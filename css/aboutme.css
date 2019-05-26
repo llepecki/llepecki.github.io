@@ -11,6 +11,7 @@
   font-size: 24px;
   position: absolute;
   left: -40px;
+  margin-top: 2px;
 }
 
 #aboutme-section p:last-child {
