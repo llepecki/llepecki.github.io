@@ -3,13 +3,14 @@
 }
 
 .about-text {
+  margin-left: 40px;
   position: relative;
 }
 
 .about-icon {
   font-size: 24px;
   position: absolute;
-  left: -42px;
+  left: -40px;
   margin-top: 2px;
 }
 
