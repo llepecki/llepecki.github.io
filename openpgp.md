@@ -1,12 +1,12 @@
 ---
 layout: page
 title: OpenPGP
-subtitle: Send ma a secure message
+subtitle: Send me a secure message
 share-title: "Łukasz Łepecki - OpenPGP"
 ---
-
-<p class="about-text">If you want to send me a secure message use the public key below to encrypt it and send it the encrypted message to my e-mail (or any other channel).</p>
-<p class="about-text">You can use [https://pgptool.org](https://pgptool.org) website to create the message (the <strong>Encrypt</strong> tab).</p>
+<p class="about-text">If you wish to send me a secure message, please use the public key provided below to encrypt it. Once encrypted, you can send the message to my email address or use any other secure communication channel.</p>
+<p class="about-text">You can encrypt your message using the <strong>Encrypt</strong> feature found on the [PGP Tool website](https://pgptool.org). This tool provides a straightforward way to securely encrypt your message before sending it.</p>
+<p class="about-text">Below is my public PGP key:</p>
 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
