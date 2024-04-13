@@ -10,3 +10,14 @@
   left: -40px;
   margin-top: 2px;
 }
+
+.pgp-public-key-container {
+  display: inline-block;  /* Makes the container an inline-block */
+  background-color: #f0f0f0;  /* Light grey background color */
+  padding: 10px;  /* Adds some padding inside the container */
+  border-radius: 5px;  /* Rounded corners */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);  /* Subtle shadow for a 3D effect */
+  text-align: center;  /* Centers the text inside the container */
+  margin: 20px auto;  /* Centers the block horizontally in its container */
+  width: fit-content;  /* Adjusts width to fit its content */
+}
