@@ -6,7 +6,7 @@ share-title: "Łukasz Łepecki - OpenPGP"
 ---
 If you wish to send me a secure message, please use the public key provided below to encrypt it. Once encrypted, you can send the message to my email address or use any other secure communication channel.
 
-You can encrypt your message using the *Encrypt* feature found on the [PGP Tool website](https://pgptool.org). This tool provides a straightforward way to securely encrypt your message before sending it.
+You can encrypt your message using the *Encrypt* feature found on the [PGP Tool](https://pgptool.org) website. This tool provides a straightforward way to securely encrypt your message before sending it.
 
 Below is my public PGP key:
 
