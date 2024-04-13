@@ -9,6 +9,7 @@ share-title: "Łukasz Łepecki - OpenPGP"
 <p class="about-text">Below is my public PGP key:</p>
 <pre class="pgp-public-key-container">
 -----BEGIN PGP PUBLIC KEY BLOCK-----
+
 xsFNBGYaZyYBEADzuSA5Cu+c1NHgU9DD2pnLn96JbJSx9IYTZWMZJtiklMSWuRpP
 eblCloBq2XJGQL5ggcvXIDF0JTaXG3RGAIMBYvqo3UFEY1GVrOHQnAGGvHFjLumz
 zUb9Fe0VjG/ujvb5ByB2QkInHw8ZRW3Z2F+B/KueGPEvfyM4AXj2Kr+Ezbty2KfB
