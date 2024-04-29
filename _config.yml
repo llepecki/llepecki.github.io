@@ -48,6 +48,7 @@ round-avatar: true
 social-network-links:
   linkedin: llepecki
   github: llepecki
+  hackerrank: llepecki
   twitter: Lukasz_Lepecki
   email: "contact@lepecki.com"
 #  facebook: deanattali
@@ -74,7 +75,6 @@ social-network-links:
 #  google-scholar: your google scholar
 #  discord: "invite_code" or "users/userid" or "invite/invite_code" 
 #  kaggle: yourname
-#  hackerrank: yourname
 #  gitlab: yourname
 #  itchio: yourname
 #  untappd: yourname
