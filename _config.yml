@@ -69,7 +69,6 @@ social-network-links:
 #  twitch: yourname
 #  yelp: yourname
 #  telegram: yourname
-#  calendly: yourname
 #  mastodon: instance.url/@username
 #  bluesky: yourname
 #  ORCID: your ORCID ID
@@ -172,7 +171,7 @@ site-css:
 #cloudflare_analytics: ""
 
 # Google Tag Manager ID
-#gtm: ""
+gtm: "WWPWM2D6"
 
 # Matomo (aka Piwik) Web statistics
 # Uncomment the following section to enable Matomo. The opt-out parameter controls
