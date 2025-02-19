@@ -171,7 +171,7 @@ site-css:
 #cloudflare_analytics: ""
 
 # Google Tag Manager ID
-gtm: "GTM-WWPWM2D6"
+#gtm: "GTM-XXX"
 
 # Matomo (aka Piwik) Web statistics
 # Uncomment the following section to enable Matomo. The opt-out parameter controls
