@@ -10,33 +10,41 @@
 
 ## Summary
 
-Over 14 years of experience as a software engineer. Microsoft .NET oriented, but easily capable of switching to other technologies. Pragmatic development: leveraging simple solutions to achieve business goals while remaining open to adapt and scale. Particularly interested in domain-driven design, API development, distributed systems and microservices. Skilled in architecting and implementing cloud solutions. Deep understanding how to design maintainable systems and write clear, self-descriptive code. Strong focus on the agile process and its constant improvement. Using AI tools to boost productivity. Experience working in a multinational environment.
+- Over 16 years of experience as a software engineer
+- Microsoft .NET oriented, but comfortable switching to other technologies
+- Pragmatic, business-focused development using simple solutions that can adapt and scale
+- Strong interest in domain-driven design, API development, distributed systems and microservices
+- Skilled in architecting and implementing cloud solutions
+- Deep understanding of maintainable system design and clear, self-descriptive code
+- Strong focus on agile processes and their continuous improvement
+- Using AI tools to boost productivity
+- Experience working in multinational and cross-cultural environments
 
 ## Skills
 
 ### Core
 
 - .NET / C#, F#
-- object-oriented programming
-- functional programming
-- system design
+- Object-oriented programming
+- Functional programming
+- System design
 
 ### System Design
 
-- domain-driven design
+- Domain-driven design
 - CQRS
-- event sourcing
-- design patterns
-- distributed systems
-- messaging patterns
-- microservices
+- Event sourcing
+- Design patterns
+- Distributed systems
+- Messaging patterns
+- Microservices
 - API design
 - RESTful APIs
 
 ### Databases
 
-- SQL
 - Microsoft SQL Server
+- PostgreSQL
 - CosmosDB
 
 ### Cloud
@@ -45,13 +53,19 @@ Over 14 years of experience as a software engineer. Microsoft .NET oriented, but
 - Amazon AWS
 - Google Cloud Platform
 
+### AI
+
+- Claude Code
+- Codex
+- AI agents
+
 ### Testing
 
-- test-driven development
-- performance profilers
-- memory profilers
-- unit testing
-- integration testing
+- Test-driven development
+- Performance profilers
+- Memory profilers
+- Unit testing
+- Integration testing
 
 ### Frontend
 
@@ -242,11 +256,11 @@ Cracow, Poland · Jun 2009 – Jan 2010 · [novomatic-tech.com](https://novomati
 
 ## Education
 
-### Automation and Robotics - MSc
+### Automation and Robotics · AGH University of Science and Technology in Cracow · MSc
 
-**AGH University of Science and Technology in Cracow** · Cracow, Poland · Oct 2004 – Jun 2010 · [www.agh.edu.pl](https://www.agh.edu.pl)
+Cracow, Poland · Oct 2004 – Jun 2010 · [www.agh.edu.pl](https://www.agh.edu.pl)
 
-**Thesis:** OCR Neural Network Implementation on an Embedded Device
+Thesis: _OCR Neural Network Implementation on an Embedded Device_
 
 C++, .NET (C#, C++/CLI), embedded
 
@@ -256,38 +270,59 @@ C++, .NET (C#, C++/CLI), embedded
 
 AI Devs · Jul 2025 · [credsverse.com/credentials/c55c2e6e-7043-4eea-b0fb-f005c6a4d2de](https://credsverse.com/credentials/c55c2e6e-7043-4eea-b0fb-f005c6a4d2de)
 
-- AI Agents
-- Large Language Models (LLM)
-- Large Language Model Operations (LLMOps)
-- Vector Databases
-- Graph Databases
+- AI agents
+- Large language models (LLM)
+- Large language model operations (LLMOps)
+- Vector databases
+- Graph databases
 
 ### Game Theory
 
 Stanford University · May 2025 · [www.coursera.org/account/accomplishments/verify/1Y9GRREZTEC0](https://www.coursera.org/account/accomplishments/verify/1Y9GRREZTEC0)
 
-- Mixed-Strategy Nash Equilibria
-- Alternative Solution Concepts
-- Extensive-Form Games
-- Repeated Games
-- Bayesian Games
-- Coalitional Games
+- Mixed-strategy Nash equilibria
+- Alternative solution concepts
+- Extensive-form games
+- Repeated games
+- Bayesian games
+- Coalitional games
 
 ### Professional Scrum Developer I (PSD I)
 
 Scrum.org · Apr 2024 · [www.credly.com/badges/a95f1e0b-b913-4124-96c5-99265c2bdea6](https://www.credly.com/badges/a95f1e0b-b913-4124-96c5-99265c2bdea6)
 
+- Scrum roles, artifacts and events
+- Sprints, sprint goals and increments
+- User stories, acceptance criteria and refinement
+- Estimation and progress tracking (boards, burndown charts)
+- Reviews, retrospectives and continuous improvement
+
 ### Certified Tester Foundation Level (CTFL)
 
 ISTQB · Jan 2010 · [istqb.org](https://istqb.org)
+
+- Fundamentals of software testing and QA
+- Role of testing in the software development lifecycle
+- Static testing techniques (reviews and static analysis)
+- Black-box and white-box test design techniques
+- Test management, planning, estimation and reporting
+- Defect lifecycle, metrics and communication with stakeholders
+- Categories and proper use of test tools
 
 ### Introduction to Kanban
 
 Altkom Akademia · Jan 2012 · [www.altkomakademia.pl](https://www.altkomakademia.pl)
 
+- Kanban boards and workflow visualization
+- Work in progress (WIP) limits
+- Flow and basic Kanban metrics
+
 ### Introduction to Scrum
 
 Altkom Akademia · Jan 2011 · [www.altkomakademia.pl](https://www.altkomakademia.pl)
+
+- Scrum fundamentals and basic workflow
+- Relationship between Scrum and agile principles
 
 ## Other
 
