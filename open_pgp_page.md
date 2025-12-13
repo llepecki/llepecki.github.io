@@ -5,12 +5,10 @@ subtitle: Send me a secure message
 share-title: "Łukasz Łepecki - OpenPGP"
 ---
 
-<p class="about-text">If you wish to send me a secure message, please use the public key provided below to encrypt it. Once encrypted, you can send the message to my email address or use any other communication channel.</p>
-<p class="about-text">You can encrypt your message using the <strong>Encrypt</strong> feature found on the <a href="https://pgptool.org" target="_blank">PGP Tool</a> website. This tool provides a straightforward way to securely encrypt your message before sending it.</p>
-<p class="about-text">Below is my public PGP key:</p>
-<pre class="pgp-public-key-container">
------BEGIN PGP PUBLIC KEY BLOCK-----
+If you wish to send me a secure message, please use the public key provided below to encrypt it. Once encrypted, you can send the message to my email address or use any other communication channel.
 
+```text
+-----BEGIN PGP PUBLIC KEY BLOCK-----
 xsFNBGYaZyYBEADzuSA5Cu+c1NHgU9DD2pnLn96JbJSx9IYTZWMZJtiklMSWuRpP
 eblCloBq2XJGQL5ggcvXIDF0JTaXG3RGAIMBYvqo3UFEY1GVrOHQnAGGvHFjLumz
 zUb9Fe0VjG/ujvb5ByB2QkInHw8ZRW3Z2F+B/KueGPEvfyM4AXj2Kr+Ezbty2KfB
@@ -105,4 +103,4 @@ tvBUnzDjPy4u+JGYvL21I+sfpk6Y7SmWWDWmJ0K4AT5RsH1PIZCAzyrhfG6e5xpf
 W1pfVerD7HPU5qxFGkYVIUG8
 =vrVx
 -----END PGP PUBLIC KEY BLOCK-----
-</pre>
+```

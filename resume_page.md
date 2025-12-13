@@ -5,11 +5,12 @@ subtitle:
 share-title: "Łukasz Łepecki - My resume"
 ---
 
-[download pdf](https://lepecki.com/resume.pdf) · [raw Markdown](https://lepecki.com/resume.md)
+[![PDF](https://img.shields.io/badge/Download-PDF-blue)](https://lepecki.com/resume.pdf)
+[![Markdown](https://img.shields.io/badge/View-Markdown-green)](https://lepecki.com/resume.md)
 
 ## Summary
 
-**Senior Back-End Engineer** specializing in .NET, API design, and distributed architectures. 16 years building systems that scale and code that lasts. Comfortable owning features end-to-end: from client requirements through architecture to release. Track record of solving systemic problems and creating internal tools that teams actually adopt. Experienced with cloud-native development. Capable across the stack when needed, but backend is my home. I improve systems, not just maintain them.
+Senior back-end engineer specializing in .NET, API design, and distributed architectures. 16 years building systems that scale and code that lasts. Comfortable owning features end-to-end: from client requirements through architecture to release. Track record of solving systemic problems and creating internal tools that teams actually adopt. Experienced with cloud-native development. Capable across the stack when needed, but backend is my home. I improve systems, not just maintain them.
 
 ## Skills
 
