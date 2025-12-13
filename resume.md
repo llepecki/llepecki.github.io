@@ -16,7 +16,9 @@ Senior back-end engineer specializing in .NET, API design, and distributed archi
 
 ### Core
 
-- .NET / C# and F#
+- .NET
+- C#
+- F#
 
 ### Working knowledge
 
@@ -31,7 +33,7 @@ Senior back-end engineer specializing in .NET, API design, and distributed archi
 - API design
 - Microservices
 - Distributed systems
-- Domain-Driven Design
+- Domain-driven design
 - Event sourcing
 - CQRS
 
@@ -40,6 +42,7 @@ Senior back-end engineer specializing in .NET, API design, and distributed archi
 - Azure
 - AWS
 - GCP
+- RabbitMQ
 - Docker
 - Kubernetes
 - Terraform
@@ -53,8 +56,8 @@ Senior back-end engineer specializing in .NET, API design, and distributed archi
 
 ### AI
 
-- Claude Code
 - Codex
+- Claude Code
 - Agentic workflows
 
 ### Languages
@@ -68,7 +71,7 @@ Senior back-end engineer specializing in .NET, API design, and distributed archi
 
 Linz, Austria · Jun 2024 - Present · [www.tributech.io](https://www.tributech.io)
 
-.NET / C#, PostgreSQL, Redis, Keycloak, Docker, Kubernetes
+.NET / C#, PostgreSQL, Redis, Keycloak, Docker, Kubernetes, Keycloak, Cerbos
 
 - Build and maintain APIs enabling external client integrations; own DevOps responsibilities including deployment pipelines and infrastructure
 - Designed a permission-matrix testing system that replaced scattered authorization tests across endpoints - eliminated duplicated code, cut test execution time, and made permission updates trivial to maintain
@@ -78,7 +81,7 @@ Linz, Austria · Jun 2024 - Present · [www.tributech.io](https://www.tributech.
 
 Warsaw, Poland · Apr 2022 - Jun 2024 · [cybervadis.com](https://cybervadis.com)
 
-.NET / C# and F#, Azure (functions, ServiceBus, Configuration, KeyVault, databases), SQL Server, Docker
+.NET / F#, Azure (Function Apps, Service Bus, Key Vault, storage), Microsoft SQL Server, Docker
 
 - Delivered business features end-to-end using Domain-Driven Design; developed and maintained core backend services communicating via messaging infrastructure
 - Built internal Azure Service Bus abstraction library that solved a persistent company-wide problem of messages silently lost between microservices - became the standard for async communication across teams
@@ -87,7 +90,7 @@ Warsaw, Poland · Apr 2022 - Jun 2024 · [cybervadis.com](https://cybervadis.com
 
 Warsaw, Poland · Dec 2020 - Apr 2022 · [ilabo.com](https://ilabo.com)
 
-.NET / C#, Azure, EventFlow, CosmosDB, Redis, SQL Server, Docker, Kubernetes
+.NET / C#, Azure, EventFlow, Microsoft SQL Server, CosmosDB, Redis, RabbitMQ, Docker, Kubernetes
 
 - Developed core microservices within a distributed system; contributed to key architectural decisions shaping the platform's design
 - Owned end-to-end delivery of the platform's public API - gathered requirements directly with external clients, led technical design, and drove the team through implementation to release
@@ -105,7 +108,7 @@ Gdansk, Poland · Aug 2019 - Dec 2020 · [appfire.com](https://appfire.com)
 
 Cracow, Poland · Feb 2018 - Aug 2019 · [library.abb.com](https://library.abb.com)
 
-.NET Core / C#, ASP.NET Web API, React, Azure, SQL Server, EF Core
+.NET Core / C#, ASP.NET, React, Azure, Microsoft SQL Server, EF Core
 
 - Built corporation-wide technical documentation portal - full-stack delivery from backend services to React frontend
 - Optimized for security and performance at enterprise scale
@@ -114,7 +117,7 @@ Cracow, Poland · Feb 2018 - Aug 2019 · [library.abb.com](https://library.abb.c
 
 Warsaw, Poland · Sep 2016 - Feb 2018 · [www.sdc.dk](https://www.sdc.dk)
 
-.NET / C#, ASP.NET , WCF, Angular
+.NET / C#, ASP.NET, WCF, Angular
 
 - Implemented PSD2-compliant APIs enabling secure third-party access to banking services
 - Built authentication and authorization systems meeting EU regulatory requirements
@@ -123,7 +126,7 @@ Warsaw, Poland · Sep 2016 - Feb 2018 · [www.sdc.dk](https://www.sdc.dk)
 
 Warsaw, Poland · May 2015 - Sep 2016 · [www.kmd.net](https://www.kmd.net)
 
-.NET / C#, ASP.NET, Angular, MS SQL Server, EF Core
+.NET / C#, ASP.NET, Angular, Microsoft SQL Server, EF Core
 
 - Architected and built core backend for a greenfield mobile payment platform serving the Danish market
 - Integrated with existing financial infrastructure; developed internal admin tooling
@@ -141,7 +144,7 @@ Wroclaw, Poland · Nov 2014 - Apr 2015 · [www.canon-ot.com.pl](https://www.cano
 
 Cracow, Poland · Nov 2013 - Nov 2014 · [www.scientificgames.com](https://www.scientificgames.com)
 
-.NET / C#, ASP.NET, webservices, MS SQL Server, NHibernate
+.NET / C#, ASP.NET, Microsoft SQL Server, NHibernate
 
 - Developed web services for government institutions - international project spanning three countries
 - Coordinated across distributed teams and time zones; delivered APIs meeting governmental security requirements
@@ -150,7 +153,7 @@ Cracow, Poland · Nov 2013 - Nov 2014 · [www.scientificgames.com](https://www.s
 
 Cracow, Poland · Aug 2013 - Nov 2013 · [www.ubs.com](https://www.ubs.com)
 
-.NET / C#, WPF
+.NET / C#, WPF, WinForms
 
 - Developed and maintained trading desktop application for one of the world's largest investment banks
 - Delivered features and performance optimizations for reliability during market hours
@@ -159,7 +162,7 @@ Cracow, Poland · Aug 2013 - Nov 2013 · [www.ubs.com](https://www.ubs.com)
 
 Cracow, Poland · Jun 2009 – Aug 2013 · [novomatic-tech.com](https://novomatic-tech.com)
 
-.NET / C#, C++, ASP.NET, WPF, SQL Server
+.NET / C#, C++, ASP.NET, WPF, Microsoft SQL Server
 
 - Progressed from Test Automation Engineer to Back-End Engineer across multiple gaming infrastructure projects
 - Built core systems including cryptographically secure RNG module, real-time telemetry pipeline, and remote software deployment platform
@@ -168,13 +171,11 @@ Cracow, Poland · Jun 2009 – Aug 2013 · [novomatic-tech.com](https://novomati
 
 ## Education
 
-### MSc · Automation and Robotics · AGH University of Science and Technology in Cracow
+### MSc · Automation and Robotics · AGH University of Science and Technology
 
 Cracow, Poland · Oct 2004 - Jun 2010 · [www.agh.edu.pl](https://www.agh.edu.pl)
 
-Thesis: _OCR Neural Network Implementation on an Embedded Device_
-
-C++, .NET (C#, C++/CLI), embedded
+Thesis: _OCR Neural Network Implementation on an Embedded Device_ (C++, .NET, embedded)
 
 ## Certificates
 
