@@ -220,6 +220,14 @@ ISTQB · Jan 2010 · [istqb.org](https://istqb.org)
 - Test management, planning, estimation and reporting
 - Defect lifecycle, metrics and communication with stakeholders
 
+## Open Source
+
+### FriendlyEnvars
+
+[github.com/llepecki/friendly-envars](https://github.com/llepecki/friendly-envars)
+
+Type-safe environment variable binding for .NET that maps environment variables directly to strongly typed configuration classes with automatic conversion and validation.
+
 ## Teaching
 
 Guest lecturer at two Polish universities on software design, OOP, design patterns, and agile processes:
