@@ -2,7 +2,7 @@
 layout: page
 title: My resume
 subtitle:
-share-title: "Łukasz Łepecki - My resume"
+share-title: Łukasz Łepecki - My resume
 ---
 
 [![PDF](https://img.shields.io/badge/Download-PDF-blue)](https://lepecki.com/llepecki_resume.pdf)

@@ -2,7 +2,7 @@
 layout: page
 title: OpenPGP
 subtitle: Send me a secure message
-share-title: "Łukasz Łepecki - OpenPGP"
+share-title: Łukasz Łepecki - OpenPGP
 ---
 
 If you wish to send me a secure message, please use the public key provided below to encrypt it. Once encrypted, you can send the message to my email address or use any other communication channel.
