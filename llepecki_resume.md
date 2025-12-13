@@ -71,7 +71,7 @@ Senior back-end engineer specializing in .NET, API design, and distributed archi
 
 Linz, Austria · Jun 2024 - Present · [www.tributech.io](https://www.tributech.io)
 
-.NET / C#, PostgreSQL, Redis, Keycloak, Docker, Kubernetes, Keycloak, Cerbos
+.NET / C#, PostgreSQL, Redis, Docker, Kubernetes, Keycloak, Cerbos
 
 - Build and maintain APIs enabling external client integrations; own DevOps responsibilities including deployment pipelines and infrastructure
 - Designed a permission-matrix testing system that replaced scattered authorization tests across endpoints - eliminated duplicated code, cut test execution time, and made permission updates trivial to maintain
@@ -160,7 +160,7 @@ Cracow, Poland · Aug 2013 - Nov 2013 · [www.ubs.com](https://www.ubs.com)
 
 ### Back-End Engineer · Novomatic Technologies Poland
 
-Cracow, Poland · Jun 2009 – Aug 2013 · [novomatic-tech.com](https://novomatic-tech.com)
+Cracow, Poland · Jun 2009 - Aug 2013 · [novomatic-tech.com](https://novomatic-tech.com)
 
 .NET / C#, C++, ASP.NET, WPF, Microsoft SQL Server
 
