@@ -29,11 +29,11 @@
 ### Architecture & Patterns
 
 - API design
-- Distributed systems
 - Microservices
+- Distributed systems
 - Domain-Driven Design
-- CQRS
 - Event sourcing
+- CQRS
 
 ### Cloud & Infrastructure
 
@@ -46,7 +46,7 @@
 
 ### Data
 
-- SQL Server
+- Microsoft SQL Server
 - PostgreSQL
 - CosmosDB
 - Redis
