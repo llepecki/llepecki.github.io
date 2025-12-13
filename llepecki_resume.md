@@ -81,7 +81,7 @@ Linz, Austria · Jun 2024 - Present · [www.tributech.io](https://www.tributech.
 
 Warsaw, Poland · Apr 2022 - Jun 2024 · [cybervadis.com](https://cybervadis.com)
 
-.NET / F#, Azure (Function Apps, Service Bus, Key Vault, storage), Microsoft SQL Server, Docker
+.NET / F#, Azure (Function Apps, Service Bus, Key Vault, storage), Microsoft SQL Server, Docker, Terraform
 
 - Delivered business features end-to-end using Domain-Driven Design; developed and maintained core backend services communicating via messaging infrastructure
 - Built internal Azure Service Bus abstraction library that solved a persistent company-wide problem of messages silently lost between microservices - became the standard for async communication across teams
