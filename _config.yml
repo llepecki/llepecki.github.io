@@ -21,7 +21,8 @@ author: Łukasz Łepecki
 
 navbar-links:
   OpenPGP: "openpgp"
-  Resume: "https://lepecki.com/llepecki_resume_en.pdf"
+  Resume (PDF): "https://lepecki.com/resume.pdf"
+  Resume (Markdown): "https://lepecki.com/resume.md"
 
 ################
 # --- Logo --- #
