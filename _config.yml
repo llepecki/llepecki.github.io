@@ -20,8 +20,8 @@ author: Łukasz Łepecki
 ###############################################
 
 navbar-links:
-  Resume: "resume_page"
-  OpenPGP: "open_pgp_page"
+  Resume: "resume"
+  OpenPGP: "openpgp"
 
 ################
 # --- Logo --- #

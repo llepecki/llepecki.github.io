@@ -1,12 +1,12 @@
-﻿# Łukasz Łepecki
+---
+layout: page
+title: My resume
+subtitle:
+share-title: "Łukasz Łepecki - My resume"
+---
 
-## Personal Info
-
-- phone: +48 798475077
-- e-mail: [lukasz@lepecki.dev](mailto:lukasz@lepecki.dev)
-- web: [lepecki.com](https://lepecki.com)
-- LinkedIn: [linkedin.com/in/llepecki](https://linkedin.com/in/llepecki)
-- GitHub: [github.com/llepecki](https://github.com/llepecki)
+[![PDF](https://img.shields.io/badge/Download-PDF-blue)](https://lepecki.com/llepecki_resume.pdf)
+[![Markdown](https://img.shields.io/badge/View-Markdown-green)](https://lepecki.com/llepecki_resume.md)
 
 ## Summary
 
