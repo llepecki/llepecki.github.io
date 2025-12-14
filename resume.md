@@ -92,7 +92,7 @@ Warsaw, Poland · Dec 2020 - Apr 2022 · [ilabo.com](https://ilabo.com)
 
 .NET / C#, Azure, EventFlow, Microsoft SQL Server, CosmosDB, Redis, RabbitMQ, Docker, Kubernetes
 
-- Developed core microservices within a distributed system; contributed to key architectural decisions shaping the platform's design
+- Developed core microservices for a MES (Manufacturing Execution System) platform; contributed to key architectural decisions shaping the system's design
 - Owned end-to-end delivery of the platform's public API - gathered requirements directly with external clients, led technical design, and drove the team through implementation to release
 
 ### Senior Back-End Engineer · Appfire
@@ -106,30 +106,22 @@ Gdansk, Poland · Aug 2019 - Dec 2020 · [appfire.com](https://appfire.com)
 
 ### Senior Full-Stack Engineer · ABB
 
-Cracow, Poland · Feb 2018 - Aug 2019 · [library.abb.com](https://library.abb.com)
+Cracow, Poland · Feb 2018 - Aug 2019 · [www.abb.com](https://www.abb.com)
 
 .NET Core / C#, ASP.NET, React, Azure, Microsoft SQL Server, EF Core
 
 - Built corporation-wide technical documentation portal - full-stack delivery from backend services to React frontend
 - Optimized for security and performance at enterprise scale
 
-### Senior Back-End Engineer · SDC
+### Senior Full-Stack Engineer · KMD
 
-Warsaw, Poland · Sep 2016 - Feb 2018 · [www.sdc.dk](https://www.sdc.dk)
-
-.NET / C#, ASP.NET, WCF, Angular
-
-- Implemented PSD2-compliant APIs enabling secure third-party access to banking services
-- Built authentication and authorization systems meeting EU regulatory requirements
-
-### Senior Full-Stack Engineer · KMD Poland
-
-Warsaw, Poland · May 2015 - Sep 2016 · [www.kmd.net](https://www.kmd.net)
+Warsaw, Poland · May 2015 - Feb 2018 · [www.kmd.net](https://www.kmd.net)
 
 .NET / C#, ASP.NET, Angular, Microsoft SQL Server, EF Core
 
 - Architected and built core backend for a greenfield mobile payment platform serving the Danish market
-- Integrated with existing financial infrastructure; developed internal admin tooling
+- Implemented PSD2-compliant APIs enabling secure third-party access to banking services
+- Built authentication and authorization systems meeting EU regulatory requirements
 
 ### Back-End Engineer · Canon Ophthalmic Technologies
 
