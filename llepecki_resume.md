@@ -214,7 +214,7 @@ Type-safe environment variable binding for .NET that maps environment variables 
 
 ## Teaching
 
-Guest lecturer at two Polish universities on software design, OOP, design patterns, and agile processes:
+Guest lecturer at two Polish universities on software design, OOP, design patterns, and agile processes.
 
 - Warsaw University of Information Technology · Oct 2016 - Jan 2017
 - AGH University of Science and Technology · Oct 2011 - Jan 2012
