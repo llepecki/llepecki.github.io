@@ -142,21 +142,12 @@ Wroclaw, Poland · Nov 2014 - Apr 2015 · [www.canon-ot.com.pl](https://www.cano
 
 ### Back-End Engineer · Scientific Games
 
-Cracow, Poland · Nov 2013 - Nov 2014 · [www.scientificgames.com](https://www.scientificgames.com)
+Cracow, Poland · Aug 2013 - Nov 2014 · [www.scientificgames.com](https://www.scientificgames.com)
 
 .NET / C#, ASP.NET, Microsoft SQL Server, NHibernate
 
 - Developed web services for government institutions - international project spanning three countries
 - Coordinated across distributed teams and time zones; delivered APIs meeting governmental security requirements
-
-### Back-End Engineer · UBS
-
-Cracow, Poland · Aug 2013 - Nov 2013 · [www.ubs.com](https://www.ubs.com)
-
-.NET / C#, WPF, WinForms
-
-- Developed and maintained trading desktop application for one of the world's largest investment banks
-- Delivered features and performance optimizations for reliability during market hours
 
 ### Back-End Engineer · Novomatic Technologies Poland
 
