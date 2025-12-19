@@ -51,7 +51,10 @@
     <div class="avatar-container">
       <div class="avatar-img-border">
         <a href="{{ '/' | absolute_url }}">
-          <img alt="Navigation bar avatar" class="avatar-img" src="{{ site.avatar | relative_url }}" />
+          <picture>
+            <source srcset="{{ '/assets/img/avatar.webp' | relative_url }}" type="image/webp">
+            <img alt="Navigation bar avatar" class="avatar-img" src="{{ site.avatar | relative_url }}" />
+          </picture>
         </a>
       </div>
     </div>
