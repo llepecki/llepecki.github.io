@@ -4,3 +4,10 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+/resume/
+  X-Robots-Tag: noindex, nofollow
+/llepecki_resume.pdf
+  X-Robots-Tag: noindex, nofollow
+/llepecki_resume.md
+  X-Robots-Tag: noindex, nofollow

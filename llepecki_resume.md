@@ -1,6 +1,6 @@
 ﻿# Łukasz Łepecki
 
-## Personal Info
+## Contact
 
 - phone: +48 798475077
 - e-mail: [lukasz@lepecki.dev](mailto:lukasz@lepecki.dev)

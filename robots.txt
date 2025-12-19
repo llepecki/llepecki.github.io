@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
+Disallow: /resume/
+Disallow: /llepecki_resume.pdf
+Disallow: /llepecki_resume.md
+
 Sitemap: https://lepecki.com/sitemap.xml
