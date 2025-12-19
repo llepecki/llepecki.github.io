@@ -15,3 +15,7 @@ gem "wdm", "~> 0.1", :platforms => [:mingw, :x64_mingw, :mswin]
 gemspec
 
 gem "kramdown-parser-gfm"
+
+# Required for Ruby 3.4+ (removed from default gems)
+gem "bigdecimal"
+gem "logger"

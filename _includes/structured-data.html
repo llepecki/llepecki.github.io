@@ -1,0 +1,54 @@
+{%- comment -%} JSON-LD Structured Data for SEO {%- endcomment -%}
+{% if page.id %}
+{%- comment -%} Blog Post Schema {%- endcomment -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "{{ page.title | strip_html | xml_escape }}",
+  "author": {
+    "@type": "Person",
+    "name": "{{ page.author | default: site.author | default: site.title }}"
+  },
+  "datePublished": "{{ page.date | date_to_xmlschema }}",
+  "dateModified": "{{ page.last-updated | default: page.date | date_to_xmlschema }}",
+  {% if page.share-img or page.cover-img or page.thumbnail-img or site.avatar %}
+  "image": "https://{{ site.url-pretty }}{% if page.share-img %}{{ page.share-img }}{% elsif page.cover-img %}{% if page.cover-img.first %}{{ page.cover-img[0].first.first }}{% else %}{{ page.cover-img }}{% endif %}{% elsif page.thumbnail-img %}{{ page.thumbnail-img }}{% else %}{{ site.avatar }}{% endif %}",
+  {% endif %}
+  "url": "https://{{ site.url-pretty }}{{ page.url }}",
+  "description": "{{ page.share-description | default: page.subtitle | default: page.content | strip_html | xml_escape | truncatewords: 50 }}",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://{{ site.url-pretty }}{{ page.url }}"
+  },
+  "publisher": {
+    "@type": "Person",
+    "name": "{{ site.author | default: site.title }}",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://{{ site.url-pretty }}{{ site.avatar }}"
+    }
+  }
+}
+</script>
+{% else %}
+{%- comment -%} Person/Website Schema {%- endcomment -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "{{ site.author | default: site.title }}",
+  "url": "https://{{ site.url-pretty }}",
+  "image": "https://{{ site.url-pretty }}{{ site.avatar }}",
+  {% if site.social-network-links.github %}
+  "sameAs": [
+    {% if site.social-network-links.github %}"https://github.com/{{ site.social-network-links.github }}"{% endif %}{% if site.social-network-links.linkedin %},
+    "https://www.linkedin.com/in/{{ site.social-network-links.linkedin }}"{% endif %}{% if site.social-network-links.twitter %},
+    "https://twitter.com/{{ site.social-network-links.twitter }}"{% endif %}
+  ],
+  {% endif %}
+  "jobTitle": "Software Engineer",
+  "email": "{{ site.social-network-links.email }}"
+}
+</script>
+{% endif %}

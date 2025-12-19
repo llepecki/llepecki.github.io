@@ -58,6 +58,22 @@
   <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="{{ '/feed.xml' | absolute_url }}">
   {% endif %}
 
+  {%- comment -%} Favicon package {%- endcomment -%}
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="msapplication-TileColor" content="#0085a1">
+  <meta name="msapplication-config" content="/browserconfig.xml">
+
+  {%- comment -%} Resource hints for performance {%- endcomment -%}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://maxcdn.bootstrapcdn.com">
+  <link rel="dns-prefetch" href="https://kit.fontawesome.com">
+  <link rel="dns-prefetch" href="https://ka-f.fontawesome.com">
+
   {% include gtag.html %}
   {% include gtm_head.html %}
   {% include google_analytics.html %}
@@ -161,15 +177,13 @@
   <link rel="stylesheet" href="{{ "/assets/css/staticman.css" | relative_url }}">
   {% endif %}
 
-  {% assign favicon_exists = site.static_files | where: "path", "/favicon.ico" | size %}
-  {% if favicon_exists == 1 %}
-  <link rel="icon" href="{{ '/favicon.ico' | relative_url }}" />
-  {% endif %}
-
   {% if page.head-extra %}
     {% for file in page.head-extra %}
       {% include {{ file }} %}
     {% endfor %}
   {% endif %}
+
+  {%- comment -%} Structured data for SEO {%- endcomment -%}
+  {% include structured-data.html %}
 
 </head>

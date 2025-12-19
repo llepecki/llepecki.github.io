@@ -24,7 +24,7 @@ layout: null
   --mid-col: #808080;
 }
 
-/* --- General --- */
+/* General */
 
 html {
   font-size: 100%
@@ -47,6 +47,21 @@ body {
 }
 body > main {
   flex: 1;
+}
+
+/* Skip to main content link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--hover-col);
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+.skip-link:focus {
+  top: 0;
 }
 p {
   line-height: 1.5;
@@ -149,7 +164,7 @@ img {
   }
 }
 
-/* --- Navbar --- */
+/* Navbar */
 
 .navbar-custom {
   background-color: var(--navbar-col);
@@ -404,7 +419,7 @@ img {
   }
 }
 
-/* --- Footer --- */
+/* Footer */
 
 footer {
   padding: 1.875rem 0;
@@ -476,7 +491,7 @@ footer .footer-custom-content {
   }
 }
 
-/* --- Post preview (feed) --- */
+/* Post preview (feed) */
 
 .posts-list {
     margin: 0;
@@ -599,7 +614,7 @@ footer .footer-custom-content {
   }
 }
 
-/* --- Tags --- */
+/* Tags */
 
 .blog-tags {
   font-family: var(--header-font);
@@ -666,7 +681,7 @@ footer .footer-custom-content {
   font-size: 1rem;
 }
 
-/* --- Post and page headers --- */
+/* Post and page headers */
 
 .intro-header {
   margin: 5rem 0 1.25rem;
@@ -785,8 +800,7 @@ nav.top-nav-short-permanent ~ header > .intro-header.big-img {
   }
 }
 
-/* --- Pagination --- */
-
+/* Pagination */
 .pagination {
   margin: 0.625rem 0 0;
   justify-content: space-between;
@@ -830,8 +844,7 @@ nav.top-nav-short-permanent ~ header > .intro-header.big-img {
   background-color: var(--hover-col);
 }
 
-/* --- Tables --- */
-
+/* Tables */
 table {
   padding: 0;
   overflow-x: auto;
@@ -865,8 +878,7 @@ table tr td :last-child {
   margin-bottom: 0;
 }
 
-/* --- Code blocks --- */
-
+/* Code blocks */
 code {
   padding: 0.125rem 0.25rem;
   color: #c7254e;
@@ -923,12 +935,12 @@ pre {
       -ms-user-select: none;
           user-select: none;
 }
+
 .lineno::selection, .lineno::-moz-selection {
   background: none;
 }
 
 /* Fix table border github gist snippets */
-
 .gist, .gist-file table tr {
   border: unset;
 }
@@ -937,14 +949,13 @@ pre {
   border: unset;
 }
 
-/* --- Social media sharing section --- */
-
+/* Social media sharing section */
 #social-share-section {
   margin-bottom: 1.875rem;
   margin-top: 1.875rem;
 }
 
-/* --- Notification boxes --- */
+/* Notification boxes */
 .box-note,
 .box-warning,
 .box-error,
@@ -976,8 +987,7 @@ pre {
   border-left-color: #3CB371;
 }
 
-/* --- Misc blog post styles --- */
-
+/* Misc blog post styles */
 .blog-post :first-child {
   margin-top: 0;
 }
@@ -1047,9 +1057,11 @@ pre {
   line-height: 2rem;
   font-weight: bold;
 }
+
 #nav-search-exit:hover {
   color: #000;
 }
+
 #nav-search-input {
   text-align: center;
   background: #e7edee;
@@ -1073,6 +1085,7 @@ pre {
     right: 12.5%;
   }
 }
+
 @media (max-width: 767px) {
   #nav-search-input {
     width: 100%;
@@ -1081,6 +1094,7 @@ pre {
     right: 0;
   }
 }
+
 #nav-search-input:focus {
   background: #f3f8fe;
   box-shadow: 0px 0.15rem 1rem #e7f4ff;
@@ -1100,10 +1114,12 @@ pre {
   max-height: calc(100vh - 6.5rem);
   overflow-y: auto;
 }
+
 #search-results-container a {
   color: #fff;
   text-decoration: none;
 }
+
 #search-results-container a:hover {
   color: #fff;
   text-decoration: underline;
@@ -1112,6 +1128,7 @@ pre {
 #nav-search-icon {
   display: inline-block;
 }
+
 #nav-search-text {
   display: none;
 }
