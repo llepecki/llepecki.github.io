@@ -2,7 +2,7 @@
 layout: page
 title: Łukasz Łepecki
 subtitle: Resume
-share-title: Łukasz Łepecki - Resume
+share-title: Resume
 ---
 
 [![PDF](https://img.shields.io/badge/Download-PDF-blue)](https://lepecki.com/llepecki_resume.pdf)

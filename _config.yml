@@ -21,7 +21,7 @@ author: Łukasz Łepecki
 
 navbar-links:
   Resume: "resume"
-  OpenPGP: "openpgp"
+  PGP Key: "pgpkey"
 
 ################
 # --- Logo --- #
@@ -51,7 +51,7 @@ social-network-links:
   hackerrank: llepecki
 #  twitter: Lukasz_Lepecki
 #  calendly: llepecki
-#  email: "contact@lepecki.com"
+  email: "lukasz@lepecki.dev"
 #  facebook: deanattali
 #  rss: true  # remove this line if you don't want to show an RSS link at the bottom
 #  facebook: deanattali
@@ -174,7 +174,7 @@ site-css:
 #gtag: "G-XXXXXXXXXX"
 
 # Fill in your Cloudflare Analytics beacon token to track your website using Cloudflare Analytics
-#cloudflare_analytics: ""
+cloudflare_analytics: "f1bf0263d6d34ee582ce23266dd748d7"
 
 # Google Tag Manager ID
 #gtm: "GTM-XXX"
@@ -294,7 +294,6 @@ exclude:
   - LICENSE
   - README.md
   - FAVICON.md
-  - screenshot.png
   - docs/
 
 plugins:

@@ -1,11 +1,23 @@
 ---
 layout: page
-title: OpenPGP
-subtitle: Send me a secure message
-share-title: Łukasz Łepecki - OpenPGP
+title: Encrypted Communication
+subtitle: Send me a message using PGP encryption
+share-title: PGP Key
 ---
 
-If you wish to send me a secure message, please use the public key provided below to encrypt it. Once encrypted, you can send the message to my email address or use any other communication channel.
+If you want to send me an encrypted message, you can use PGP. It's useful for sensitive topics or if you simply prefer end-to-end encryption.
+
+## Key Fingerprint
+
+```text
+ECEF A23F 2DE0 020E 0B28  529E 7E18 C4A3 19AF 53D4
+```
+
+Always verify this fingerprint before trusting the key.
+
+## Public Key
+
+Use the public key below to encrypt your message. Once encrypted, you can send it through any channel.
 
 ```text
 -----BEGIN PGP PUBLIC KEY BLOCK-----
