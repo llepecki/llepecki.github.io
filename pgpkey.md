@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Encrypted Communication
+title: PGP Key
 subtitle: Send me a message using PGP encryption
 share-title: PGP Key
 ---
@@ -9,11 +9,11 @@ If you want to send me an encrypted message, you can use PGP. It's useful for se
 
 ## Key Fingerprint
 
+Always verify this fingerprint before trusting the key.
+
 ```text
 ECEF A23F 2DE0 020E 0B28  529E 7E18 C4A3 19AF 53D4
 ```
-
-Always verify this fingerprint before trusting the key.
 
 ## Public Key
 
