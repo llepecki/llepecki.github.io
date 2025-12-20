@@ -8,8 +8,9 @@ This document describes how the favicon set for lepecki.com was created.
 
 **Configuration:**
 - **Font:** Open Sans
-- **Color:** #0096FF
-- **Background:** Rounded
+- **Color:** #FFFFFF (white)
+- **Background:** #0078D4 (Azure blue)
+- **Shape:** Circle
 
 ## Generated Files
 
@@ -28,8 +29,8 @@ The favicon package includes the following files:
 The `site.webmanifest` file has been customized from the generated version to include:
 - Site name: "Lukasz Lepecki"
 - Short name: "L. Lepecki"
-- Theme color: #0085a1 (site brand color)
-- Background color: #0085a1
+- Theme color: #0078D4 (site brand color - Azure blue)
+- Background color: #0078D4
 
 ## Updating Favicons
 
@@ -38,7 +39,9 @@ To update the favicon:
 1. Visit https://favicon.io/favicon-generator/
 2. Configure with:
    - Font: Open Sans
-   - Color: #0096FF
+   - Text color: #FFFFFF (white)
+   - Background: #0078D4 (Azure blue)
+   - Shape: Circle
    - Desired text/settings
 3. Download the generated package
 4. Extract all files
