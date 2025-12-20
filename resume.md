@@ -18,7 +18,7 @@ Senior back-end engineer specializing in .NET, API design, and distributed archi
 - C#
 - F#
 
-### Working knowledge
+### Working Knowledge
 
 - C++
 - JavaScript
@@ -26,7 +26,7 @@ Senior back-end engineer specializing in .NET, API design, and distributed archi
 - Node.js
 - React
 
-### Architecture & Patterns
+### System Architecture
 
 - API design
 - Microservices
