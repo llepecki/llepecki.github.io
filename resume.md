@@ -3,10 +3,11 @@ layout: page
 title: Łukasz Łepecki
 subtitle: Resume
 share-title: Resume
+sitemap: false
 ---
 
-[![PDF](https://img.shields.io/badge/Download-PDF-blue)](https://lepecki.com/llepecki_resume.pdf)
-[![Markdown](https://img.shields.io/badge/View-Markdown-slategrey)](https://lepecki.com/llepecki_resume.md)
+[![PDF](https://img.shields.io/badge/Download-PDF-blue)](https://lepecki.com/assets/resumes/llepecki_resume.pdf)
+[![Markdown](https://img.shields.io/badge/View-Markdown-slategrey)](https://lepecki.com/assets/resumes/llepecki_resume.md)
 
 Senior back-end engineer specializing in .NET, API design, and distributed architectures. 16 years building systems that scale and code that lasts. Comfortable owning features end-to-end: from client requirements through architecture to release. Track record of solving systemic problems and creating internal tools that teams actually adopt. Experienced with cloud-native development. Capable across the stack when needed, but backend is my home. I improve systems, not just maintain them.
 

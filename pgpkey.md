@@ -3,6 +3,7 @@ layout: page
 title: PGP Key
 subtitle: Send me a message using PGP encryption
 share-title: PGP Key
+sitemap: false
 ---
 
 If you want to send me an encrypted message, you can use PGP. It's useful for sensitive topics or if you simply prefer end-to-end encryption.
