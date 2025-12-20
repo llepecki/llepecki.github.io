@@ -29,14 +29,14 @@ navbar-links:
 
 # Image to show in the navigation bar - works best with a square image
 # Remove this parameter if you don't want an image in the navbar
-avatar: "/assets/img/avatar.png"
+avatar: "/assets/img/avatar.webp"
 
 # By default, the image is cut into a circle. You can disable this behaviour by setting 'round-avatar: false'
 round-avatar: true
 
 # If you want to have an image logo in the top-left corner instead of having the title of the website,
 # then specify the following parameter
-#title-img: /path/to/image
+title-img: /favicon-32x32.png
 
 #####################################
 # --- Footer social media links --- #
@@ -49,9 +49,9 @@ social-network-links:
   linkedin: llepecki
   github: llepecki
   hackerrank: llepecki
-  twitter: Lukasz_Lepecki
-  calendly: llepecki
-  email: "contact@lepecki.com"
+#  twitter: Lukasz_Lepecki
+#  calendly: llepecki
+#  email: "contact@lepecki.com"
 #  facebook: deanattali
 #  rss: true  # remove this line if you don't want to show an RSS link at the bottom
 #  facebook: deanattali
@@ -90,8 +90,8 @@ social-network-links:
 
 # Select which social network share links to show in posts
 share-links-active:
-  twitter: true
-  facebook: true
+  twitter: false
+  facebook: false
   linkedin: true
   vk: false
   reddit: false
