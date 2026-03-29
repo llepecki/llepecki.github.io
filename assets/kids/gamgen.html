@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<!-- saved from url=(0061)file:///Users/llepecki/Downloads/generator-schemat-gam_9.html -->
+<html lang="pl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Generator Schematów Gam</title>
+<link href="./Generator Schematów Gam_files/css2" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{
+    min-height:100vh;
+    background:linear-gradient(160deg,#FAFAF7 0%,#F0EDE6 100%);
+    font-family:'DM Sans','Segoe UI',sans-serif;
+    color:#37474F;
+    transition:background .3s;
+  }
+
+  .header{padding:28px 32px 20px;border-bottom:1px solid #E0DDD6;transition:opacity .3s,max-height .3s}
+  .header h1{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#263238;letter-spacing:-.5px}
+  .header p{margin-top:6px;font-size:14px;color:#78909C}
+
+  .main{display:flex;flex-wrap:wrap;gap:24px;padding:24px 32px;align-items:flex-start;transition:padding .3s}
+  .sidebar{width:320px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;transition:opacity .3s,width .3s}
+  .content{flex:1;min-width:320px}
+
+  .card{background:#fff;border-radius:12px;border:1px solid #E0DDD6;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.03)}
+  .card-label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#90A4AE;margin-bottom:10px}
+
+  .preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .preset-btn{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    padding:10px 6px 8px;border:2px solid transparent;border-radius:10px;
+    background:#FAFAF7;cursor:pointer;transition:all .15s;font-family:inherit;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  }
+  .preset-btn:hover,.preset-btn:active{background:#F0EDE6}
+  .preset-btn.active{border-color:#455A64;background:#ECEFF1}
+  .preset-btn .mini-svg{width:100%;height:50px}
+  .preset-btn .p-name{font-size:11px;font-weight:600;color:#546E7A;text-align:center;line-height:1.2}
+
+  .slider-row{display:flex;align-items:center;gap:12px}
+  .slider-row input[type=range]{
+    flex:1;-webkit-appearance:none;appearance:none;height:6px;
+    background:#E0DDD6;border-radius:3px;outline:none;
+    touch-action:none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:28px;height:28px;border-radius:50%;
+    background:#455A64;cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);
+  }
+  .slider-row input[type=range]::-moz-range-thumb{
+    width:28px;height:28px;border-radius:50%;
+    background:#455A64;cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);
+  }
+  .slider-val{
+    min-width:32px;text-align:center;font-family:'DM Mono',monospace;
+    font-size:16px;font-weight:700;color:#263238;
+  }
+
+  .chk-label{display:flex;align-items:center;gap:8px;font-size:16px;color:#546E7A;cursor:pointer;touch-action:manipulation}
+  .chk-label input{accent-color:#455A64;width:20px;height:20px}
+
+  .gen-btn{
+    padding:14px 24px;background:#263238;color:#fff;border:none;border-radius:10px;
+    font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;
+    transition:transform .1s;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  }
+  .gen-btn:active{transform:scale(.97)}
+  .gen-btn svg{flex-shrink:0;transition:transform .3s}
+  .gen-btn:active svg{transform:rotate(-180deg)}
+
+  .legend{display:flex;gap:20px}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:13px;color:#546E7A}
+  .legend-line{width:24px;height:3px;border-radius:2px}
+
+  .diagram-panel{background:#fff;border-radius:14px;border:1px solid #E0DDD6;padding:24px 20px;box-shadow:0 2px 12px rgba(0,0,0,.04);position:relative;transition:min-height .3s}
+  .diagram-panel svg{display:block;width:100%;height:auto}
+  #svgContainer svg{max-height:calc(100vh - 240px);width:auto;max-width:100%;margin:0 auto}
+  body.zen #svgContainer svg{max-height:calc(100vh - 80px)}
+
+  .detail-bar{transition:opacity .3s,max-height .3s;overflow:hidden}
+  .playback{margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .play-btn{
+    padding:8px 16px;background:#ECEFF1;border:1px solid #CFD8DC;border-radius:8px;
+    cursor:pointer;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;color:#455A64;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  }
+  .play-btn:disabled{background:#CFD8DC;cursor:default}
+  .step-counter{font-size:12px;color:#90A4AE;font-family:'DM Mono',monospace}
+
+  .kb-preview{display:flex;gap:1px;align-items:flex-end;height:32px}
+  .kb-key{
+    width:28px;border-radius:3px;display:flex;align-items:center;justify-content:center;
+    font-family:'DM Mono',monospace;font-size:9px;transition:all .2s;border-width:2px;border-style:solid;
+  }
+
+  .seq-box{
+    margin-top:16px;padding:12px 14px;background:#FAFAF7;border-radius:8px;
+    font-size:12px;font-family:'DM Mono',monospace;color:#78909C;line-height:1.8;
+  }
+
+  .random-opt{display:none}
+  .random-opt.visible{display:block}
+
+  .zen-btn{
+    position:absolute;top:12px;right:12px;
+    padding:10px 16px;background:#ECEFF1;border:1px solid #CFD8DC;border-radius:8px;
+    cursor:pointer;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;
+    color:#78909C;transition:all .15s;z-index:10;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .zen-btn:hover,.zen-btn:active{background:#CFD8DC;color:#455A64}
+
+  body.zen{background:#fff}
+  body.zen .header{display:none}
+  body.zen .sidebar{display:none}
+  body.zen .detail-bar{display:none}
+  body.zen .main{padding:12px;justify-content:center}
+  body.zen .content{max-width:1200px}
+  body.zen .diagram-panel{
+    border:none;box-shadow:none;
+    min-height:calc(100vh - 24px);
+    display:flex;flex-direction:column;justify-content:center;
+  }
+  body.zen .zen-btn{background:#F5F5F5}
+
+  @media(max-width:820px){
+    .main{flex-direction:column}
+    .sidebar{width:100%}
+    .preset-grid{grid-template-columns:1fr 1fr 1fr}
+  }
+  @media(max-width:480px){
+    .main{padding:16px}
+    .header{padding:20px 16px 16px}
+    .preset-grid{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body class="">
+
+<div class="header">
+  <h1>🎹 Generator Schematów Gam</h1>
+  <p>Automatyczne tworzenie schematów ćwiczeniowych dla obu rąk</p>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="card">
+      <label class="card-label">Schemat</label>
+      <div class="preset-grid" id="presetList"><button class="preset-btn active" data-id="classic"><div class="mini-svg"><svg viewBox="0 0 64 50" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><circle cx="4" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="46" r=".6" fill="#D0D0D0"></circle><line x1="4" y1="32" x2="11" y2="25" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="25" x2="18" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="18" x2="25" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="11" x2="32" y2="4" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="4" x2="39" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="11" x2="46" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="18" x2="53" y2="25" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="25" x2="60" y2="32" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="4" y1="39" x2="11" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="32" x2="18" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="25" x2="25" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="32" x2="32" y2="39" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="39" x2="39" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="32" x2="46" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="25" x2="53" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="32" x2="60" y2="39" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line></svg></div><div class="p-name">Góra klasyczna</div></button><button class="preset-btn" data-id="parallel"><div class="mini-svg"><svg viewBox="0 0 64 50" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><circle cx="4" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="46" r=".6" fill="#D0D0D0"></circle><line x1="4" y1="32" x2="11" y2="25" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="25" x2="18" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="18" x2="25" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="11" x2="32" y2="4" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="4" x2="39" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="11" x2="46" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="18" x2="53" y2="25" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="25" x2="60" y2="32" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="4" y1="39" x2="11" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="32" x2="18" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="25" x2="25" y2="18" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="18" x2="32" y2="11" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="11" x2="39" y2="18" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="18" x2="46" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="25" x2="53" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="32" x2="60" y2="39" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line></svg></div><div class="p-name">Góra równoległa</div></button><button class="preset-btn" data-id="contrary"><div class="mini-svg"><svg viewBox="0 0 64 50" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><circle cx="4" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="46" r=".6" fill="#D0D0D0"></circle><line x1="4" y1="18" x2="11" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="11" x2="18" y2="4" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="4" x2="25" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="11" x2="32" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="18" x2="39" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="11" x2="46" y2="4" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="4" x2="53" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="11" x2="60" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="4" y1="25" x2="11" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="32" x2="18" y2="39" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="39" x2="25" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="32" x2="32" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="25" x2="39" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="32" x2="46" y2="39" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="39" x2="53" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="32" x2="60" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line></svg></div><div class="p-name">Ruch przeciwny</div></button><button class="preset-btn" data-id="fan"><div class="mini-svg"><svg viewBox="0 0 64 50" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><circle cx="4" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="46" r=".6" fill="#D0D0D0"></circle><line x1="4" y1="25" x2="11" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="18" x2="18" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="11" x2="25" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="18" x2="32" y2="25" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="25" x2="39" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="18" x2="46" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="11" x2="53" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="18" x2="60" y2="25" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="4" y1="32" x2="11" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="25" x2="18" y2="18" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="18" x2="25" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="25" x2="32" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="32" x2="39" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="25" x2="46" y2="18" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="18" x2="53" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="25" x2="60" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line></svg></div><div class="p-name">Fala</div></button><button class="preset-btn" data-id="zigzag"><div class="mini-svg"><svg viewBox="0 0 64 50" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><circle cx="4" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="46" r=".6" fill="#D0D0D0"></circle><line x1="4" y1="18" x2="11" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="11" x2="18" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="18" x2="25" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="11" x2="32" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="18" x2="39" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="11" x2="46" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="18" x2="53" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="11" x2="60" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="4" y1="25" x2="11" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="32" x2="18" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="25" x2="25" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="32" x2="32" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="25" x2="39" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="32" x2="46" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="25" x2="53" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="32" x2="60" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line></svg></div><div class="p-name">Zygzak</div></button><button class="preset-btn" data-id="random"><div class="mini-svg"><svg viewBox="0 0 64 50" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><circle cx="4" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="4" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="11" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="18" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="25" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="32" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="39" r=".6" fill="#D0D0D0"></circle><circle cx="4" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="11" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="18" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="25" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="32" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="39" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="46" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="53" cy="46" r=".6" fill="#D0D0D0"></circle><circle cx="60" cy="46" r=".6" fill="#D0D0D0"></circle><line x1="4" y1="11" x2="11" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="18" x2="18" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="11" x2="25" y2="4" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="4" x2="32" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="11" x2="39" y2="4" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="4" x2="46" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="11" x2="53" y2="18" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="18" x2="60" y2="11" stroke="#D32F2F" stroke-width="1.4" stroke-linecap="round"></line><line x1="4" y1="18" x2="11" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="11" y1="25" x2="18" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="18" y1="32" x2="25" y2="39" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="25" y1="39" x2="32" y2="32" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="32" y1="32" x2="39" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="39" y1="25" x2="46" y2="18" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="46" y1="18" x2="53" y2="25" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line><line x1="53" y1="25" x2="60" y2="18" stroke="#1565C0" stroke-width="1.4" stroke-linecap="round"></line></svg></div><div class="p-name">Losowy</div></button></div>
+    </div>
+
+    <div class="card">
+      <label class="card-label">Długość</label>
+      <div class="slider-row">
+        <input type="range" id="lengthSlider" min="4" max="10" value="8" step="1">
+        <div class="slider-val" id="lengthVal">8</div>
+      </div>
+    </div>
+
+    <div class="card random-opt" id="randomOpt">
+      <label class="chk-label">
+        <input type="checkbox" id="returnChk" checked="">
+        Powrót do pozycji startowej
+      </label>
+    </div>
+
+    <button class="gen-btn" id="genBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 2v6h-6"></path>
+        <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+        <path d="M3 22v-6h6"></path>
+        <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+      </svg>
+      Generuj
+    </button>
+
+    <div class="card legend">
+      <div class="legend-item"><div class="legend-line" style="background:#D32F2F"></div>Prawa ręka</div>
+      <div class="legend-item"><div class="legend-line" style="background:#1565C0"></div>Lewa ręka</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="diagram-panel">
+      <button class="zen-btn" id="zenBtn">Zen</button>
+      <div id="svgContainer"><svg viewBox="0 0 440 348" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arR" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#D32F2F"></polygon></marker><marker id="arL" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#1565C0"></polygon></marker></defs><circle cx="36" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="312" r="2.2" fill="#BDBDBD"></circle><line x1="40.242640687119284" y1="215.7573593128807" x2="77.75735931288071" y2="178.2426406871193" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="86.24264068711929" y1="169.7573593128807" x2="123.75735931288071" y2="132.2426406871193" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="132.2426406871193" y1="123.75735931288071" x2="169.7573593128807" y2="86.24264068711929" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="178.2426406871193" y1="77.75735931288071" x2="215.7573593128807" y2="40.242640687119284" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="224.2426406871193" y1="40.242640687119284" x2="261.75735931288074" y2="77.75735931288071" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="270.24264068711926" y1="86.24264068711929" x2="307.75735931288074" y2="123.75735931288071" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="316.24264068711926" y1="132.2426406871193" x2="353.75735931288074" y2="169.7573593128807" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="362.24264068711926" y1="178.2426406871193" x2="399.75735931288074" y2="215.7573593128807" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="40.242640687119284" y1="261.75735931288074" x2="77.75735931288071" y2="224.2426406871193" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="86.24264068711929" y1="215.7573593128807" x2="123.75735931288071" y2="178.2426406871193" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="132.2426406871193" y1="178.2426406871193" x2="169.7573593128807" y2="215.7573593128807" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="178.2426406871193" y1="224.2426406871193" x2="215.7573593128807" y2="261.75735931288074" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="224.2426406871193" y1="261.75735931288074" x2="261.75735931288074" y2="224.2426406871193" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="270.24264068711926" y1="215.7573593128807" x2="307.75735931288074" y2="178.2426406871193" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="316.24264068711926" y1="178.2426406871193" x2="353.75735931288074" y2="215.7573593128807" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="362.24264068711926" y1="224.2426406871193" x2="399.75735931288074" y2="261.75735931288074" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><circle cx="36" cy="220" r="5" fill="#D32F2F" opacity=".3"></circle><circle cx="36" cy="266" r="5" fill="#1565C0" opacity=".3"></circle></svg></div>
+      <div class="detail-bar" id="detailBar">
+        <div class="playback" id="playbackBar" style="display: flex;">
+          <button class="play-btn" id="playBtn">▶ Animuj</button>
+          <div class="step-counter" id="stepCounter">Krok 0 / 8</div>
+          <div class="kb-preview" id="kbPreview"><div class="kb-key" style="height: 22px; background: rgb(245, 245, 245); border-color: rgb(224, 224, 224); color: rgb(189, 189, 189); font-weight: 400;">1</div><div class="kb-key" style="height: 28px; background: rgb(187, 222, 251); border-color: rgb(21, 101, 192); color: rgb(21, 101, 192); font-weight: 700;">2</div><div class="kb-key" style="height: 28px; background: rgb(255, 205, 210); border-color: rgb(211, 47, 47); color: rgb(211, 47, 47); font-weight: 700;">3</div><div class="kb-key" style="height: 22px; background: rgb(245, 245, 245); border-color: rgb(224, 224, 224); color: rgb(189, 189, 189); font-weight: 400;">4</div><div class="kb-key" style="height: 22px; background: rgb(245, 245, 245); border-color: rgb(224, 224, 224); color: rgb(189, 189, 189); font-weight: 400;">5</div><div class="kb-key" style="height: 22px; background: rgb(245, 245, 245); border-color: rgb(224, 224, 224); color: rgb(189, 189, 189); font-weight: 400;">6</div><div class="kb-key" style="height: 22px; background: rgb(245, 245, 245); border-color: rgb(224, 224, 224); color: rgb(189, 189, 189); font-weight: 400;">7</div></div>
+        </div>
+        <div class="seq-box" id="seqBox" style="display: block;"><div><span style="color:#D32F2F;font-weight:600">P:</span> <span style="font-weight:700;color:#D32F2F">3</span> → <span style="font-weight:400;color:#78909C">4</span> → <span style="font-weight:400;color:#78909C">5</span> → <span style="font-weight:400;color:#78909C">6</span> → <span style="font-weight:400;color:#78909C">7</span> → <span style="font-weight:400;color:#78909C">6</span> → <span style="font-weight:400;color:#78909C">5</span> → <span style="font-weight:400;color:#78909C">4</span> → <span style="font-weight:400;color:#78909C">3</span></div><div style="margin-top:4px"><span style="color:#1565C0;font-weight:600">L:</span> <span style="font-weight:700;color:#1565C0">2</span> → <span style="font-weight:400;color:#78909C">3</span> → <span style="font-weight:400;color:#78909C">4</span> → <span style="font-weight:400;color:#78909C">3</span> → <span style="font-weight:400;color:#78909C">2</span> → <span style="font-weight:400;color:#78909C">3</span> → <span style="font-weight:400;color:#78909C">4</span> → <span style="font-weight:400;color:#78909C">3</span> → <span style="font-weight:400;color:#78909C">2</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════════════════ */
+const MAX_OCT = 7;
+const CELL = 46;
+const PAD = { t: 36, r: 36, b: 36, l: 36 };
+const RC = '#D32F2F', RCL = '#FFCDD2';
+const LC = '#1565C0', LCL = '#BBDEFB';
+const DOT = '#BDBDBD';
+const SVGNS = 'http://www.w3.org/2000/svg';
+const M_CELL = 7, M_PAD = 4;
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════ */
+let state = {
+  preset: 'classic',
+  numSteps: 8,
+  variant: 0,
+  returnToStart: true,
+  result: null,
+  playStep: 0,
+  isPlaying: false,
+  timer: null,
+  zen: false,
+};
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════ */
+function movesToPath(start, moves) {
+  const p = [start];
+  for (const m of moves) p.push(p[p.length - 1] + m);
+  return p;
+}
+
+function shuffle(a) {
+  a = [...a];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* Invert: flip vertically + swap hands.
+   gap_new = (8-L_i) - (8-R_i) = R_i - L_i = gap_old.
+   Works for asymmetric patterns (classic, parallel, wave). */
+function invertPattern(res) {
+  return {
+    right: res.left.map(p => MAX_OCT + 1 - p),
+    left:  res.right.map(p => MAX_OCT + 1 - p),
+    steps: res.steps,
+  };
+}
+
+/* Close gap: shift L up by 1 so both hands start at same octave. */
+function closeGap(res) {
+  return {
+    right: res.right,
+    left:  res.left.map(p => p + 1),
+    steps: res.steps,
+  };
+}
+
+/* Center pattern vertically in the 1..MAX_OCT grid.
+   Computes used range, then shifts so gap_top ≈ gap_bottom.
+   Allows 0 gap on one side if range is tight. */
+function centerPattern(res) {
+  const all = [...res.right, ...res.left];
+  const minUsed = Math.min(...all);
+  const maxUsed = Math.max(...all);
+  const range = maxUsed - minUsed;
+  // Ideal: center the range. floor gives slight bias toward bottom.
+  const idealMin = Math.floor((MAX_OCT - range) / 2) + 1;
+  const shift = idealMin - minUsed;
+  if (shift === 0) return res;
+  const newR = res.right.map(p => p + shift);
+  const newL = res.left.map(p => p + shift);
+  // Verify bounds
+  const newAll = [...newR, ...newL];
+  if (Math.min(...newAll) < 1 || Math.max(...newAll) > MAX_OCT) return res;
+  return { right: newR, left: newL, steps: res.steps };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRESET GENERATORS
+
+   Rules:
+   - R > L at every step (gap ≥ 1) for base variants
+   - Every move is exactly ±1 per hand
+   - All positions within 1..MAX_OCT
+   - Works for any length 4..10
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Classic Mountain ──
+   R: single big mountain. L: two smaller mountains below. */
+const CLASSIC_L_MOVES = {
+  4:  [1,-1,1,-1],
+  5:  [1,1,-1,-1,1],
+  6:  [1,1,-1,-1,1,-1],
+  7:  [1,1,-1,-1,1,1,-1],
+  8:  [1,1,-1,-1,1,1,-1,-1],
+  9:  [1,1,1,-1,-1,-1,1,1,-1],
+  10: [1,1,1,-1,-1,-1,1,1,-1,-1],
+};
+
+function presetClassicMountain(steps) {
+  const up = Math.ceil(steps / 2);
+  const down = steps - up;
+  const rMoves = [...Array(up).fill(1), ...Array(down).fill(-1)];
+  const lMoves = CLASSIC_L_MOVES[steps];
+  const rStart = Math.max(2, MAX_OCT - up);
+  const lStart = rStart - 1;
+  return {
+    right: movesToPath(rStart, rMoves),
+    left:  movesToPath(lStart, lMoves),
+    steps: steps,
+  };
+}
+
+/* ── Parallel Mountain ──
+   Both hands do same mountain. Gap constant = 1. */
+function presetParallelMountain(steps) {
+  const up = Math.ceil(steps / 2);
+  const down = steps - up;
+  const moves = [...Array(up).fill(1), ...Array(down).fill(-1)];
+  const rStart = Math.max(2, MAX_OCT - up);
+  const lStart = rStart - 1;
+  return {
+    right: movesToPath(rStart, moves),
+    left:  movesToPath(lStart, moves),
+    steps: steps,
+  };
+}
+
+/* ── Contrary Motion ──
+   R and L always move in opposite directions, grouped by 2.
+   Normal: R starts UP from 5, L starts DOWN from 4 (diverge first)
+   Inverted: R starts DOWN from 7, L starts UP from 2 (converge first) */
+function presetContraryMotion(steps, inverted) {
+  const rStart = inverted ? 7 : 5;
+  const lStart = inverted ? 2 : 4;
+  const rMoves = [], lMoves = [];
+  let rDir = inverted ? -1 : 1;
+  let lDir = inverted ? 1 : -1;
+  for (let i = 0; i < steps; i++) {
+    rMoves.push(rDir);
+    lMoves.push(lDir);
+    if ((i + 1) % 2 === 0) { rDir = -rDir; lDir = -lDir; }
+  }
+  return {
+    right: movesToPath(rStart, rMoves),
+    left:  movesToPath(lStart, lMoves),
+    steps: steps,
+  };
+}
+
+/* ── Wave (double mountain) ──
+   Both hands do two sub-mountains. Gap constant = 1. */
+function presetWave(steps) {
+  const firstHalf = Math.ceil(steps / 2);
+  const secondHalf = steps - firstHalf;
+  function subMountain(n) {
+    const u = Math.ceil(n / 2), d = n - u;
+    return [...Array(u).fill(1), ...Array(d).fill(-1)];
+  }
+  const moves = [...subMountain(firstHalf), ...subMountain(secondHalf)];
+  let maxH = 0, h = 0;
+  for (const m of moves) { h += m; if (h > maxH) maxH = h; }
+  const rStart = Math.max(2, MAX_OCT - maxH);
+  const lStart = rStart - 1;
+  return {
+    right: movesToPath(rStart, moves),
+    left:  movesToPath(lStart, moves),
+    steps: steps,
+  };
+}
+
+/* ── Zigzag ──
+   R and L move in opposite directions every step.
+   Normal: R starts UP from 5, L starts DOWN from 4 (X opening)
+   Inverted: R starts DOWN from 6, L starts UP from 3 (X closing) */
+function presetZigzag(steps, inverted) {
+  const rStart = inverted ? 6 : 5;
+  const lStart = inverted ? 3 : 4;
+  const rFirst = inverted ? -1 : 1;
+  const lFirst = inverted ? 1 : -1;
+  const rMoves = [], lMoves = [];
+  for (let i = 0; i < steps; i++) {
+    rMoves.push(i % 2 === 0 ? rFirst : -rFirst);
+    lMoves.push(i % 2 === 0 ? lFirst : -lFirst);
+  }
+  return {
+    right: movesToPath(rStart, rMoves),
+    left:  movesToPath(lStart, lMoves),
+    steps: steps,
+  };
+}
+
+/* ── Random ── */
+function generateRandom(steps, returnToStart, prevResult) {
+  const startPairs = shuffle([
+    [4,3],[5,4],[3,2],[6,5],[2,1],[5,4],[4,3],[6,5],[3,2],
+  ]);
+  // Try up to 20 full attempts to get a DIFFERENT result
+  for (let attempt = 0; attempt < 20; attempt++) {
+    for (const [rS, lS] of shuffle(startPairs)) {
+      const res = tryRandomFrom(steps, rS, lS, returnToStart);
+      if (res) {
+        // Check it's different from previous
+        if (prevResult && arrEq(res.right, prevResult.right) && arrEq(res.left, prevResult.left)) {
+          continue; // same as before, try again
+        }
+        return res;
+      }
+    }
+  }
+  return presetZigzag(steps);
+}
+
+function arrEq(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) { if (a[i] !== b[i]) return false; }
+  return true;
+}
+
+function tryRandomFrom(steps, rStart, lStart, ret) {
+  for (let a = 0; a < 50; a++) {
+    const rP = [rStart], lP = [lStart];
+    let ok = true;
+    for (let i = 0; i < steps; i++) {
+      const rem = steps - i - 1;
+      const opts = shuffle([[1,1],[1,-1],[-1,1],[-1,-1]]);
+      let found = false;
+      for (const [rd, ld] of opts) {
+        const nR = rP[i] + rd, nL = lP[i] + ld;
+        if (nR <= nL || nR < 1 || nR > MAX_OCT || nL < 1 || nL > MAX_OCT) continue;
+        if (ret && rem > 0) {
+          if (Math.abs(nR - rStart) > rem || Math.abs(nL - lStart) > rem) continue;
+        }
+        if (ret && rem === 0) {
+          if (nR !== rStart || nL !== lStart) continue;
+        }
+        rP.push(nR); lP.push(nL); found = true; break;
+      }
+      if (!found) { ok = false; break; }
+    }
+    if (ok && rP.length === steps + 1) return { right: rP, left: lP, steps };
+  }
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRESETS CONFIG
+   
+   maxVariants:
+   - 2 = M / W  (classic, parallel, wave)
+   - 4 = M-gap1 / M-gap0 / W-gap1 / W-gap0  (contrary, zigzag)
+   ═══════════════════════════════════════════════════════════ */
+const PRESETS = [
+  { id: 'classic',  name: 'Góra klasyczna',  fn: presetClassicMountain,  maxVariants: 2 },
+  { id: 'parallel', name: 'Góra równoległa', fn: presetParallelMountain, maxVariants: 2 },
+  { id: 'contrary', name: 'Ruch przeciwny',  fn: presetContraryMotion,   maxVariants: 4 },
+  { id: 'fan',      name: 'Fala',            fn: presetWave,             maxVariants: 2 },
+  { id: 'zigzag',   name: 'Zygzak',          fn: presetZigzag,           maxVariants: 4 },
+  { id: 'random',   name: 'Losowy',          fn: null,                   maxVariants: 1 },
+];
+
+/* ═══════════════════════════════════════════════════════════
+   SVG RENDERING
+   ═══════════════════════════════════════════════════════════ */
+function el(tag, attrs) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  return e;
+}
+
+function renderDiagram(R, L, steps) {
+  const w = PAD.l + steps * CELL + PAD.r;
+  const h = PAD.t + (MAX_OCT - 1) * CELL + PAD.b;
+  const toX = s => PAD.l + s * CELL;
+  const toY = o => PAD.t + (MAX_OCT - o) * CELL;
+
+  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, xmlns: SVGNS });
+  const defs = el('defs');
+  function mkM(id, c) {
+    const m = el('marker', { id, markerWidth: '7', markerHeight: '5', refX: '6', refY: '2.5', orient: 'auto' });
+    m.appendChild(el('polygon', { points: '0 0,7 2.5,0 5', fill: c }));
+    return m;
+  }
+  defs.appendChild(mkM('arR', RC));
+  defs.appendChild(mkM('arL', LC));
+  svg.appendChild(defs);
+
+  for (let oi = 0; oi < MAX_OCT; oi++) {
+    const oct = MAX_OCT - oi;
+    for (let si = 0; si <= steps; si++) {
+      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '2.2', fill: DOT }));
+    }
+  }
+
+  function drawArr(path, color, mid) {
+    for (let i = 0; i < path.length - 1; i++) {
+      const x1 = toX(i), y1 = toY(path[i]), x2 = toX(i + 1), y2 = toY(path[i + 1]);
+      const dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy), sh = 6;
+      svg.appendChild(el('line', {
+        x1: x1 + dx / len * sh, y1: y1 + dy / len * sh,
+        x2: x2 - dx / len * sh, y2: y2 - dy / len * sh,
+        stroke: color, 'stroke-width': '2.8', 'stroke-linecap': 'round',
+        'marker-end': `url(#${mid})`
+      }));
+    }
+  }
+  drawArr(R, RC, 'arR');
+  drawArr(L, LC, 'arL');
+
+  svg.appendChild(el('circle', { cx: toX(0), cy: toY(R[0]), r: '5', fill: RC, opacity: '.3' }));
+  svg.appendChild(el('circle', { cx: toX(0), cy: toY(L[0]), r: '5', fill: LC, opacity: '.3' }));
+  return svg;
+}
+
+/* ── Mini SVG for thumbnails ── */
+function renderMiniDiagram(R, L, steps) {
+  const w = M_PAD * 2 + steps * M_CELL;
+  const h = M_PAD * 2 + (MAX_OCT - 1) * M_CELL;
+  const toX = s => M_PAD + s * M_CELL;
+  const toY = o => M_PAD + (MAX_OCT - o) * M_CELL;
+  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, xmlns: SVGNS, width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet' });
+  for (let oi = 0; oi < MAX_OCT; oi++) {
+    const oct = MAX_OCT - oi;
+    for (let si = 0; si <= steps; si++) {
+      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '.6', fill: '#D0D0D0' }));
+    }
+  }
+  function draw(path, c) {
+    for (let i = 0; i < path.length - 1; i++) {
+      svg.appendChild(el('line', { x1: toX(i), y1: toY(path[i]), x2: toX(i + 1), y2: toY(path[i + 1]), stroke: c, 'stroke-width': '1.4', 'stroke-linecap': 'round' }));
+    }
+  }
+  draw(R, RC);
+  draw(L, LC);
+  return svg;
+}
+
+function getMiniPreviewData(pid) {
+  if (pid === 'random') return centerPattern(generateRandom(8, true, null));
+  return centerPattern(PRESETS.find(x => x.id === pid).fn(8));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYBOARD PREVIEW
+   ═══════════════════════════════════════════════════════════ */
+function renderKeyboard(R, L, step) {
+  const c = document.getElementById('kbPreview');
+  c.innerHTML = '';
+  const rO = R[step], lO = L[step];
+  for (let i = 1; i <= MAX_OCT; i++) {
+    const isR = i === rO, isL = i === lO;
+    const isBoth = isR && isL;
+    const k = document.createElement('div');
+    k.className = 'kb-key';
+    k.style.height = (isR || isL ? 28 : 22) + 'px';
+    if (isBoth) {
+      k.style.background = 'linear-gradient(135deg,' + RCL + ' 50%,' + LCL + ' 50%)';
+      k.style.borderColor = '#7B1FA2';
+      k.style.color = '#7B1FA2';
+    } else {
+      k.style.background = isR ? RCL : isL ? LCL : '#F5F5F5';
+      k.style.borderColor = isR ? RC : isL ? LC : '#E0E0E0';
+      k.style.color = isR ? RC : isL ? LC : '#BDBDBD';
+    }
+    k.style.fontWeight = isR || isL ? 700 : 400;
+    k.textContent = i;
+    c.appendChild(k);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SEQUENCE TEXT
+   ═══════════════════════════════════════════════════════════ */
+function renderSequence(R, L, active) {
+  const box = document.getElementById('seqBox');
+  box.style.display = 'block';
+  function row(lbl, clr, path) {
+    let h = `<span style="color:${clr};font-weight:600">${lbl}:</span> `;
+    path.forEach((o, i) => {
+      const a = i === active;
+      h += `<span style="font-weight:${a ? 700 : 400};color:${a ? clr : '#78909C'}">${o}</span>`;
+      if (i < path.length - 1) h += ' → ';
+    });
+    return h;
+  }
+  box.innerHTML = `<div>${row('P', RC, R)}</div><div style="margin-top:4px">${row('L', LC, L)}</div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GENERATE — always succeeds
+
+   Variant system:
+   - 2-variant presets (classic, parallel, wave):
+     0 = normal (M), 1 = inverted (W)
+   - 4-variant presets (contrary, zigzag):
+     0 = gap1 normal, 1 = gap0 normal,
+     2 = gap1 inverted, 3 = gap0 inverted
+   - random: always just regenerates
+   ═══════════════════════════════════════════════════════════ */
+function generate() {
+  stopAnimation();
+  state.playStep = 0;
+
+  let res;
+  if (state.preset === 'random') {
+    res = generateRandom(state.numSteps, state.returnToStart, state.result);
+  } else {
+    const preset = PRESETS.find(p => p.id === state.preset);
+
+    if (preset.maxVariants === 2) {
+      // 0=normal, 1=inverted (flip+swap)
+      res = preset.fn(state.numSteps);
+      if (state.variant === 1) res = invertPattern(res);
+    } else if (preset.maxVariants === 4) {
+      // 0=gap1 normal, 1=gap0 normal, 2=gap1 inverted, 3=gap0 inverted
+      const isInverted = state.variant === 2 || state.variant === 3;
+      const isGap0 = state.variant === 1 || state.variant === 3;
+      res = preset.fn(state.numSteps, isInverted);
+      if (isGap0) res = closeGap(res);
+    } else {
+      res = preset.fn(state.numSteps);
+    }
+  }
+
+  // Safety fallback
+  if (!res) res = presetZigzag(state.numSteps);
+
+  // Center vertically
+  res = centerPattern(res);
+
+  state.result = res;
+  redraw();
+}
+
+function redraw() {
+  const r = state.result;
+  if (!r) return;
+  const c = document.getElementById('svgContainer');
+  c.innerHTML = '';
+  c.appendChild(renderDiagram(r.right, r.left, r.steps));
+  document.getElementById('playbackBar').style.display = 'flex';
+  document.getElementById('stepCounter').textContent = `Krok ${state.playStep} / ${r.steps}`;
+  renderKeyboard(r.right, r.left, state.playStep);
+  renderSequence(r.right, r.left, state.playStep);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATION
+   ═══════════════════════════════════════════════════════════ */
+function stopAnimation() {
+  if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  state.isPlaying = false;
+  const b = document.getElementById('playBtn');
+  if (b) b.disabled = false;
+}
+
+function playAnimation() {
+  if (!state.result || state.isPlaying) return;
+  state.isPlaying = true;
+  state.playStep = 0;
+  document.getElementById('playBtn').disabled = true;
+  redraw();
+  let step = 0;
+  state.timer = setInterval(() => {
+    step++;
+    if (step > state.result.steps) { stopAnimation(); return; }
+    state.playStep = step;
+    document.getElementById('stepCounter').textContent = `Krok ${step} / ${state.result.steps}`;
+    renderKeyboard(state.result.right, state.result.left, step);
+    renderSequence(state.result.right, state.result.left, step);
+  }, 600);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ZEN MODE
+   ═══════════════════════════════════════════════════════════ */
+function toggleZen() {
+  state.zen = !state.zen;
+  document.body.classList.toggle('zen', state.zen);
+  document.getElementById('zenBtn').textContent = state.zen ? '✕' : 'Zen';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UI INIT
+   ═══════════════════════════════════════════════════════════ */
+function initUI() {
+  const pl = document.getElementById('presetList');
+  PRESETS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (p.id === state.preset ? ' active' : '');
+    btn.dataset.id = p.id;
+
+    const miniDiv = document.createElement('div');
+    miniDiv.className = 'mini-svg';
+    const preview = getMiniPreviewData(p.id);
+    if (preview) miniDiv.appendChild(renderMiniDiagram(preview.right, preview.left, preview.steps));
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'p-name';
+    nameDiv.textContent = p.name;
+
+    btn.appendChild(miniDiv);
+    btn.appendChild(nameDiv);
+
+    btn.addEventListener('click', () => {
+      state.preset = p.id;
+      state.variant = 0;
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.dataset.id === p.id));
+      document.getElementById('randomOpt').classList.toggle('visible', p.id === 'random');
+      generate();
+    });
+    pl.appendChild(btn);
+  });
+
+  const slider = document.getElementById('lengthSlider');
+  const sv = document.getElementById('lengthVal');
+  slider.addEventListener('input', () => {
+    state.numSteps = +slider.value;
+    sv.textContent = slider.value;
+    generate();
+  });
+
+  document.getElementById('returnChk').addEventListener('change', e => {
+    state.returnToStart = e.target.checked;
+  });
+
+  // Generate button: cycle variants for presets, regenerate for random
+  document.getElementById('genBtn').addEventListener('click', () => {
+    if (state.preset === 'random') {
+      generate();
+    } else {
+      const preset = PRESETS.find(p => p.id === state.preset);
+      state.variant = (state.variant + 1) % preset.maxVariants;
+      generate();
+    }
+  });
+
+  document.getElementById('playBtn').addEventListener('click', playAnimation);
+  document.getElementById('zenBtn').addEventListener('click', toggleZen);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && state.zen) toggleZen();
+    if (e.key === 'z' && !e.ctrlKey && !e.metaKey && e.target === document.body) toggleZen();
+  });
+
+  generate();
+}
+
+document.addEventListener('DOMContentLoaded', initUI);
+</script>
+
+
+</body></html>
