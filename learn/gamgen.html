@@ -4,7 +4,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Generator Schematów Gam</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&family=DM+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   body{
@@ -16,7 +16,7 @@
   }
 
   .header{padding:28px 32px 20px;border-bottom:1px solid #E0DDD6;transition:opacity .3s,max-height .3s}
-  .header h1{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#263238;letter-spacing:-.5px}
+  .header h1{font-family:'DM Sans','Segoe UI',sans-serif;font-size:26px;font-weight:700;color:#263238;letter-spacing:-.5px}
   .header p{margin-top:6px;font-size:14px;color:#78909C}
 
   .main{display:flex;flex-wrap:wrap;gap:24px;padding:24px 32px;align-items:flex-start;transition:padding .3s}
@@ -56,6 +56,13 @@
     min-width:32px;text-align:center;font-family:'DM Mono',monospace;
     font-size:16px;font-weight:700;color:#263238;
   }
+  .len-btn{
+    width:32px;height:32px;border-radius:50%;border:1px solid #E0DDD6;
+    background:#FAFAF7;cursor:pointer;font-size:18px;font-weight:700;color:#455A64;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    transition:background .15s;font-family:'DM Sans',sans-serif;
+  }
+  .len-btn:active{background:#E0DDD6}
 
   .chk-label{display:flex;align-items:center;gap:8px;font-size:16px;color:#546E7A;cursor:pointer;touch-action:manipulation}
   .chk-label input{accent-color:#455A64;width:20px;height:20px}
@@ -157,10 +164,11 @@
     </div>
 
     <div class="card">
-      <label class="card-label">Długość</label>
+      <label class="card-label">Długość (<span id="lengthLabel">8</span>)</label>
       <div class="slider-row">
+        <button class="len-btn" id="lenMinus">&minus;</button>
         <input type="range" id="lengthSlider" min="4" max="10" value="8" step="1">
-        <div class="slider-val" id="lengthVal">8</div>
+        <button class="len-btn" id="lenPlus">+</button>
       </div>
     </div>
 
@@ -465,8 +473,8 @@ function tryRandomFrom(steps, rStart, lStart, ret) {
    - 4 = M-gap1 / M-gap0 / W-gap1 / W-gap0  (contrary, zigzag)
    ═══════════════════════════════════════════════════════════ */
 const PRESETS = [
-  { id: 'classic',  name: 'Góra klasyczna',  fn: presetClassicMountain,  maxVariants: 2 },
-  { id: 'parallel', name: 'Góra równoległa', fn: presetParallelMountain, maxVariants: 2 },
+  { id: 'classic',  name: 'Klasyczna',        fn: presetClassicMountain,  maxVariants: 2 },
+  { id: 'parallel', name: 'Ruch równoległy', fn: presetParallelMountain, maxVariants: 2 },
   { id: 'contrary', name: 'Ruch przeciwny',  fn: presetContraryMotion,   maxVariants: 4 },
   { id: 'fan',      name: 'Fala',            fn: presetWave,             maxVariants: 2 },
   { id: 'zigzag',   name: 'Zygzak',          fn: presetZigzag,           maxVariants: 4 },
@@ -732,7 +740,7 @@ function initUI() {
   });
 
   const slider = document.getElementById('lengthSlider');
-  const sv = document.getElementById('lengthVal');
+  const lenLabel = document.getElementById('lengthLabel');
   const returnChk = document.getElementById('returnChk');
   const returnLabel = returnChk.closest('.chk-label');
 
@@ -746,12 +754,18 @@ function initUI() {
     returnLabel.style.opacity = odd ? '0.4' : '1';
   }
 
-  slider.addEventListener('input', () => {
-    state.numSteps = +slider.value;
-    sv.textContent = slider.value;
+  function setLength(v) {
+    v = Math.max(+slider.min, Math.min(+slider.max, v));
+    slider.value = v;
+    state.numSteps = v;
+    lenLabel.textContent = v;
     updateReturnChk();
     generate();
-  });
+  }
+
+  slider.addEventListener('input', () => setLength(+slider.value));
+  document.getElementById('lenMinus').addEventListener('click', () => setLength(state.numSteps - 1));
+  document.getElementById('lenPlus').addEventListener('click', () => setLength(state.numSteps + 1));
 
   returnChk.addEventListener('change', e => {
     state.returnToStart = e.target.checked;

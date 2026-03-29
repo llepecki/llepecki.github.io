@@ -281,6 +281,26 @@
   .output-value.high { fill: var(--wire-high); }
   .output-value.low  { fill: var(--wire-low); }
 
+  .guess-btn { cursor: pointer; transition: all 0.2s; }
+  .guess-btn rect { fill: var(--panel); stroke: var(--panel-border); stroke-width: 1.5; rx: 5; }
+  .guess-btn text { fill: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .guess-btn:hover rect { stroke: var(--accent); }
+  .guess-btn.selected-high rect { fill: var(--output-led-high); stroke: var(--output-led-high); }
+  .guess-btn.selected-high text { fill: #fff; }
+  .guess-btn.selected-low rect { fill: var(--wire-low); stroke: var(--wire-low); }
+  .guess-btn.selected-low text { fill: #fff; }
+  .guess-btn.disabled { pointer-events: none; opacity: 0.4; }
+
+  .result-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.6); cursor: pointer;
+    animation: overlayFadeIn 0.3s ease;
+  }
+  .result-overlay .result-emoji { font-size: 120px; animation: overlayPop 0.4s ease; }
+  @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes overlayPop { 0% { transform: scale(0.3); opacity: 0; } 60% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+
   .not-bubble { fill: var(--gate-fill); stroke: var(--not-color); stroke-width: 2; }
   .xor-extra  { fill: none; stroke: var(--xor-color); stroke-width: 2; }
 
@@ -316,7 +336,7 @@
   <h1>⚡ Logic Gate Trainer</h1>
   <p>Practice solving circuits — set inputs, predict the output, then reveal!</p>
   <div class="theme-toggle" onclick="toggleTheme()">
-    <span class="theme-toggle-icon" id="themeIcon">☀️</span>
+    <span class="theme-toggle-icon" id="themeIcon">⚪</span>
   </div>
 </header>
 
@@ -344,7 +364,7 @@
   </div>
   <button class="btn" onclick="generate()">Generate</button>
   <button class="btn randomize" id="randomBtn" onclick="randomizeInputs()" style="">Random Inputs</button>
-  <button class="btn reveal revealed" id="revealBtn" onclick="handleRevealReset()" style="">Reset</button>
+  <button class="btn reveal" id="revealBtn" onclick="handleRevealReset()">Check</button>
   <div class="config-group" id="speedGroup" style="">
     <label>Speed:</label>
     <div class="speed-control">
@@ -356,45 +376,7 @@
   </div>
 </div>
 
-<div class="circuit-container" id="circuitContainer"><svg id="circuit" viewBox="0 0 1168 606" preserveAspectRatio="xMidYMid meet"><path id="w-i0-g0p0" d="M 267.0 326.0 C 281.8 326.0, 327.3 320.5, 356.0 326.0 C 384.7 331.5, 425.2 353.5, 439.0 359.0" class="wire high" data-src-type="input" data-src-idx="0" data-level="3"></path><path id="w-i1-g0p1" d="M 267.0 412.0 C 281.8 412.0, 327.3 417.5, 356.0 412.0 C 384.7 406.5, 425.2 384.5, 439.0 379.0" class="wire low" data-src-type="input" data-src-idx="1" data-level="3"></path><path id="w-g0-g1p0" d="M 489.0 369.0 C 501.8 369.0, 539.3 362.7, 566.0 369.0 C 592.7 375.3, 635.2 400.7, 649.0 407.0" class="wire high" data-src-type="gate" data-src-idx="0" data-level="2"></path><path id="w-g6-g1p1" d="M 493.0 503.0 C 505.2 503.0, 540.0 515.7, 566.0 503.0 C 592.0 490.3, 635.2 439.7, 649.0 427.0" class="wire high" data-src-type="gate" data-src-idx="6" data-level="2"></path><path id="w-g4-g2p0" d="M 489.0 149.0 C 501.8 149.0, 540.0 149.0, 566.0 149.0 C 592.0 149.0, 631.8 149.0, 645.0 149.0" class="wire low" data-src-type="gate" data-src-idx="4" data-level="1"></path><path id="w-i5-g3p0" d="M 74.0 235.0 C 86.0 235.0, 120.8 235.0, 146.0 235.0 C 171.2 235.0, 211.8 235.0, 225.0 235.0" class="wire high" data-src-type="input" data-src-idx="5" data-level="3"></path><path id="w-g5-g4p0" d="M 271.0 101.0 C 285.2 101.0, 328.0 94.7, 356.0 101.0 C 384.0 107.3, 425.2 132.7, 439.0 139.0" class="wire low" data-src-type="gate" data-src-idx="5" data-level="2"></path><path id="w-g3-g4p1" d="M 283.0 235.0 C 295.2 235.0, 330.0 247.7, 356.0 235.0 C 382.0 222.3, 425.2 171.7, 439.0 159.0" class="wire low" data-src-type="gate" data-src-idx="3" data-level="2"></path><path id="w-i3-g5p0" d="M 74.0 58.0 C 86.0 58.0, 120.5 52.5, 146.0 58.0 C 171.5 63.5, 213.5 85.5, 227.0 91.0" class="wire low" data-src-type="input" data-src-idx="3" data-level="3"></path><path id="w-i4-g5p1" d="M 74.0 144.0 C 86.0 144.0, 120.5 149.5, 146.0 144.0 C 171.5 138.5, 213.5 116.5, 227.0 111.0" class="wire high" data-src-type="input" data-src-idx="4" data-level="3"></path><path id="w-i2-g6p0" d="M 267.0 503.0 C 281.8 503.0, 328.0 503.0, 356.0 503.0 C 384.0 503.0, 421.8 503.0, 435.0 503.0" class="wire low" data-src-type="input" data-src-idx="2" data-level="3"></path><path id="w-g2-g7p0" d="M 703.0 149.0 C 715.2 149.0, 750.0 127.9, 776.0 149.0 C 802.0 170.1, 845.2 254.4, 859.0 275.5" class="wire high" data-src-type="gate" data-src-idx="2" data-level="0"></path><path id="w-g1-g7p1" d="M 699.0 417.0 C 711.8 417.0, 749.3 437.3, 776.0 417.0 C 802.7 396.8, 845.2 315.8, 859.0 295.5" class="wire high" data-src-type="gate" data-src-idx="1" data-level="0"></path><path id="wire-output" d="M 909.0 285.5 C 921.8 285.5, 961.2 285.5, 986.0 285.5 C 1010.8 285.5, 1046.0 285.5, 1058.0 285.5" class="wire low" data-level="5"></path><path d="M 435 349 Q 449 369 435 389 Q 465 389 489 369 Q 465 349 435 349 Z" class="gate-body xor-gate"></path><path d="M 429 349 Q 443 369 429 389" class="xor-extra"></path><text x="459" y="369" class="gate-label">XOR</text><text id="gv-0" x="489" y="347" class="gate-value visible high">1</text><path d="M 645 397 Q 659 417 645 437 Q 675 437 699 417 Q 675 397 645 397 Z" class="gate-body or-gate"></path><text x="669" y="417" class="gate-label">OR</text><text id="gv-1" x="699" y="395" class="gate-value visible high">1</text><path d="M 645 129 L 691 149 L 645 169 Z" class="gate-body not-gate"></path><circle cx="697" cy="149" r="5" class="not-bubble"></circle><text x="661" y="149" class="gate-label">NOT</text><text id="gv-2" x="703" y="127" class="gate-value visible high">1</text><path d="M 225 215 L 271 235 L 225 255 Z" class="gate-body not-gate"></path><circle cx="277" cy="235" r="5" class="not-bubble"></circle><text x="241" y="235" class="gate-label">NOT</text><text id="gv-3" x="283" y="213" class="gate-value visible low">0</text><path d="M 435 129 Q 449 149 435 169 Q 465 169 489 149 Q 465 129 435 129 Z" class="gate-body xor-gate"></path><path d="M 429 129 Q 443 149 429 169" class="xor-extra"></path><text x="459" y="149" class="gate-label">XOR</text><text id="gv-4" x="489" y="127" class="gate-value visible low">0</text><path d="M 227 81 L 251 81 A 20 20 0 0 1 251 121 L 227 121 Z" class="gate-body and-gate"></path><text x="245" y="101" class="gate-label">AND</text><text id="gv-5" x="271" y="79" class="gate-value visible low">0</text><path d="M 435 483 L 481 503 L 435 523 Z" class="gate-body not-gate"></path><circle cx="487" cy="503" r="5" class="not-bubble"></circle><text x="451" y="503" class="gate-label">NOT</text><text id="gv-6" x="493" y="481" class="gate-value visible high">1</text><path d="M 855 265.5 Q 869 285.5 855 305.5 Q 885 305.5 909 285.5 Q 885 265.5 855 265.5 Z" class="gate-body xor-gate"></path><path d="M 849 265.5 Q 863 285.5 849 305.5" class="xor-extra"></path><text x="879" y="285.5" class="gate-label">XOR</text><text id="gv-7" x="909" y="263.5" class="gate-value visible low">0</text><g class="input-toggle" onclick="toggleInput(0)">
-      <circle cx="251" cy="326" r="24" fill="transparent"></circle>
-      <circle cx="251" cy="326" r="15" class="input-ring high" id="ir-0"></circle>
-      <circle cx="251" cy="326" r="11" class="input-circle high" id="ic-0"></circle>
-      <text x="251" y="326" class="input-label">A</text>
-      <text x="251" y="352" class="input-value-label high" id="iv-0">1</text>
-    </g><g class="input-toggle" onclick="toggleInput(1)">
-      <circle cx="251" cy="412" r="24" fill="transparent"></circle>
-      <circle cx="251" cy="412" r="15" class="input-ring low" id="ir-1"></circle>
-      <circle cx="251" cy="412" r="11" class="input-circle low" id="ic-1"></circle>
-      <text x="251" y="412" class="input-label">B</text>
-      <text x="251" y="438" class="input-value-label low" id="iv-1">0</text>
-    </g><g class="input-toggle" onclick="toggleInput(2)">
-      <circle cx="251" cy="503" r="24" fill="transparent"></circle>
-      <circle cx="251" cy="503" r="15" class="input-ring low" id="ir-2"></circle>
-      <circle cx="251" cy="503" r="11" class="input-circle low" id="ic-2"></circle>
-      <text x="251" y="503" class="input-label">C</text>
-      <text x="251" y="529" class="input-value-label low" id="iv-2">0</text>
-    </g><g class="input-toggle" onclick="toggleInput(3)">
-      <circle cx="58" cy="58" r="24" fill="transparent"></circle>
-      <circle cx="58" cy="58" r="15" class="input-ring low" id="ir-3"></circle>
-      <circle cx="58" cy="58" r="11" class="input-circle low" id="ic-3"></circle>
-      <text x="58" y="58" class="input-label">D</text>
-      <text x="58" y="84" class="input-value-label low" id="iv-3">0</text>
-    </g><g class="input-toggle" onclick="toggleInput(4)">
-      <circle cx="58" cy="144" r="24" fill="transparent"></circle>
-      <circle cx="58" cy="144" r="15" class="input-ring high" id="ir-4"></circle>
-      <circle cx="58" cy="144" r="11" class="input-circle high" id="ic-4"></circle>
-      <text x="58" y="144" class="input-label">E</text>
-      <text x="58" y="170" class="input-value-label high" id="iv-4">1</text>
-    </g><g class="input-toggle" onclick="toggleInput(5)">
-      <circle cx="58" cy="235" r="24" fill="transparent"></circle>
-      <circle cx="58" cy="235" r="15" class="input-ring high" id="ir-5"></circle>
-      <circle cx="58" cy="235" r="11" class="input-circle high" id="ic-5"></circle>
-      <text x="58" y="235" class="input-label">F</text>
-      <text x="58" y="261" class="input-value-label high" id="iv-5">1</text>
-    </g><circle cx="1072" cy="285.5" r="14" class="output-led low" id="output-led"></circle>
-        <text x="1072" y="313.5" class="output-label">OUT</text>
-        <text x="1072" y="285.5" class="output-value visible low" id="output-val">0</text></svg></div>
+<div class="circuit-container" id="circuitContainer"></div>
 
 <div class="bottom-bar">
   <div class="status-text" id="statusText">Output = <span class="val-low">LOW (0)</span></div>
@@ -404,17 +386,34 @@
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-let circuit = null, layoutData = null, revealed = false, revealTimeouts = [];
+let circuit = null, layoutData = null, revealed = false, revealTimeouts = [], userGuess = null;
+
+function setGuess(v) {
+  if (revealed) return;
+  userGuess = v;
+  document.querySelectorAll('.guess-btn').forEach(el => {
+    el.classList.remove('selected-high', 'selected-low');
+    if (+el.dataset.val === v) el.classList.add(v ? 'selected-high' : 'selected-low');
+  });
+}
+
+function showResultOverlay(correct) {
+  const overlay = document.createElement('div');
+  overlay.className = 'result-overlay';
+  overlay.innerHTML = `<span class="result-emoji">${correct ? '\uD83C\uDF89' : '\uD83D\uDC4E\uD83C\uDFFB'}</span>`;
+  overlay.addEventListener('click', () => overlay.remove());
+  document.body.appendChild(overlay);
+}
 
 function toggleTheme() {
   const html = document.documentElement;
   const isLight = html.getAttribute('data-theme') === 'light';
   if (isLight) {
     html.removeAttribute('data-theme');
-    document.getElementById('themeIcon').textContent = '☀️';
+    document.getElementById('themeIcon').textContent = '\u26AA';
   } else {
     html.setAttribute('data-theme', 'light');
-    document.getElementById('themeIcon').textContent = '🌙';
+    document.getElementById('themeIcon').textContent = '\u26AB';
   }
 }
 
@@ -579,7 +578,7 @@ function computeLayout(circ) {
 
   // viewbox
   const graph = g.graph();
-  const svgW = graph.width + 40;
+  const svgW = graph.width + 120;
   const svgH = graph.height + 40;
 
   return { inputPos, gatePos, outputPos, edgePoints, gateLevel, maxDepth, svgW, svgH };
@@ -756,6 +755,17 @@ function renderCircuit(c, L) {
         <text x="${L.outputPos.x}" y="${L.outputPos.y + 28}" class="output-label">OUT</text>
         <text x="${L.outputPos.x}" y="${L.outputPos.y}" class="output-value" id="output-val">?</text>`;
 
+  // ── guess buttons ──
+  const gx = L.outputPos.x + 30, gy = L.outputPos.y;
+  h += `<g class="guess-btn" data-val="0" onclick="setGuess(0)">
+          <rect x="${gx}" y="${gy - 12}" width="24" height="24" />
+          <text x="${gx + 12}" y="${gy}">0</text>
+        </g>
+        <g class="guess-btn" data-val="1" onclick="setGuess(1)">
+          <rect x="${gx + 30}" y="${gy - 12}" width="24" height="24" />
+          <text x="${gx + 42}" y="${gy}">1</text>
+        </g>`;
+
   svg.innerHTML = h;
   box.appendChild(svg);
 }
@@ -804,13 +814,26 @@ function toggleInput(i) {
 function handleRevealReset() {
   if (!circuit) return;
   if (revealed) resetCircuit();
-  else reveal();
+  else {
+    if (userGuess === null) {
+      document.getElementById('statusText').innerHTML = 'Pick <span style="color:#e3b341">0</span> or <span style="color:#e3b341">1</span> next to the output first!';
+      document.querySelectorAll('.guess-btn').forEach(el => {
+        el.style.animation = 'overlayPop 0.4s ease';
+        setTimeout(() => el.style.animation = '', 400);
+      });
+      return;
+    }
+    reveal();
+  }
 }
 
 function resetCircuit() {
   // Cancel any in-progress reveal animation
   revealTimeouts.forEach(clearTimeout);
   revealTimeouts = [];
+
+  // Dismiss overlay if present
+  document.querySelectorAll('.result-overlay').forEach(el => el.remove());
 
   revealed = false;
 
@@ -820,13 +843,16 @@ function resetCircuit() {
   // Re-render the circuit with current input values preserved
   renderCircuit(circuit, layoutData);
 
+  // Reset guess
+  userGuess = null;
+
   // Restore button
   const btn = document.getElementById('revealBtn');
-  btn.textContent = 'Reveal';
+  btn.textContent = 'Check';
   btn.classList.remove('revealed');
 
   document.getElementById('statusText').innerHTML =
-    'Set inputs by clicking them, then hit <span style="color:#e3b341">Reveal</span> to check.';
+    'Set inputs, pick your answer, then hit <span style="color:#e3b341">Check</span>.';
 }
 
 // ══════════════════════════════════════════════
@@ -838,6 +864,7 @@ function reveal() {
   const btn = document.getElementById('revealBtn');
   btn.classList.add('revealed');
   btn.textContent = 'Reset';
+  document.querySelectorAll('.guess-btn').forEach(el => el.classList.add('disabled'));
   document.getElementById('statusText').innerHTML = 'Revealing\u2026';
 
   evaluateCircuit(circuit);
@@ -882,6 +909,12 @@ function reveal() {
     document.getElementById('statusText').innerHTML =
       `Output = <span class="${v ? 'val-high' : 'val-low'}">${v ? 'HIGH (1)' : 'LOW (0)'}</span>`;
   }, fin + 250));
+
+  // Show result overlay
+  revealTimeouts.push(setTimeout(() => {
+    const v = circuit.gates[circuit.outputGateIdx].value;
+    showResultOverlay(userGuess === v);
+  }, fin + 700));
 }
 
 // ══════════════════════════════════════════════
@@ -895,17 +928,20 @@ function generate() {
   circuit = generateCircuit(types, n);
   layoutData = computeLayout(circuit);
   revealed = false;
+  userGuess = null;
 
   renderCircuit(circuit, layoutData);
 
   const btn = document.getElementById('revealBtn');
   btn.style.display = ''; btn.classList.remove('revealed');
-  btn.textContent = 'Reveal';
+  btn.textContent = 'Check';
   document.getElementById('randomBtn').style.display = '';
   document.getElementById('speedGroup').style.display = '';
   document.getElementById('statusText').innerHTML =
-    'Set inputs by clicking them, then hit <span style="color:#e3b341">Reveal</span> to check.';
+    'Set inputs, pick your answer, then hit <span style="color:#e3b341">Check</span>.';
 }
+
+generate();
 </script>
 
 
