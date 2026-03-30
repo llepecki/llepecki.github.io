@@ -162,6 +162,10 @@
     pointer-events: auto; opacity: 1;
   }
   .btn.reveal.revealed:hover { background: var(--not-color); color: var(--bg); }
+  .btn.wire-toggle { border-color: var(--panel-border); color: var(--text-dim); }
+  .btn.wire-toggle:hover { background: var(--panel-border); color: var(--text); }
+  .btn.wire-toggle.active { border-color: var(--accent); color: var(--accent); }
+  .btn.wire-toggle.active:hover { background: var(--accent); color: var(--bg); }
 
   .btn.randomize { border-color: var(--or-color); color: var(--or-color); }
   .btn.randomize:hover { background: var(--or-color); color: var(--bg); }
@@ -281,6 +285,10 @@
   .output-value.high { fill: var(--wire-high); }
   .output-value.low  { fill: var(--wire-low); }
 
+  .wire-label circle { fill: var(--panel); stroke: var(--panel-border); stroke-width: 1; }
+  .wire-label text { fill: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 10px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .wire-labels-hidden .wire-label { display: none; }
+
   .guess-btn { cursor: pointer; transition: all 0.2s; }
   .guess-btn rect { fill: var(--panel); stroke: var(--panel-border); stroke-width: 1.5; rx: 5; }
   .guess-btn text { fill: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
@@ -374,6 +382,7 @@
       <span class="speed-value" id="speedValue">1×</span>
     </div>
   </div>
+  <button class="btn wire-toggle" id="wireLabelsBtn" onclick="toggleWireLabels()">Wire #</button>
 </div>
 
 <div class="circuit-container" id="circuitContainer"></div>
@@ -677,8 +686,11 @@ function renderCircuit(c, L) {
   svg.id = 'circuit';
   svg.setAttribute('viewBox', `0 0 ${L.svgW} ${L.svgH}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  if (!document.getElementById('wireLabelsBtn').classList.contains('active')) svg.classList.add('wire-labels-hidden');
 
   let h = '';
+  const wireMids = [];
+  let wireNum = 1;
 
   // ── wires (dagre-routed, behind everything) ──
   c.gates.forEach((gate, gi) => {
@@ -704,6 +716,11 @@ function renderCircuit(c, L) {
         pts[pts.length - 1] = { x: ip.x, y: ip.y };
       }
 
+      if (pts && pts.length >= 2) {
+        const mid = pts[Math.floor(pts.length / 2)];
+        wireMids.push({ x: mid.x, y: mid.y, n: wireNum++ });
+      }
+
       const level = L.gateLevel[gi] !== undefined ? L.gateLevel[gi] : 0;
       h += `<path id="w-${ref.type[0]}${ref.index}-g${gi}p${ri}"
                    d="${pointsToPath(pts)}"
@@ -722,10 +739,20 @@ function renderCircuit(c, L) {
       const oop = outputPinXY(c.gates[c.outputGateIdx].type, ogp.x, ogp.y);
       pts[0] = { x: oop.x, y: oop.y };
       pts[pts.length - 1] = { x: L.outputPos.x - 14, y: L.outputPos.y };
+      const mid = pts[Math.floor(pts.length / 2)];
+      wireMids.push({ x: mid.x, y: mid.y, n: wireNum++ });
     }
     h += `<path id="wire-output" d="${pointsToPath(pts)}"
                  class="wire" data-level="${L.maxDepth + 1}" />`;
   }
+
+  // ── wire labels (rendered on top of wires) ──
+  wireMids.forEach(w => {
+    h += `<g class="wire-label">
+      <circle cx="${w.x}" cy="${w.y}" r="8" />
+      <text x="${w.x}" y="${w.y}">${w.n}</text>
+    </g>`;
+  });
 
   // ── gates ──
   c.gates.forEach((gate, gi) => {
@@ -782,6 +809,12 @@ function getStepDelay() {
 
 function updateSpeedLabel() {
   document.getElementById('speedValue').textContent = SPEED_LABELS[+document.getElementById('speedSlider').value];
+}
+
+function toggleWireLabels() {
+  const btn = document.getElementById('wireLabelsBtn');
+  btn.classList.toggle('active');
+  document.getElementById('circuit').classList.toggle('wire-labels-hidden', !btn.classList.contains('active'));
 }
 
 function randomizeInputs() {
