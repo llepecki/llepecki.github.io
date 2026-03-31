@@ -109,13 +109,6 @@
     font-size: 11px; color: var(--text-dim); letter-spacing: 1px;
   }
 
-  .drag-hint {
-    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px; color: var(--text-dim); opacity: 0.6;
-    writing-mode: vertical-rl; letter-spacing: 2px;
-  }
-
   @media (max-width: 700px) {
     .bottom { flex-direction: column; }
     .controls {
@@ -138,7 +131,6 @@
 <div class="main">
   <div class="side-view">
     <canvas id="sideCanvas"></canvas>
-    <span class="drag-hint">↕ DRAG STAR</span>
   </div>
 
   <div class="bottom">
@@ -433,6 +425,25 @@ function drawSideView() {
     ctx.fillText('θ_E', lensX + eRad + 12, midY);
   }
   ctx.fillText('SOURCE', srcX, srcY + 22);
+
+  // Drag arrows to the right of source star (vertical arrangement)
+  const arrowX = srcX + srcGlowR + 10;
+  const arrowSize = 5;
+  ctx.fillStyle = 'rgba(110,122,138,0.6)';
+  // Up arrow
+  ctx.beginPath();
+  ctx.moveTo(arrowX, srcY - 10 - arrowSize);
+  ctx.lineTo(arrowX - arrowSize, srcY - 10 + arrowSize);
+  ctx.lineTo(arrowX + arrowSize, srcY - 10 + arrowSize);
+  ctx.closePath();
+  ctx.fill();
+  // Down arrow
+  ctx.beginPath();
+  ctx.moveTo(arrowX, srcY + 10 + arrowSize);
+  ctx.lineTo(arrowX - arrowSize, srcY + 10 - arrowSize);
+  ctx.lineTo(arrowX + arrowSize, srcY + 10 - arrowSize);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function var_starColor() { return '#ffe066'; }
