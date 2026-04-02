@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Double-Slit Experiment</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF7;
+    --panel: #ffffff;
+    --panel-border: #E0DDD6;
+    --text: #37474F;
+    --text-head: #263238;
+    --text-dim: #78909C;
+    --text-label: #90A4AE;
+    --accent: #455A64;
+    --accent-light: #ECEFF1;
+    --canvas-bg: #f5f3ee;
+    --photon: #FF9800;
+  }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #FAFAF7 0%, #F0EDE6 100%);
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  header {
+    padding: 6px 28px 5px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--text-head); display: flex; align-items: center; gap: 8px; }
+  header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
+  .header-text { flex: 1; }
+
+  .lang-btn {
+    background: none; border: 1px solid var(--panel-border); border-radius: 4px;
+    padding: 3px 4px; cursor: pointer; flex-shrink: 0;
+    transition: border-color 0.15s; line-height: 0; align-self: center;
+  }
+  .lang-btn:hover { border-color: var(--accent); }
+  .lang-btn svg { display: block; }
+
+  .main { display: flex; height: calc(100vh - 46px); }
+
+  .canvas-wrap {
+    flex: 1; position: relative; min-width: 0;
+    background: var(--canvas-bg);
+    border-right: 1px solid var(--panel-border);
+  }
+  .canvas-wrap canvas { width: 100%; height: 100%; display: block; }
+
+  .panel {
+    width: 260px; flex-shrink: 0;
+    background: var(--panel);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .controls {
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 18px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--text-label);
+  }
+
+  .type-toggle { display: flex; gap: 6px; }
+  .type-btn {
+    flex: 1; padding: 8px 4px; border-radius: 8px;
+    border: 2px solid transparent;
+    background: #FAFAF7; color: #546E7A;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; text-align: center;
+    touch-action: manipulation;
+  }
+  .type-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+  .type-btn:hover { background: #F0EDE6; }
+
+  .fire-btn {
+    padding: 12px 4px; font-size: 14px; font-weight: 600;
+    background: var(--text-head); color: #fff; border: none; border-radius: 10px;
+  }
+  .fire-btn:hover { background: #37474F; }
+  .fire-btn:active { transform: scale(0.97); }
+
+  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row input[type=range] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 6px; background: #E0DDD6; border-radius: 3px; outline: none;
+    touch-action: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .slider-row input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .slider-row input[type=range]:disabled {
+    opacity: 0.35;
+  }
+  .slider-val {
+    min-width: 36px; text-align: right;
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-head);
+  }
+
+  .stats {
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 10px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .stat-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px; font-weight: 700; min-width: 24px;
+  }
+  .stat-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; min-width: 30px; text-align: right; color: var(--text);
+  }
+
+  .info {
+    padding: 20px; flex: 1;
+  }
+  .info-text {
+    font-size: 13px; color: #546E7A; line-height: 1.6;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(38,50,56,0.3); }
+    50% { box-shadow: 0 0 0 2px rgba(38,50,56,0.08); }
+  }
+  .auto-active { animation: pulse-border 1.2s ease infinite; }
+
+  @media (max-width: 700px) {
+    .main { flex-direction: column; height: auto; min-height: calc(100vh - 80px); }
+    .canvas-wrap { min-height: 350px; height: 50vh; border-right: none; border-bottom: 1px solid var(--panel-border); }
+    .panel { width: 100%; }
+    .controls { flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
+    .ctrl-group { min-width: 120px; flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <h1><span style="font-size:18px;line-height:1">&#x1F4A0;</span><span id="titleText">Double-Slit Experiment</span></h1>
+    <p id="subtitleText">Fire single photons at a barrier with slits and watch an interference pattern build up.</p>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">
+    <svg width="28" height="20" viewBox="0 0 28 20" id="langFlag"><rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/></svg>
+  </button>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblSlits">Slits</span>
+        <div class="type-toggle">
+          <button class="type-btn active" id="slit1Btn" onclick="setSlits(1)">1 slit</button>
+          <button class="type-btn" id="slit2Btn" onclick="setSlits(2)">2 slits</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblSlitWidth">Slit width</span>
+        <div class="slider-row">
+          <input type="range" id="slitWidthSlider" min="1" max="20" value="5" step="1">
+          <span class="slider-val" id="slitWidthVal">5</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblSlitSep">Slit separation</span>
+        <div class="slider-row">
+          <input type="range" id="slitSepSlider" min="5" max="50" value="20" step="1">
+          <span class="slider-val" id="slitSepVal">20</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <button class="type-btn fire-btn" id="fireBtn" onclick="firePhoton()">Fire Photon</button>
+        <div class="type-toggle" style="margin-top:6px">
+          <button class="type-btn" id="autoBtn" onclick="toggleAuto()">Auto</button>
+          <button class="type-btn" id="resetBtn" onclick="resetStats()">Reset</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblSpeed">Speed</span>
+        <div class="slider-row">
+          <input type="range" id="speedSlider" min="25" max="300" value="100" step="25">
+          <span class="slider-val" id="speedVal">1x</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <span class="ctrl-label" id="lblTotal">Total photons</span>
+      <div class="stat-row">
+        <span class="stat-label" style="color:var(--text-dim)" id="lblTot">Tot</span>
+        <span class="stat-count" id="totalCount" style="margin-left:auto">0</span>
+      </div>
+    </div>
+
+    <div class="info">
+      <div class="info-text" id="infoText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const state = {
+  lang: 'en',
+  slitCount: 1,
+  slitWidth: 5,
+  slitSep: 20,
+  speed: 1,
+  autoFire: false,
+  totalCount: 0,
+  photons: [],
+  hasFired: false,
+};
+
+// ══════════════════════════════════════════════
+// I18N
+// ══════════════════════════════════════════════
+const I18N = {
+  en: {
+    title: 'Double-Slit Experiment',
+    subtitle: 'Fire single photons at a barrier with slits and watch an interference pattern build up.',
+    slits: 'Slits',
+    oneSlit: '1 slit',
+    twoSlits: '2 slits',
+    slitWidth: 'Slit width',
+    slitSeparation: 'Slit separation',
+    firePhoton: 'Fire Photon',
+    auto: 'Auto', reset: 'Reset',
+    speed: 'Speed',
+    totalPhotons: 'Total photons',
+    tot: 'Tot',
+    infoStart: 'Press "Fire Photon" to shoot a photon at the barrier!',
+  },
+  pl: {
+    title: 'Do\u015Bwiadczenie z podw\u00F3jn\u0105 szczelin\u0105',
+    subtitle: 'Wystrzel pojedyncze fotony w barier\u0119 ze szczelinami i obserwuj, jak powstaje wz\u00F3r interferencyjny.',
+    slits: 'Szczeliny',
+    oneSlit: '1 szczelina',
+    twoSlits: '2 szczeliny',
+    slitWidth: 'Szeroko\u015B\u0107 szczeliny',
+    slitSeparation: 'Odst\u0119p szczelin',
+    firePhoton: 'Wystrzel foton',
+    auto: 'Auto', reset: 'Zeruj',
+    speed: 'Pr\u0119dko\u015B\u0107',
+    totalPhotons: 'Suma foton\u00F3w',
+    tot: 'Suma',
+    infoStart: 'Naci\u015Bnij "Wystrzel foton", aby wys\u0142a\u0107 foton w barier\u0119!',
+  },
+};
+
+function T(key) { return I18N[state.lang][key]; }
+
+function applyTranslations() {
+  const l = I18N[state.lang];
+  document.title = l.title;
+  document.documentElement.lang = state.lang;
+  document.getElementById('titleText').textContent = l.title;
+  document.getElementById('subtitleText').textContent = l.subtitle;
+  document.getElementById('lblSlits').textContent = l.slits;
+  document.getElementById('slit1Btn').textContent = l.oneSlit;
+  document.getElementById('slit2Btn').textContent = l.twoSlits;
+  document.getElementById('lblSlitWidth').textContent = l.slitWidth;
+  document.getElementById('lblSlitSep').textContent = l.slitSeparation;
+  document.getElementById('fireBtn').textContent = l.firePhoton;
+  document.getElementById('autoBtn').textContent = l.auto;
+  document.getElementById('resetBtn').textContent = l.reset;
+  document.getElementById('lblSpeed').textContent = l.speed;
+  document.getElementById('lblTotal').textContent = l.totalPhotons;
+  document.getElementById('lblTot').textContent = l.tot;
+  // Re-apply active states
+  document.getElementById('slit1Btn').classList.toggle('active', state.slitCount === 1);
+  document.getElementById('slit2Btn').classList.toggle('active', state.slitCount === 2);
+  document.getElementById('autoBtn').classList.toggle('active', state.autoFire);
+  updateInfoText();
+}
+
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'pl' : 'en';
+  const flag = document.getElementById('langFlag');
+  if (state.lang === 'en') {
+    flag.innerHTML = '<rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/>';
+  } else {
+    flag.innerHTML = '<rect width="28" height="20" fill="#012169"/><path d="M0 0L28 20M28 0L0 20" stroke="#fff" stroke-width="3"/><path d="M0 0L28 20M28 0L0 20" stroke="#C8102E" stroke-width="1.5"/><path d="M14 0V20M0 10H28" stroke="#fff" stroke-width="5"/><path d="M14 0V20M0 10H28" stroke="#C8102E" stroke-width="3"/>';
+  }
+  applyTranslations();
+}
+
+// ══════════════════════════════════════════════
+// CANVAS
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  W = rect.width; H = rect.height;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+// ══════════════════════════════════════════════
+// DRAWING (placeholder)
+// ══════════════════════════════════════════════
+function drawScene() {
+  ctx.fillStyle = '#f5f3ee';
+  ctx.fillRect(0, 0, W, H);
+}
+
+// ══════════════════════════════════════════════
+// ANIMATION
+// ══════════════════════════════════════════════
+let lastTime = 0;
+let autoTimer = 0;
+const AUTO_DELAY = 0.15;
+
+function animate(now) {
+  now /= 1000;
+  const rawDt = lastTime ? Math.min(now - lastTime, 0.05) : 0;
+  lastTime = now;
+
+  // Auto-fire
+  if (state.autoFire) {
+    autoTimer += rawDt;
+    if (autoTimer >= AUTO_DELAY / state.speed) {
+      firePhoton();
+      autoTimer = 0;
+    }
+  }
+
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+// ══════════════════════════════════════════════
+// CONTROLS
+// ══════════════════════════════════════════════
+function setSlits(n) {
+  state.slitCount = n;
+  document.getElementById('slit1Btn').classList.toggle('active', n === 1);
+  document.getElementById('slit2Btn').classList.toggle('active', n === 2);
+  document.getElementById('slitSepSlider').disabled = (n === 1);
+  resetStats();
+  updateInfoText();
+}
+
+document.getElementById('slitWidthSlider').addEventListener('input', e => {
+  state.slitWidth = +e.target.value;
+  document.getElementById('slitWidthVal').textContent = e.target.value;
+  resetStats();
+});
+
+document.getElementById('slitSepSlider').addEventListener('input', e => {
+  state.slitSep = +e.target.value;
+  document.getElementById('slitSepVal').textContent = e.target.value;
+  resetStats();
+});
+
+document.getElementById('speedSlider').addEventListener('input', e => {
+  state.speed = +e.target.value / 100;
+  document.getElementById('speedVal').textContent = state.speed + 'x';
+});
+
+function firePhoton() {
+  state.totalCount++;
+  document.getElementById('totalCount').textContent = state.totalCount;
+  if (!state.hasFired) { state.hasFired = true; updateInfoText(); }
+}
+
+function resetStats() {
+  state.totalCount = 0;
+  state.photons = [];
+  document.getElementById('totalCount').textContent = '0';
+}
+
+function toggleAuto() {
+  state.autoFire = !state.autoFire;
+  autoTimer = 0;
+  document.getElementById('autoBtn').classList.toggle('active', state.autoFire);
+  document.getElementById('fireBtn').classList.toggle('auto-active', state.autoFire);
+}
+
+function updateInfoText() {
+  if (!state.hasFired) {
+    document.getElementById('infoText').textContent = T('infoStart');
+    return;
+  }
+  document.getElementById('infoText').textContent = '';
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+resize();
+document.getElementById('slitSepSlider').disabled = (state.slitCount === 1);
+document.getElementById('infoText').textContent = T('infoStart');
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

@@ -308,9 +308,7 @@ function drawSideView() {
   ctx.setLineDash([]);
   }
 
-  // Light rays and lens body — only when lens is on
-  if (state.lensOn) {
-  // Light rays — only when rays toggle is on
+  // Light rays — visible with or without lens (no deflection when lens is off)
   if (state.showRays) {
   // Thin-lens ray tracing: straight lines with sharp deflection at lens plane
   const numRays = 50;
@@ -325,7 +323,7 @@ function drawSideView() {
 
     const b = rayY - midY;
     const bAbs = Math.abs(b);
-    if (bAbs < 3) continue;
+    if (state.lensOn && bAbs < 3) continue;
 
     // Deflection angle toward axis: α = θ_E² / (b · D_OL) in diagram units
     const hatAlpha = eRad * eRad / (bAbs * distObsLens);
@@ -355,7 +353,8 @@ function drawSideView() {
   }
   } // end if showRays
 
-  // Lens body
+  // Lens body — only when lens is on
+  if (state.lensOn) {
   if (state.lensType === 'blackhole') {
     // Accretion glow
     const glow = ctx.createRadialGradient(lensX, midY, eRad * 0.15, lensX, midY, eRad * 0.7);
@@ -413,7 +412,7 @@ function drawSideView() {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = var_textColor();
-  ctx.fillText('👁', obsX, midY);
+  ctx.fillText('👩🏻', obsX, midY);
 
   // Labels
   ctx.font = '10px "Share Tech Mono", monospace';
