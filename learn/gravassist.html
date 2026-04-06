@@ -623,7 +623,7 @@ function computeStartDist() {
   var vPfX = vScSun * Math.cos(state.approachAngle) - vp;
   var vPfY = vScSun * Math.sin(state.approachAngle);
   var vInf2 = vPfX * vPfX + vPfY * vPfY;
-  return Math.max(400, Math.min(2000, Math.ceil(5 * GM / Math.max(vInf2, 1))));
+  return Math.max(800, Math.min(4000, Math.ceil(10 * GM / Math.max(vInf2, 1))));
 }
 
 function initVecPosition() {
@@ -781,7 +781,7 @@ function computeTrajectory() {
     if (crashed) { points.push({ x: x, y: y, vx: vx, vy: vy }); break; }
 
     var rEnd = Math.sqrt(x * x + y * y);
-    if (rEnd > startDist * 0.9 && i > closestIdx + 50) break;
+    if (rEnd > startDist && i > closestIdx + 50) break;
   }
 
   state.trajectory = points;
@@ -810,13 +810,22 @@ function toSunFrame(idx) {
 }
 
 function computeResults() {
-  var GM = state.planetMass * GM_SCALE;
   var vp = state.planetVel * V_SCALE;
-  var vScSun = state.approachSpeed * V_SCALE;
-  var alpha = state.approachAngle;
+  var traj = state.trajectory;
 
-  // Sun-frame entry speed
-  state.vIn = vScSun / V_SCALE;
+  if (traj.length === 0) {
+    state.vIn = 0;
+    state.vOut = 0;
+    state.deltaV = 0;
+    state.deflectionAngle = 0;
+    return;
+  }
+
+  // Entry: sun-frame velocity at first trajectory point
+  var first = traj[0];
+  var vInSunX = first.vx + vp;
+  var vInSunY = first.vy;
+  state.vIn = Math.sqrt(vInSunX * vInSunX + vInSunY * vInSunY) / V_SCALE;
 
   if (state.crashed) {
     state.vOut = 0;
@@ -825,49 +834,17 @@ function computeResults() {
     return;
   }
 
-  var vPfX = vScSun * Math.cos(alpha) - vp;
-  var vPfY = vScSun * Math.sin(alpha);
-  var vInf = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
-
-  if (vInf < 0.01) {
-    state.vOut = state.vIn;
-    state.deltaV = 0;
-    state.deflectionAngle = 0;
-    return;
-  }
-
-  var alphaPf = Math.atan2(vPfY, vPfX);
-  var rp = state.planetRadius + state.periapsisAlt;
-
-  if (rp <= 0.01) {
-    state.crashed = true;
-    state.vOut = 0;
-    state.deltaV = 0;
-    state.deflectionAngle = 0;
-    return;
-  }
-
-  var e = 1 + rp * vInf * vInf / GM;
-  var sinHalfDelta = Math.min(1, 1 / e);
-  var delta = 2 * Math.asin(sinHalfDelta);
-
-  var L = state.vecPfX * vPfY - state.vecPfY * vPfX;
-  var turnSign = L >= 0 ? 1 : -1;
-
-  var outAngle = alphaPf + turnSign * delta;
-  var vOutPfX = vInf * Math.cos(outAngle);
-  var vOutPfY = vInf * Math.sin(outAngle);
-
-  var vInSunX = vPfX + vp;
-  var vInSunY = vPfY;
-  var vOutSunX = vOutPfX + vp;
-  var vOutSunY = vOutPfY;
-
-  state.vIn = Math.sqrt(vInSunX * vInSunX + vInSunY * vInSunY) / V_SCALE;
+  // Exit: sun-frame velocity at last trajectory point (far-field after stop rule)
+  var last = traj[traj.length - 1];
+  var vOutSunX = last.vx + vp;
+  var vOutSunY = last.vy;
   state.vOut = Math.sqrt(vOutSunX * vOutSunX + vOutSunY * vOutSunY) / V_SCALE;
   state.deltaV = state.vOut - state.vIn;
 
-  var da = turnSign * delta * 180 / Math.PI;
+  // Deflection: signed angle between inbound and outbound planet-frame velocity vectors
+  var inAngle = Math.atan2(first.vy, first.vx);
+  var outAngle = Math.atan2(last.vy, last.vx);
+  var da = (outAngle - inAngle) * 180 / Math.PI;
   while (da > 180) da -= 360;
   while (da < -180) da += 360;
   state.deflectionAngle = da;
