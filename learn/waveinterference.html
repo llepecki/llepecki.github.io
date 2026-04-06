@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Wave Interference</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF7;
+    --panel: #ffffff;
+    --panel-border: #E0DDD6;
+    --text: #37474F;
+    --text-head: #263238;
+    --text-dim: #78909C;
+    --text-label: #90A4AE;
+    --accent: #455A64;
+    --accent-light: #ECEFF1;
+    --canvas-bg: #f5f3ee;
+    --wave-a: #FF6D00;
+    --wave-b: #2979FF;
+    --wave-sum: #00C853;
+  }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #FAFAF7 0%, #F0EDE6 100%);
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  header {
+    padding: 6px 28px 5px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--text-head); display: flex; align-items: center; gap: 8px; }
+  header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
+  .header-text { flex: 1; }
+
+  .lang-btn {
+    background: none; border: 1px solid var(--panel-border); border-radius: 4px;
+    padding: 3px 4px; cursor: pointer; flex-shrink: 0;
+    transition: border-color 0.15s; line-height: 0; align-self: center;
+  }
+  .lang-btn:hover { border-color: var(--accent); }
+  .lang-btn svg { display: block; }
+
+  .main { display: flex; height: calc(100vh - 46px); }
+
+  .canvas-wrap {
+    flex: 1; position: relative; min-width: 0;
+    background: var(--canvas-bg);
+    border-right: 1px solid var(--panel-border);
+  }
+  .canvas-wrap canvas { width: 100%; height: 100%; display: block; }
+
+  .panel {
+    width: 260px; flex-shrink: 0;
+    background: var(--panel);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .controls {
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 18px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--text-label);
+  }
+
+  .type-toggle { display: flex; gap: 6px; }
+  .type-btn {
+    flex: 1; padding: 8px 4px; border-radius: 8px;
+    border: 2px solid transparent;
+    background: #FAFAF7; color: #546E7A;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; text-align: center;
+    touch-action: manipulation;
+  }
+  .type-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+  .type-btn:hover { background: #F0EDE6; }
+
+  .step-only { transition: opacity 0.3s, max-height 0.3s; overflow: hidden; }
+  .step-only.hidden { opacity: 0.3; pointer-events: none; max-height: 0; margin: 0; padding: 0; }
+
+  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row input[type=range] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 6px; background: #E0DDD6; border-radius: 3px; outline: none;
+    touch-action: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .slider-row input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .slider-val {
+    min-width: 36px; text-align: right;
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-head);
+  }
+
+  .info {
+    padding: 20px; flex: 1;
+  }
+  .info-text {
+    font-size: 13px; color: #546E7A; line-height: 1.6;
+  }
+  .info-text a {
+    color: var(--accent); text-decoration: underline;
+  }
+
+  @media (max-width: 700px) {
+    .main { flex-direction: column; height: auto; min-height: calc(100vh - 80px); }
+    .canvas-wrap { min-height: 350px; height: 50vh; border-right: none; border-bottom: 1px solid var(--panel-border); }
+    .panel { width: 100%; }
+    .controls { flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
+    .ctrl-group { min-width: 120px; flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <h1><span style="font-size:18px;line-height:1">&#x1F30A;</span><span id="titleText">Wave Interference</span></h1>
+    <p id="subtitleText">Discover how waves add up, cancel out, and create interference.</p>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">
+    <svg width="28" height="20" viewBox="0 0 28 20" id="langFlag"><rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/></svg>
+  </button>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblStep">Step</span>
+        <div class="type-toggle">
+          <button class="type-btn active" id="step1Btn" onclick="setStep(1)">1</button>
+          <button class="type-btn" id="step2Btn" onclick="setStep(2)">2</button>
+          <button class="type-btn" id="step3Btn" onclick="setStep(3)">3</button>
+          <button class="type-btn" id="step4Btn" onclick="setStep(4)">4</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblAmpA">Wave A amplitude</span>
+        <div class="slider-row">
+          <input type="range" id="ampASlider" min="1" max="10" value="5" step="1">
+          <span class="slider-val" id="ampAVal">5</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblWavelength">Wavelength</span>
+        <div class="slider-row">
+          <input type="range" id="wavelengthSlider" min="40" max="160" value="80" step="5">
+          <span class="slider-val" id="wavelengthVal">80</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblFrequency">Frequency</span>
+        <div class="slider-row">
+          <input type="range" id="frequencySlider" min="0.5" max="5" value="2.5" step="0.1">
+          <span class="slider-val" id="frequencyVal">2.5 Hz</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group step-only" id="ampBGroup">
+        <span class="ctrl-label" id="lblAmpB">Wave B amplitude</span>
+        <div class="slider-row">
+          <input type="range" id="ampBSlider" min="1" max="10" value="5" step="1">
+          <span class="slider-val" id="ampBVal">5</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group step-only" id="phaseGroup">
+        <span class="ctrl-label" id="lblPhase">Phase offset</span>
+        <div class="slider-row">
+          <input type="range" id="phaseSlider" min="0" max="360" value="0" step="5">
+          <span class="slider-val" id="phaseVal">0&deg;</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group step-only" id="presetGroup">
+        <span class="ctrl-label" id="lblPresets">Try these</span>
+        <div class="type-toggle">
+          <button class="type-btn" id="presetConBtn" onclick="setPreset('constructive')">In sync</button>
+          <button class="type-btn" id="presetDesBtn" onclick="setPreset('destructive')">Opposite</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <button class="type-btn" id="playBtn" onclick="togglePlay()">&#x23F8; Pause</button>
+      </div>
+    </div>
+
+    <div class="info">
+      <div class="info-text" id="infoText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const state = {
+  lang: 'en',
+  step: 1,
+  playing: true,
+  ampA: 5,
+  ampB: 5,
+  wavelength: 80,
+  frequency: 2.5,
+  phaseDeg: 0,
+  frozenTime: 0,
+  // Draggable crosshair (logical coords)
+  crossX: 500,
+  crossY: 160,  // starts on Wave A centerline
+  dragging: null,  // null, 'vertical', 'horizontal'
+};
+
+// ══════════════════════════════════════════════
+// I18N
+// ══════════════════════════════════════════════
+const I18N = {
+  en: {
+    title: 'Wave Interference',
+    subtitle: 'Discover how waves add up, cancel out, and create interference.',
+    step: 'Step',
+    waveAAmplitude: 'Wave A amplitude',
+    waveBAmplitude: 'Wave B amplitude',
+    wavelength: 'Wavelength',
+    frequency: 'Frequency',
+    phaseOffset: 'Phase offset',
+    tryThese: 'Try these',
+    inSync: 'In sync',
+    opposite: 'Opposite',
+    pause: '\u23F8 Pause',
+    play: '\u25B6 Play',
+    waveA: 'Wave A',
+    waveB: 'Wave B',
+    combined: 'A + B',
+    amplitude: 'amplitude',
+    wavelengthLabel: 'wavelength',
+    frequencyLabel: 'frequency',
+
+    infoStep1: 'This is a wave! It moves forward while oscillating up and down. Try the sliders \u2014 <b>amplitude</b> controls the height, <b>wavelength</b> the distance between peaks, and <b>frequency</b> how fast it oscillates.',
+    infoStep2: 'Now there are two waves! When waves overlap, their heights <b>add up</b> at every point. This is called <b>superposition</b>. The green wave shows A\u2009+\u2009B combined.',
+    infoStep2Phase0: 'Both waves are perfectly in sync. The combined wave (green) is <b>bigger</b> than either one alone!',
+    infoStep3Constructive: '<b>Constructive interference!</b> The waves are in sync (phase\u2009=\u20090\u00B0). Peaks line up, so the combined wave is at its tallest \u2014 both waves push together!',
+    infoStep3Destructive: '<b>Destructive interference!</b> The waves are exactly opposite (phase\u2009=\u2009180\u00B0). Peak meets valley, and they cancel out completely! The combined wave is flat.',
+    infoStep3Partial: 'The waves are partly out of sync. The combined wave is somewhere between full constructive and full destructive interference.',
+    infoStep4Explore: 'Move the phase slider slowly from 0\u00B0 to 360\u00B0. Watch how the combined wave changes smoothly. Interference is not all-or-nothing \u2014 every angle gives a different result!',
+    infoStep4Phase: 'Phase\u2009=\u2009{0}\u00B0 \u2014 combined amplitude = <b>{1}</b>. {2}',
+    infoStep4Full: 'Maximum constructive interference!',
+    infoStep4Zero: 'Complete destructive interference \u2014 total cancellation!',
+    infoStep4Partial: 'Partial interference.',
+    infoStep4Bridge: 'Ready for more? Try the <a href="mzinterferometer.html">Mach-Zehnder Interferometer</a> or the <a href="doubleslit.html">Double-Slit Experiment</a> to see interference with real light!',
+  },
+  pl: {
+    title: 'Interferencja fal',
+    subtitle: 'Odkryj, jak fale sumuj\u0105 si\u0119, znosz\u0105 i tworz\u0105 interferencj\u0119.',
+    step: 'Krok',
+    waveAAmplitude: 'Amplituda fali A',
+    waveBAmplitude: 'Amplituda fali B',
+    wavelength: 'D\u0142ugo\u015B\u0107 fali',
+    frequency: 'Cz\u0119stotliwo\u015B\u0107',
+    phaseOffset: 'Przesuni\u0119cie fazowe',
+    tryThese: 'Wypr\u00F3buj',
+    inSync: 'Zgodne',
+    opposite: 'Przeciwne',
+    pause: '\u23F8 Pauza',
+    play: '\u25B6 Odtw\u00F3rz',
+    waveA: 'Fala A',
+    waveB: 'Fala B',
+    combined: 'A + B',
+    amplitude: 'amplituda',
+    wavelengthLabel: 'd\u0142ugo\u015B\u0107 fali',
+    frequencyLabel: 'cz\u0119stotliwo\u015B\u0107',
+
+    infoStep1: 'To jest fala! Porusza si\u0119 do przodu, jednocze\u015Bnie faluj\u0105c w g\u00F3r\u0119 i w d\u00F3\u0142. Wypr\u00F3buj suwaki \u2014 <b>amplituda</b> kontroluje wysoko\u015B\u0107, <b>d\u0142ugo\u015B\u0107 fali</b> \u2014 odleg\u0142o\u015B\u0107 mi\u0119dzy szczytami, a <b>cz\u0119stotliwo\u015B\u0107</b> \u2014 jak szybko fala oscyluje.',
+    infoStep2: 'Teraz s\u0105 dwie fale! Gdy fale nak\u0142adaj\u0105 si\u0119, ich wysoko\u015Bci <b>sumuj\u0105 si\u0119</b> w ka\u017Cdym punkcie. To <b>superpozycja</b>. Zielona fala pokazuje A\u2009+\u2009B razem.',
+    infoStep2Phase0: 'Obie fale s\u0105 idealnie zsynchronizowane. Fala wypadkowa (zielona) jest <b>wi\u0119ksza</b> ni\u017C ka\u017Cda osobno!',
+    infoStep3Constructive: '<b>Interferencja konstruktywna!</b> Fale s\u0105 zgodne (faza\u2009=\u20090\u00B0). Szczyty nak\u0142adaj\u0105 si\u0119, wi\u0119c fala wypadkowa jest najwy\u017Csza \u2014 obie fale pchaj\u0105 razem!',
+    infoStep3Destructive: '<b>Interferencja destruktywna!</b> Fale s\u0105 dok\u0142adnie przeciwne (faza\u2009=\u2009180\u00B0). Szczyt spotyka dolin\u0119, i wzajemnie si\u0119 znosz\u0105! Fala wypadkowa jest p\u0142aska.',
+    infoStep3Partial: 'Fale s\u0105 cz\u0119\u015Bciowo rozsynchronizowane. Fala wypadkowa jest gdzies mi\u0119dzy pe\u0142n\u0105 interferencj\u0105 konstruktywn\u0105 a destruktywn\u0105.',
+    infoStep4Explore: 'Przesu\u0144 suwak fazy powoli od 0\u00B0 do 360\u00B0. Obserwuj, jak fala wypadkowa p\u0142ynnie si\u0119 zmienia. Interferencja to nie tylko wszystko albo nic \u2014 ka\u017Cdy k\u0105t daje inny wynik!',
+    infoStep4Phase: 'Faza\u2009=\u2009{0}\u00B0 \u2014 amplituda wypadkowa = <b>{1}</b>. {2}',
+    infoStep4Full: 'Maksymalna interferencja konstruktywna!',
+    infoStep4Zero: 'Pe\u0142na interferencja destruktywna \u2014 ca\u0142kowite zniesienie!',
+    infoStep4Partial: 'Cz\u0119\u015Bciowa interferencja.',
+    infoStep4Bridge: 'Gotowy na wi\u0119cej? Wypr\u00F3buj <a href="mzinterferometer.html">Interferometr Macha-Zehndera</a> lub <a href="doubleslit.html">Do\u015Bwiadczenie z podw\u00F3jn\u0105 szczelin\u0105</a>, aby zobaczy\u0107 interferencj\u0119 prawdziwego \u015Bwiat\u0142a!',
+  },
+};
+
+function T(key) { return I18N[state.lang][key]; }
+
+function applyTranslations() {
+  const l = I18N[state.lang];
+  document.title = l.title;
+  document.documentElement.lang = state.lang;
+  document.getElementById('titleText').textContent = l.title;
+  document.getElementById('subtitleText').textContent = l.subtitle;
+  document.getElementById('lblStep').textContent = l.step;
+  document.getElementById('lblAmpA').textContent = l.waveAAmplitude;
+  document.getElementById('lblAmpB').textContent = l.waveBAmplitude;
+  document.getElementById('lblWavelength').textContent = l.wavelength;
+  document.getElementById('lblFrequency').textContent = l.frequency;
+  document.getElementById('lblPhase').textContent = l.phaseOffset;
+  document.getElementById('lblPresets').textContent = l.tryThese;
+  document.getElementById('presetConBtn').textContent = l.inSync;
+  document.getElementById('presetDesBtn').textContent = l.opposite;
+  document.getElementById('playBtn').innerHTML = state.playing ? l.pause : l.play;
+  updateInfoText();
+}
+
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'pl' : 'en';
+  const flag = document.getElementById('langFlag');
+  if (state.lang === 'en') {
+    flag.innerHTML = '<rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/>';
+  } else {
+    flag.innerHTML = '<rect width="28" height="20" fill="#012169"/><path d="M0 0L28 20M28 0L0 20" stroke="#fff" stroke-width="3"/><path d="M0 0L28 20M28 0L0 20" stroke="#C8102E" stroke-width="1.5"/><path d="M14 0V20M0 10H28" stroke="#fff" stroke-width="5"/><path d="M14 0V20M0 10H28" stroke="#C8102E" stroke-width="3"/>';
+  }
+  applyTranslations();
+}
+
+// ══════════════════════════════════════════════
+// LAYOUT (logical coords, 1000x700 space)
+// ══════════════════════════════════════════════
+const ROW_A  = { y: 160, label: 'waveA',   col: { r: 255, g: 109, b: 0 } };
+const ROW_B  = { y: 360, label: 'waveB',   col: { r: 41,  g: 121, b: 255 } };
+const ROW_SUM = { y: 560, label: 'combined', col: { r: 0, g: 200, b: 83 } };
+
+const WAVE_X_START = 120;
+const WAVE_X_END   = 950;
+const ROW_AMP      = 60;   // max pixel displacement from center in logical coords
+const AMP_SCALE    = 10;   // fixed scale = max slider value; keeps waves proportional
+
+// ══════════════════════════════════════════════
+// CANVAS SETUP
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H, scale, ox, oy;
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  W = rect.width; H = rect.height;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  scale = Math.min(W / 1000, H / 700) * 0.95;
+  ox = (W - 1000 * scale) / 2;
+  oy = (H - 700 * scale) / 2;
+}
+window.addEventListener('resize', resize);
+
+function tx(x) { return ox + x * scale; }
+function ty(y) { return oy + y * scale; }
+function ts(s) { return s * scale; }
+
+// ══════════════════════════════════════════════
+// PHYSICS
+// ══════════════════════════════════════════════
+function waveA(x, t) {
+  const k = 2 * Math.PI / state.wavelength;
+  const omega = 2 * Math.PI * state.frequency;
+  return state.ampA * Math.sin(k * x - omega * t);
+}
+
+function waveB(x, t) {
+  const k = 2 * Math.PI / state.wavelength;
+  const omega = 2 * Math.PI * state.frequency;
+  const phi = state.phaseDeg * Math.PI / 180;
+  return state.ampB * Math.sin(k * x - omega * t + phi);
+}
+
+function waveCombined(x, t) {
+  return waveA(x, t) + waveB(x, t);
+}
+
+function combinedAmplitude() {
+  const phi = state.phaseDeg * Math.PI / 180;
+  const Aa = state.ampA, Ab = state.ampB;
+  return Math.sqrt(Aa * Aa + Ab * Ab + 2 * Aa * Ab * Math.cos(phi));
+}
+
+// ══════════════════════════════════════════════
+// DRAWING
+// ══════════════════════════════════════════════
+function drawBackground() {
+  const c = ctx;
+  c.fillStyle = '#f5f3ee';
+  c.fillRect(0, 0, W, H);
+
+  const showB = state.step >= 2;
+  const rows = showB ? [ROW_A.y, ROW_B.y, ROW_SUM.y] : [ROW_A.y];
+
+  // Grid mesh — helps students trace values across rows
+  const gridColor = 'rgba(69,90,100,0.15)';
+
+  // Vertical grid lines
+  c.strokeStyle = gridColor;
+  c.lineWidth = ts(0.5);
+  const gridSpacing = 40;  // logical units between vertical lines
+  const yTop = rows[0] - ROW_AMP - 10;
+  const yBot = rows[rows.length - 1] + ROW_AMP + 10;
+  for (let gx = WAVE_X_START; gx <= WAVE_X_END; gx += gridSpacing) {
+    c.beginPath();
+    c.moveTo(tx(gx), ty(yTop));
+    c.lineTo(tx(gx), ty(yBot));
+    c.stroke();
+  }
+
+  // Horizontal grid lines within each row
+  const ampScale = showB ? AMP_SCALE : Math.max(state.ampA, 0.01);
+  const gridStep = showB ? 2 : 1;  // amplitude units per grid line
+  for (const cy of rows) {
+    for (let a = gridStep; a <= ampScale; a += gridStep) {
+      const dy = (a / ampScale) * ROW_AMP;
+      c.beginPath();
+      c.moveTo(tx(WAVE_X_START), ty(cy - dy));
+      c.lineTo(tx(WAVE_X_END), ty(cy - dy));
+      c.stroke();
+      c.beginPath();
+      c.moveTo(tx(WAVE_X_START), ty(cy + dy));
+      c.lineTo(tx(WAVE_X_END), ty(cy + dy));
+      c.stroke();
+    }
+  }
+
+  // Row separators
+  c.strokeStyle = 'rgba(69,90,100,0.1)';
+  c.lineWidth = ts(1);
+  c.setLineDash([ts(6), ts(6)]);
+  const dividers = [260, 460];
+  for (const dy of dividers) {
+    c.beginPath();
+    c.moveTo(tx(30), ty(dy));
+    c.lineTo(tx(970), ty(dy));
+    c.stroke();
+  }
+  c.setLineDash([]);
+
+  // Centerlines for each row (zero line, slightly stronger)
+  c.strokeStyle = 'rgba(69,90,100,0.12)';
+  c.lineWidth = ts(1);
+  for (const cy of rows) {
+    c.beginPath();
+    c.moveTo(tx(WAVE_X_START), ty(cy));
+    c.lineTo(tx(WAVE_X_END), ty(cy));
+    c.stroke();
+  }
+}
+
+function drawRowLabels() {
+  const c = ctx;
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+
+  // Wave A label
+  c.font = `600 ${ts(22)}px "DM Sans", sans-serif`;
+  c.fillStyle = `rgba(${ROW_A.col.r},${ROW_A.col.g},${ROW_A.col.b},0.6)`;
+  c.fillText(T(ROW_A.label), tx(60), ty(ROW_A.y));
+
+  if (state.step >= 2) {
+    // Wave B label
+    c.fillStyle = `rgba(${ROW_B.col.r},${ROW_B.col.g},${ROW_B.col.b},0.6)`;
+    c.fillText(T(ROW_B.label), tx(60), ty(ROW_B.y));
+
+    // Combined label
+    c.fillStyle = `rgba(${ROW_SUM.col.r},${ROW_SUM.col.g},${ROW_SUM.col.b},0.6)`;
+    c.fillText(T(ROW_SUM.label), tx(60), ty(ROW_SUM.y));
+  }
+}
+
+// ampScale: the amplitude value that maps to full ROW_AMP height.
+// All waves use the same ampScale so their visual heights are proportional.
+function drawWave(centerY, waveFunc, col, t, alpha, ampScale) {
+  const c = ctx;
+  const N = 300;
+  const {r: cr, g: cg, b: cb} = col;
+
+  const upper = [], lower = [], center = [];
+  for (let i = 0; i <= N; i++) {
+    const lx = WAVE_X_START + (WAVE_X_END - WAVE_X_START) * (i / N);
+    const val = waveFunc(lx, t);
+    const displacement = (val / ampScale) * ROW_AMP;
+    const sx = tx(lx), sy = ty(centerY);
+    const dy = ts(displacement);
+    upper.push({ x: sx, y: sy - dy });
+    lower.push({ x: sx, y: sy + dy });
+    center.push({ x: sx, y: sy - dy });
+  }
+
+  // Filled ribbon
+  c.beginPath();
+  c.moveTo(upper[0].x, upper[0].y);
+  for (let i = 1; i <= N; i++) c.lineTo(upper[i].x, upper[i].y);
+  for (let i = N; i >= 0; i--) c.lineTo(lower[i].x, lower[i].y);
+  c.closePath();
+  c.fillStyle = `rgba(${cr},${cg},${cb},${0.06 * alpha})`;
+  c.fill();
+
+  // Center stroke
+  c.beginPath();
+  c.moveTo(center[0].x, center[0].y);
+  for (let i = 1; i <= N; i++) c.lineTo(center[i].x, center[i].y);
+  c.strokeStyle = `rgba(${cr},${cg},${cb},${0.7 * alpha})`;
+  c.lineWidth = ts(2.5);
+  c.stroke();
+}
+
+function drawAnnotations(t) {
+  const c = ctx;
+
+  if (state.step === 1) {
+    // Amplitude annotation on Wave A
+    // In step 1, ampScale = ampA so the wave always fills the row
+    const peakX = 400;
+    const peakDisp = ROW_AMP;
+
+    // Arrow from centerline to peak
+    const sx = tx(peakX), syCenter = ty(ROW_A.y), syPeak = ty(ROW_A.y) - ts(peakDisp);
+
+    c.strokeStyle = 'rgba(255,109,0,0.5)';
+    c.lineWidth = ts(1.5);
+    c.setLineDash([ts(3), ts(3)]);
+    c.beginPath();
+    c.moveTo(sx, syCenter);
+    c.lineTo(sx, syPeak);
+    c.stroke();
+    c.setLineDash([]);
+
+    // Arrow heads
+    const arrowSize = ts(5);
+    c.fillStyle = 'rgba(255,109,0,0.5)';
+    c.beginPath();
+    c.moveTo(sx, syPeak);
+    c.lineTo(sx - arrowSize, syPeak + arrowSize * 1.5);
+    c.lineTo(sx + arrowSize, syPeak + arrowSize * 1.5);
+    c.fill();
+
+    // Label
+    c.font = `500 ${ts(14)}px "DM Sans", sans-serif`;
+    c.fillStyle = 'rgba(255,109,0,0.7)';
+    c.textAlign = 'left';
+    c.textBaseline = 'middle';
+    c.fillText(T('amplitude'), sx + ts(8), (syCenter + syPeak) / 2);
+
+    // Wavelength annotation — double-headed arrow between two peaks
+    // We'll show it at a fixed position below the wave
+    const wl = state.wavelength;
+    const wlStartX = 500;
+    const wlEndX = wlStartX + wl;
+    const arrowY = ROW_A.y + ROW_AMP + 18;
+
+    c.strokeStyle = 'rgba(255,109,0,0.4)';
+    c.lineWidth = ts(1.5);
+    c.beginPath();
+    c.moveTo(tx(wlStartX), ty(arrowY));
+    c.lineTo(tx(wlEndX), ty(arrowY));
+    c.stroke();
+
+    // Left arrowhead
+    c.fillStyle = 'rgba(255,109,0,0.4)';
+    c.beginPath();
+    c.moveTo(tx(wlStartX), ty(arrowY));
+    c.lineTo(tx(wlStartX) + arrowSize * 1.5, ty(arrowY) - arrowSize);
+    c.lineTo(tx(wlStartX) + arrowSize * 1.5, ty(arrowY) + arrowSize);
+    c.fill();
+
+    // Right arrowhead
+    c.beginPath();
+    c.moveTo(tx(wlEndX), ty(arrowY));
+    c.lineTo(tx(wlEndX) - arrowSize * 1.5, ty(arrowY) - arrowSize);
+    c.lineTo(tx(wlEndX) - arrowSize * 1.5, ty(arrowY) + arrowSize);
+    c.fill();
+
+    // Label
+    c.font = `500 ${ts(14)}px "DM Sans", sans-serif`;
+    c.fillStyle = 'rgba(255,109,0,0.7)';
+    c.textAlign = 'center';
+    c.textBaseline = 'top';
+    c.fillText(T('wavelengthLabel'), tx((wlStartX + wlEndX) / 2), ty(arrowY) + ts(6));
+    c.textBaseline = 'middle';
+  }
+
+  if (state.step === 4) {
+    drawPhaseDial();
+  }
+}
+
+function drawPhaseDial() {
+  const c = ctx;
+  const cx = tx(940), cy = ty(80);
+  const r = ts(30);
+  const phi = state.phaseDeg * Math.PI / 180;
+
+  // Dial background
+  c.beginPath();
+  c.arc(cx, cy, r, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(255,255,255,0.8)';
+  c.fill();
+  c.strokeStyle = 'rgba(69,90,100,0.2)';
+  c.lineWidth = ts(1.5);
+  c.stroke();
+
+  // Tick marks at 0, 90, 180, 270
+  for (let deg = 0; deg < 360; deg += 90) {
+    const a = deg * Math.PI / 180 - Math.PI / 2;
+    c.beginPath();
+    c.moveTo(cx + Math.cos(a) * r * 0.8, cy + Math.sin(a) * r * 0.8);
+    c.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    c.strokeStyle = 'rgba(69,90,100,0.3)';
+    c.lineWidth = ts(1);
+    c.stroke();
+  }
+
+  // Wave A reference (fixed at 12 o'clock)
+  const refAngle = -Math.PI / 2;
+  c.beginPath();
+  c.moveTo(cx, cy);
+  c.lineTo(cx + Math.cos(refAngle) * r * 0.65, cy + Math.sin(refAngle) * r * 0.65);
+  c.strokeStyle = `rgba(${ROW_A.col.r},${ROW_A.col.g},${ROW_A.col.b},0.7)`;
+  c.lineWidth = ts(2.5);
+  c.stroke();
+
+  // Wave B hand (rotated by phase)
+  const bAngle = -Math.PI / 2 + phi;
+  c.beginPath();
+  c.moveTo(cx, cy);
+  c.lineTo(cx + Math.cos(bAngle) * r * 0.65, cy + Math.sin(bAngle) * r * 0.65);
+  c.strokeStyle = `rgba(${ROW_B.col.r},${ROW_B.col.g},${ROW_B.col.b},0.7)`;
+  c.lineWidth = ts(2.5);
+  c.stroke();
+
+  // Phase arc
+  if (state.phaseDeg > 0 && state.phaseDeg < 360) {
+    c.beginPath();
+    c.arc(cx, cy, r * 0.4, -Math.PI / 2, -Math.PI / 2 + phi, false);
+    c.strokeStyle = 'rgba(69,90,100,0.3)';
+    c.lineWidth = ts(1.5);
+    c.stroke();
+  }
+
+  // Degree label
+  c.font = `700 ${ts(11)}px "DM Mono", monospace`;
+  c.fillStyle = 'rgba(69,90,100,0.6)';
+  c.textAlign = 'center';
+  c.textBaseline = 'top';
+  c.fillText(state.phaseDeg + '\u00B0', cx, cy + r + ts(4));
+}
+
+function drawScene(now) {
+  drawBackground();
+  drawRowLabels();
+
+  const t = now;
+
+  if (state.step >= 2) {
+    // Fixed scale so all three waves are visually proportional.
+    // Changing any amplitude slider visibly affects all wave heights.
+    drawWave(ROW_A.y, waveA, ROW_A.col, t, 1, AMP_SCALE);
+    drawWave(ROW_B.y, waveB, ROW_B.col, t, 1, AMP_SCALE);
+    drawWave(ROW_SUM.y, waveCombined, ROW_SUM.col, t, 1, AMP_SCALE);
+
+    // Amplitude indicators on each wave
+    const col = ROW_SUM.col;
+    ctx.font = `700 ${ts(14)}px "DM Mono", monospace`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = `rgba(${ROW_A.col.r},${ROW_A.col.g},${ROW_A.col.b},0.5)`;
+    ctx.fillText(state.ampA, tx(WAVE_X_END + 40), ty(ROW_A.y));
+
+    ctx.fillStyle = `rgba(${ROW_B.col.r},${ROW_B.col.g},${ROW_B.col.b},0.5)`;
+    ctx.fillText(state.ampB, tx(WAVE_X_END + 40), ty(ROW_B.y));
+
+    ctx.fillStyle = `rgba(${col.r},${col.g},${col.b},0.5)`;
+    ctx.fillText(combinedAmplitude().toFixed(1), tx(WAVE_X_END + 40), ty(ROW_SUM.y));
+
+    ctx.textAlign = 'center';
+  } else {
+    // Step 1: only Wave A, fills the row on its own
+    const ampScale = Math.max(state.ampA, 0.01);
+    drawWave(ROW_A.y, waveA, ROW_A.col, t, 1, ampScale);
+  }
+
+  drawAnnotations(t);
+  drawCrosshair(t);
+}
+
+// ══════════════════════════════════════════════
+// ANIMATION LOOP
+// ══════════════════════════════════════════════
+let lastTime = 0;
+
+function animate(now) {
+  now /= 1000;
+  const dt = lastTime ? Math.min(now - lastTime, 0.05) : 0;
+  lastTime = now;
+
+  if (state.playing) {
+    state.frozenTime += dt;
+  }
+
+  drawScene(state.frozenTime);
+  requestAnimationFrame(animate);
+}
+
+// ══════════════════════════════════════════════
+// INFO TEXT
+// ══════════════════════════════════════════════
+function updateInfoText() {
+  const el = document.getElementById('infoText');
+  const phi = state.phaseDeg;
+
+  if (state.step === 1) {
+    el.innerHTML = T('infoStep1');
+  } else if (state.step === 2) {
+    if (phi === 0) {
+      el.innerHTML = T('infoStep2') + '<br><br>' + T('infoStep2Phase0');
+    } else {
+      el.innerHTML = T('infoStep2');
+    }
+  } else if (state.step === 3) {
+    if (phi === 0) {
+      el.innerHTML = T('infoStep3Constructive');
+    } else if (phi === 180) {
+      el.innerHTML = T('infoStep3Destructive');
+    } else {
+      el.innerHTML = T('infoStep3Partial');
+    }
+  } else if (state.step === 4) {
+    const Aa = state.ampA, Ab = state.ampB;
+    const ratio = combinedAmplitude().toFixed(1);
+
+    let qualifier;
+    if (phi === 0) qualifier = T('infoStep4Full');
+    else if (phi === 180 && Math.abs(Aa - Ab) < 0.05) qualifier = T('infoStep4Zero');
+    else qualifier = T('infoStep4Partial');
+
+    const phaseText = T('infoStep4Phase')
+      .replace('{0}', phi)
+      .replace('{1}', ratio)
+      .replace('{2}', qualifier);
+
+    el.innerHTML = T('infoStep4Explore') + '<br><br>' + phaseText + '<br><br>' + T('infoStep4Bridge');
+  }
+}
+
+// ══════════════════════════════════════════════
+// CONTROLS
+// ══════════════════════════════════════════════
+function setStep(n) {
+  state.step = n;
+
+  // Update step buttons
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('step' + i + 'Btn').classList.toggle('active', i === n);
+  }
+
+  // Show/hide controls based on step
+  const step2Ctrls = [document.getElementById('ampBGroup'), document.getElementById('phaseGroup')];
+  const step3Ctrls = [document.getElementById('presetGroup')];
+
+  step2Ctrls.forEach(el => el.classList.toggle('hidden', n < 2));
+  step3Ctrls.forEach(el => el.classList.toggle('hidden', n < 3));
+
+  updateInfoText();
+}
+
+function setPreset(type) {
+  if (type === 'constructive') {
+    state.phaseDeg = 0;
+  } else {
+    state.phaseDeg = 180;
+  }
+  document.getElementById('phaseSlider').value = state.phaseDeg;
+  document.getElementById('phaseVal').innerHTML = state.phaseDeg + '&deg;';
+
+  // Highlight active preset
+  document.getElementById('presetConBtn').classList.toggle('active', type === 'constructive');
+  document.getElementById('presetDesBtn').classList.toggle('active', type === 'destructive');
+
+  updateInfoText();
+}
+
+function togglePlay() {
+  state.playing = !state.playing;
+  document.getElementById('playBtn').innerHTML = state.playing ? T('pause') : T('play');
+}
+
+// Slider listeners
+document.getElementById('ampASlider').addEventListener('input', e => {
+  state.ampA = +e.target.value;
+  document.getElementById('ampAVal').textContent = state.ampA;
+  updateInfoText();
+});
+
+document.getElementById('ampBSlider').addEventListener('input', e => {
+  state.ampB = +e.target.value;
+  document.getElementById('ampBVal').textContent = state.ampB;
+  updateInfoText();
+});
+
+document.getElementById('wavelengthSlider').addEventListener('input', e => {
+  state.wavelength = +e.target.value;
+  document.getElementById('wavelengthVal').textContent = state.wavelength;
+});
+
+document.getElementById('frequencySlider').addEventListener('input', e => {
+  state.frequency = +e.target.value;
+  document.getElementById('frequencyVal').textContent = state.frequency.toFixed(1) + ' Hz';
+});
+
+document.getElementById('phaseSlider').addEventListener('input', e => {
+  state.phaseDeg = +e.target.value;
+  document.getElementById('phaseVal').innerHTML = e.target.value + '&deg;';
+  // Clear preset highlight
+  document.getElementById('presetConBtn').classList.remove('active');
+  document.getElementById('presetDesBtn').classList.remove('active');
+  if (state.phaseDeg === 0) document.getElementById('presetConBtn').classList.add('active');
+  if (state.phaseDeg === 180) document.getElementById('presetDesBtn').classList.add('active');
+  updateInfoText();
+});
+
+// ══════════════════════════════════════════════
+// DRAGGABLE CROSSHAIR
+// ══════════════════════════════════════════════
+const CROSS_GRAB = 12; // grab radius in screen px
+
+function drawCrosshair(t) {
+  const c = ctx;
+  const showB = state.step >= 2;
+  const rows = showB ? [ROW_A.y, ROW_B.y, ROW_SUM.y] : [ROW_A.y];
+  const ampScale = showB ? AMP_SCALE : Math.max(state.ampA, 0.01);
+  const yTop = rows[0] - ROW_AMP - 10;
+  const yBot = rows[rows.length - 1] + ROW_AMP + 10;
+
+  // Clamp crosshair to wave area
+  const cx = Math.max(WAVE_X_START, Math.min(WAVE_X_END, state.crossX));
+  const cy = Math.max(yTop, Math.min(yBot, state.crossY));
+  state.crossX = cx;
+  state.crossY = cy;
+
+  const sx = tx(cx), sy = ty(cy);
+
+  // Vertical line (full height across all rows)
+  c.strokeStyle = 'rgba(69,90,100,0.4)';
+  c.lineWidth = ts(1);
+  c.setLineDash([ts(4), ts(4)]);
+  c.beginPath();
+  c.moveTo(sx, ty(yTop));
+  c.lineTo(sx, ty(yBot));
+  c.stroke();
+
+  // Horizontal line (across wave area)
+  c.beginPath();
+  c.moveTo(tx(WAVE_X_START), sy);
+  c.lineTo(tx(WAVE_X_END), sy);
+  c.stroke();
+  c.setLineDash([]);
+
+  // Intersection dot
+  c.fillStyle = 'rgba(69,90,100,0.5)';
+  c.beginPath();
+  c.arc(sx, sy, ts(4), 0, Math.PI * 2);
+  c.fill();
+
+  // Read wave values at the crosshair x position
+  const waveFuncs = showB
+    ? [{ fn: waveA, col: ROW_A.col, label: 'A' },
+       { fn: waveB, col: ROW_B.col, label: 'B' },
+       { fn: waveCombined, col: ROW_SUM.col, label: 'A+B' }]
+    : [{ fn: waveA, col: ROW_A.col, label: 'A' }];
+
+  // Draw value dots and labels on each wave at the crosshair x
+  for (let i = 0; i < rows.length; i++) {
+    const rowY = rows[i];
+    const val = waveFuncs[i].fn(cx, t);
+    const disp = (val / ampScale) * ROW_AMP;
+    const dotY = ty(rowY) - ts(disp);
+    const col = waveFuncs[i].col;
+
+    // Dot on the wave
+    c.fillStyle = `rgba(${col.r},${col.g},${col.b},0.9)`;
+    c.beginPath();
+    c.arc(sx, dotY, ts(5), 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = '#fff';
+    c.lineWidth = ts(1.5);
+    c.stroke();
+
+    // Value label
+    const valRounded = Math.round(val * 10) / 10;
+    const labelText = waveFuncs[i].label + '=' + (Number.isInteger(valRounded) ? valRounded.toFixed(0) : valRounded.toFixed(1));
+    c.font = `700 ${ts(12)}px "DM Mono", monospace`;
+    c.fillStyle = `rgba(${col.r},${col.g},${col.b},0.9)`;
+    c.textAlign = 'left';
+    c.textBaseline = 'bottom';
+
+    // Background pill for readability
+    const metrics = c.measureText(labelText);
+    const px = sx + ts(8), py = dotY - ts(4);
+    const pw = metrics.width + ts(8), ph = ts(16);
+    c.fillStyle = 'rgba(255,255,255,0.85)';
+    c.beginPath();
+    c.roundRect(px - ts(4), py - ph + ts(2), pw, ph, ts(3));
+    c.fill();
+
+    c.fillStyle = `rgba(${col.r},${col.g},${col.b},0.9)`;
+    c.fillText(labelText, px, py);
+  }
+
+  // Horizontal line amplitude label (relative to nearest row center)
+  let nearestRow = rows[0], nearestDist = Math.abs(cy - rows[0]);
+  for (const ry of rows) {
+    if (Math.abs(cy - ry) < nearestDist) { nearestRow = ry; nearestDist = Math.abs(cy - ry); }
+  }
+  const hAmpVal = -((cy - nearestRow) / ROW_AMP) * ampScale;
+  const hLabel = (Math.round(hAmpVal * 10) / 10).toFixed(1);
+  c.font = `700 ${ts(11)}px "DM Mono", monospace`;
+  const hlx = tx(WAVE_X_START) - ts(6);
+  c.textAlign = 'right';
+  c.textBaseline = 'middle';
+  // Background
+  const hMetrics = c.measureText(hLabel);
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  c.fillRect(hlx - hMetrics.width - ts(6), sy - ts(7), hMetrics.width + ts(8), ts(14));
+  c.fillStyle = 'rgba(69,90,100,0.7)';
+  c.fillText(hLabel, hlx, sy);
+  c.textAlign = 'center';
+}
+
+// Convert screen coords to logical coords
+function screenToLogical(screenX, screenY) {
+  const rect = canvas.getBoundingClientRect();
+  const px = screenX - rect.left;
+  const py = screenY - rect.top;
+  return { x: (px - ox) / scale, y: (py - oy) / scale };
+}
+
+function getCrosshairHit(screenX, screenY) {
+  const rect = canvas.getBoundingClientRect();
+  const px = screenX - rect.left;
+  const py = screenY - rect.top;
+  const sx = tx(state.crossX), sy = ty(state.crossY);
+
+  const distV = Math.abs(px - sx);
+  const distH = Math.abs(py - sy);
+
+  // Prefer whichever line is closer, within grab radius
+  if (distV <= CROSS_GRAB && distH <= CROSS_GRAB) return 'both';
+  if (distV <= CROSS_GRAB) return 'vertical';
+  if (distH <= CROSS_GRAB) return 'horizontal';
+  return null;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const hit = getCrosshairHit(e.clientX, e.clientY);
+  if (hit) {
+    state.dragging = hit;
+    canvas.style.cursor = hit === 'horizontal' ? 'ns-resize' : hit === 'vertical' ? 'ew-resize' : 'move';
+    e.preventDefault();
+  }
+});
+
+window.addEventListener('mousemove', e => {
+  if (state.dragging) {
+    const lp = screenToLogical(e.clientX, e.clientY);
+    if (state.dragging === 'vertical' || state.dragging === 'both') state.crossX = lp.x;
+    if (state.dragging === 'horizontal' || state.dragging === 'both') state.crossY = lp.y;
+    e.preventDefault();
+  } else {
+    const hit = getCrosshairHit(e.clientX, e.clientY);
+    canvas.style.cursor = hit === 'horizontal' ? 'ns-resize' : hit === 'vertical' ? 'ew-resize' : hit === 'both' ? 'move' : 'default';
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  state.dragging = null;
+  canvas.style.cursor = 'default';
+});
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+  const touch = e.touches[0];
+  const hit = getCrosshairHit(touch.clientX, touch.clientY);
+  if (hit) {
+    state.dragging = hit;
+    e.preventDefault();
+  }
+}, { passive: false });
+
+window.addEventListener('touchmove', e => {
+  if (state.dragging) {
+    const touch = e.touches[0];
+    const lp = screenToLogical(touch.clientX, touch.clientY);
+    if (state.dragging === 'vertical' || state.dragging === 'both') state.crossX = lp.x;
+    if (state.dragging === 'horizontal' || state.dragging === 'both') state.crossY = lp.y;
+    e.preventDefault();
+  }
+}, { passive: false });
+
+window.addEventListener('touchend', () => { state.dragging = null; });
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+resize();
+setStep(1);
+applyTranslations();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

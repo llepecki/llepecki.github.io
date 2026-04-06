@@ -17,6 +17,10 @@ Visual generator for piano scale patterns. Pick a root note and scale type to se
 
 See how massive objects like black holes and stars bend light from distant stars. Drag the source to discover Einstein rings, arcs, and multiple images.
 
+### [Wave Interference](waveinterference.html)
+
+Discover how waves add up, cancel out, and create interference patterns. A step-by-step introduction to constructive and destructive interference — the foundation for understanding quantum experiments.
+
 ### [Mach-Zehnder Interferometer](mzinterferometer.html)
 
 Fire single photons through a beam-splitter setup and watch quantum interference in action. Adjust the phase shift, block paths, and see how detection statistics reveal wave-particle duality.

@@ -93,6 +93,9 @@
   .type-btn.blocked { border-color: var(--absorbed-color); color: var(--absorbed-color); background: #FFEBEE; }
   .type-btn:hover { background: #F0EDE6; }
 
+  .photon-only { transition: opacity 0.2s; }
+  .photon-only.hidden { opacity: 0.3; pointer-events: none; }
+
   .fire-btn {
     padding: 12px 4px; font-size: 14px; font-weight: 600;
     background: var(--text-head); color: #fff; border: none; border-radius: 10px;
@@ -223,6 +226,14 @@
   <div class="panel">
     <div class="controls">
       <div class="ctrl-group">
+        <span class="ctrl-label" id="lblMode">Mode</span>
+        <div class="type-toggle">
+          <button class="type-btn active" id="contBtn" onclick="setMode('continuous')">Continuous</button>
+          <button class="type-btn" id="photonBtn" onclick="setMode('photon')">Single Photon</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
         <span class="ctrl-label" id="lblPhase">Phase shift</span>
         <div class="slider-row">
           <input type="range" id="phaseSlider" min="0" max="360" value="0" step="5">
@@ -238,7 +249,7 @@
         </div>
       </div>
 
-      <div class="ctrl-group">
+      <div class="ctrl-group photon-only" id="fireGroup">
         <button class="type-btn fire-btn" id="fireBtn" onclick="firePhoton()">Fire Photon</button>
         <div class="type-toggle" style="margin-top:6px">
           <button class="type-btn" id="autoBtn" onclick="toggleAuto()">Auto</button>
@@ -246,16 +257,16 @@
         </div>
       </div>
 
-      <div class="ctrl-group">
+      <div class="ctrl-group photon-only" id="speedGroup">
         <span class="ctrl-label" id="lblSpeed">Speed</span>
         <div class="slider-row">
-          <input type="range" id="speedSlider" min="25" max="300" value="100" step="25">
+          <input type="range" id="speedSlider" min="25" max="900" value="100" step="25">
           <span class="slider-val" id="speedVal">1x</span>
         </div>
       </div>
     </div>
 
-    <div class="stats">
+    <div class="stats photon-only" id="statsSection">
       <span class="ctrl-label" id="lblCounts">Detection counts</span>
       <div class="stat-row">
         <span class="stat-label" style="color:var(--d1-color)">D1</span>
@@ -295,6 +306,7 @@
 // STATE
 // ══════════════════════════════════════════════
 const state = {
+  mode: 'continuous',
   phaseDeg: 0,
   blockA: false,
   blockB: false,
@@ -314,7 +326,10 @@ const state = {
 const I18N = {
   en: {
     title: 'Mach-Zehnder Interferometer',
-    subtitle: 'Fire single photons and discover how one particle can travel two paths at once.',
+    subtitle: 'Explore how light splits, travels two paths, and recombines through interference.',
+    mode: 'Mode',
+    continuous: 'Continuous',
+    singlePhoton: 'Single Photon',
     phaseShift: 'Phase shift',
     blockPath: 'Block path',
     pathA: 'Path A', pathB: 'Path B',
@@ -336,10 +351,19 @@ const I18N = {
     infoPhase90: 'Phase shift = {0}\u00B0 \u2014 the two paths are partly out of sync. Each detector has a 50% chance, like flipping a coin!',
     infoGeneric: 'Phase shift = {0}\u00B0 \u2014 D1 expects ~{1}% of photons. Fire more to see the statistics converge!',
     infoStart: 'Press "Fire Photon" to shoot a photon through the experiment!',
+    infoContinuous0: 'A continuous wave splits at the first splitter, travels both paths, and recombines. At 0\u00B0 phase shift, constructive interference sends all light to D1.',
+    infoContinuous180: 'Phase shift = 180\u00B0 \u2014 the waves cancel at D1 and combine at D2. All light goes to D2!',
+    infoContinuous90: 'Phase shift = {0}\u00B0 \u2014 the waves are partly out of sync. Light splits equally between D1 and D2.',
+    infoContinuousGeneric: 'Phase shift = {0}\u00B0 \u2014 interference sends {1}% of the light to D1 and {2}% to D2.',
+    infoContinuousBlocked: 'With one path blocked, no interference occurs. The remaining wave splits 50/50 at the second splitter.',
+    infoContinuousBothBlocked: 'Both paths blocked \u2014 no light reaches the detectors.',
   },
   pl: {
     title: 'Interferometr Macha-Zehndera',
-    subtitle: 'Wystrzel pojedyncze fotony i odkryj, jak jedna cz\u0105stka mo\u017Ce pod\u0105\u017Ca\u0107 dwiema drogami naraz.',
+    subtitle: 'Odkryj, jak \u015Bwiat\u0142o rozdziela si\u0119, pod\u0105\u017Ca dwiema drogami i \u0142\u0105czy si\u0119 przez interferencj\u0119.',
+    mode: 'Tryb',
+    continuous: 'Ci\u0105g\u0142y',
+    singlePhoton: 'Pojedynczy foton',
     phaseShift: 'Przesuni\u0119cie fazowe',
     blockPath: 'Zablokuj drog\u0119',
     pathA: 'Droga A', pathB: 'Droga B',
@@ -361,6 +385,12 @@ const I18N = {
     infoPhase90: 'Przesuni\u0119cie fazowe = {0}\u00B0 \u2014 dwie drogi s\u0105 cz\u0119\u015Bciowo rozsynchronizowane. Ka\u017Cdy detektor ma 50% szans, jak rzut monet\u0105!',
     infoGeneric: 'Przesuni\u0119cie fazowe = {0}\u00B0 \u2014 D1 oczekuje ~{1}% foton\u00F3w. Wystrzel wi\u0119cej, aby zobaczy\u0107, jak statystyki si\u0119 zbiegaj\u0105!',
     infoStart: 'Naci\u015Bnij "Wystrzel foton", aby wys\u0142a\u0107 foton przez eksperyment!',
+    infoContinuous0: 'Fala ci\u0105g\u0142a rozdziela si\u0119 na pierwszym rozdzielaczu, pod\u0105\u017Ca obiema drogami i \u0142\u0105czy si\u0119 ponownie. Przy przesuni\u0119ciu 0\u00B0 konstruktywna interferencja kieruje ca\u0142e \u015Bwiat\u0142o do D1.',
+    infoContinuous180: 'Przesuni\u0119cie fazowe = 180\u00B0 \u2014 fale znosz\u0105 si\u0119 przy D1 i wzmacniaj\u0105 przy D2. Ca\u0142e \u015Bwiat\u0142o trafia do D2!',
+    infoContinuous90: 'Przesuni\u0119cie fazowe = {0}\u00B0 \u2014 fale s\u0105 cz\u0119\u015Bciowo rozsynchronizowane. \u015Awiat\u0142o dzieli si\u0119 r\u00F3wno mi\u0119dzy D1 i D2.',
+    infoContinuousGeneric: 'Przesuni\u0119cie fazowe = {0}\u00B0 \u2014 interferencja kieruje {1}% \u015Bwiat\u0142a do D1 i {2}% do D2.',
+    infoContinuousBlocked: 'Przy zablokowanej jednej drodze interferencja nie zachodzi. Pozosta\u0142a fala dzieli si\u0119 50/50 na drugim rozdzielaczu.',
+    infoContinuousBothBlocked: 'Obie drogi zablokowane \u2014 \u017Cadne \u015Bwiat\u0142o nie dociera do detektor\u00F3w.',
   },
 };
 
@@ -372,6 +402,11 @@ function applyTranslations() {
   document.documentElement.lang = state.lang;
   document.getElementById('titleText').textContent = l.title;
   document.getElementById('subtitleText').textContent = l.subtitle;
+  document.getElementById('lblMode').textContent = l.mode;
+  document.getElementById('contBtn').textContent = l.continuous;
+  document.getElementById('photonBtn').textContent = l.singlePhoton;
+  document.getElementById('contBtn').classList.toggle('active', state.mode === 'continuous');
+  document.getElementById('photonBtn').classList.toggle('active', state.mode === 'photon');
   document.getElementById('lblPhase').textContent = l.phaseShift;
   document.getElementById('lblBlock').textContent = l.blockPath;
   document.getElementById('blockABtn').textContent = l.pathA;
@@ -505,6 +540,7 @@ function computeDetection() {
 const PHASE_DURATIONS = { entry: 0.4, split: 1.6, recombine: 0.1, detect: 0.4, flash: 0.35 };
 
 function firePhoton() {
+  if (state.mode === 'continuous') return;
   const p = {
     phase: 'entry',
     t: 0,
@@ -772,8 +808,8 @@ function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
 
   // Gaussian wave packet: oscillating filled ribbon, brightest at center, fading both ways
   const N = 60;                    // sample points across the packet
-  const halfLen = ts(70);          // half-length of the packet along travel dir
-  const waveAmp = ts(14) * amplitude; // max perpendicular oscillation
+  const halfLen = ts(35);          // half-length of the packet along travel dir
+  const waveAmp = ts(7) * amplitude; // max perpendicular oscillation
   const sigma = halfLen * 0.38;    // gaussian width
 
   // Build upper and lower envelope points
@@ -817,7 +853,7 @@ function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
   c.stroke();
 
   // Soft glow along the center axis
-  const glowR = ts(18) * amplitude;
+  const glowR = ts(9) * amplitude;
   const glow = c.createRadialGradient(px, py, 0, px, py, glowR);
   glow.addColorStop(0, `rgba(${cr},${cg},${cb},${0.45 * amplitude})`);
   glow.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
@@ -896,6 +932,117 @@ function drawPhotonPhase(p, now) {
 }
 
 // ══════════════════════════════════════════════
+// DRAWING — CONTINUOUS WAVE MODE
+// ══════════════════════════════════════════════
+function drawContinuousWaveOnPath(path, now, color, amplitude, phaseOffset) {
+  if (amplitude < 0.01) return;
+  const c = ctx;
+  const totalLen = pathLength(path);
+  const N = 500;
+  const waveAmp = ts(10) * amplitude;
+  const k = 0.25;       // spatial frequency (logical units)
+  const omega = 8;       // temporal frequency
+
+  const upper = [], lower = [], center = [];
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    const pos = posOnPath(path, t);
+    const dist = t * totalLen;
+    const perpx = -pos.dy, perpy = pos.dx;
+    const osc = Math.sin(k * dist - omega * now + phaseOffset);
+    const cx = tx(pos.x), cy = ty(pos.y);
+    const offx = perpx * osc * waveAmp * scale;
+    const offy = perpy * osc * waveAmp * scale;
+    upper.push({ x: cx + offx, y: cy + offy });
+    lower.push({ x: cx - offx, y: cy - offy });
+    center.push({ x: cx + offx, y: cy + offy });
+  }
+
+  // Filled ribbon
+  c.beginPath();
+  c.moveTo(upper[0].x, upper[0].y);
+  for (let i = 1; i <= N; i++) c.lineTo(upper[i].x, upper[i].y);
+  for (let i = N; i >= 0; i--) c.lineTo(lower[i].x, lower[i].y);
+  c.closePath();
+  c.fillStyle = `rgba(${color.r},${color.g},${color.b},${0.12 * amplitude})`;
+  c.fill();
+
+  // Center stroke
+  c.beginPath();
+  c.moveTo(center[0].x, center[0].y);
+  for (let i = 1; i <= N; i++) c.lineTo(center[i].x, center[i].y);
+  c.strokeStyle = `rgba(${color.r},${color.g},${color.b},${0.6 * amplitude})`;
+  c.lineWidth = ts(2.5);
+  c.stroke();
+}
+
+function drawContinuousWaves(now) {
+  const phi = state.phaseDeg * Math.PI / 180;
+  const pD1 = Math.cos(phi / 2) ** 2;
+  const pD2 = Math.sin(phi / 2) ** 2;
+
+  // Entry: Source → BS1
+  drawContinuousWaveOnPath(PATH_ENTRY, now, COL_SOURCE, 1.0, 0);
+
+  // Path A: BS1 → M1 → BS2
+  if (!state.blockA) {
+    drawContinuousWaveOnPath(PATH_A, now, COL_ARM_A, 0.7, 0);
+  }
+
+  // Path B: BS1 → M2 → BS2
+  if (!state.blockB) {
+    drawContinuousWaveOnPath(PATH_B, now, COL_ARM_B, 0.7, phi);
+  }
+
+  // Output paths
+  if (state.blockA && state.blockB) {
+    // Both blocked — no output
+  } else if (state.blockA || state.blockB) {
+    // One blocked — no interference, 50/50
+    drawContinuousWaveOnPath(PATH_D1, now, { r: 41, g: 121, b: 255 }, 0.5, 0);
+    drawContinuousWaveOnPath(PATH_D2, now, { r: 229, g: 57, b: 53 }, 0.5, 0);
+  } else {
+    // Both open — interference
+    const ampD1 = Math.sqrt(pD1);
+    const ampD2 = Math.sqrt(pD2);
+    if (ampD1 > 0.01) {
+      drawContinuousWaveOnPath(PATH_D1, now, { r: 41, g: 121, b: 255 }, ampD1, 0);
+    }
+    if (ampD2 > 0.01) {
+      drawContinuousWaveOnPath(PATH_D2, now, { r: 229, g: 57, b: 53 }, ampD2, 0);
+    }
+  }
+}
+
+function drawDetectorGlow(x, y, color, intensity) {
+  if (intensity < 0.01) return;
+  const c = ctx;
+  const cx = tx(x), cy = ty(y);
+  const r = ts(55) * intensity;
+  const g = c.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, `rgba(${color},${intensity * 0.5})`);
+  g.addColorStop(0.5, `rgba(${color},${intensity * 0.2})`);
+  g.addColorStop(1, `rgba(${color},0)`);
+  c.fillStyle = g;
+  c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
+}
+
+function drawContinuousDetectors() {
+  const phi = state.phaseDeg * Math.PI / 180;
+  let intD1, intD2;
+  if (state.blockA && state.blockB) {
+    intD1 = 0; intD2 = 0;
+  } else if (state.blockA || state.blockB) {
+    intD1 = 0.5; intD2 = 0.5;
+  } else {
+    intD1 = Math.cos(phi / 2) ** 2;
+    intD2 = Math.sin(phi / 2) ** 2;
+  }
+  drawDetectorGlow(MZ.d1.x, MZ.d1.y, '41,121,255', intD1);
+  drawDetectorGlow(MZ.d2.x, MZ.d2.y, '229,57,53', intD2);
+}
+
+// ══════════════════════════════════════════════
 // ANIMATION LOOP
 // ══════════════════════════════════════════════
 let lastTime = 0;
@@ -908,24 +1055,31 @@ function animate(now) {
   const dt = rawDt * state.speed;
   lastTime = now;
 
-  // Update photons
-  for (let i = state.photons.length - 1; i >= 0; i--) {
-    updatePhoton(state.photons[i], dt);
-    if (state.photons[i].phase === 'done') state.photons.splice(i, 1);
-  }
+  if (state.mode === 'photon') {
+    // Update photons
+    for (let i = state.photons.length - 1; i >= 0; i--) {
+      updatePhoton(state.photons[i], dt);
+      if (state.photons[i].phase === 'done') state.photons.splice(i, 1);
+    }
 
-  // Auto-fire
-  if (state.autoFire) {
-    autoTimer += rawDt;
-    if (autoTimer >= AUTO_DELAY / state.speed && state.photons.length < 3) {
-      firePhoton();
-      autoTimer = 0;
+    // Auto-fire
+    if (state.autoFire) {
+      autoTimer += rawDt;
+      if (autoTimer >= AUTO_DELAY / state.speed && state.photons.length < 1) {
+        firePhoton();
+        autoTimer = 0;
+      }
     }
   }
 
   // Draw
   drawDiagram();
-  for (const p of state.photons) drawPhotonPhase(p, now);
+  if (state.mode === 'continuous') {
+    drawContinuousWaves(now);
+    drawContinuousDetectors();
+  } else {
+    for (const p of state.photons) drawPhotonPhase(p, now);
+  }
 
   requestAnimationFrame(animate);
 }
@@ -933,6 +1087,22 @@ function animate(now) {
 // ══════════════════════════════════════════════
 // CONTROLS
 // ══════════════════════════════════════════════
+function setMode(mode) {
+  state.mode = mode;
+  document.getElementById('contBtn').classList.toggle('active', mode === 'continuous');
+  document.getElementById('photonBtn').classList.toggle('active', mode === 'photon');
+  const hidden = mode === 'continuous';
+  document.querySelectorAll('.photon-only').forEach(el => el.classList.toggle('hidden', hidden));
+  if (mode === 'continuous' && state.autoFire) {
+    state.autoFire = false;
+    autoTimer = 0;
+    document.getElementById('autoBtn').classList.remove('active');
+    document.getElementById('fireBtn').classList.remove('auto-active');
+  }
+  state.photons = [];
+  updateInfoText();
+}
+
 document.getElementById('phaseSlider').addEventListener('input', e => {
   state.phaseDeg = +e.target.value;
   document.getElementById('phaseVal').innerHTML = e.target.value + '&deg;';
@@ -1023,6 +1193,28 @@ function updateExpected() {
 }
 
 function updateInfoText() {
+  if (state.mode === 'continuous') {
+    const phi = state.phaseDeg;
+    const phiRad = phi * Math.PI / 180;
+    let text;
+    if (state.blockA && state.blockB) {
+      text = T('infoContinuousBothBlocked');
+    } else if (state.blockA || state.blockB) {
+      text = T('infoContinuousBlocked');
+    } else if (phi === 0) {
+      text = T('infoContinuous0');
+    } else if (phi === 180) {
+      text = T('infoContinuous180');
+    } else if (phi === 90 || phi === 270) {
+      text = T('infoContinuous90').replace('{0}', phi);
+    } else {
+      const pD1 = (Math.cos(phiRad / 2) ** 2 * 100).toFixed(0);
+      const pD2 = (Math.sin(phiRad / 2) ** 2 * 100).toFixed(0);
+      text = T('infoContinuousGeneric').replace('{0}', phi).replace('{1}', pD1).replace('{2}', pD2);
+    }
+    document.getElementById('infoText').textContent = text;
+    return;
+  }
   if (!state.hasFired) {
     document.getElementById('infoText').textContent = T('infoStart');
     return;
@@ -1051,7 +1243,7 @@ function updateInfoText() {
 // ══════════════════════════════════════════════
 resize();
 updateExpected();
-document.getElementById('infoText').textContent = T('infoStart');
+setMode('continuous');
 requestAnimationFrame(animate);
 </script>
 </body>
