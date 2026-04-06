@@ -25,6 +25,10 @@ Discover how waves add up, cancel out, and create interference patterns. A step-
 
 Fire single photons through a beam-splitter setup and watch quantum interference in action. Adjust the phase shift, block paths, and see how detection statistics reveal wave-particle duality.
 
+### [Gravity Assist Simulator](gravassist.html)
+
+See how spacecraft use a planet's gravity and motion to speed up or slow down without fuel. Toggle between reference frames to discover how the slingshot maneuver really works.
+
 ### [Double-Slit Experiment](doubleslit.html)
 
 Fire single photons at a barrier with slits and watch an interference pattern build up one dot at a time. Switch between one and two slits to see the difference.

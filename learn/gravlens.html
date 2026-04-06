@@ -29,7 +29,9 @@
   header {
     padding: 20px 28px 16px;
     border-bottom: 1px solid var(--panel-border);
+    display: flex; align-items: flex-start; gap: 12px;
   }
+  .header-text { flex: 1; }
   header h1 { font-size: 22px; font-weight: 700; }
   header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 
@@ -46,7 +48,7 @@
   .bottom { display: flex; flex: 1; min-height: 0; }
 
   .controls {
-    width: 200px; flex-shrink: 0;
+    width: 280px; flex-shrink: 0;
     padding: 20px;
     border-right: 1px solid var(--panel-border);
     display: flex; flex-direction: column; gap: 20px;
@@ -60,7 +62,14 @@
     color: var(--text-dim);
   }
 
-  .type-toggle { display: flex; gap: 6px; }
+  .lang-btn {
+    background: none; border: 1px solid var(--panel-border); border-radius: 4px;
+    padding: 3px 4px; cursor: pointer; flex-shrink: 0;
+    transition: border-color 0.15s; line-height: 0; align-self: center;
+  }
+  .lang-btn:hover { border-color: var(--accent); }
+  .lang-btn svg { display: block; }
+
   .type-btn {
     flex: 1; padding: 8px 4px; border-radius: 6px;
     border: 1.5px solid var(--panel-border);
@@ -71,7 +80,18 @@
   .type-btn.active { border-color: var(--accent); color: var(--accent); }
   .type-btn:hover { border-color: var(--accent); }
 
-  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row { display: flex; align-items: center; gap: 4px; }
+  .step-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace; font-size: 16px; line-height: 1;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .step-btn:active { background: var(--accent); color: var(--bg); }
   .slider-row input[type=range] {
     flex: 1; -webkit-appearance: none; appearance: none;
     height: 4px; background: var(--panel-border); border-radius: 2px; outline: none;
@@ -124,8 +144,13 @@
 <body>
 
 <header>
-  <h1>🔭 Gravitational Lens Simulator</h1>
-  <p>Massive objects bend light from distant stars. Drag the source star to see Einstein rings, arcs, and multiple images.</p>
+  <div class="header-text">
+    <h1><span style="font-size:18px;line-height:1">🔭</span> <span id="titleText">Gravitational Lens Simulator</span></h1>
+    <p id="subtitleText">A massive object bends light from a distant source. Drag the source to see Einstein rings, arcs, and multiple images.</p>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">
+    <svg width="28" height="20" viewBox="0 0 28 20" id="langFlag"><rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/></svg>
+  </button>
 </header>
 
 <div class="main">
@@ -136,42 +161,41 @@
   <div class="bottom">
     <div class="controls">
       <div class="ctrl-group">
-        <span class="ctrl-label">Lens type</span>
-        <div class="type-toggle">
-          <button class="type-btn active" data-type="blackhole" onclick="setLensType('blackhole')">Black hole</button>
-          <button class="type-btn" data-type="star" onclick="setLensType('star')">Star</button>
-        </div>
-      </div>
-
-      <div class="ctrl-group">
-        <span class="ctrl-label">Mass</span>
+        <span class="ctrl-label" id="lblMass">Black hole mass</span>
         <div class="slider-row">
-          <input type="range" id="massSlider" min="1" max="50" value="15" step="1">
+          <button class="step-btn" onclick="stepSlider('mass',-1)">&minus;</button>
+          <input type="range" id="massSlider" min="0" max="50" value="15" step="1">
+          <button class="step-btn" onclick="stepSlider('mass',1)">+</button>
           <span class="slider-val" id="massVal">15</span>
         </div>
       </div>
 
       <div class="ctrl-group">
-        <span class="ctrl-label">Source size</span>
+        <span class="ctrl-label" id="lblSize">Source size</span>
         <div class="slider-row">
+          <button class="step-btn" onclick="stepSlider('size',-1)">&minus;</button>
           <input type="range" id="sizeSlider" min="2" max="20" value="8" step="1">
+          <button class="step-btn" onclick="stepSlider('size',1)">+</button>
           <span class="slider-val" id="sizeVal">8</span>
         </div>
       </div>
 
       <div class="ctrl-group">
-        <button class="type-btn active" id="lensToggle" onclick="toggleLens()">Lens ON</button>
+        <span class="ctrl-label" id="lblDisplay">Display</span>
         <button class="type-btn" id="raysToggle" onclick="toggleRays()">Rays</button>
       </div>
 
       <div class="ctrl-group info-text">
         <span id="infoText">Align the source with the lens to see an Einstein ring.</span>
+        <span id="geoNote" style="display:block; margin-top:8px; font-size:10px; opacity:0.6;">
+          Observer–lens–source distances are fixed. The Mass slider varies lens mass within this geometry.
+        </span>
       </div>
     </div>
 
     <div class="observer-view">
       <canvas id="obsCanvas"></canvas>
-      <span class="view-label">OBSERVER'S VIEW</span>
+      <span class="view-label" id="lblObsView">OBSERVER'S VIEW</span>
     </div>
   </div>
 </div>
@@ -181,13 +205,87 @@
 // STATE
 // ══════════════════════════════════════════════
 const state = {
-  lensType: 'blackhole',
   mass: 15,
   sourceY: 0,       // source offset from optical axis (normalized, -1 to 1)
   sourceSize: 8,    // source star radius in source-plane units
-  lensOn: true,
   showRays: false,
+  lang: 'en',
 };
+
+function hasLens() { return state.mass > 0; }
+
+// ══════════════════════════════════════════════
+// I18N
+// ══════════════════════════════════════════════
+const I18N = {
+  en: {
+    title: 'Gravitational Lens Simulator',
+    subtitle: 'A massive object bends light from a distant source. Drag the source to see Einstein rings, arcs, and multiple images.',
+    mass: 'Black hole mass',
+    sourceSize: 'Source size',
+    display: 'Display',
+    rays: 'Rays',
+    obsView: "OBSERVER'S VIEW",
+    geoNote: 'Observer\u2013lens\u2013source distances are fixed. The Mass slider varies lens mass within this geometry.',
+    lblObserver: 'OBSERVER',
+    lblLens: 'LENS',
+    lblSource: 'SOURCE',
+    infoNoLens: 'Mass is zero \u2014 no black hole, direct view of the source.',
+    infoNegligible: 'Lens has negligible mass.',
+    infoRing: '\u2728 Perfect alignment \u2014 Einstein ring!',
+    infoArcs: 'Near alignment \u2014 bright arcs visible around the lens.',
+    infoTwo: 'Two distorted images of the source star.',
+    infoFar: 'Source far from lens \u2014 minimal distortion.',
+  },
+  pl: {
+    title: 'Symulator soczewki grawitacyjnej',
+    subtitle: 'Masywny obiekt zakrzywia \u015Bwiat\u0142o z odleg\u0142ego \u017Ar\u00F3d\u0142a. Przeci\u0105gnij \u017Ar\u00F3d\u0142o, aby zobaczy\u0107 pier\u015Bcienie Einsteina, \u0142uki i wielokrotne obrazy.',
+    mass: 'Masa czarnej dziury',
+    sourceSize: 'Rozmiar \u017Ar\u00F3d\u0142a',
+    display: 'Widok',
+    rays: 'Promienie',
+    obsView: 'WIDOK OBSERWATORA',
+    geoNote: 'Odleg\u0142o\u015Bci obserwator\u2013soczewka\u2013\u017Ar\u00F3d\u0142o s\u0105 sta\u0142e. Suwak Masa zmienia mas\u0119 soczewki w tej geometrii.',
+    lblObserver: 'OBSERWATOR',
+    lblLens: 'SOCZEWKA',
+    lblSource: '\u0179R\u00D3D\u0141O',
+    infoNoLens: 'Masa wynosi zero \u2014 brak czarnej dziury, bezpo\u015Bredni widok \u017Ar\u00F3d\u0142a.',
+    infoNegligible: 'Soczewka ma zaniedbywaln\u0105 mas\u0119.',
+    infoRing: '\u2728 Idealne ustawienie \u2014 pier\u015Bcie\u0144 Einsteina!',
+    infoArcs: 'Bliskie ustawienie \u2014 jasne \u0142uki widoczne wok\u00F3\u0142 soczewki.',
+    infoTwo: 'Dwa zniekszta\u0142cone obrazy gwiazdy \u017Ar\u00F3d\u0142owej.',
+    infoFar: '\u0179r\u00F3d\u0142o daleko od soczewki \u2014 minimalne zniekszta\u0142cenie.',
+  },
+};
+
+function T(key) { return I18N[state.lang][key]; }
+
+function applyTranslations() {
+  document.title = T('title');
+  document.documentElement.lang = state.lang;
+  document.getElementById('titleText').textContent = T('title');
+  document.getElementById('subtitleText').textContent = T('subtitle');
+  document.getElementById('lblMass').textContent = T('mass');
+  document.getElementById('lblSize').textContent = T('sourceSize');
+  document.getElementById('lblDisplay').textContent = T('display');
+  document.getElementById('raysToggle').textContent = T('rays');
+  document.getElementById('lblObsView').textContent = T('obsView');
+  document.getElementById('geoNote').textContent = T('geoNote');
+  document.getElementById('raysToggle').classList.toggle('active', state.showRays);
+  updateInfo();
+  render();
+}
+
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'pl' : 'en';
+  const flag = document.getElementById('langFlag');
+  if (state.lang === 'en') {
+    flag.innerHTML = '<rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/>';
+  } else {
+    flag.innerHTML = '<rect width="28" height="20" fill="#012169"/><path d="M0 0L28 20M28 0L0 20" stroke="#fff" stroke-width="3"/><path d="M0 0L28 20M28 0L0 20" stroke="#C8102E" stroke-width="1.5"/><path d="M14 0V20M0 10H28" stroke="#fff" stroke-width="5"/><path d="M14 0V20M0 10H28" stroke="#C8102E" stroke-width="3"/>';
+  }
+  applyTranslations();
+}
 
 // ══════════════════════════════════════════════
 // CANVAS SETUP
@@ -242,7 +340,7 @@ window.addEventListener('resize', resize);
 // PHYSICS
 // ══════════════════════════════════════════════
 function einsteinRadius() {
-  if (!state.lensOn) return 0;
+  if (!hasLens()) return 0;
   // θ_E proportional to sqrt(mass), scaled for visual niceness
   return Math.sqrt(state.mass) * 12;
 }
@@ -250,11 +348,26 @@ function einsteinRadius() {
 // Inverse ray trace: given observed angle (x,y) from lens center,
 // compute source position after removing deflection
 function deflect(ox, oy, thetaE) {
-  const r2 = ox * ox + oy * oy;
-  if (r2 < 0.01) return { x: ox, y: oy }; // avoid singularity
+  const r2 = Math.max(ox * ox + oy * oy, 0.01);
   const tE2 = thetaE * thetaE;
   const factor = tE2 / r2;
   return { x: ox - ox * factor, y: oy - oy * factor };
+}
+
+// ══════════════════════════════════════════════
+// SHARED LENS GEOMETRY
+// ══════════════════════════════════════════════
+function getLensGeometry() {
+  const xObs = 60, xLens = sideW * 0.45, xSrc = sideW - 80, yAxis = sideH / 2;
+  const Dl = xLens - xObs, Dls = xSrc - xLens, Ds = xSrc - xObs;
+  const ySource = state.sourceY * (sideH * 0.4);
+  return { xObs, xLens, xSrc, yAxis, Dl, Dls, Ds, ySource, ySrcScreen: yAxis + ySource };
+}
+
+function solveImageAngles(beta, thetaE) {
+  if (thetaE <= 0) return [];
+  const disc = Math.sqrt(beta * beta + 4 * thetaE * thetaE);
+  return [0.5 * (beta + disc), 0.5 * (beta - disc)];
 }
 
 // ══════════════════════════════════════════════
@@ -278,11 +391,12 @@ function drawSideView() {
     ctx.fill();
   });
 
-  const midY = h / 2;
-  const obsX = 60;
-  const lensX = w * 0.45;
-  const srcX = w - 80;
-  const srcY = midY + state.sourceY * (h * 0.4);
+  const g = getLensGeometry();
+  const midY = g.yAxis;
+  const obsX = g.xObs;
+  const lensX = g.xLens;
+  const srcX = g.xSrc;
+  const srcY = g.ySrcScreen;
 
   const thetaE = einsteinRadius();
   const eRad = thetaE; // match observer view physics exactly
@@ -298,7 +412,7 @@ function drawSideView() {
   ctx.setLineDash([]);
 
   // Einstein radius circle (dashed)
-  if (state.lensOn) {
+  if (hasLens()) {
   ctx.setLineDash([3, 5]);
   ctx.strokeStyle = 'rgba(88,166,255,0.3)';
   ctx.lineWidth = 1;
@@ -308,54 +422,69 @@ function drawSideView() {
   ctx.setLineDash([]);
   }
 
-  // Light rays — visible with or without lens (no deflection when lens is off)
+  // Light rays: schematic fan showing how gravity bends nearby paths,
+  // with solved image-forming rays drawn prominently on top
   if (state.showRays) {
-  // Thin-lens ray tracing: straight lines with sharp deflection at lens plane
-  const numRays = 50;
-  const maxSpread = h * 0.42;
-  ctx.lineWidth = 0.8;
-  const distLensSrc = srcX - lensX;
-  const distObsLens = lensX - obsX;
+    const distLensSrc = srcX - lensX;
+    const distObsLens = lensX - obsX;
 
-  for (let i = 0; i < numRays; i++) {
-    const t = (i / (numRays - 1)) * 2 - 1; // -1 to 1
-    const rayY = midY + t * maxSpread;
+    if (!hasLens()) {
+      // No lens: direct straight path from source to observer
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255,224,102,0.5)';
+      ctx.beginPath();
+      ctx.moveTo(srcX, srcY);
+      ctx.lineTo(obsX, midY);
+      ctx.stroke();
+    } else {
+      // Schematic ray fan showing deflection across many impact parameters
+      const numRays = 50;
+      const maxSpread = h * 0.42;
+      ctx.lineWidth = 0.8;
 
-    const b = rayY - midY;
-    const bAbs = Math.abs(b);
-    if (state.lensOn && bAbs < 3) continue;
+      for (let i = 0; i < numRays; i++) {
+        const t = (i / (numRays - 1)) * 2 - 1;
+        const rayY = midY + t * maxSpread;
+        const b = rayY - midY;
+        const bAbs = Math.abs(b);
+        if (bAbs < 3) continue;
 
-    // Deflection angle toward axis: α = θ_E² / (b · D_OL) in diagram units
-    const hatAlpha = eRad * eRad / (bAbs * distObsLens);
-    const deflDir = b > 0 ? -1 : 1;
+        const hatAlpha = eRad * eRad / (bAbs * distObsLens);
+        const deflDir = b > 0 ? -1 : 1;
+        const mIn = (rayY - srcY) / distLensSrc;
+        const mOut = mIn + deflDir * hatAlpha;
+        const obsHitY = rayY + mOut * distObsLens;
 
-    // Incoming slope (dy per unit leftward distance, source to lens)
-    const mIn = (rayY - srcY) / distLensSrc;
+        const distToObs = Math.abs(obsHitY - midY);
+        const threshold = maxSpread * 0.4;
+        const alpha = Math.max(0.05, 0.4 * (1 - distToObs / threshold));
+        ctx.strokeStyle = `rgba(255,224,102,${alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(srcX, srcY);
+        ctx.lineTo(lensX, rayY);
+        ctx.lineTo(obsX, obsHitY);
+        ctx.stroke();
+      }
 
-    // Outgoing slope after gravitational deflection at lens plane
-    const mOut = mIn + deflDir * hatAlpha;
-
-    // Where outgoing ray arrives at observer's x-position
-    const obsHitY = rayY + mOut * distObsLens;
-
-    // Brightness: rays closer to the observer position are the "correct" ones
-    const distToObs = Math.abs(obsHitY - midY);
-    const threshold = maxSpread * 0.4;
-
-    // All rays visible faintly; rays reaching the observer glow brighter
-    const alpha = Math.max(0.05, 0.4 * (1 - distToObs / threshold));
-    ctx.strokeStyle = `rgba(255,224,102,${alpha})`;
-    ctx.beginPath();
-    ctx.moveTo(srcX, srcY);
-    ctx.lineTo(lensX, rayY);   // straight incoming ray: source → lens plane
-    ctx.lineTo(obsX, obsHitY); // straight outgoing ray: lens plane → observer
-    ctx.stroke();
-  }
+      // Solved image-forming rays drawn on top
+      const thetaEAng = einsteinRadius() / g.Dl;
+      const beta = g.ySource / g.Ds;
+      const angles = solveImageAngles(beta, thetaEAng);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,224,102,0.9)';
+      angles.forEach((theta) => {
+        const yLens = midY + theta * g.Dl;
+        ctx.beginPath();
+        ctx.moveTo(obsX, midY);
+        ctx.lineTo(lensX, yLens);
+        ctx.lineTo(srcX, srcY);
+        ctx.stroke();
+      });
+    }
   } // end if showRays
 
-  // Lens body — only when lens is on
-  if (state.lensOn) {
-  if (state.lensType === 'blackhole') {
+  // Lens body — only when lens is active
+  if (hasLens()) {
     // Accretion glow
     const glow = ctx.createRadialGradient(lensX, midY, eRad * 0.15, lensX, midY, eRad * 0.7);
     glow.addColorStop(0, 'rgba(255,120,50,0.0)');
@@ -364,7 +493,7 @@ function drawSideView() {
     ctx.fillStyle = glow;
     ctx.fillRect(lensX - eRad, midY - eRad, eRad * 2, eRad * 2);
 
-    // Black hole
+    // Black hole marker
     ctx.beginPath();
     ctx.arc(lensX, midY, 12, 0, Math.PI * 2);
     ctx.fillStyle = '#000';
@@ -372,23 +501,7 @@ function drawSideView() {
     ctx.strokeStyle = 'rgba(255,120,50,0.5)';
     ctx.lineWidth = 2;
     ctx.stroke();
-  } else {
-    // Star glow
-    const glow = ctx.createRadialGradient(lensX, midY, 2, lensX, midY, 30);
-    glow.addColorStop(0, 'rgba(255,240,200,0.9)');
-    glow.addColorStop(0.3, 'rgba(255,200,100,0.4)');
-    glow.addColorStop(1, 'rgba(255,200,100,0.0)');
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(lensX, midY, 30, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(lensX, midY, 8, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffe8b0';
-    ctx.fill();
   }
-  } // end if lensOn
 
   // Source star (scales with source size slider)
   const srcSolidR = Math.max(2, state.sourceSize * 0.6);
@@ -418,12 +531,12 @@ function drawSideView() {
   ctx.font = '10px "Share Tech Mono", monospace';
   ctx.fillStyle = 'rgba(110,122,138,0.8)';
   ctx.textAlign = 'center';
-  ctx.fillText('OBSERVER', obsX, midY + 22);
-  if (state.lensOn) {
-    ctx.fillText('LENS', lensX, midY + eRad + 16);
+  ctx.fillText(T('lblObserver'), obsX, midY + 22);
+  if (hasLens()) {
+    ctx.fillText(T('lblLens'), lensX, midY + eRad + 16);
     ctx.fillText('θ_E', lensX + eRad + 12, midY);
   }
-  ctx.fillText('SOURCE', srcX, srcY + 22);
+  ctx.fillText(T('lblSource'), srcX, srcY + 22);
 
   // Drag arrows to the right of source star (vertical arrangement)
   const arrowX = srcX + srcGlowR + 10;
@@ -482,27 +595,15 @@ function drawObserverView() {
   const srcOffY = state.sourceY * half * 0.8; // source offset in pixel coords
   const srcR = state.sourceSize; // source radius
 
-  // Schwarzschild radius (visual) for black hole
-  const schwarzR = (state.lensOn && state.lensType === 'blackhole') ? Math.sqrt(state.mass) * 2.5 : 0;
-
-  // Adaptive FOV: zoom out so both lensed images fit in the view
-  let fov = 1;
-  if (state.lensOn && thetaE > 0) {
-    const beta = Math.abs(srcOffY);
-    const thetaPlus = (beta + Math.sqrt(beta * beta + 4 * thetaE * thetaE)) / 2;
-    if (thetaPlus > half * 0.75) fov = thetaPlus / (half * 0.75);
-  }
-
   // Use ImageData for pixel-level ray tracing (DPR-aware for sharp output)
   const dpr = window.devicePixelRatio || 1;
   const res = Math.min(Math.round(size * dpr), 600);
   const imgData = ctx.createImageData(res, res);
   const data = imgData.data;
   const resHalf = res / 2;
-  const thetaEScaled = thetaE * res / (size * fov);
-  const srcOffYScaled = srcOffY * res / (size * fov);
-  const srcRScaled = Math.max(srcR * res / (size * fov), 0.8);
-  const schwarzRScaled = schwarzR * res / (size * fov);
+  const thetaEScaled = thetaE * res / size;
+  const srcOffYScaled = srcOffY * res / size;
+  const srcRScaled = Math.max(srcR * res / size, 0.8);
 
   for (let py = 0; py < res; py++) {
     for (let px = 0; px < res; px++) {
@@ -512,12 +613,6 @@ function drawObserverView() {
 
       // Circular mask
       if (distFromCenter > resHalf) continue;
-
-      // Black hole shadow
-      if (schwarzRScaled > 0 && distFromCenter < schwarzRScaled) {
-        // Pure black inside event horizon
-        continue;
-      }
 
       // Apply gravitational deflection
       const src = deflect(ox, oy, thetaEScaled);
@@ -550,44 +645,13 @@ function drawObserverView() {
   ctx.imageSmoothingEnabled = true;
   ctx.drawImage(tempCanvas, 0, 0, size, size);
 
-  // Lens body in center of observer view
-  if (state.lensOn) {
-    if (state.lensType === 'blackhole') {
-      // Subtle glow ring (scaled by FOV)
-      const sR = schwarzR / fov;
-      const glow = ctx.createRadialGradient(half, half, sR * 0.8, half, half, sR * 2);
-      glow.addColorStop(0, 'rgba(255,120,50,0.0)');
-      glow.addColorStop(0.5, 'rgba(255,120,50,0.08)');
-      glow.addColorStop(1, 'rgba(255,120,50,0.0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(half, half, sR * 2, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      // Lens star in center
-      const starGlow = ctx.createRadialGradient(half, half, 1, half, half, 15);
-      starGlow.addColorStop(0, 'rgba(255,240,200,0.7)');
-      starGlow.addColorStop(0.4, 'rgba(255,200,100,0.2)');
-      starGlow.addColorStop(1, 'rgba(255,200,100,0.0)');
-      ctx.fillStyle = starGlow;
-      ctx.beginPath();
-      ctx.arc(half, half, 15, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(half, half, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffe8b0';
-      ctx.fill();
-    }
-  }
-
   // Einstein radius ring (subtle guide)
-  if (state.lensOn && thetaE > 0) {
+  if (hasLens() && thetaE > 0) {
     ctx.setLineDash([3, 5]);
     ctx.strokeStyle = 'rgba(88,166,255,0.15)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(half, half, thetaE / fov, 0, Math.PI * 2);
+    ctx.arc(half, half, thetaE, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
   }
@@ -615,20 +679,20 @@ function updateInfo() {
   const half = obsSize / 2;
   const srcOff = Math.abs(state.sourceY) * half * 0.8;
   let text;
-  if (!state.lensOn) {
-    text = 'No lens — direct view of the source star.';
+  if (!hasLens()) {
+    text = T('infoNoLens');
   } else if (thetaE < 1) {
-    text = 'Lens has negligible mass.';
+    text = T('infoNegligible');
   } else {
     const ratio = srcOff / thetaE;
     if (ratio < 0.05) {
-      text = '✨ Perfect alignment — Einstein ring!';
+      text = T('infoRing');
     } else if (ratio < 0.5) {
-      text = 'Near alignment — bright arcs visible around the lens.';
+      text = T('infoArcs');
     } else if (ratio < 1.5) {
-      text = 'Two distorted images of the source star.';
+      text = T('infoTwo');
     } else {
-      text = 'Source far from lens — minimal distortion.';
+      text = T('infoFar');
     }
   }
   document.getElementById('infoText').textContent = text;
@@ -637,19 +701,11 @@ function updateInfo() {
 // ══════════════════════════════════════════════
 // INTERACTION
 // ══════════════════════════════════════════════
-function setLensType(type) {
-  state.lensType = type;
-  document.querySelectorAll('.type-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.type === type));
-  render();
-}
-
-function toggleLens() {
-  state.lensOn = !state.lensOn;
-  const btn = document.getElementById('lensToggle');
-  btn.textContent = state.lensOn ? 'Lens ON' : 'Lens OFF';
-  btn.classList.toggle('active', state.lensOn);
-  render();
+function stepSlider(name, dir) {
+  const slider = document.getElementById(name + 'Slider');
+  const val = Math.min(+slider.max, Math.max(+slider.min, +slider.value + dir * +slider.step));
+  slider.value = val;
+  slider.dispatchEvent(new Event('input'));
 }
 
 function toggleRays() {

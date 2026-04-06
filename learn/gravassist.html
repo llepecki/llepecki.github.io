@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Gravity Assist Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f18;
+    --panel: #131825;
+    --panel-border: #1e2a3a;
+    --text: #c9d1d9;
+    --text-dim: #6e7a8a;
+    --accent: #58a6ff;
+    --gain: #3fb950;
+    --loss: #f97583;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Outfit', sans-serif;
+    color: var(--text);
+  }
+
+  header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  header h1 { font-size: 22px; font-weight: 700; }
+  header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
+
+  .main { display: flex; height: calc(100vh - 80px); }
+
+  .canvas-wrap {
+    flex: 1; position: relative;
+    background: #080c14; min-width: 0;
+  }
+  .canvas-wrap canvas { width: 100%; height: 100%; display: block; }
+
+  .controls {
+    width: 240px; flex-shrink: 0;
+    padding: 20px;
+    border-left: 1px solid var(--panel-border);
+    display: flex; flex-direction: column; gap: 18px;
+    overflow-y: auto;
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+
+  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row input[type=range] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 4px; background: var(--panel-border); border-radius: 2px; outline: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+  .slider-row input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+  .slider-val {
+    min-width: 28px; text-align: right;
+    font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text);
+  }
+
+  .type-btn {
+    padding: 10px 4px; border-radius: 6px;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+    width: 100%;
+  }
+  .type-btn:hover { border-color: var(--accent); }
+
+  .readouts { gap: 6px; }
+  .readout-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+  }
+  .readout-label { color: var(--text-dim); }
+  .readout-val { color: var(--text); }
+
+  .boost-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid var(--panel-border);
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .boost-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+  .boost-val {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 20px; font-weight: 700;
+  }
+
+  .info-text {
+    font-size: 12px; color: var(--text-dim); line-height: 1.6;
+  }
+
+  @media (max-width: 700px) {
+    .main { flex-direction: column; }
+    .canvas-wrap { min-height: 350px; flex: 1; }
+    .controls {
+      width: 100%; flex-direction: row; flex-wrap: wrap;
+      border-left: none; border-top: 1px solid var(--panel-border);
+      padding: 12px 16px; gap: 12px;
+    }
+    .ctrl-group { min-width: 140px; flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 Gravity Assist Simulator</h1>
+  <p>A moving planet can speed up a spacecraft for free. Increase the planet's speed to see how.</p>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Planet Speed</span>
+      <div class="slider-row">
+        <input type="range" id="planetVelSlider" min="0" max="6" value="0" step="0.5">
+        <span class="slider-val" id="planetVelVal">0</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Planet Mass</span>
+      <div class="slider-row">
+        <input type="range" id="massSlider" min="5" max="50" value="25" step="1">
+        <span class="slider-val" id="massVal">25</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Flyby Distance</span>
+      <div class="slider-row">
+        <input type="range" id="distSlider" min="30" max="200" value="80" step="5">
+        <span class="slider-val" id="distVal">80</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Spacecraft Speed</span>
+      <div class="slider-row">
+        <input type="range" id="speedSlider" min="2" max="10" value="5" step="0.5">
+        <span class="slider-val" id="speedVal">5</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Animation Speed</span>
+      <div class="slider-row">
+        <input type="range" id="animSlider" min="0.2" max="3" value="1" step="0.1">
+        <span class="slider-val" id="animVal">1x</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <button class="type-btn" id="replayBtn" onclick="replay()">Replay</button>
+    </div>
+
+    <div class="ctrl-group readouts">
+      <div class="boost-row">
+        <span class="boost-label">Speed boost</span>
+        <span class="boost-val" id="boostVal">&mdash;</span>
+      </div>
+      <div class="readout-row">
+        <span class="readout-label">Speed in</span>
+        <span class="readout-val" id="speedInVal">&mdash;</span>
+      </div>
+      <div class="readout-row">
+        <span class="readout-label">Speed out</span>
+        <span class="readout-val" id="speedOutVal">&mdash;</span>
+      </div>
+      <div class="readout-row">
+        <span class="readout-label">Deflection</span>
+        <span class="readout-val" id="deflVal">&mdash;</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group info-text">
+      <span id="infoText"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const state = {
+  planetMass: 25,
+  approachSpeed: 5,   // Sun-frame approach speed (stays constant visually)
+  impactParam: 80,
+  planetVel: 0,       // planet orbital speed — THE key slider
+  approachAngle: Math.PI,  // Sun-frame velocity direction (π = leftward = default)
+  vecPfX: 0,          // planet-frame tail x (set by initVecPosition)
+  vecPfY: 0,          // planet-frame tail y (set by initVecPosition)
+  animSpeed: 1,        // animation speed multiplier (0.2x to 3x)
+  playing: false,
+  currentIndex: 0,
+  trajectory: [],     // planet-frame points: [{x, y, vx, vy}]
+  closestIndex: 0,
+  crashed: false,
+  dragMode: null,      // null | 'shaft' | 'tip'
+  vIn: 0,
+  vOut: 0,
+  deltaV: 0,
+  deflectionAngle: 0,
+};
+
+// ══════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════
+const GM_SCALE = 200;
+const V_SCALE = 1.5;
+const START_DIST = 400;
+const SIM_DT = 0.25;
+const MAX_STEPS = 15000;
+const PLANET_RADIUS = 12;
+const ORBIT_R = 1500; // planet orbital radius — gives a gentle visible arc
+
+// ══════════════════════════════════════════════
+// VECTOR POSITION HELPERS
+// ══════════════════════════════════════════════
+
+// Compute vecPfX/vecPfY from current angle + impactParam (used by sliders)
+function initVecPosition() {
+  const vp = state.planetVel * V_SCALE;
+  const vScSun = state.approachSpeed * V_SCALE;
+  const alpha = state.approachAngle;
+  const b = state.impactParam;
+
+  const vPfX = vScSun * Math.cos(alpha) - vp;
+  const vPfY = vScSun * Math.sin(alpha);
+  const alphaPf = Math.atan2(vPfY, vPfX);
+
+  state.vecPfX = -START_DIST * Math.cos(alphaPf) - b * Math.sin(alphaPf);
+  state.vecPfY = -START_DIST * Math.sin(alphaPf) + b * Math.cos(alphaPf);
+}
+
+// Compute impact parameter from current position (perpendicular distance from planet to velocity line)
+function computeImpactParamFromPosition() {
+  const vp = state.planetVel * V_SCALE;
+  const vScSun = state.approachSpeed * V_SCALE;
+  const alpha = state.approachAngle;
+
+  const vPfX = vScSun * Math.cos(alpha) - vp;
+  const vPfY = vScSun * Math.sin(alpha);
+  const vPfMag = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
+  if (vPfMag < 0.001) return;
+
+  const vHatX = vPfX / vPfMag;
+  const vHatY = vPfY / vPfMag;
+  state.impactParam = Math.abs(state.vecPfX * vHatY - state.vecPfY * vHatX);
+}
+
+// ══════════════════════════════════════════════
+// CANVAS SETUP
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+let bgStars = [];
+
+// Stored screen coordinates for drag handle hit-testing
+let handleScreenX = 0, handleScreenY = 0;
+let scStartScreenX = 0, scStartScreenY = 0;
+
+// Camera state exported from drawScene for drag handlers
+let lastScale = 1;
+let cameraFrozen = false;
+let frozenScale = 1, frozenCamX = 0, frozenCamY = 0;
+
+// Drag delta tracking
+let dragPrevX = 0, dragPrevY = 0;
+
+function initBgStars(n) {
+  bgStars = [];
+  for (let i = 0; i < n; i++) {
+    bgStars.push({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.2 + 0.3,
+      b: Math.random() * 0.4 + 0.2,
+    });
+  }
+}
+initBgStars(200);
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  W = rect.width;
+  H = rect.height;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', () => { resize(); });
+
+// ══════════════════════════════════════════════
+// PHYSICS
+// ══════════════════════════════════════════════
+
+// Compute trajectory in the planet's rest frame.
+// The spacecraft speed slider controls Sun-frame speed (v_sc_sun).
+// Approach angle controls the Sun-frame velocity direction.
+// Planet-frame velocity = Sun-frame velocity − planet velocity (vector).
+function computeTrajectory() {
+  const GM = state.planetMass * GM_SCALE;
+  const vp = state.planetVel * V_SCALE;
+  const vScSun = state.approachSpeed * V_SCALE;
+  const alpha = state.approachAngle;
+
+  // Planet-frame velocity (planet moves in +x direction)
+  const vPfX = vScSun * Math.cos(alpha) - vp;
+  const vPfY = vScSun * Math.sin(alpha);
+  const vInfPlanet = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
+  const alphaPf = Math.atan2(vPfY, vPfX);
+  const safePf = Math.max(vInfPlanet, 0.01);
+
+  // Starting position from stored vector position; velocity from approach angle
+  let x = state.vecPfX;
+  let y = state.vecPfY;
+  let vx = safePf * Math.cos(alphaPf);
+  let vy = safePf * Math.sin(alphaPf);
+
+  const points = [];
+  let minDist = Infinity;
+  let closestIdx = 0;
+
+  for (let i = 0; i < MAX_STEPS; i++) {
+    const r = Math.sqrt(x * x + y * y);
+    points.push({ x, y, vx, vy });
+
+    if (r < minDist) { minDist = r; closestIdx = i; }
+    if (r < PLANET_RADIUS * 0.5) break;
+
+    // Adaptive sub-stepping near close approach
+    const substeps = r < 20 ? 32 : r < 40 ? 16 : r < 80 ? 8 : r < 160 ? 4 : 1;
+    const subdt = SIM_DT / substeps;
+
+    for (let s = 0; s < substeps; s++) {
+      const rs = Math.sqrt(x * x + y * y);
+      const rs3 = rs * rs * rs;
+      const ax = -GM * x / rs3;
+      const ay = -GM * y / rs3;
+
+      const x1 = x + vx * subdt + 0.5 * ax * subdt * subdt;
+      const y1 = y + vy * subdt + 0.5 * ay * subdt * subdt;
+      const rs1 = Math.sqrt(x1 * x1 + y1 * y1);
+      const rs1_3 = rs1 * rs1 * rs1;
+      const ax1 = -GM * x1 / rs1_3;
+      const ay1 = -GM * y1 / rs1_3;
+
+      vx += 0.5 * (ax + ax1) * subdt;
+      vy += 0.5 * (ay + ay1) * subdt;
+      x = x1;
+      y = y1;
+    }
+
+    const rEnd = Math.sqrt(x * x + y * y);
+    if (rEnd > START_DIST * 0.9 && i > closestIdx + 50) break;
+  }
+
+  state.trajectory = points;
+  state.closestIndex = closestIdx;
+
+  // Detect crash: did the trajectory end because the spacecraft hit the planet?
+  const lastPt = points[points.length - 1];
+  const lastR = Math.sqrt(lastPt.x * lastPt.x + lastPt.y * lastPt.y);
+  state.crashed = lastR < PLANET_RADIUS;
+
+  computeResults();
+}
+
+function orbitAngle(idx) {
+  const vp = state.planetVel * V_SCALE;
+  const tRel = (idx - state.closestIndex) * SIM_DT;
+  return vp * tRel / ORBIT_R;
+}
+
+function planetPos(idx) {
+  const theta = orbitAngle(idx);
+  return {
+    x: ORBIT_R * Math.sin(theta),
+    y: ORBIT_R * (Math.cos(theta) - 1),
+  };
+}
+
+function toSunFrame(idx) {
+  const p = state.trajectory[idx];
+  const vp = state.planetVel * V_SCALE;
+  const theta = orbitAngle(idx);
+  const pl = planetPos(idx);
+  return {
+    x: p.x + pl.x,
+    y: p.y + pl.y,
+    vx: p.vx + vp * Math.cos(theta),
+    vy: p.vy - vp * Math.sin(theta),
+  };
+}
+
+function computeResults() {
+  const len = state.trajectory.length;
+  if (len < 2) return;
+
+  const sf = toSunFrame(0);
+  const sl = toSunFrame(len - 1);
+
+  state.vIn = Math.sqrt(sf.vx * sf.vx + sf.vy * sf.vy);
+  state.vOut = Math.sqrt(sl.vx * sl.vx + sl.vy * sl.vy);
+  state.deltaV = state.vOut - state.vIn;
+
+  const first = state.trajectory[0];
+  const last = state.trajectory[len - 1];
+  const angIn = Math.atan2(first.vy, first.vx);
+  const angOut = Math.atan2(last.vy, last.vx);
+  let da = (angOut - angIn) * 180 / Math.PI;
+  while (da > 180) da -= 360;
+  while (da < -180) da += 360;
+  state.deflectionAngle = da;
+}
+
+// ══════════════════════════════════════════════
+// RENDERING
+// ══════════════════════════════════════════════
+function drawScene() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, W, H);
+
+  const traj = state.trajectory;
+  if (traj.length < 2) return;
+  const len = traj.length;
+  const idx = Math.min(state.currentIndex, len - 1);
+
+  // ── Camera: fit the full Sun-frame trajectory + planet path ──
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  const sampleStep = Math.max(1, Math.floor(len / 300));
+  for (let i = 0; i < len; i += sampleStep) {
+    const p = toSunFrame(i);
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  const pL = toSunFrame(len - 1);
+  minX = Math.min(minX, pL.x); maxX = Math.max(maxX, pL.x);
+  minY = Math.min(minY, pL.y); maxY = Math.max(maxY, pL.y);
+
+  const plS = planetPos(0);
+  const plE = planetPos(len - 1);
+  minX = Math.min(minX, plS.x, plE.x);
+  maxX = Math.max(maxX, plS.x, plE.x);
+  minY = Math.min(minY, plS.y, plE.y, -30);
+  maxY = Math.max(maxY, plS.y, plE.y, 30);
+
+  const pad = 100;
+  const spanX = (maxX - minX) + 2 * pad;
+  const spanY = (maxY - minY) + 2 * pad;
+  let scale = Math.min(W / spanX, H / spanY);
+  let camX = (minX + maxX) / 2;
+  let camY = (minY + maxY) / 2;
+
+  // Freeze camera during drag to prevent feedback loop
+  if (cameraFrozen) {
+    scale = frozenScale;
+    camX = frozenCamX;
+    camY = frozenCamY;
+  } else {
+    lastScale = scale;
+    frozenCamX = camX;
+    frozenCamY = camY;
+  }
+
+  function tx(x) { return W / 2 + (x - camX) * scale; }
+  function ty(y) { return H / 2 - (y - camY) * scale; }
+
+  // ── Background stars ──
+  bgStars.forEach(s => {
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,210,220,${s.b * 0.3})`;
+    ctx.fill();
+  });
+
+  // ── Planet orbital path (dashed arc) ──
+  const vp = state.planetVel * V_SCALE;
+  if (vp > 0.01) {
+    const thetaS = orbitAngle(0);
+    const thetaE = orbitAngle(len - 1);
+    const arcPad = (thetaE - thetaS) * 0.08;
+    const arcSteps = 60;
+    ctx.setLineDash([4, 6]);
+    ctx.strokeStyle = 'rgba(77,201,246,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= arcSteps; i++) {
+      const t = i / arcSteps;
+      const theta = (thetaS - arcPad) + t * ((thetaE + arcPad) - (thetaS - arcPad));
+      const ax = ORBIT_R * Math.sin(theta);
+      const ay = ORBIT_R * (Math.cos(theta) - 1);
+      if (i === 0) ctx.moveTo(tx(ax), ty(ay));
+      else ctx.lineTo(tx(ax), ty(ay));
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── Ghost planet at start & end positions ──
+  if (vp > 0.01) {
+    [plS, plE].forEach(pl => {
+      ctx.beginPath();
+      ctx.arc(tx(pl.x), ty(pl.y), PLANET_RADIUS * scale * 0.8, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(77,201,246,0.1)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+  }
+
+  // ── Planet at current time (drawn BEFORE trajectory so path renders on top) ──
+  const plNow = planetPos(idx);
+  drawPlanet(tx(plNow.x), ty(plNow.y), scale);
+
+  // ── Planet velocity arrow (tangent to orbit) ──
+  if (vp > 0.01) {
+    const px = tx(plNow.x), py = ty(plNow.y);
+    const pr = Math.max(8, PLANET_RADIUS * scale);
+    const theta = orbitAngle(idx);
+    const tdx = Math.cos(theta);   // tangent direction in sim coords
+    const tdy = -Math.sin(theta);
+    const arrowLen = Math.min(vp * 10, 60);
+    const startX = px + tdx * (pr + 6);
+    const startY = py - tdy * (pr + 6); // flip y for screen
+    const endX = startX + tdx * arrowLen;
+    const endY = startY - tdy * arrowLen;
+    drawArrow(startX, startY, endX, endY,
+      'rgba(77,201,246,0.5)', 1.5, 6);
+    ctx.font = '9px "Share Tech Mono", monospace';
+    ctx.fillStyle = 'rgba(77,201,246,0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText('v\u209A', (startX + endX) / 2 - tdy * 10, (startY + endY) / 2 - tdx * 10);
+  }
+
+  // ── Full trajectory (faint) ──
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(255,224,102,0.08)';
+  ctx.beginPath();
+  for (let i = 0; i < len; i += sampleStep) {
+    const p = toSunFrame(i);
+    if (i === 0) ctx.moveTo(tx(p.x), ty(p.y));
+    else ctx.lineTo(tx(p.x), ty(p.y));
+  }
+  ctx.lineTo(tx(pL.x), ty(pL.y));
+  ctx.stroke();
+
+  // ── Animated trail (bright) ──
+  if (idx > 0) {
+    const trailStep = Math.max(1, Math.floor(idx / 600));
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255,224,102,0.55)';
+    ctx.beginPath();
+    for (let i = 0; i <= idx; i += trailStep) {
+      const p = toSunFrame(i);
+      if (i === 0) ctx.moveTo(tx(p.x), ty(p.y));
+      else ctx.lineTo(tx(p.x), ty(p.y));
+    }
+    const pCur = toSunFrame(idx);
+    ctx.lineTo(tx(pCur.x), ty(pCur.y));
+    ctx.stroke();
+  }
+
+  // ── Spacecraft ──
+  if (idx < len) {
+    const sc = toSunFrame(idx);
+    const screenAngle = Math.atan2(-sc.vy, sc.vx);
+    drawSpacecraft(tx(sc.x), ty(sc.y), screenAngle);
+  }
+
+  // ── Crash overlay ──
+  if (state.crashed && idx >= len - 1) {
+    const plCrash = planetPos(len - 1);
+    const cx = tx(plCrash.x), cy = ty(plCrash.y);
+
+    // Flash glow
+    const boom = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80);
+    boom.addColorStop(0, 'rgba(255,140,50,0.7)');
+    boom.addColorStop(0.3, 'rgba(255,80,30,0.4)');
+    boom.addColorStop(0.7, 'rgba(255,50,20,0.1)');
+    boom.addColorStop(1, 'rgba(255,50,20,0.0)');
+    ctx.fillStyle = boom;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 80, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Boom emoji
+    ctx.font = '36px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\uD83D\uDCA5', cx, cy);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  // ── Velocity arrows at entry and exit (skip on crash) ──
+  if (!state.crashed) {
+    drawVelocityArrows(len, tx, ty);
+  }
+
+  // ── Draggable velocity vector (two zones: shaft = move, tip = rotate) ──
+  {
+    const sf0 = toSunFrame(0);
+    const sx = tx(sf0.x), sy = ty(sf0.y);
+    scStartScreenX = sx;
+    scStartScreenY = sy;
+
+    // Arrow in Sun-frame velocity direction
+    const alpha = state.approachAngle;
+    const arrowLen = 55;
+    const tipX = sx + Math.cos(alpha) * arrowLen;
+    const tipY = sy - Math.sin(alpha) * arrowLen;
+    handleScreenX = tipX;
+    handleScreenY = tipY;
+
+    const shaftColor = state.dragMode ? '#7dc4ff' : '#58a6ff';
+
+    // Shaft highlight glow during shaft drag
+    if (state.dragMode === 'shaft') {
+      ctx.strokeStyle = 'rgba(88,166,255,0.15)';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+    }
+
+    // Arrow shaft
+    ctx.strokeStyle = shaftColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(tipX, tipY);
+    ctx.stroke();
+
+    // Tail anchor dot
+    ctx.beginPath();
+    ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+    ctx.fillStyle = shaftColor;
+    ctx.fill();
+
+    // Arrowhead
+    const headAngle = Math.atan2(tipY - sy, tipX - sx);
+    ctx.fillStyle = shaftColor;
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX - 10 * Math.cos(headAngle - 0.4), tipY - 10 * Math.sin(headAngle - 0.4));
+    ctx.lineTo(tipX - 10 * Math.cos(headAngle + 0.4), tipY - 10 * Math.sin(headAngle + 0.4));
+    ctx.closePath();
+    ctx.fill();
+
+    // Speed label on the draggable vector
+    const perpX = -(tipY - sy);
+    const perpY = tipX - sx;
+    const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
+    const midX = (sx + tipX) / 2, midY = (sy + tipY) / 2;
+    ctx.font = '11px "Share Tech Mono", monospace';
+    ctx.fillStyle = '#58a6ff';
+    ctx.textAlign = 'center';
+    ctx.fillText('v=' + state.vIn.toFixed(1),
+      midX + perpX / perpLen * 14, midY + perpY / perpLen * 14);
+  }
+
+  // ── Labels ──
+  ctx.font = '10px "Share Tech Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(110,122,138,0.7)';
+  const plLabelY = ty(plNow.y) + Math.max(8, PLANET_RADIUS * scale) + 14;
+  ctx.fillText('PLANET', tx(plNow.x), plLabelY);
+
+  if (vp < 0.01) {
+    ctx.fillStyle = 'rgba(110,122,138,0.35)';
+    ctx.fillText('(stationary)', tx(plNow.x), plLabelY + 13);
+  }
+}
+
+function drawPlanet(px, py, scale) {
+  const r = Math.max(8, PLANET_RADIUS * scale);
+
+  const glow = ctx.createRadialGradient(px, py, r * 0.3, px, py, r * 3);
+  glow.addColorStop(0, 'rgba(77,201,246,0.2)');
+  glow.addColorStop(0.5, 'rgba(77,201,246,0.06)');
+  glow.addColorStop(1, 'rgba(77,201,246,0.0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(px, py, r * 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  const bodyGrad = ctx.createRadialGradient(
+    px - r * 0.3, py - r * 0.3, r * 0.1, px, py, r);
+  bodyGrad.addColorStop(0, '#7ed6f7');
+  bodyGrad.addColorStop(0.7, '#3aa8d8');
+  bodyGrad.addColorStop(1, '#1a6e8e');
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.arc(px, py, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(77,201,246,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawSpacecraft(x, y, angle) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 14);
+  glow.addColorStop(0, 'rgba(255,224,102,0.45)');
+  glow.addColorStop(1, 'rgba(255,224,102,0.0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffe066';
+  ctx.beginPath();
+  ctx.moveTo(9, 0);
+  ctx.lineTo(-5, -4.5);
+  ctx.lineTo(-5, 4.5);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawArrow(x1, y1, x2, y2, color, lineW, headSize) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lineW;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - headSize * Math.cos(angle - 0.4), y2 - headSize * Math.sin(angle - 0.4));
+  ctx.lineTo(x2 - headSize * Math.cos(angle + 0.4), y2 - headSize * Math.sin(angle + 0.4));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawVelocityArrows(len, tx, ty) {
+  const sl = toSunFrame(len - 1);
+
+  const maxSpeed = Math.max(state.vIn, state.vOut, 0.1);
+  const maxArrowPx = Math.min(W, H) * 0.14;
+  const arrowK = maxArrowPx / maxSpeed;
+
+  // ── Exit arrow (colored by gain/loss) ──
+  if (state.vOut > 0.01) {
+    const sx = tx(sl.x), sy = ty(sl.y);
+    const ex = sx + sl.vx * arrowK;
+    const ey = sy - sl.vy * arrowK;
+
+    let color = '#58a6ff';
+    if (state.deltaV > 0.15) color = '#3fb950';
+    else if (state.deltaV < -0.15) color = '#f97583';
+
+    drawArrow(sx, sy, ex, ey, color, 2.5, 10);
+
+    ctx.font = '11px "Share Tech Mono", monospace';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    const mx = (sx + ex) / 2, my = (sy + ey) / 2;
+    const perpX = -(ey - sy), perpY = ex - sx;
+    const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
+    ctx.fillText('v=' + state.vOut.toFixed(1),
+      mx + perpX / perpLen * 14, my + perpY / perpLen * 14);
+  }
+}
+
+// ══════════════════════════════════════════════
+// ANIMATION
+// ══════════════════════════════════════════════
+let lastTime = 0;
+let stepAccum = 0; // fractional step accumulator for smooth slow-motion
+
+function animate(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+
+  if (state.playing && state.trajectory.length > 0) {
+    const baseStepsPerSec = Math.max(30, Math.ceil(state.trajectory.length / 3.5));
+    stepAccum += dt * baseStepsPerSec * state.animSpeed;
+    const steps = Math.floor(stepAccum);
+    stepAccum -= steps;
+    if (steps > 0) state.currentIndex += steps;
+    if (state.currentIndex >= state.trajectory.length) {
+      state.currentIndex = state.trajectory.length - 1;
+      state.playing = false;
+    }
+  }
+
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+// ══════════════════════════════════════════════
+// CONTROLS
+// ══════════════════════════════════════════════
+function replay() {
+  state.currentIndex = 0;
+  stepAccum = 0;
+  state.playing = true;
+}
+
+function recompute() {
+  computeTrajectory();
+  updateReadouts();
+  updateInfo();
+  replay();
+}
+
+document.getElementById('planetVelSlider').addEventListener('input', e => {
+  state.planetVel = +e.target.value;
+  document.getElementById('planetVelVal').textContent = e.target.value;
+  initVecPosition();
+  recompute();
+});
+
+document.getElementById('massSlider').addEventListener('input', e => {
+  state.planetMass = +e.target.value;
+  document.getElementById('massVal').textContent = e.target.value;
+  recompute();
+});
+
+document.getElementById('distSlider').addEventListener('input', e => {
+  state.impactParam = +e.target.value;
+  document.getElementById('distVal').textContent = e.target.value;
+  initVecPosition();
+  recompute();
+});
+
+document.getElementById('speedSlider').addEventListener('input', e => {
+  state.approachSpeed = +e.target.value;
+  document.getElementById('speedVal').textContent = e.target.value;
+  initVecPosition();
+  recompute();
+});
+
+document.getElementById('animSlider').addEventListener('input', e => {
+  state.animSpeed = +e.target.value;
+  document.getElementById('animVal').textContent = e.target.value + 'x';
+});
+
+// ══════════════════════════════════════════════
+// DRAG INTERACTION
+// ══════════════════════════════════════════════
+const HANDLE_HIT_RADIUS = 25;
+const SHAFT_HIT_DIST = 20;
+
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  if (e.touches) {
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function isNearTip(pos) {
+  const dx = pos.x - handleScreenX;
+  const dy = pos.y - handleScreenY;
+  return dx * dx + dy * dy < HANDLE_HIT_RADIUS * HANDLE_HIT_RADIUS;
+}
+
+function isNearShaft(pos) {
+  const x1 = scStartScreenX, y1 = scStartScreenY;
+  const x2 = handleScreenX, y2 = handleScreenY;
+  const dx = x2 - x1, dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq < 1) return false;
+  let t = ((pos.x - x1) * dx + (pos.y - y1) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const projX = x1 + t * dx, projY = y1 + t * dy;
+  const distSq = (pos.x - projX) * (pos.x - projX) + (pos.y - projY) * (pos.y - projY);
+  return distSq < SHAFT_HIT_DIST * SHAFT_HIT_DIST;
+}
+
+function updateDistSliderFromState() {
+  const slider = document.getElementById('distSlider');
+  const clamped = Math.max(+slider.min, Math.min(+slider.max, Math.round(state.impactParam / 5) * 5));
+  slider.value = clamped;
+  document.getElementById('distVal').textContent = clamped;
+}
+
+function freezeCamera() {
+  cameraFrozen = true;
+  frozenScale = lastScale;
+  // frozenCamX/frozenCamY are already kept in sync by drawScene
+}
+
+function unfreezeCamera() {
+  cameraFrozen = false;
+}
+
+// Tip drag: rotate around tail (pure direction change)
+function handleTipDrag(pos) {
+  const dx = pos.x - scStartScreenX;
+  const dy = -(pos.y - scStartScreenY);
+  state.approachAngle = Math.atan2(dy, dx);
+  computeImpactParamFromPosition();
+  computeTrajectory();
+  updateReadouts();
+  updateInfo();
+  updateDistSliderFromState();
+}
+
+// Shaft drag: translate vector (pure position change)
+function handleShaftDrag(pos) {
+  const dx = pos.x - dragPrevX;
+  const dy = pos.y - dragPrevY;
+  dragPrevX = pos.x;
+  dragPrevY = pos.y;
+  state.vecPfX += dx / lastScale;
+  state.vecPfY -= dy / lastScale;
+  computeImpactParamFromPosition();
+  computeTrajectory();
+  updateReadouts();
+  updateInfo();
+  updateDistSliderFromState();
+}
+
+function startDrag(mode, pos) {
+  state.dragMode = mode;
+  state.playing = false;
+  freezeCamera();
+  if (mode === 'shaft') {
+    dragPrevX = pos.x;
+    dragPrevY = pos.y;
+  }
+}
+
+function endDrag() {
+  if (state.dragMode) {
+    state.dragMode = null;
+    canvas.style.cursor = 'default';
+    unfreezeCamera();
+  }
+}
+
+canvas.addEventListener('mousedown', e => {
+  const pos = getCanvasPos(e);
+  if (isNearTip(pos)) {
+    startDrag('tip', pos);
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+  } else if (isNearShaft(pos)) {
+    startDrag('shaft', pos);
+    canvas.style.cursor = 'move';
+    e.preventDefault();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const pos = getCanvasPos(e);
+  if (state.dragMode === 'tip') {
+    handleTipDrag(pos);
+    e.preventDefault();
+  } else if (state.dragMode === 'shaft') {
+    handleShaftDrag(pos);
+    e.preventDefault();
+  } else {
+    if (isNearTip(pos)) canvas.style.cursor = 'grab';
+    else if (isNearShaft(pos)) canvas.style.cursor = 'move';
+    else canvas.style.cursor = 'default';
+  }
+});
+
+canvas.addEventListener('mouseup', endDrag);
+canvas.addEventListener('mouseleave', endDrag);
+
+canvas.addEventListener('touchstart', e => {
+  const pos = getCanvasPos(e);
+  if (isNearTip(pos)) {
+    startDrag('tip', pos);
+    e.preventDefault();
+  } else if (isNearShaft(pos)) {
+    startDrag('shaft', pos);
+    e.preventDefault();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  const pos = getCanvasPos(e);
+  if (state.dragMode === 'tip') {
+    handleTipDrag(pos);
+    e.preventDefault();
+  } else if (state.dragMode === 'shaft') {
+    handleShaftDrag(pos);
+    e.preventDefault();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', endDrag);
+
+// ══════════════════════════════════════════════
+// READOUTS & INFO
+// ══════════════════════════════════════════════
+function updateReadouts() {
+  if (state.crashed) {
+    document.getElementById('speedInVal').textContent = state.vIn.toFixed(1);
+    document.getElementById('speedOutVal').textContent = '\u2014';
+    const boostEl = document.getElementById('boostVal');
+    boostEl.textContent = 'CRASH';
+    boostEl.style.color = 'var(--loss)';
+    document.getElementById('deflVal').textContent = '\u2014';
+    return;
+  }
+
+  document.getElementById('speedInVal').textContent = state.vIn.toFixed(1);
+  document.getElementById('speedOutVal').textContent = state.vOut.toFixed(1);
+
+  const boostEl = document.getElementById('boostVal');
+  const dv = state.deltaV;
+  boostEl.textContent = (dv >= 0 ? '+' : '') + dv.toFixed(1);
+  if (dv > 0.15) boostEl.style.color = 'var(--gain)';
+  else if (dv < -0.15) boostEl.style.color = 'var(--loss)';
+  else boostEl.style.color = 'var(--text)';
+
+  document.getElementById('deflVal').textContent =
+    Math.abs(state.deflectionAngle).toFixed(0) + '\u00B0';
+}
+
+function updateInfo() {
+  let text;
+  if (state.crashed) {
+    text = 'The spacecraft flew too close and crashed into the planet! Increase the flyby distance or spacecraft speed to survive the encounter.';
+  } else if (state.planetVel < 0.1) {
+    text = 'The planet is stationary. The spacecraft exits at the same speed it entered \u2014 gravity only changed its direction. Try increasing the planet\u2019s speed!';
+  } else if (state.deltaV > 0.15) {
+    text = 'The planet is moving! The spacecraft swung behind it and exits faster \u2014 a free speed boost from the planet\u2019s motion. This is how Voyager reached the outer solar system.';
+  } else {
+    text = 'Drag the arrow body to reposition, or drag the tip to rotate. Increase the planet\u2019s speed to see a bigger boost.';
+  }
+  document.getElementById('infoText').textContent = text;
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+resize();
+initVecPosition();
+computeTrajectory();
+updateReadouts();
+updateInfo();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
