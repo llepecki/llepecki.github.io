@@ -368,15 +368,20 @@ const I18N = {
 // ══════════════════════════════════════════════
 // PLANET DATA
 // ══════════════════════════════════════════════
+// simMass derived from real planetary masses with sqrt compression:
+//   simMass = round(25 * sqrt(real_mass / Earth_mass))
+// simRadius derived analogously: round(12 * sqrt(real_radius / Earth_radius))
+// state.planetRadius is the PHYSICAL radius — collision uses it directly, drawPlanet
+// renders the solid body at this scale and the glow halo at a clamped visible size.
 const PLANET_DATA = [
-  { key: 'mercury',  simMass: 12,  simRadius: 7,   defaultSpeed: 4.5, colors: { hi: '#b0b0b0', mid: '#8a8a8a', lo: '#5c5c5c', glow: '150,150,150' } },
-  { key: 'venus',    simMass: 24,  simRadius: 12,  defaultSpeed: 3.5, colors: { hi: '#f5e6a3', mid: '#d4b856', lo: '#a08530', glow: '213,184,86' } },
+  { key: 'mercury',  simMass: 6,   simRadius: 7,   defaultSpeed: 4.5, colors: { hi: '#b0b0b0', mid: '#8a8a8a', lo: '#5c5c5c', glow: '150,150,150' } },
+  { key: 'venus',    simMass: 23,  simRadius: 12,  defaultSpeed: 3.5, colors: { hi: '#f5e6a3', mid: '#d4b856', lo: '#a08530', glow: '213,184,86' } },
   { key: 'earth',    simMass: 25,  simRadius: 12,  defaultSpeed: 3.0, colors: { hi: '#7ed6f7', mid: '#3aa8d8', lo: '#1a6e8e', glow: '77,201,246' } },
-  { key: 'mars',     simMass: 14,  simRadius: 9,   defaultSpeed: 2.5, colors: { hi: '#e8a07a', mid: '#c75b3a', lo: '#8b3a1f', glow: '199,91,58' } },
-  { key: 'jupiter',  simMass: 106, simRadius: 40,  defaultSpeed: 1.5, colors: { hi: '#f0c590', mid: '#d4944a', lo: '#a06020', glow: '212,148,74' } },
-  { key: 'saturn',   simMass: 78,  simRadius: 37,  defaultSpeed: 1.0, colors: { hi: '#f0dca0', mid: '#c8a84c', lo: '#967830', glow: '200,168,76' } },
-  { key: 'uranus',   simMass: 49,  simRadius: 24,  defaultSpeed: 0.5, colors: { hi: '#b8e8f0', mid: '#7cc8d8', lo: '#4a9aaa', glow: '124,200,216' } },
-  { key: 'neptune',  simMass: 51,  simRadius: 24,  defaultSpeed: 0.5, colors: { hi: '#7090e0', mid: '#4060c0', lo: '#203880', glow: '64,96,192' } },
+  { key: 'mars',     simMass: 8,   simRadius: 9,   defaultSpeed: 2.5, colors: { hi: '#e8a07a', mid: '#c75b3a', lo: '#8b3a1f', glow: '199,91,58' } },
+  { key: 'jupiter',  simMass: 446, simRadius: 40,  defaultSpeed: 1.5, colors: { hi: '#f0c590', mid: '#d4944a', lo: '#a06020', glow: '212,148,74' } },
+  { key: 'saturn',   simMass: 244, simRadius: 37,  defaultSpeed: 1.0, colors: { hi: '#f0dca0', mid: '#c8a84c', lo: '#967830', glow: '200,168,76' } },
+  { key: 'uranus',   simMass: 95,  simRadius: 24,  defaultSpeed: 0.5, colors: { hi: '#b8e8f0', mid: '#7cc8d8', lo: '#4a9aaa', glow: '124,200,216' } },
+  { key: 'neptune',  simMass: 104, simRadius: 24,  defaultSpeed: 0.5, colors: { hi: '#7090e0', mid: '#4060c0', lo: '#203880', glow: '64,96,192' } },
 ];
 
 // ══════════════════════════════════════════════
@@ -409,6 +414,7 @@ const state = {
   gameTarget: null,
   gameResult: null,
   gameLaunched: false,
+  fineDrag: false,
 };
 
 // ══════════════════════════════════════════════
@@ -623,7 +629,7 @@ function computeStartDist() {
   var vPfX = vScSun * Math.cos(state.approachAngle) - vp;
   var vPfY = vScSun * Math.sin(state.approachAngle);
   var vInf2 = vPfX * vPfX + vPfY * vPfY;
-  return Math.max(800, Math.min(4000, Math.ceil(10 * GM / Math.max(vInf2, 1))));
+  return Math.max(800, Math.min(8000, Math.ceil(10 * GM / Math.max(vInf2, 1))));
 }
 
 function initVecPosition() {
@@ -681,7 +687,9 @@ var scStartScreenX = 0, scStartScreenY = 0;
 var lastScale = 1;
 var cameraFrozen = false;
 var frozenScale = 1, frozenCamX = 0, frozenCamY = 0;
-var grabOffsetX = 0, grabOffsetY = 0;
+var dragInitialTipX = 0, dragInitialTipY = 0;
+var dragAccumX = 0, dragAccumY = 0;
+var dragLastPosX = 0, dragLastPosY = 0;
 var frozenRootX = 0, frozenRootY = 0;
 var dragPrevX = 0, dragPrevY = 0;
 var targetScreenX = 0, targetScreenY = 0;
@@ -1096,7 +1104,7 @@ function drawScene() {
     handleScreenX = tipX;
     handleScreenY = tipY;
 
-    var shaftColor = state.dragMode ? '#7dc4ff' : '#58a6ff';
+    var shaftColor = state.fineDrag ? '#7dffe7' : (state.dragMode ? '#7dc4ff' : '#58a6ff');
 
     // Dotted circle guide while dragging
     if (state.dragMode === 'arrow') {
@@ -1168,33 +1176,40 @@ function drawScene() {
 }
 
 function drawPlanet(px, py, scale) {
-  var r = Math.max(8, state.planetRadius * scale);
+  // physR is the PHYSICAL radius in screen units (matches collision boundary).
+  // glowR is clamped to a minimum so the planet stays visible at zoom-out.
+  // bodyR floors the body to 1 px so it never disappears entirely.
+  var physR = state.planetRadius * scale;
+  var glowR = Math.max(8, physR);
+  var bodyR = Math.max(1, physR);
   var c = state.planetColors;
 
-  // Atmosphere ring
+  // Atmosphere ring (visible scale)
   ctx.beginPath();
-  ctx.arc(px, py, r * 1.15, 0, Math.PI * 2);
+  ctx.arc(px, py, glowR * 1.15, 0, Math.PI * 2);
   ctx.strokeStyle = 'rgba(' + c.glow + ',0.12)';
-  ctx.lineWidth = r * 0.15;
+  ctx.lineWidth = glowR * 0.15;
   ctx.stroke();
 
-  var glow = ctx.createRadialGradient(px, py, r * 0.3, px, py, r * 3);
+  // Outer glow gradient (visible scale)
+  var glow = ctx.createRadialGradient(px, py, glowR * 0.3, px, py, glowR * 3);
   glow.addColorStop(0, 'rgba(' + c.glow + ',0.2)');
   glow.addColorStop(0.5, 'rgba(' + c.glow + ',0.06)');
   glow.addColorStop(1, 'rgba(' + c.glow + ',0.0)');
   ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.arc(px, py, r * 3, 0, Math.PI * 2);
+  ctx.arc(px, py, glowR * 3, 0, Math.PI * 2);
   ctx.fill();
 
+  // Solid body at PHYSICAL scale — a safe flyby never visually intersects this
   var bodyGrad = ctx.createRadialGradient(
-    px - r * 0.3, py - r * 0.3, r * 0.1, px, py, r);
+    px - bodyR * 0.3, py - bodyR * 0.3, bodyR * 0.1, px, py, bodyR);
   bodyGrad.addColorStop(0, c.hi);
   bodyGrad.addColorStop(0.7, c.mid);
   bodyGrad.addColorStop(1, c.lo);
   ctx.fillStyle = bodyGrad;
   ctx.beginPath();
-  ctx.arc(px, py, r, 0, Math.PI * 2);
+  ctx.arc(px, py, bodyR, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.strokeStyle = 'rgba(' + c.glow + ',0.3)';
@@ -1482,9 +1497,21 @@ function unfreezeCamera() {
   cameraFrozen = false;
 }
 
-function handleArrowDrag(pos) {
-  var effX = pos.x - grabOffsetX;
-  var effY = pos.y - grabOffsetY;
+function handleArrowDrag(pos, shiftHeld) {
+  // Delta accumulation: cursor movement is added to an effective tip position,
+  // optionally scaled down by 8x for fine adjustments. This avoids any jumps
+  // when Shift is pressed or released mid-drag — only NEW movement is scaled.
+  var rawDx = pos.x - dragLastPosX;
+  var rawDy = pos.y - dragLastPosY;
+  var scale = shiftHeld ? 0.125 : 1.0;
+  dragAccumX += rawDx * scale;
+  dragAccumY += rawDy * scale;
+  dragLastPosX = pos.x;
+  dragLastPosY = pos.y;
+  state.fineDrag = !!shiftHeld;
+
+  var effX = dragInitialTipX + dragAccumX;
+  var effY = dragInitialTipY + dragAccumY;
   var dx = effX - frozenRootX;
   var dy = -(effY - frozenRootY);
   var dist = Math.sqrt(dx * dx + dy * dy);
@@ -1544,8 +1571,12 @@ function startDrag(mode, pos) {
   state.playing = false;
   freezeCamera();
   if (mode === 'arrow') {
-    grabOffsetX = pos.x - handleScreenX;
-    grabOffsetY = pos.y - handleScreenY;
+    dragInitialTipX = handleScreenX;
+    dragInitialTipY = handleScreenY;
+    dragAccumX = 0;
+    dragAccumY = 0;
+    dragLastPosX = pos.x;
+    dragLastPosY = pos.y;
     frozenRootX = scStartScreenX;
     frozenRootY = scStartScreenY;
   } else if (mode === 'translate') {
@@ -1562,6 +1593,7 @@ function startDrag(mode, pos) {
 function endDrag() {
   if (state.dragMode) {
     state.dragMode = null;
+    state.fineDrag = false;
     canvas.style.cursor = 'default';
     unfreezeCamera();
   }
@@ -1580,6 +1612,7 @@ canvas.addEventListener('mousedown', function(e) {
   } else if (isNearArrow(pos)) {
     startDrag('arrow', pos);
     canvas.style.cursor = 'grabbing';
+    state.fineDrag = e.shiftKey;
     e.preventDefault();
   }
 });
@@ -1587,7 +1620,7 @@ canvas.addEventListener('mousedown', function(e) {
 canvas.addEventListener('mousemove', function(e) {
   var pos = getCanvasPos(e);
   if (state.dragMode === 'arrow') {
-    handleArrowDrag(pos);
+    handleArrowDrag(pos, e.shiftKey);
     e.preventDefault();
   } else if (state.dragMode === 'translate') {
     handleTranslateDrag(pos);
@@ -1635,6 +1668,21 @@ canvas.addEventListener('touchmove', function(e) {
 }, { passive: false });
 
 canvas.addEventListener('touchend', endDrag);
+
+// Instant visual feedback for fine-mode toggle while the arrow is being dragged.
+// The actual scaling happens in handleArrowDrag on the next mousemove; these
+// listeners only update the visual flag so the shaft color flips immediately.
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Shift' && state.dragMode === 'arrow') {
+    state.fineDrag = true;
+  }
+});
+
+document.addEventListener('keyup', function(e) {
+  if (e.key === 'Shift' && state.dragMode === 'arrow') {
+    state.fineDrag = false;
+  }
+});
 
 // ══════════════════════════════════════════════
 // READOUTS & INFO
