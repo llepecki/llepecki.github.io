@@ -231,16 +231,6 @@
       </div>
     </div>
 
-    <div class="ctrl-group" id="grpFlybyAlt">
-      <span class="ctrl-label" id="lblFlybyAlt">Flyby Altitude</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('distSlider',-5)">&minus;</button>
-        <input type="range" id="distSlider" min="0" max="300" value="50" step="5">
-        <button class="step-btn" onclick="stepSlider('distSlider',5)">+</button>
-        <span class="slider-val" id="distVal">50</span>
-      </div>
-    </div>
-
     <div class="ctrl-group" id="grpAnim">
       <span class="ctrl-label" id="lblAnimSpeed">Animation Speed</span>
       <div class="slider-row">
@@ -300,6 +290,7 @@ const I18N = {
     spacecraftSpeed: 'Spacecraft Speed',
     animSpeed: 'Animation Speed',
     launch: 'Launch',
+    reset: 'Reset',
     newTarget: 'New Target',
     speedBoost: 'Speed boost',
     speedIn: 'Speed in',
@@ -330,6 +321,7 @@ const I18N = {
     spacecraftSpeed: 'Pr\u0119dko\u015B\u0107 statku',
     animSpeed: 'Pr\u0119dko\u015B\u0107 animacji',
     launch: 'Start',
+    reset: 'Resetuj',
     newTarget: 'Nowy cel',
     speedBoost: 'Przyrost pr\u0119dko\u015Bci',
     speedIn: 'Pr\u0119dko\u015B\u0107 wlotowa',
@@ -420,9 +412,8 @@ function applyTranslations() {
   document.getElementById('modeGameBtn').textContent = l.modeGame;
   document.getElementById('lblPlanet').textContent = l.planet;
   document.getElementById('lblPlanetSpeed').textContent = l.planetSpeed;
-  document.getElementById('lblFlybyAlt').textContent = l.flybyAlt;
   document.getElementById('lblAnimSpeed').textContent = l.animSpeed;
-  document.getElementById('replayBtn').textContent = l.launch;
+  document.getElementById('replayBtn').textContent = (state.currentIndex > 0 || state.playing) ? l.reset : l.launch;
   document.getElementById('newTargetBtn').textContent = l.newTarget;
   document.getElementById('lblBoost').textContent = l.speedBoost;
   document.getElementById('lblSpeedIn').textContent = l.speedIn;
@@ -467,11 +458,10 @@ function setMode(mode) {
   document.getElementById('modeExploreBtn').classList.toggle('active', mode === 'explore');
   document.getElementById('modeGameBtn').classList.toggle('active', mode === 'game');
 
-  document.getElementById('grpPlanetVel').style.display = mode === 'explore' ? '' : 'none';
   document.getElementById('grpReadouts').style.display = mode === 'explore' ? '' : 'none';
   document.getElementById('grpNewTarget').style.display = mode === 'game' ? '' : 'none';
 
-  document.getElementById('replayBtn').textContent = T('launch');
+  updateLaunchBtn();
 
   if (mode === 'game') {
     var planet = PLANET_DATA.find(function(p) { return p.key === state.selectedPlanet; });
@@ -526,8 +516,7 @@ function generateTarget() {
   state.approachAngle = Math.PI;
   state.periapsisAlt = 50;
   state.approachSpeed = 5;
-  document.getElementById('distSlider').value = 50;
-  document.getElementById('distVal').textContent = '50';
+  state.periapsisAlt = 50;
   state.approachSpeed = 5;
 
   initVecPosition();
@@ -540,7 +529,7 @@ function generateTarget() {
 function newTarget() { generateTarget(); }
 
 function gameTolerance() {
-  return Math.max(25, state.planetRadius * 2);
+  return Math.max(20, state.planetRadius * 1.6);
 }
 
 function evaluateGame() {
@@ -666,7 +655,10 @@ var cameraFrozen = false;
 var frozenScale = 1, frozenCamX = 0, frozenCamY = 0;
 var grabOffsetX = 0, grabOffsetY = 0;
 var frozenRootX = 0, frozenRootY = 0;
-var MIN_ARROW_PX = 20, MAX_ARROW_PX = 120;
+var dragPrevX = 0, dragPrevY = 0;
+var targetScreenX = 0, targetScreenY = 0;
+var targetGrabOfsX = 0, targetGrabOfsY = 0;
+var MIN_ARROW_PX = 55, MAX_ARROW_PX = 175;
 
 function initBgStars(n) {
   bgStars = [];
@@ -865,7 +857,7 @@ function drawScene() {
 
   // ── Camera ──
   var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  var sampleStep = Math.max(1, Math.floor(len / 300));
+  var sampleStep = Math.max(1, Math.floor(len / 3000));
   for (var i = 0; i < len; i += sampleStep) {
     var p = toSunFrame(i);
     if (p.x < minX) minX = p.x;
@@ -955,7 +947,7 @@ function drawScene() {
     var pr = Math.max(8, state.planetRadius * scale);
     var arrowLen = Math.min(vp * 10, 60);
     drawArrow(ppx + pr + 6, ppy, ppx + pr + 6 + arrowLen, ppy,
-      'rgba(' + pg + ',0.5)', 1.5, 6);
+      'rgba(' + pg + ',0.5)', 1.5, 8);
     ctx.font = '9px "Share Tech Mono", monospace';
     ctx.fillStyle = 'rgba(' + pg + ',0.5)';
     ctx.textAlign = 'center';
@@ -964,7 +956,7 @@ function drawScene() {
 
   // Drag offset: shift trajectory rendering to stay pinned to frozen root
   var dragOfsX = 0, dragOfsY = 0;
-  if (state.dragMode === 'arrow') {
+  if (state.dragMode === 'arrow' || state.dragMode === 'translate') {
     var sf0Live = toSunFrame(0);
     dragOfsX = frozenRootX - tx(sf0Live.x);
     dragOfsY = frozenRootY - ty(sf0Live.y);
@@ -1003,6 +995,8 @@ function drawScene() {
     var gtol = gameTolerance();
     var gx = tx(state.gameTarget.x);
     var gy = ty(state.gameTarget.y);
+    targetScreenX = gx;
+    targetScreenY = gy;
     var gr = gtol * scale;
     var pulse = 1 + 0.06 * Math.sin(Date.now() / 250);
 
@@ -1063,7 +1057,7 @@ function drawScene() {
   (function() {
     var sf0 = toSunFrame(0);
     var sx, sy;
-    if (state.dragMode === 'arrow') {
+    if (state.dragMode === 'arrow' || state.dragMode === 'translate') {
       sx = frozenRootX;
       sy = frozenRootY;
     } else {
@@ -1074,7 +1068,7 @@ function drawScene() {
     scStartScreenY = sy;
 
     var a = state.approachAngle;
-    var aLen = MIN_ARROW_PX + (state.approachSpeed - 2) * (MAX_ARROW_PX - MIN_ARROW_PX) / 8;
+    var aLen = MIN_ARROW_PX + (state.approachSpeed - 1) * (MAX_ARROW_PX - MIN_ARROW_PX) / 9;
     var tipX = sx + Math.cos(a) * aLen;
     var tipY = sy - Math.sin(a) * aLen;
     handleScreenX = tipX;
@@ -1094,8 +1088,8 @@ function drawScene() {
     }
 
     var headAngle = Math.atan2(tipY - sy, tipX - sx);
-    var shaftEndX = tipX - 9 * Math.cos(headAngle);
-    var shaftEndY = tipY - 9 * Math.sin(headAngle);
+    var shaftEndX = tipX - 11 * Math.cos(headAngle);
+    var shaftEndY = tipY - 11 * Math.sin(headAngle);
     ctx.strokeStyle = shaftColor;
     ctx.lineWidth = 3;
     ctx.lineCap = 'butt';
@@ -1112,8 +1106,8 @@ function drawScene() {
     ctx.fillStyle = shaftColor;
     ctx.beginPath();
     ctx.moveTo(tipX, tipY);
-    ctx.lineTo(tipX - 10 * Math.cos(headAngle - 0.4), tipY - 10 * Math.sin(headAngle - 0.4));
-    ctx.lineTo(tipX - 10 * Math.cos(headAngle + 0.4), tipY - 10 * Math.sin(headAngle + 0.4));
+    ctx.lineTo(tipX - 13 * Math.cos(headAngle - 0.4), tipY - 13 * Math.sin(headAngle - 0.4));
+    ctx.lineTo(tipX - 13 * Math.cos(headAngle + 0.4), tipY - 13 * Math.sin(headAngle + 0.4));
     ctx.closePath();
     ctx.fill();
 
@@ -1132,8 +1126,9 @@ function drawScene() {
   if (idx < len) {
     var sc = toSunFrame(idx);
     var screenAngle = Math.atan2(-sc.vy, sc.vx);
-    var scx = (state.dragMode === 'arrow' && idx === 0) ? frozenRootX : tx(sc.x);
-    var scy = (state.dragMode === 'arrow' && idx === 0) ? frozenRootY : ty(sc.y);
+    var isDrag = (state.dragMode === 'arrow' || state.dragMode === 'translate');
+    var scx = (isDrag && idx === 0) ? frozenRootX : tx(sc.x);
+    var scy = (isDrag && idx === 0) ? frozenRootY : ty(sc.y);
     drawSpacecraft(scx, scy, screenAngle);
   }
 
@@ -1190,19 +1185,19 @@ function drawSpacecraft(x, y, angle) {
   ctx.translate(x, y);
   ctx.rotate(angle);
 
-  var glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 14);
+  var glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 20);
   glow.addColorStop(0, 'rgba(255,224,102,0.45)');
   glow.addColorStop(1, 'rgba(255,224,102,0.0)');
   ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.arc(0, 0, 14, 0, Math.PI * 2);
+  ctx.arc(0, 0, 20, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = '#ffe066';
   ctx.beginPath();
-  ctx.moveTo(9, 0);
-  ctx.lineTo(-5, -4.5);
-  ctx.lineTo(-5, 4.5);
+  ctx.moveTo(13, 0);
+  ctx.lineTo(-7, -6.5);
+  ctx.lineTo(-7, 6.5);
   ctx.closePath();
   ctx.fill();
 
@@ -1242,7 +1237,7 @@ function drawVelocityArrows(len, tx, ty, ofsX, ofsY) {
     if (state.deltaV > 0.15) color = '#3fb950';
     else if (state.deltaV < -0.15) color = '#f97583';
 
-    drawArrow(sx, sy, ex, ey, color, 2.5, 10);
+    drawArrow(sx, sy, ex, ey, color, 2.5, 13);
 
     ctx.font = '11px "Share Tech Mono", monospace';
     ctx.fillStyle = color;
@@ -1275,6 +1270,7 @@ function animate(timestamp) {
     if (state.currentIndex >= state.trajectory.length - 1) {
       state.currentIndex = state.trajectory.length - 1;
       state.playing = false;
+      updateLaunchBtn();
       evaluateGame();
     }
   }
@@ -1287,17 +1283,33 @@ function animate(timestamp) {
 // CONTROLS
 // ══════════════════════════════════════════════
 function replay() {
-  state.currentIndex = 0;
-  stepAccum = 0;
-  state.playing = true;
-  if (state.mode === 'game') {
-    state.gameLaunched = true;
-    state.gameResult = null;
+  if (state.currentIndex > 0 || state.playing) {
+    // Reset
+    state.currentIndex = 0;
+    stepAccum = 0;
+    state.playing = false;
+    updateLaunchBtn();
+  } else {
+    // Launch
+    state.currentIndex = 0;
+    stepAccum = 0;
+    state.playing = true;
+    if (state.mode === 'game') {
+      state.gameLaunched = true;
+      state.gameResult = null;
+    }
+    updateLaunchBtn();
   }
+}
+
+function updateLaunchBtn() {
+  var btn = document.getElementById('replayBtn');
+  btn.textContent = (state.currentIndex > 0 || state.playing) ? T('reset') : T('launch');
 }
 
 function recompute() {
   computeTrajectory();
+
   updateReadouts();
   updateInfo();
   state.currentIndex = 0;
@@ -1307,6 +1319,7 @@ function recompute() {
     state.gameLaunched = false;
     state.gameResult = null;
   }
+  updateLaunchBtn();
 }
 
 function stepSlider(sliderId, delta) {
@@ -1352,13 +1365,6 @@ document.getElementById('planetVelSlider').addEventListener('input', function(e)
   recompute();
 });
 
-document.getElementById('distSlider').addEventListener('input', function(e) {
-  state.periapsisAlt = +e.target.value;
-  document.getElementById('distVal').textContent = e.target.value;
-  initVecPosition();
-  recompute();
-});
-
 document.getElementById('animSlider').addEventListener('input', function(e) {
   state.animSpeed = +e.target.value;
   document.getElementById('animVal').textContent = (+e.target.value).toFixed(1) + 'x';
@@ -1394,13 +1400,6 @@ function isNearArrow(pos) {
   return distSq < ARROW_HIT_DIST * ARROW_HIT_DIST;
 }
 
-function updateDistSliderFromState() {
-  var slider = document.getElementById('distSlider');
-  var clamped = Math.max(+slider.min, Math.min(+slider.max, Math.round(state.periapsisAlt / 5) * 5));
-  slider.value = clamped;
-  document.getElementById('distVal').textContent = clamped;
-}
-
 function freezeCamera() {
   cameraFrozen = true;
   frozenScale = lastScale;
@@ -1419,24 +1418,72 @@ function handleArrowDrag(pos) {
 
   state.approachAngle = Math.atan2(dy, dx);
 
-  var speed = 2 + (dist - MIN_ARROW_PX) * 8 / (MAX_ARROW_PX - MIN_ARROW_PX);
-  state.approachSpeed = Math.max(2, Math.min(10, Math.round(speed * 10) / 10));
+  var speed = 1 + (dist - MIN_ARROW_PX) * 9 / (MAX_ARROW_PX - MIN_ARROW_PX);
+  state.approachSpeed = Math.max(1, Math.min(10, Math.round(speed * 10) / 10));
 
+  state.currentIndex = 0;
   computePeriapsisAltFromPosition();
   computeTrajectory();
+  updateLaunchBtn();
   updateReadouts();
   updateInfo();
-  updateDistSliderFromState();
 }
 
-function startDrag(pos) {
-  state.dragMode = 'arrow';
+function isNearTarget(pos) {
+  if (state.mode !== 'game' || !state.gameTarget) return false;
+  var dx = pos.x - targetScreenX, dy = pos.y - targetScreenY;
+  var hitR = Math.max(30, gameTolerance() * lastScale);
+  return dx * dx + dy * dy < hitR * hitR;
+}
+
+function handleTargetDrag(pos) {
+  var sx = pos.x - targetGrabOfsX;
+  var sy = pos.y - targetGrabOfsY;
+  state.gameTarget.x = frozenCamX + (sx - W / 2) / frozenScale;
+  state.gameTarget.y = frozenCamY - (sy - H / 2) / frozenScale;
+
+}
+
+function isNearRoot(pos) {
+  var dx = pos.x - scStartScreenX, dy = pos.y - scStartScreenY;
+  return dx * dx + dy * dy < 15 * 15;
+}
+
+function handleTranslateDrag(pos) {
+  var dx = pos.x - dragPrevX;
+  var dy = pos.y - dragPrevY;
+  dragPrevX = pos.x;
+  dragPrevY = pos.y;
+  state.vecPfX += dx / frozenScale;
+  state.vecPfY -= dy / frozenScale;
+  frozenRootX += dx;
+  frozenRootY += dy;
+  state.currentIndex = 0;
+  computePeriapsisAltFromPosition();
+  computeTrajectory();
+  updateLaunchBtn();
+  updateReadouts();
+  updateInfo();
+}
+
+function startDrag(mode, pos) {
+  state.dragMode = mode;
   state.playing = false;
-  grabOffsetX = pos.x - handleScreenX;
-  grabOffsetY = pos.y - handleScreenY;
-  frozenRootX = scStartScreenX;
-  frozenRootY = scStartScreenY;
   freezeCamera();
+  if (mode === 'arrow') {
+    grabOffsetX = pos.x - handleScreenX;
+    grabOffsetY = pos.y - handleScreenY;
+    frozenRootX = scStartScreenX;
+    frozenRootY = scStartScreenY;
+  } else if (mode === 'translate') {
+    dragPrevX = pos.x;
+    dragPrevY = pos.y;
+    frozenRootX = scStartScreenX;
+    frozenRootY = scStartScreenY;
+  } else if (mode === 'target') {
+    targetGrabOfsX = pos.x - targetScreenX;
+    targetGrabOfsY = pos.y - targetScreenY;
+  }
 }
 
 function endDrag() {
@@ -1449,8 +1496,16 @@ function endDrag() {
 
 canvas.addEventListener('mousedown', function(e) {
   var pos = getCanvasPos(e);
-  if (isNearArrow(pos)) {
-    startDrag(pos);
+  if (isNearTarget(pos)) {
+    startDrag('target', pos);
+    canvas.style.cursor = 'move';
+    e.preventDefault();
+  } else if (isNearRoot(pos)) {
+    startDrag('translate', pos);
+    canvas.style.cursor = 'move';
+    e.preventDefault();
+  } else if (isNearArrow(pos)) {
+    startDrag('arrow', pos);
     canvas.style.cursor = 'grabbing';
     e.preventDefault();
   }
@@ -1461,8 +1516,17 @@ canvas.addEventListener('mousemove', function(e) {
   if (state.dragMode === 'arrow') {
     handleArrowDrag(pos);
     e.preventDefault();
+  } else if (state.dragMode === 'translate') {
+    handleTranslateDrag(pos);
+    e.preventDefault();
+  } else if (state.dragMode === 'target') {
+    handleTargetDrag(pos);
+    e.preventDefault();
   } else {
-    canvas.style.cursor = isNearArrow(pos) ? 'grab' : 'default';
+    if (isNearTarget(pos)) canvas.style.cursor = 'move';
+    else if (isNearRoot(pos)) canvas.style.cursor = 'move';
+    else if (isNearArrow(pos)) canvas.style.cursor = 'grab';
+    else canvas.style.cursor = 'default';
   }
 });
 
@@ -1471,8 +1535,14 @@ canvas.addEventListener('mouseleave', endDrag);
 
 canvas.addEventListener('touchstart', function(e) {
   var pos = getCanvasPos(e);
-  if (isNearArrow(pos)) {
-    startDrag(pos);
+  if (isNearTarget(pos)) {
+    startDrag('target', pos);
+    e.preventDefault();
+  } else if (isNearRoot(pos)) {
+    startDrag('translate', pos);
+    e.preventDefault();
+  } else if (isNearArrow(pos)) {
+    startDrag('arrow', pos);
     e.preventDefault();
   }
 }, { passive: false });
@@ -1481,6 +1551,12 @@ canvas.addEventListener('touchmove', function(e) {
   var pos = getCanvasPos(e);
   if (state.dragMode === 'arrow') {
     handleArrowDrag(pos);
+    e.preventDefault();
+  } else if (state.dragMode === 'translate') {
+    handleTranslateDrag(pos);
+    e.preventDefault();
+  } else if (state.dragMode === 'target') {
+    handleTargetDrag(pos);
     e.preventDefault();
   }
 }, { passive: false });
