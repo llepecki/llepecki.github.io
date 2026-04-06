@@ -602,7 +602,7 @@ function drawDiagram() {
   drawBeamSplitter(MZ.bs2.x, MZ.bs2.y, T('splitter'));
   drawMirror(MZ.m1.x, MZ.m1.y, T('mirror'));
   drawMirror(MZ.m2.x, MZ.m2.y, T('mirror'));
-  drawPhaseShifter(MZ.phase.x, MZ.phase.y);
+  if (state.phaseDeg !== 0) drawPhaseShifter(MZ.phase.x, MZ.phase.y);
   drawSource(MZ.source.x, MZ.source.y);
   drawDetector(MZ.d1.x, MZ.d1.y, 'D1', '#2979FF');
   drawDetector(MZ.d2.x, MZ.d2.y, 'D2', '#E53935');
