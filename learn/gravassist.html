@@ -501,6 +501,7 @@ const state = {
   gameTarget: null,
   gameResult: null,
   gameLaunched: false,
+  gameGhost: null,        // sun-frame trail of the previous attempt (game mode only)
   fineDrag: false,        // derived: precisionMode XOR shiftHeld
   precisionMode: false,   // latched setting (toggled by button click)
   shiftHeld: false,       // momentary Shift key tracking
@@ -617,11 +618,13 @@ function setMode(mode) {
     state.gameTarget = null;
     state.gameResult = null;
     state.gameLaunched = false;
+    state.gameGhost = null;
   }
   updateInfo();
 }
 
 function generateTarget() {
+  state.gameGhost = null;  // new target → previous attempts irrelevant
   var planet = PLANET_DATA.find(function(p) { return p.key === state.selectedPlanet; });
   state.planetVel = planet.defaultSpeed;
 
@@ -721,6 +724,24 @@ function evaluateGame() {
 }
 
 function showGameOverlay(result) {
+  // Capture the just-finished trajectory as a sun-frame ghost so the next
+  // attempt can reference where the previous one went. Subsampled to keep
+  // the array small (~4000 points max) — at low alpha the ghost only needs
+  // enough resolution to read as a curve.
+  if (state.mode === 'game' && state.trajectory.length > 1) {
+    var glen = state.trajectory.length;
+    var gstep = Math.max(1, Math.floor(glen / 4000));
+    state.gameGhost = [];
+    for (var gi = 0; gi < glen; gi += gstep) {
+      var gsf = toSunFrame(gi);
+      state.gameGhost.push({ x: gsf.x, y: gsf.y });
+    }
+    if ((glen - 1) % gstep !== 0) {
+      var glast = toSunFrame(glen - 1);
+      state.gameGhost.push({ x: glast.x, y: glast.y });
+    }
+  }
+
   var existing = document.querySelector('.result-overlay');
   if (existing) existing.remove();
 
@@ -1229,10 +1250,25 @@ function drawScene() {
     ctx.stroke();
   }
 
-  // ── Full trajectory (faint) ──
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(255,224,102,0.08)';
-  strokeSmoothTrail(0, len - 1, renderStep);
+  // ── Full trajectory (faint) — explore mode only; in game mode the
+  //    pre-launch shadow would spoil the puzzle ──
+  if (state.mode !== 'game') {
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,224,102,0.08)';
+    strokeSmoothTrail(0, len - 1, renderStep);
+  }
+
+  // ── Game ghost (previous attempt's trajectory) — game mode only ──
+  if (state.mode === 'game' && state.gameGhost && state.gameGhost.length > 1) {
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,224,102,0.12)';
+    ctx.beginPath();
+    ctx.moveTo(tx(state.gameGhost[0].x), ty(state.gameGhost[0].y));
+    for (var ggi = 1; ggi < state.gameGhost.length; ggi++) {
+      ctx.lineTo(tx(state.gameGhost[ggi].x), ty(state.gameGhost[ggi].y));
+    }
+    ctx.stroke();
+  }
 
   // ── Animated trail ──
   if (idx > 0) {
@@ -1300,8 +1336,8 @@ function drawScene() {
     ctx.textBaseline = 'alphabetic';
   }
 
-  // ── Velocity arrows (exit) ──
-  if (!state.crashed) {
+  // ── Velocity arrows (exit) — hidden in game mode (it's a spoiler) ──
+  if (!state.crashed && state.mode !== 'game') {
     drawVelocityArrows(len, tx, ty);
   }
 
