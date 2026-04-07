@@ -79,6 +79,18 @@
   .type-btn.active { border-color: var(--accent); color: var(--accent); }
   .type-btn.full-width { flex: none; width: 100%; }
 
+  /* Larger glyphs for the View zoom buttons */
+  #zoomInBtn, #zoomOutBtn { font-size: 18px; line-height: 1; }
+
+  /* Icon-only Play/Pause/Stop buttons */
+  #replayBtn, #resetBtn {
+    display: flex; align-items: center; justify-content: center;
+  }
+  #replayBtn .pause-icon { display: none; }
+  #replayBtn.playing .play-icon { display: none; }
+  #replayBtn.playing .pause-icon { display: block; }
+  #replayBtn:hover, #resetBtn:hover { color: var(--accent); }
+
   .slider-row { display: flex; align-items: center; gap: 6px; }
   .slider-row input[type=range] {
     flex: 1; -webkit-appearance: none; appearance: none;
@@ -248,7 +260,7 @@
       <span class="ctrl-label" id="lblAnimSpeed">Animation Speed</span>
       <div class="slider-row">
         <button class="step-btn" onclick="stepSlider('animSlider',-0.1)">&minus;</button>
-        <input type="range" id="animSlider" min="0.2" max="3" value="1" step="0.1">
+        <input type="range" id="animSlider" min="0.1" max="3" value="1" step="0.1">
         <button class="step-btn" onclick="stepSlider('animSlider',0.1)">+</button>
         <span class="slider-val" id="animVal">1x</span>
       </div>
@@ -258,12 +270,12 @@
       <span class="ctrl-label" id="lblView">View</span>
       <div class="type-toggle">
         <button class="type-btn" id="zoomOutBtn" onclick="zoomOut()">&minus;</button>
-        <button class="type-btn" id="autoViewBtn" onclick="resetView()">Fixed</button>
+        <button class="type-btn" id="autoViewBtn" onclick="resetView()">Auto</button>
         <button class="type-btn" id="zoomInBtn" onclick="zoomIn()">+</button>
       </div>
       <div class="type-toggle">
-        <button class="type-btn" id="focusPlanetBtn" onclick="focusPlanet()">&#x1F50D; Planet</button>
-        <button class="type-btn" id="focusScBtn" onclick="focusSpacecraft()">&#x1F50D; Spacecraft</button>
+        <button class="type-btn" id="focusPlanetBtn" onclick="focusPlanet()">&#x1F4CD; Planet</button>
+        <button class="type-btn" id="focusScBtn" onclick="focusSpacecraft()">&#x1F4CD; Spacecraft</button>
       </div>
     </div>
 
@@ -272,8 +284,13 @@
     </div>
 
     <div class="ctrl-group">
-      <button class="type-btn full-width" id="replayBtn" onclick="replay()">Launch</button>
-      <button class="type-btn full-width" id="resetBtn" onclick="resetSim()">Reset</button>
+      <button class="type-btn full-width" id="replayBtn" onclick="togglePlay()" title="Play">
+        <svg class="play-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>
+        <svg class="pause-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+      </button>
+      <button class="type-btn full-width" id="resetBtn" onclick="handleStopClick()" title="Stop">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+      </button>
     </div>
 
     <div class="ctrl-group" id="grpNewTarget" style="display:none">
@@ -343,12 +360,15 @@ const I18N = {
     animSpeed: 'Animation Speed',
     launch: 'Launch',
     reset: 'Reset',
+    play: 'Play',
+    pause: 'Pause',
+    stop: 'Stop (double-click resets the view)',
     newTarget: 'New Target',
     precision: 'Precision (Shift)',
     view: 'View',
-    fixed: 'Fixed',
-    focusPlanet: '\uD83D\uDD0D Planet',
-    focusSpacecraft: '\uD83D\uDD0D Spacecraft',
+    fixed: 'Auto',
+    focusPlanet: '\uD83D\uDCCD Planet',
+    focusSpacecraft: '\uD83D\uDCCD Spacecraft',
     speedBoost: 'Speed boost',
     speedIn: 'Speed in',
     speedOut: 'Speed out',
@@ -368,7 +388,8 @@ const I18N = {
     infoDefault: 'Drag the arrow body to reposition, or drag the tip to rotate. Increase the planet\u2019s speed to see a bigger boost.',
     infoGame: 'Adjust the velocity arrow and flyby altitude to steer the spacecraft through the target. Click Launch when ready!',
     gameSuccess: 'Great shot!',
-    gameMiss: 'Almost! Try again',
+    gameCloseMiss: 'Almost! Try again',
+    gameFarMiss: 'Way off! Try again',
     gameCrash: 'Crash! Too close',
     clickToDismiss: 'Click to continue',
     mercury: 'Mercury', venus: 'Venus', earth: 'Earth', mars: 'Mars',
@@ -386,12 +407,15 @@ const I18N = {
     animSpeed: 'Pr\u0119dko\u015B\u0107 animacji',
     launch: 'Start',
     reset: 'Resetuj',
+    play: 'Odtw\u00F3rz',
+    pause: 'Pauza',
+    stop: 'Zatrzymaj (dwuklik resetuje widok)',
     newTarget: 'Nowy cel',
     precision: 'Precyzja (Shift)',
     view: 'Widok',
-    fixed: 'Sta\u0142y',
-    focusPlanet: '\uD83D\uDD0D Planeta',
-    focusSpacecraft: '\uD83D\uDD0D Statek',
+    fixed: 'Auto',
+    focusPlanet: '\uD83D\uDCCD Planeta',
+    focusSpacecraft: '\uD83D\uDCCD Statek',
     speedBoost: 'Przyrost pr\u0119dko\u015Bci',
     speedIn: 'Pr\u0119dko\u015B\u0107 wlotowa',
     speedOut: 'Pr\u0119dko\u015B\u0107 wylotowa',
@@ -411,7 +435,8 @@ const I18N = {
     infoDefault: 'Przeci\u0105gnij cia\u0142o strza\u0142ki, aby zmieni\u0107 pozycj\u0119, lub przeci\u0105gnij grot, aby obr\u00F3ci\u0107. Zwi\u0119ksz pr\u0119dko\u015B\u0107 planety, aby zobaczy\u0107 wi\u0119kszy przyrost.',
     infoGame: 'Dopasuj strza\u0142k\u0119 pr\u0119dko\u015Bci i wysoko\u015B\u0107 przelotu, aby poprowadzi\u0107 statek przez cel. Kliknij Start gdy gotowe!',
     gameSuccess: '\u015Awietny strza\u0142!',
-    gameMiss: 'Prawie! Spr\u00F3buj ponownie',
+    gameCloseMiss: 'Prawie! Spr\u00F3buj ponownie',
+    gameFarMiss: 'Pud\u0142o! Spr\u00F3buj ponownie',
     gameCrash: 'Katastrofa! Za blisko',
     clickToDismiss: 'Kliknij, aby kontynuowa\u0107',
     mercury: 'Merkury', venus: 'Wenus', earth: 'Ziemia', mars: 'Mars',
@@ -520,8 +545,8 @@ function applyTranslations() {
   document.getElementById('lblPlanet').textContent = l.planet;
   document.getElementById('lblPlanetSpeed').textContent = l.planetSpeed;
   document.getElementById('lblAnimSpeed').textContent = l.animSpeed;
-  document.getElementById('replayBtn').textContent = l.launch;
-  document.getElementById('resetBtn').textContent = l.reset;
+  document.getElementById('resetBtn').title = l.stop;
+  updatePlayButton();
   document.getElementById('newTargetBtn').textContent = l.newTarget;
   document.getElementById('precisionBtn').textContent = l.precision;
   document.getElementById('lblView').textContent = l.view;
@@ -664,22 +689,35 @@ function evaluateGame() {
     return;
   }
 
-  var tol = gameTolerance();
-  var tolSq = tol * tol;
+  var hitTol = gameTolerance();
+  var hitTolSq = hitTol * hitTol;
+  // Close-miss boundary: 3× the hit radius (~33 px on screen). Tight enough
+  // that "almost!" feels honest, generous enough that small misalignments
+  // still get encouragement instead of the discouraging far-miss feedback.
+  var closeTol = hitTol * 3;
+  var closeTolSq = closeTol * closeTol;
   var gx = state.gameTarget.x, gy = state.gameTarget.y;
+  var minDistSq = Infinity;
 
   for (var i = 0; i < state.trajectory.length; i++) {
     var sf = toSunFrame(i);
     var dx = sf.x - gx, dy = sf.y - gy;
-    if (dx * dx + dy * dy < tolSq) {
+    var dSq = dx * dx + dy * dy;
+    if (dSq < minDistSq) minDistSq = dSq;
+    if (dSq < hitTolSq) {
       state.gameResult = 'success';
       showGameOverlay('success');
       return;
     }
   }
 
-  state.gameResult = 'miss';
-  showGameOverlay('miss');
+  if (minDistSq < closeTolSq) {
+    state.gameResult = 'closeMiss';
+    showGameOverlay('closeMiss');
+  } else {
+    state.gameResult = 'farMiss';
+    showGameOverlay('farMiss');
+  }
 }
 
 function showGameOverlay(result) {
@@ -694,8 +732,12 @@ function showGameOverlay(result) {
     emoji = '\uD83C\uDF89'; msg = T('gameSuccess'); bg = 'rgba(63,185,80,0.88)';
   } else if (result === 'crash') {
     emoji = '\uD83D\uDCA5'; msg = T('gameCrash'); bg = 'rgba(249,117,131,0.88)';
-  } else {
-    emoji = '\uD83D\uDC4B'; msg = T('gameMiss'); bg = 'rgba(88,166,255,0.88)';
+  } else if (result === 'closeMiss') {
+    // Thumbs up with Fitzpatrick Type 1-2 skin tone modifier (light/Caucasian).
+    emoji = '\uD83D\uDC4D\uD83C\uDFFB'; msg = T('gameCloseMiss'); bg = 'rgba(88,166,255,0.88)';
+  } else { // farMiss
+    // Thumbs down with Fitzpatrick Type 1-2 skin tone modifier (light/Caucasian).
+    emoji = '\uD83D\uDC4E\uD83C\uDFFB'; msg = T('gameFarMiss'); bg = 'rgba(240,180,60,0.92)';
   }
 
   overlay.style.background = bg;
@@ -896,16 +938,27 @@ function computeTrajectory() {
   computeResults();
 }
 
+// Time anchor: sample 0 (start of integration). This means "the planet is at
+// sun-frame origin at the moment of integration sample 0." The choice is
+// arbitrary for visualization — only relative positions matter — but it's
+// critical that the anchor be STABLE across recomputes. closestIndex was the
+// previous anchor, but it shifts every time the trajectory shape changes,
+// causing toSunFrame(0) to drift during arrow drag (vecPfX is constant but
+// the offset term changes). That drift was hidden by a dragOfsX/Y rendering
+// hack which only shifted the trajectory, not the planet/target/arrow,
+// producing a visual lie where the trajectory appeared to hit a target it
+// physically missed. Anchoring at sample 0 makes toSunFrame(0).x = vecPfX,
+// stable for the entire drag.
 function planetPos(idx) {
   var vp = state.planetVel * V_SCALE;
-  var tRel = (idx - state.closestIndex) * SIM_DT;
+  var tRel = idx * SIM_DT;
   return { x: vp * tRel, y: 0 };
 }
 
 function toSunFrame(idx) {
   var p = state.trajectory[idx];
   var vp = state.planetVel * V_SCALE;
-  var tRel = (idx - state.closestIndex) * SIM_DT;
+  var tRel = idx * SIM_DT;
   return {
     x: p.x + vp * tRel,
     y: p.y,
@@ -1149,14 +1202,6 @@ function drawScene() {
     ctx.fillText('v\u209A', ppx + pr + 6 + arrowLen / 2, ppy - 16);
   }
 
-  // Drag offset: shift trajectory rendering to stay pinned to frozen root
-  var dragOfsX = 0, dragOfsY = 0;
-  if (state.dragMode === 'arrow' || state.dragMode === 'translate') {
-    var sf0Live = toSunFrame(0);
-    dragOfsX = frozenRootX - tx(sf0Live.x);
-    dragOfsY = frozenRootY - ty(sf0Live.y);
-  }
-
   // Render step: finer than the bounds-sampling step so the smoothed curve
   // has enough segments to follow sharp curvature near periapsis.
   var renderStep = Math.max(1, Math.floor(len / 8000));
@@ -1169,18 +1214,18 @@ function drawScene() {
     if (end <= start) return;
     var p0 = toSunFrame(start);
     ctx.beginPath();
-    ctx.moveTo(tx(p0.x) + dragOfsX, ty(p0.y) + dragOfsY);
+    ctx.moveTo(tx(p0.x), ty(p0.y));
     for (var i = start + step; i + step <= end; i += step) {
       var p = toSunFrame(i);
       var pNext = toSunFrame(i + step);
-      var midX = tx((p.x + pNext.x) / 2) + dragOfsX;
-      var midY = ty((p.y + pNext.y) / 2) + dragOfsY;
-      ctx.quadraticCurveTo(tx(p.x) + dragOfsX, ty(p.y) + dragOfsY, midX, midY);
+      var midX = tx((p.x + pNext.x) / 2);
+      var midY = ty((p.y + pNext.y) / 2);
+      ctx.quadraticCurveTo(tx(p.x), ty(p.y), midX, midY);
     }
     // Finish exactly at the requested end sample (so the trail meets the
     // spacecraft icon and the faint trajectory ends at the true last point).
     var pEnd = toSunFrame(end);
-    ctx.lineTo(tx(pEnd.x) + dragOfsX, ty(pEnd.y) + dragOfsY);
+    ctx.lineTo(tx(pEnd.x), ty(pEnd.y));
     ctx.stroke();
   }
 
@@ -1257,7 +1302,7 @@ function drawScene() {
 
   // ── Velocity arrows (exit) ──
   if (!state.crashed) {
-    drawVelocityArrows(len, tx, ty, dragOfsX, dragOfsY);
+    drawVelocityArrows(len, tx, ty);
   }
 
   // ── Draggable velocity vector (arrow length = speed) ──
@@ -1520,14 +1565,14 @@ function drawArrow(x1, y1, x2, y2, color, lineW, headSize) {
   ctx.fill();
 }
 
-function drawVelocityArrows(len, tx, ty, ofsX, ofsY) {
+function drawVelocityArrows(len, tx, ty) {
   var sl = toSunFrame(len - 1);
   var maxSpeed = Math.max(state.vIn, state.vOut, 0.1);
   var maxArrowPx = Math.min(W, H) * 0.14;
   var arrowK = maxArrowPx / (maxSpeed * V_SCALE);
 
   if (state.vOut > 0.01) {
-    var sx = tx(sl.x) + ofsX, sy = ty(sl.y) + ofsY;
+    var sx = tx(sl.x), sy = ty(sl.y);
     var ex = sx + sl.vx * arrowK;
     var ey = sy - sl.vy * arrowK;
 
@@ -1587,20 +1632,41 @@ function animate(timestamp) {
   }
 
   drawScene();
+  updatePlayButton();
   requestAnimationFrame(animate);
 }
 
 // ══════════════════════════════════════════════
 // CONTROLS
 // ══════════════════════════════════════════════
-function replay() {
-  state.currentIndex = 0;
-  stepAccum = 0;
-  state.playing = true;
-  if (state.mode === 'game') {
-    state.gameLaunched = true;
-    state.gameResult = null;
+// Play / Pause / Resume toggle. If currently playing, pauses. If paused mid-
+// trajectory, resumes from the current sample. If paused at the end of the
+// trajectory (or never started), restarts from the beginning. In game mode,
+// every fresh start clears the previous result and re-arms gameLaunched.
+function togglePlay() {
+  if (state.playing) {
+    state.playing = false;
+  } else {
+    if (state.currentIndex >= state.trajectory.length - 1) {
+      state.currentIndex = 0;
+      stepAccum = 0;
+    }
+    state.playing = true;
+    if (state.mode === 'game') {
+      state.gameLaunched = true;
+      state.gameResult = null;
+    }
   }
+  updatePlayButton();
+}
+
+// Sync the Play/Pause icon and tooltip to the current state.playing. Cheap
+// (one class toggle, one title write) so it's safe to call every animation
+// frame; the browser optimizes away no-op DOM writes.
+function updatePlayButton() {
+  var btn = document.getElementById('replayBtn');
+  btn.classList.toggle('playing', state.playing);
+  btn.title = state.playing ? T('pause') : T('play');
 }
 
 function resetSim() {
@@ -1609,6 +1675,25 @@ function resetSim() {
   state.playing = false;
   cameraMode = 'auto';
   updateViewButtons();
+  updatePlayButton();
+}
+
+// Stop button click dispatcher: single click → resetSim (animation reset),
+// double click → resetToDefaults (full per-planet reset). Uses a timer to
+// distinguish single from double click without firing resetSim twice during
+// a double-click sequence.
+var stopClickTimer = null;
+function handleStopClick() {
+  if (stopClickTimer !== null) {
+    clearTimeout(stopClickTimer);
+    stopClickTimer = null;
+    resetToDefaults();
+  } else {
+    stopClickTimer = setTimeout(function() {
+      stopClickTimer = null;
+      resetSim();
+    }, 260);
+  }
 }
 
 function recompute() {
@@ -1637,7 +1722,7 @@ function stepSlider(sliderId, delta) {
   slider.dispatchEvent(new Event('input'));
 }
 
-function selectPlanet(key) {
+function selectPlanet(key, keepTarget) {
   var planet = PLANET_DATA.find(function(p) { return p.key === key; });
   if (!planet) return;
   state.selectedPlanet = key;
@@ -1654,9 +1739,27 @@ function selectPlanet(key) {
   initVecPosition();
   recompute();
 
-  if (state.mode === 'game') {
+  if (state.mode === 'game' && !keepTarget) {
     generateTarget();
   }
+}
+
+// Full reset to the planet's default initial view: angle, periapsis, planet
+// velocity, approach speed, camera mode, and zoom — everything the user sees
+// on a fresh planet selection. Triggered by double-clicking the Stop button.
+// Keeps the game target so the user can retry the same challenge from clean
+// defaults instead of getting a brand new randomized target.
+function resetToDefaults() {
+  state.approachAngle = Math.PI;
+  state.periapsisAlt = 50;
+  state.currentIndex = 0;
+  stepAccum = 0;
+  state.playing = false;
+  zoomFactor = 1;
+  cameraMode = 'auto';
+  selectPlanet(state.selectedPlanet, true);
+  updateViewButtons();
+  updatePlayButton();
 }
 
 document.getElementById('planetSelect').addEventListener('change', function(e) {
