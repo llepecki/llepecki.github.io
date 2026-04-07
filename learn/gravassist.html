@@ -368,20 +368,26 @@ const I18N = {
 // ══════════════════════════════════════════════
 // PLANET DATA
 // ══════════════════════════════════════════════
-// simMass derived from real planetary masses with sqrt compression:
-//   simMass = round(25 * sqrt(real_mass / Earth_mass))
-// simRadius derived analogously: round(12 * sqrt(real_radius / Earth_radius))
-// state.planetRadius is the PHYSICAL radius — collision uses it directly, drawPlanet
-// renders the solid body at this scale and the glow halo at a clamped visible size.
+// Real planetary mass and radius ratios relative to Earth. The simulator uses
+// these directly: mu = massRatio * GM_BASE; planetRadius = BASE_RADIUS * radiusRatio.
+// Mass ratios span ~5750x (Mercury 0.0553 to Jupiter 317.8); the simulator
+// honors this honestly — Jupiter really is ~318x Earth's mu.
+//
+// defaultSpeed is the planet's orbital velocity slider default (Sun-frame).
+// defaultApproachSpeed is the spacecraft slider default. Massive planets need
+// a higher default approach speed to produce hyperbolic flybys at sensible
+// drag distances; if the user sets the slider too low, Jupiter/Saturn will
+// show a bound (captured) orbit instead of a flyby — that's intentional and
+// physically correct.
 const PLANET_DATA = [
-  { key: 'mercury',  simMass: 6,   simRadius: 7,   defaultSpeed: 4.5, colors: { hi: '#b0b0b0', mid: '#8a8a8a', lo: '#5c5c5c', glow: '150,150,150' } },
-  { key: 'venus',    simMass: 23,  simRadius: 12,  defaultSpeed: 3.5, colors: { hi: '#f5e6a3', mid: '#d4b856', lo: '#a08530', glow: '213,184,86' } },
-  { key: 'earth',    simMass: 25,  simRadius: 12,  defaultSpeed: 3.0, colors: { hi: '#7ed6f7', mid: '#3aa8d8', lo: '#1a6e8e', glow: '77,201,246' } },
-  { key: 'mars',     simMass: 8,   simRadius: 9,   defaultSpeed: 2.5, colors: { hi: '#e8a07a', mid: '#c75b3a', lo: '#8b3a1f', glow: '199,91,58' } },
-  { key: 'jupiter',  simMass: 446, simRadius: 40,  defaultSpeed: 1.5, colors: { hi: '#f0c590', mid: '#d4944a', lo: '#a06020', glow: '212,148,74' } },
-  { key: 'saturn',   simMass: 244, simRadius: 37,  defaultSpeed: 1.0, colors: { hi: '#f0dca0', mid: '#c8a84c', lo: '#967830', glow: '200,168,76' } },
-  { key: 'uranus',   simMass: 95,  simRadius: 24,  defaultSpeed: 0.5, colors: { hi: '#b8e8f0', mid: '#7cc8d8', lo: '#4a9aaa', glow: '124,200,216' } },
-  { key: 'neptune',  simMass: 104, simRadius: 24,  defaultSpeed: 0.5, colors: { hi: '#7090e0', mid: '#4060c0', lo: '#203880', glow: '64,96,192' } },
+  { key: 'mercury',  massRatio: 0.0553, radiusRatio: 0.383,  defaultSpeed: 4.5, defaultApproachSpeed: 5,  colors: { hi: '#b0b0b0', mid: '#8a8a8a', lo: '#5c5c5c', glow: '150,150,150' } },
+  { key: 'venus',    massRatio: 0.815,  radiusRatio: 0.949,  defaultSpeed: 3.5, defaultApproachSpeed: 5,  colors: { hi: '#f5e6a3', mid: '#d4b856', lo: '#a08530', glow: '213,184,86' } },
+  { key: 'earth',    massRatio: 1,      radiusRatio: 1,      defaultSpeed: 3.0, defaultApproachSpeed: 5,  colors: { hi: '#7ed6f7', mid: '#3aa8d8', lo: '#1a6e8e', glow: '77,201,246' } },
+  { key: 'mars',     massRatio: 0.107,  radiusRatio: 0.532,  defaultSpeed: 2.5, defaultApproachSpeed: 5,  colors: { hi: '#e8a07a', mid: '#c75b3a', lo: '#8b3a1f', glow: '199,91,58' } },
+  { key: 'jupiter',  massRatio: 317.8,  radiusRatio: 10.973, defaultSpeed: 1.5, defaultApproachSpeed: 10, colors: { hi: '#f0c590', mid: '#d4944a', lo: '#a06020', glow: '212,148,74' } },
+  { key: 'saturn',   massRatio: 95.2,   radiusRatio: 9.140,  defaultSpeed: 1.0, defaultApproachSpeed: 10, colors: { hi: '#f0dca0', mid: '#c8a84c', lo: '#967830', glow: '200,168,76' } },
+  { key: 'uranus',   massRatio: 14.54,  radiusRatio: 3.981,  defaultSpeed: 0.5, defaultApproachSpeed: 8,  colors: { hi: '#b8e8f0', mid: '#7cc8d8', lo: '#4a9aaa', glow: '124,200,216' } },
+  { key: 'neptune',  massRatio: 17.15,  radiusRatio: 3.865,  defaultSpeed: 0.5, defaultApproachSpeed: 8,  colors: { hi: '#7090e0', mid: '#4060c0', lo: '#203880', glow: '64,96,192' } },
 ];
 
 // ══════════════════════════════════════════════
@@ -391,8 +397,8 @@ const state = {
   lang: 'en',
   mode: 'explore',
   selectedPlanet: 'earth',
-  planetMass: 25,
-  planetRadius: 12,
+  planetMass: 1,    // Earth massRatio; mu = planetMass * GM_BASE
+  planetRadius: 12, // = BASE_RADIUS * earth.radiusRatio
   planetColors: { hi: '#7ed6f7', mid: '#3aa8d8', lo: '#1a6e8e', glow: '77,201,246' },
   approachSpeed: 5,
   periapsisAlt: 50,
@@ -420,10 +426,16 @@ const state = {
 // ══════════════════════════════════════════════
 // CONSTANTS
 // ══════════════════════════════════════════════
-const GM_SCALE  = 200;
-const V_SCALE   = 1.5;
-const SIM_DT    = 0.25;
-const MAX_STEPS = 15000;
+// GM_BASE is Earth's gravitational parameter in sim units; per-planet mu is
+// computed as state.planetMass (= massRatio) * GM_BASE. Earth's behavior is
+// preserved exactly: 1 * 5000 = 5000, matching the previous 25 * 200 = 5000.
+const GM_BASE     = 5000;
+const BASE_RADIUS = 12;
+const V_SCALE     = 1.5;
+const SIM_DT      = 0.25;
+// MAX_STEPS bumped from 15000 to handle Jupiter-class encounters where the
+// integration starts at r ≈ 70k–80k and traverses ~160k of trajectory.
+const MAX_STEPS   = 80000;
 
 // ══════════════════════════════════════════════
 // I18N FUNCTIONS
@@ -623,18 +635,26 @@ function showGameOverlay(result) {
 // VECTOR POSITION HELPERS
 // ══════════════════════════════════════════════
 function computeStartDist() {
-  var GM = state.planetMass * GM_SCALE;
+  var GM = state.planetMass * GM_BASE;
   var vp = state.planetVel * V_SCALE;
   var vScSun = state.approachSpeed * V_SCALE;
   var vPfX = vScSun * Math.cos(state.approachAngle) - vp;
   var vPfY = vScSun * Math.sin(state.approachAngle);
-  var vInf2 = vPfX * vPfX + vPfY * vPfY;
-  return Math.max(800, Math.min(8000, Math.ceil(10 * GM / Math.max(vInf2, 1))));
+  // vLocal2 is the local KE×2 in the planet frame (under the local semantic).
+  // The formula 10*GM/v² places gravitational potential ≈ 0.4·KE at start,
+  // leaving 60% as asymptotic vInf². Cap raised to 80000 to handle Jupiter
+  // (which would otherwise be capped into a bound state). minR scales with
+  // planetRadius so massive bodies leave visual room around the integration
+  // start.
+  var vLocal2 = vPfX * vPfX + vPfY * vPfY;
+  var dynamic = Math.ceil(10 * GM / Math.max(vLocal2, 1));
+  var minR = Math.max(800, 30 * state.planetRadius);
+  return Math.max(minR, Math.min(80000, dynamic));
 }
 
 function initVecPosition() {
   var startDist = computeStartDist();
-  var GM = state.planetMass * GM_SCALE;
+  var GM = state.planetMass * GM_BASE;
   var vp = state.planetVel * V_SCALE;
   var vScSun = state.approachSpeed * V_SCALE;
   var alpha = state.approachAngle;
@@ -653,7 +673,7 @@ function initVecPosition() {
 }
 
 function computePeriapsisAltFromPosition() {
-  var GM = state.planetMass * GM_SCALE;
+  var GM = state.planetMass * GM_BASE;
   var vp = state.planetVel * V_SCALE;
   var vScSun = state.approachSpeed * V_SCALE;
   var alpha = state.approachAngle;
@@ -729,7 +749,7 @@ window.addEventListener('resize', function() { resize(); });
 // ══════════════════════════════════════════════
 function computeTrajectory() {
   var startDist = computeStartDist();
-  var GM = state.planetMass * GM_SCALE;
+  var GM = state.planetMass * GM_BASE;
   var vp = state.planetVel * V_SCALE;
   var vScSun = state.approachSpeed * V_SCALE;
   var alpha = state.approachAngle;
@@ -863,7 +883,7 @@ function asymptoticVelocityPf(rx, ry, vx, vy, mu, branch) {
 
 function computeResults() {
   var vp = state.planetVel * V_SCALE;
-  var mu = state.planetMass * GM_SCALE;
+  var mu = state.planetMass * GM_BASE;
   var traj = state.trajectory;
 
   if (traj.length === 0) {
@@ -1044,32 +1064,44 @@ function drawScene() {
     dragOfsY = frozenRootY - ty(sf0Live.y);
   }
 
+  // Render step: finer than the bounds-sampling step so the smoothed curve
+  // has enough segments to follow sharp curvature near periapsis.
+  var renderStep = Math.max(1, Math.floor(len / 8000));
+
+  // Smooth-polyline helper using quadratic Beziers through segment midpoints.
+  // Each curve goes midpoint(i-1,i) → midpoint(i,i+1) with sample i as the
+  // control point, producing a visually smooth approximation of the polyline
+  // without changing the underlying physics.
+  function strokeSmoothTrail(start, end, step) {
+    if (end <= start) return;
+    var p0 = toSunFrame(start);
+    ctx.beginPath();
+    ctx.moveTo(tx(p0.x) + dragOfsX, ty(p0.y) + dragOfsY);
+    for (var i = start + step; i + step <= end; i += step) {
+      var p = toSunFrame(i);
+      var pNext = toSunFrame(i + step);
+      var midX = tx((p.x + pNext.x) / 2) + dragOfsX;
+      var midY = ty((p.y + pNext.y) / 2) + dragOfsY;
+      ctx.quadraticCurveTo(tx(p.x) + dragOfsX, ty(p.y) + dragOfsY, midX, midY);
+    }
+    // Finish exactly at the requested end sample (so the trail meets the
+    // spacecraft icon and the faint trajectory ends at the true last point).
+    var pEnd = toSunFrame(end);
+    ctx.lineTo(tx(pEnd.x) + dragOfsX, ty(pEnd.y) + dragOfsY);
+    ctx.stroke();
+  }
+
   // ── Full trajectory (faint) ──
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = 'rgba(255,224,102,0.08)';
-  ctx.beginPath();
-  for (var i = 0; i < len; i += sampleStep) {
-    var p = toSunFrame(i);
-    if (i === 0) ctx.moveTo(tx(p.x) + dragOfsX, ty(p.y) + dragOfsY);
-    else ctx.lineTo(tx(p.x) + dragOfsX, ty(p.y) + dragOfsY);
-  }
-  ctx.lineTo(tx(pL.x) + dragOfsX, ty(pL.y) + dragOfsY);
-  ctx.stroke();
+  strokeSmoothTrail(0, len - 1, renderStep);
 
   // ── Animated trail ──
   if (idx > 0) {
-    var trailStep = Math.max(1, Math.floor(idx / 600));
+    var trailStep = Math.max(1, Math.floor(idx / 2000));
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = 'rgba(255,224,102,0.55)';
-    ctx.beginPath();
-    for (var i = 0; i <= idx; i += trailStep) {
-      var p = toSunFrame(i);
-      if (i === 0) ctx.moveTo(tx(p.x) + dragOfsX, ty(p.y) + dragOfsY);
-      else ctx.lineTo(tx(p.x) + dragOfsX, ty(p.y) + dragOfsY);
-    }
-    var pCur = toSunFrame(idx);
-    ctx.lineTo(tx(pCur.x) + dragOfsX, ty(pCur.y) + dragOfsY);
-    ctx.stroke();
+    strokeSmoothTrail(0, idx, trailStep);
   }
 
   // ── Game target ──
@@ -1228,12 +1260,14 @@ function drawScene() {
 }
 
 function drawPlanet(px, py, scale) {
-  // physR is the PHYSICAL radius in screen units (matches collision boundary).
-  // glowR is clamped to a minimum so the planet stays visible at zoom-out.
-  // bodyR floors the body to 1 px so it never disappears entirely.
+  // physR is the PHYSICAL radius in screen units — drawn at exactly this size
+  // so the filled solid body never exceeds the collision boundary. The glow
+  // and atmosphere remain clamped for visibility, and a non-solid helper
+  // marker is drawn at extreme zoom-out where physR would otherwise be too
+  // small to see.
   var physR = state.planetRadius * scale;
   var glowR = Math.max(8, physR);
-  var bodyR = Math.max(1, physR);
+  var bodyR = physR;
   var c = state.planetColors;
 
   // Atmosphere ring (visible scale)
@@ -1267,6 +1301,23 @@ function drawPlanet(px, py, scale) {
   ctx.strokeStyle = 'rgba(' + c.glow + ',0.3)';
   ctx.lineWidth = 1;
   ctx.stroke();
+
+  // Non-solid helper marker at extreme zoom-out: when the physical body is
+  // smaller than ~1.5 px the user can't see it, so draw an outline ring and
+  // crosshair to indicate the planet's location without misrepresenting the
+  // collision radius.
+  if (physR < 1.5) {
+    var helperR = Math.max(6, glowR * 0.4);
+    ctx.strokeStyle = 'rgba(' + c.glow + ',0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(px, py, helperR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px - helperR, py); ctx.lineTo(px + helperR, py);
+    ctx.moveTo(px, py - helperR); ctx.lineTo(px, py + helperR);
+    ctx.stroke();
+  }
 }
 
 function drawSpacecraft(x, y, angle) {
@@ -1432,10 +1483,11 @@ function selectPlanet(key) {
   var planet = PLANET_DATA.find(function(p) { return p.key === key; });
   if (!planet) return;
   state.selectedPlanet = key;
-  state.planetMass = planet.simMass;
-  state.planetRadius = planet.simRadius;
+  state.planetMass = planet.massRatio;
+  state.planetRadius = BASE_RADIUS * planet.radiusRatio;
   state.planetColors = planet.colors;
   state.planetVel = planet.defaultSpeed;
+  state.approachSpeed = planet.defaultApproachSpeed;
 
   document.getElementById('planetVelSlider').value = planet.defaultSpeed;
   document.getElementById('planetVelVal').textContent = planet.defaultSpeed;
