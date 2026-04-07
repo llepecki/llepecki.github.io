@@ -249,9 +249,9 @@
     <div class="ctrl-group" id="grpPlanetVel">
       <span class="ctrl-label" id="lblPlanetSpeed">Planet Speed</span>
       <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('planetVelSlider',-0.5)">&minus;</button>
-        <input type="range" id="planetVelSlider" min="0" max="6" value="0" step="0.5">
-        <button class="step-btn" onclick="stepSlider('planetVelSlider',0.5)">+</button>
+        <button class="step-btn" onclick="stepSlider('planetVelSlider',-5)">&minus;</button>
+        <input type="range" id="planetVelSlider" min="0" max="60" value="0" step="5">
+        <button class="step-btn" onclick="stepSlider('planetVelSlider',5)">+</button>
         <span class="slider-val" id="planetVelVal">0</span>
       </div>
     </div>
@@ -459,14 +459,14 @@ const I18N = {
 // show a bound (captured) orbit instead of a flyby — that's intentional and
 // physically correct.
 const PLANET_DATA = [
-  { key: 'mercury',  massRatio: 0.0553, radiusRatio: 0.383,  defaultSpeed: 4.5, defaultApproachSpeed: 5,  colors: { hi: '#b0b0b0', mid: '#8a8a8a', lo: '#5c5c5c', glow: '150,150,150' } },
-  { key: 'venus',    massRatio: 0.815,  radiusRatio: 0.949,  defaultSpeed: 3.5, defaultApproachSpeed: 5,  colors: { hi: '#f5e6a3', mid: '#d4b856', lo: '#a08530', glow: '213,184,86' } },
-  { key: 'earth',    massRatio: 1,      radiusRatio: 1,      defaultSpeed: 3.0, defaultApproachSpeed: 5,  colors: { hi: '#7ed6f7', mid: '#3aa8d8', lo: '#1a6e8e', glow: '77,201,246' } },
-  { key: 'mars',     massRatio: 0.107,  radiusRatio: 0.532,  defaultSpeed: 2.5, defaultApproachSpeed: 5,  colors: { hi: '#e8a07a', mid: '#c75b3a', lo: '#8b3a1f', glow: '199,91,58' } },
-  { key: 'jupiter',  massRatio: 317.8,  radiusRatio: 10.973, defaultSpeed: 1.5, defaultApproachSpeed: 10, colors: { hi: '#f0c590', mid: '#d4944a', lo: '#a06020', glow: '212,148,74' } },
-  { key: 'saturn',   massRatio: 95.2,   radiusRatio: 9.140,  defaultSpeed: 1.0, defaultApproachSpeed: 10, colors: { hi: '#f0dca0', mid: '#c8a84c', lo: '#967830', glow: '200,168,76' } },
-  { key: 'uranus',   massRatio: 14.54,  radiusRatio: 3.981,  defaultSpeed: 0.5, defaultApproachSpeed: 8,  colors: { hi: '#b8e8f0', mid: '#7cc8d8', lo: '#4a9aaa', glow: '124,200,216' } },
-  { key: 'neptune',  massRatio: 17.15,  radiusRatio: 3.865,  defaultSpeed: 0.5, defaultApproachSpeed: 8,  colors: { hi: '#7090e0', mid: '#4060c0', lo: '#203880', glow: '64,96,192' } },
+  { key: 'mercury',  massRatio: 0.0553, radiusRatio: 0.383,  defaultSpeed: 45, defaultApproachSpeed: 50,  colors: { hi: '#b0b0b0', mid: '#8a8a8a', lo: '#5c5c5c', glow: '150,150,150' } },
+  { key: 'venus',    massRatio: 0.815,  radiusRatio: 0.949,  defaultSpeed: 35, defaultApproachSpeed: 50,  colors: { hi: '#f5e6a3', mid: '#d4b856', lo: '#a08530', glow: '213,184,86' } },
+  { key: 'earth',    massRatio: 1,      radiusRatio: 1,      defaultSpeed: 30, defaultApproachSpeed: 50,  colors: { hi: '#7ed6f7', mid: '#3aa8d8', lo: '#1a6e8e', glow: '77,201,246' } },
+  { key: 'mars',     massRatio: 0.107,  radiusRatio: 0.532,  defaultSpeed: 25, defaultApproachSpeed: 50,  colors: { hi: '#e8a07a', mid: '#c75b3a', lo: '#8b3a1f', glow: '199,91,58' } },
+  { key: 'jupiter',  massRatio: 317.8,  radiusRatio: 10.973, defaultSpeed: 15, defaultApproachSpeed: 100, colors: { hi: '#f0c590', mid: '#d4944a', lo: '#a06020', glow: '212,148,74' } },
+  { key: 'saturn',   massRatio: 95.2,   radiusRatio: 9.140,  defaultSpeed: 10, defaultApproachSpeed: 100, colors: { hi: '#f0dca0', mid: '#c8a84c', lo: '#967830', glow: '200,168,76' } },
+  { key: 'uranus',   massRatio: 14.54,  radiusRatio: 3.981,  defaultSpeed: 5,  defaultApproachSpeed: 80,  colors: { hi: '#b8e8f0', mid: '#7cc8d8', lo: '#4a9aaa', glow: '124,200,216' } },
+  { key: 'neptune',  massRatio: 17.15,  radiusRatio: 3.865,  defaultSpeed: 5,  defaultApproachSpeed: 80,  colors: { hi: '#7090e0', mid: '#4060c0', lo: '#203880', glow: '64,96,192' } },
 ];
 
 // ══════════════════════════════════════════════
@@ -479,7 +479,7 @@ const state = {
   planetMass: 1,    // Earth massRatio; mu = planetMass * GM_BASE
   planetRadius: 12, // = BASE_RADIUS * earth.radiusRatio
   planetColors: { hi: '#7ed6f7', mid: '#3aa8d8', lo: '#1a6e8e', glow: '77,201,246' },
-  approachSpeed: 5,
+  approachSpeed: 50,
   periapsisAlt: 50,
   planetVel: 0,
   approachAngle: Math.PI,
@@ -515,7 +515,11 @@ const state = {
 // preserved exactly: 1 * 5000 = 5000, matching the previous 25 * 200 = 5000.
 const GM_BASE     = 5000;
 const BASE_RADIUS = 12;
-const V_SCALE     = 1.5;
+// V_SCALE bridges slider units to the integrator's internal speed units.
+// With slider units anchored so 1 unit ≈ 1 km/s, V_SCALE absorbs the
+// 10× factor so the integrator sees the same sim-frame speeds as before
+// the slider rescale (e.g. Earth at planetVel=30 → vp = 30 * 0.15 = 4.5).
+const V_SCALE     = 0.15;
 const SIM_DT      = 0.25;
 // MAX_STEPS bumped from 15000 to handle Jupiter-class encounters where the
 // integration starts at r ≈ 70k–80k and traverses ~160k of trajectory.
@@ -523,12 +527,13 @@ const MAX_STEPS   = 80000;
 
 // Real-world unit conversions for the readouts. LENGTH is exact for all
 // planets because radiusRatio values come from real planetary data. VELOCITY
-// is anchored on Earth's orbital velocity (29.78 km/s at slider 3.0); other
-// planets are approximate (~2% Saturn → ~27% Uranus error at default slider)
-// because per-planet defaultSpeed values were tuned for visual effect, not
-// strict realism. Acceptable for educational scale awareness.
+// is anchored on Earth's orbital velocity (29.78 km/s at planetVel = 30 in
+// the new 1..100 slider scale). With 1 slider unit ≈ 1 km/s, the slider
+// value IS approximately the speed in km/s. Other planets are approximate
+// (~2% Saturn → ~27% Uranus error at default slider) because per-planet
+// defaultSpeed values were tuned for visual effect, not strict realism.
 const KM_PER_SIM_LENGTH  = 6371 / BASE_RADIUS;  // ≈ 530.92 km / sim unit
-const KMS_PER_SLIDER_VEL = 29.78 / 3.0;         // ≈ 9.93 km/s per slider unit
+const KMS_PER_SLIDER_VEL = 29.78 / 30.0;        // ≈ 0.993 km/s per slider unit
 
 // ══════════════════════════════════════════════
 // I18N FUNCTIONS
@@ -632,7 +637,7 @@ function generateTarget() {
   for (var attempt = 0; attempt < 20; attempt++) {
     var solAngle = Math.PI + (Math.random() - 0.5) * 1.0;
     var solAlt = state.planetRadius * (1 + Math.random() * 4);
-    var solSpeed = 3 + Math.random() * 5;
+    var solSpeed = 30 + Math.random() * 50;
 
     state.approachAngle = solAngle;
     state.periapsisAlt = solAlt;
@@ -662,9 +667,9 @@ function generateTarget() {
   // Reset player to defaults
   state.approachAngle = Math.PI;
   state.periapsisAlt = 50;
-  state.approachSpeed = 5;
+  state.approachSpeed = 50;
   state.periapsisAlt = 50;
-  state.approachSpeed = 5;
+  state.approachSpeed = 50;
 
   initVecPosition();
   recompute();
@@ -1356,7 +1361,7 @@ function drawScene() {
     scStartScreenY = sy;
 
     var a = state.approachAngle;
-    var aLen = MIN_ARROW_PX + (state.approachSpeed - 1) * (MAX_ARROW_PX - MIN_ARROW_PX) / 9;
+    var aLen = MIN_ARROW_PX + (state.approachSpeed - 10) * (MAX_ARROW_PX - MIN_ARROW_PX) / 90;
     var tipX = sx + Math.cos(a) * aLen;
     var tipY = sy - Math.sin(a) * aLen;
     handleScreenX = tipX;
@@ -1406,7 +1411,7 @@ function drawScene() {
     ctx.font = '17px "Share Tech Mono", monospace';
     ctx.fillStyle = '#58a6ff';
     ctx.textAlign = 'center';
-    ctx.fillText('v=' + state.vIn.toFixed(1),
+    ctx.fillText('v=' + Math.round(state.vIn),
       midX + perpX / perpLen * 22, midY + perpY / perpLen * 22);
   })();
 
@@ -1624,7 +1629,7 @@ function drawVelocityArrows(len, tx, ty) {
     var mx = (sx + ex) / 2, my = (sy + ey) / 2;
     var perpX = -(ey - sy), perpY = ex - sx;
     var perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
-    ctx.fillText('v=' + state.vOut.toFixed(1),
+    ctx.fillText('v=' + Math.round(state.vOut),
       mx + perpX / perpLen * 22, my + perpY / perpLen * 22);
   }
 }
@@ -1916,8 +1921,8 @@ function handleArrowDrag(pos, shiftHeld) {
 
   state.approachAngle = Math.atan2(dy, dx);
 
-  var speed = 1 + (dist - MIN_ARROW_PX) * 9 / (MAX_ARROW_PX - MIN_ARROW_PX);
-  state.approachSpeed = Math.max(1, Math.min(10, Math.round(speed * 10) / 10));
+  var speed = 10 + (dist - MIN_ARROW_PX) * 90 / (MAX_ARROW_PX - MIN_ARROW_PX);
+  state.approachSpeed = Math.max(10, Math.min(100, Math.round(speed)));
 
   state.currentIndex = 0;
   computePeriapsisAltFromPosition();
