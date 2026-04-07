@@ -817,8 +817,53 @@ function toSunFrame(idx) {
   };
 }
 
+// Returns the asymptotic velocity vector at infinity (in planet frame) for the
+// orbit defined by the local state (rx, ry, vx, vy). branch = 'in' returns the
+// past-infinity (inbound) asymptote; 'out' returns the future-infinity
+// (outbound) asymptote. Falls back to the local velocity for non-hyperbolic
+// or degenerate states.
+//
+// Derivation:
+// - vis-viva: vInf² = v² − 2·mu/r
+// - eccentricity vector: e_vec = ((v² − mu/r)·r − (r·v)·v) / mu
+// - perifocal asymptote unit vectors:
+//     inbound  = (1/e,  sqrt(e²−1)/e)
+//     outbound = (-1/e, sqrt(e²−1)/e)
+// - perifocal x-axis ê_p = e_vec/e (toward periapsis)
+// - perifocal y-axis ê_q = sgn(h)·(-eY, eX)/e (in direction of motion at periapsis)
+// - planet-frame asymptote = perX·ê_p + perY·ê_q, scaled by vInf
+function asymptoticVelocityPf(rx, ry, vx, vy, mu, branch) {
+  var r = Math.sqrt(rx * rx + ry * ry);
+  var v2 = vx * vx + vy * vy;
+  var vInf2 = v2 - 2 * mu / r;
+  if (vInf2 <= 0) return { x: vx, y: vy };
+  var vInf = Math.sqrt(vInf2);
+
+  var coeffR = (v2 - mu / r) / mu;
+  var rDotV = rx * vx + ry * vy;
+  var coeffV = rDotV / mu;
+  var eX = coeffR * rx - coeffV * vx;
+  var eY = coeffR * ry - coeffV * vy;
+  var e = Math.sqrt(eX * eX + eY * eY);
+  if (e <= 1.0001) return { x: vx, y: vy };
+
+  var sqrtE2m1 = Math.sqrt(e * e - 1);
+  var perX = (branch === 'in') ? (1 / e) : (-1 / e);
+  var perY = sqrtE2m1 / e;
+
+  var h = rx * vy - ry * vx;
+  var sgnH = h >= 0 ? 1 : -1;
+  var ePx = eX / e, ePy = eY / e;
+  var eQx = -sgnH * eY / e, eQy = sgnH * eX / e;
+
+  var planetX = perX * ePx + perY * eQx;
+  var planetY = perX * ePy + perY * eQy;
+  return { x: planetX * vInf, y: planetY * vInf };
+}
+
 function computeResults() {
   var vp = state.planetVel * V_SCALE;
+  var mu = state.planetMass * GM_SCALE;
   var traj = state.trajectory;
 
   if (traj.length === 0) {
@@ -829,10 +874,13 @@ function computeResults() {
     return;
   }
 
-  // Entry: sun-frame velocity at first trajectory point
+  // Asymptotic inbound: derived from the FIRST integrated sample via vis-viva
+  // and the eccentricity vector. This is the actual asymptotic Sun-frame
+  // entry speed, not the slider value.
   var first = traj[0];
-  var vInSunX = first.vx + vp;
-  var vInSunY = first.vy;
+  var asymIn = asymptoticVelocityPf(first.x, first.y, first.vx, first.vy, mu, 'in');
+  var vInSunX = asymIn.x + vp;
+  var vInSunY = asymIn.y;
   state.vIn = Math.sqrt(vInSunX * vInSunX + vInSunY * vInSunY) / V_SCALE;
 
   if (state.crashed) {
@@ -842,16 +890,20 @@ function computeResults() {
     return;
   }
 
-  // Exit: sun-frame velocity at last trajectory point (far-field after stop rule)
+  // Asymptotic outbound: derived from the LAST integrated sample. Computing
+  // inbound from first and outbound from last also serves as a built-in
+  // integrator-drift check (energy conservation requires |asymIn| = |asymOut|).
   var last = traj[traj.length - 1];
-  var vOutSunX = last.vx + vp;
-  var vOutSunY = last.vy;
+  var asymOut = asymptoticVelocityPf(last.x, last.y, last.vx, last.vy, mu, 'out');
+  var vOutSunX = asymOut.x + vp;
+  var vOutSunY = asymOut.y;
   state.vOut = Math.sqrt(vOutSunX * vOutSunX + vOutSunY * vOutSunY) / V_SCALE;
   state.deltaV = state.vOut - state.vIn;
 
-  // Deflection: signed angle between inbound and outbound planet-frame velocity vectors
-  var inAngle = Math.atan2(first.vy, first.vx);
-  var outAngle = Math.atan2(last.vy, last.vx);
+  // Deflection: signed angle between asymptotic inbound and outbound vectors
+  // in the planet frame. Equals 2·asin(1/e) in magnitude for a clean orbit.
+  var inAngle = Math.atan2(asymIn.y, asymIn.x);
+  var outAngle = Math.atan2(asymOut.y, asymOut.x);
   var da = (outAngle - inAngle) * 180 / Math.PI;
   while (da > 180) da -= 360;
   while (da < -180) da += 360;
