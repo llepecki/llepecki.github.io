@@ -52,7 +52,7 @@
   .canvas-wrap canvas { width: 100%; height: 100%; display: block; }
 
   .controls {
-    width: 260px; flex-shrink: 0;
+    width: 300px; flex-shrink: 0;
     padding: 20px;
     border-left: 1px solid var(--panel-border);
     display: flex; flex-direction: column; gap: 18px;
@@ -268,6 +268,10 @@
     </div>
 
     <div class="ctrl-group">
+      <button class="type-btn full-width" id="precisionBtn" onclick="togglePrecision()">Precision (Shift)</button>
+    </div>
+
+    <div class="ctrl-group">
       <button class="type-btn full-width" id="replayBtn" onclick="replay()">Launch</button>
       <button class="type-btn full-width" id="resetBtn" onclick="resetSim()">Reset</button>
     </div>
@@ -340,6 +344,7 @@ const I18N = {
     launch: 'Launch',
     reset: 'Reset',
     newTarget: 'New Target',
+    precision: 'Precision (Shift)',
     view: 'View',
     fixed: 'Fixed',
     focusPlanet: '\uD83D\uDD0D Planet',
@@ -382,6 +387,7 @@ const I18N = {
     launch: 'Start',
     reset: 'Resetuj',
     newTarget: 'Nowy cel',
+    precision: 'Precyzja (Shift)',
     view: 'Widok',
     fixed: 'Sta\u0142y',
     focusPlanet: '\uD83D\uDD0D Planeta',
@@ -470,7 +476,9 @@ const state = {
   gameTarget: null,
   gameResult: null,
   gameLaunched: false,
-  fineDrag: false,
+  fineDrag: false,        // derived: precisionMode XOR shiftHeld
+  precisionMode: false,   // latched setting (toggled by button click)
+  shiftHeld: false,       // momentary Shift key tracking
 };
 
 // ══════════════════════════════════════════════
@@ -515,6 +523,7 @@ function applyTranslations() {
   document.getElementById('replayBtn').textContent = l.launch;
   document.getElementById('resetBtn').textContent = l.reset;
   document.getElementById('newTargetBtn').textContent = l.newTarget;
+  document.getElementById('precisionBtn').textContent = l.precision;
   document.getElementById('lblView').textContent = l.view;
   document.getElementById('autoViewBtn').textContent = l.fixed;
   document.getElementById('focusPlanetBtn').textContent = l.focusPlanet;
@@ -1754,14 +1763,17 @@ function handleArrowDrag(pos, shiftHeld) {
   // Delta accumulation: cursor movement is added to an effective tip position,
   // optionally scaled down by 8x for fine adjustments. This avoids any jumps
   // when Shift is pressed or released mid-drag — only NEW movement is scaled.
+  state.shiftHeld = !!shiftHeld;
+  recomputeFineDrag();
+  updatePrecisionUI();
+
   var rawDx = pos.x - dragLastPosX;
   var rawDy = pos.y - dragLastPosY;
-  var scale = shiftHeld ? 0.125 : 1.0;
+  var scale = state.fineDrag ? 0.125 : 1.0;
   dragAccumX += rawDx * scale;
   dragAccumY += rawDy * scale;
   dragLastPosX = pos.x;
   dragLastPosY = pos.y;
-  state.fineDrag = !!shiftHeld;
 
   var effX = dragInitialTipX + dragAccumX;
   var effY = dragInitialTipY + dragAccumY;
@@ -1847,10 +1859,27 @@ function startDrag(mode, pos) {
 function endDrag() {
   if (state.dragMode) {
     state.dragMode = null;
-    state.fineDrag = false;
     canvas.style.cursor = 'default';
     unfreezeCamera();
   }
+}
+
+// Effective precision state = latched setting OR Shift held. Shift acts as a
+// momentary boost only when precision is NOT latched on; once latched, Shift
+// is a no-op. Both the toggle button click and Shift key events update this
+// through recomputeFineDrag + updatePrecisionUI.
+function recomputeFineDrag() {
+  state.fineDrag = state.precisionMode || state.shiftHeld;
+}
+
+function updatePrecisionUI() {
+  document.getElementById('precisionBtn').classList.toggle('active', state.fineDrag);
+}
+
+function togglePrecision() {
+  state.precisionMode = !state.precisionMode;
+  recomputeFineDrag();
+  updatePrecisionUI();
 }
 
 canvas.addEventListener('mousedown', function(e) {
@@ -1866,7 +1895,9 @@ canvas.addEventListener('mousedown', function(e) {
   } else if (isNearArrow(pos)) {
     startDrag('arrow', pos);
     canvas.style.cursor = 'grabbing';
-    state.fineDrag = e.shiftKey;
+    state.shiftHeld = e.shiftKey;
+    recomputeFineDrag();
+    updatePrecisionUI();
     e.preventDefault();
   }
 });
@@ -1923,18 +1954,23 @@ canvas.addEventListener('touchmove', function(e) {
 
 canvas.addEventListener('touchend', endDrag);
 
-// Instant visual feedback for fine-mode toggle while the arrow is being dragged.
-// The actual scaling happens in handleArrowDrag on the next mousemove; these
-// listeners only update the visual flag so the shaft color flips immediately.
+// Track Shift globally so the precision toggle button reflects the current
+// effective state (latched XOR Shift held), and so the arrow shaft color
+// flips immediately during drag without waiting for the next mousemove.
+// The !state.shiftHeld guard avoids redundant work from auto-repeat keydown.
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Shift' && state.dragMode === 'arrow') {
-    state.fineDrag = true;
+  if (e.key === 'Shift' && !state.shiftHeld) {
+    state.shiftHeld = true;
+    recomputeFineDrag();
+    updatePrecisionUI();
   }
 });
 
 document.addEventListener('keyup', function(e) {
-  if (e.key === 'Shift' && state.dragMode === 'arrow') {
-    state.fineDrag = false;
+  if (e.key === 'Shift' && state.shiftHeld) {
+    state.shiftHeld = false;
+    recomputeFineDrag();
+    updatePrecisionUI();
   }
 });
 
