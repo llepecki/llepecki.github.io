@@ -37,11 +37,14 @@
 
   .lang-btn {
     background: none; border: 1px solid var(--panel-border);
-    border-radius: 4px; padding: 3px 4px;
+    border-radius: 4px; padding: 3px 8px;
     cursor: pointer; flex-shrink: 0;
-    transition: border-color 0.15s;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    transition: border-color 0.15s, color 0.15s;
   }
-  .lang-btn:hover { border-color: var(--accent); }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   .main { display: flex; height: calc(100vh - 80px); }
 
@@ -223,9 +226,7 @@
     <h1>&#x1F680; <span id="titleText">Gravity Assist Simulator</span></h1>
     <p id="subtitleText">A moving planet can speed up a spacecraft for free. Increase the planet's speed to see how.</p>
   </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">
-    <svg width="28" height="20" viewBox="0 0 28 20" id="langFlag"><rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/></svg>
-  </button>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
 </header>
 
 <div class="main">
@@ -578,12 +579,8 @@ function applyTranslations() {
 
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
-  var flag = document.getElementById('langFlag');
-  if (state.lang === 'en') {
-    flag.innerHTML = '<rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/>';
-  } else {
-    flag.innerHTML = '<rect width="28" height="20" fill="#012169"/><path d="M0 0L28 20M28 0L0 20" stroke="#fff" stroke-width="3"/><path d="M0 0L28 20M28 0L0 20" stroke="#C8102E" stroke-width="1.5"/><path d="M14 0V20M0 10H28" stroke="#fff" stroke-width="5"/><path d="M14 0V20M0 10H28" stroke="#C8102E" stroke-width="3"/>';
-  }
+  // Button label shows the language you'd switch TO (the inverse of current).
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
   applyTranslations();
 }
 
