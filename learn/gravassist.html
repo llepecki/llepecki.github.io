@@ -353,6 +353,8 @@ const I18N = {
     planetVelKms: 'Planet velocity',
     curSpeed: 'Current speed',
     curAltitude: 'Current altitude',
+    hintLine1: 'Drag the spacecraft to reposition',
+    hintLine2: 'Drag the tip to aim and set speed',
     crash: 'CRASH',
     stationary: '(stationary)',
     infoCrash: 'The spacecraft flew too close and crashed into the planet! Increase the flyby altitude or spacecraft speed to survive the encounter.',
@@ -393,6 +395,8 @@ const I18N = {
     planetVelKms: 'Pr\u0119dko\u015B\u0107 planety',
     curSpeed: 'Bie\u017C\u0105ca pr\u0119dko\u015B\u0107',
     curAltitude: 'Bie\u017C\u0105ca wysoko\u015B\u0107',
+    hintLine1: 'Przeci\u0105gnij statek, aby zmieni\u0107 pozycj\u0119',
+    hintLine2: 'Przeci\u0105gnij grot, aby celowa\u0107 i ustawi\u0107 pr\u0119dko\u015B\u0107',
     crash: 'KATASTROFA',
     stationary: '(nieruchoma)',
     infoCrash: 'Statek kosmiczny przylecia\u0142 za blisko i rozbi\u0142 si\u0119 o planet\u0119! Zwi\u0119ksz wysoko\u015B\u0107 przelotu lub pr\u0119dko\u015B\u0107 statku.',
@@ -462,6 +466,7 @@ const state = {
   deltaV: 0,
   deflectionAngle: 0,
   maxSpeedSliderUnits: 0,
+  hintShown: true,
   gameTarget: null,
   gameResult: null,
   gameLaunched: false,
@@ -634,7 +639,11 @@ function generateTarget() {
 function newTarget() { generateTarget(); }
 
 function gameTolerance() {
-  return Math.max(20, state.planetRadius * 1.6);
+  // Constant on-screen radius (~11 px) regardless of planet/zoom. Anchored
+  // to lastScale, which is the current camera scale set every frame in
+  // drawScene; the rendering then computes gtol * scale = 11 px.
+  // Matches Earth's default visual size so the target stays consistent.
+  return 11 / Math.max(lastScale, 0.001);
 }
 
 function evaluateGame() {
@@ -1311,6 +1320,9 @@ function drawScene() {
       midX + perpX / perpLen * 22, midY + perpY / perpLen * 22);
   })();
 
+  // ── Onboarding tooltip (vanishes after first drag) ──
+  drawVectorTooltip();
+
   // ── Spacecraft (drawn LAST among game objects) ──
   if (idx < len) {
     var sc = toSunFrame(idx);
@@ -1392,6 +1404,68 @@ function drawPlanet(px, py, scale) {
     ctx.moveTo(px - helperR, py); ctx.lineTo(px + helperR, py);
     ctx.moveTo(px, py - helperR); ctx.lineTo(px, py + helperR);
     ctx.stroke();
+  }
+}
+
+// Draws an onboarding text tooltip near the velocity vector to teach the
+// drag interactions. Two lines: one for translating the body, one for
+// rotating/scaling the tip. Vanishes permanently the first time startDrag()
+// fires. Positioned above the vector midpoint and clamped to canvas bounds.
+function drawVectorTooltip() {
+  if (!state.hintShown) return;
+
+  var lines = [T('hintLine1'), T('hintLine2')];
+
+  ctx.font = '13px "Share Tech Mono", monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  var maxWidth = 0;
+  for (var i = 0; i < lines.length; i++) {
+    var w = ctx.measureText(lines[i]).width;
+    if (w > maxWidth) maxWidth = w;
+  }
+
+  var padX = 12, padY = 10;
+  var lineH = 17;
+  var boxW = maxWidth + padX * 2;
+  var boxH = lineH * lines.length + padY * 2 - 2;
+
+  // Anchor: above the vector midpoint with a 60 px gap, then clamp to canvas.
+  var midX = (scStartScreenX + handleScreenX) / 2;
+  var midY = (scStartScreenY + handleScreenY) / 2;
+  var rx = midX - boxW / 2;
+  var ry = midY - 60 - boxH;
+
+  var margin = 12;
+  if (rx < margin) rx = margin;
+  if (rx + boxW > W - margin) rx = W - margin - boxW;
+  if (ry < margin) ry = margin;
+  if (ry + boxH > H - margin) ry = H - margin - boxH;
+
+  // Rounded rectangle backdrop (manual path for portability across browsers).
+  var r = 6;
+  ctx.beginPath();
+  ctx.moveTo(rx + r, ry);
+  ctx.lineTo(rx + boxW - r, ry);
+  ctx.quadraticCurveTo(rx + boxW, ry, rx + boxW, ry + r);
+  ctx.lineTo(rx + boxW, ry + boxH - r);
+  ctx.quadraticCurveTo(rx + boxW, ry + boxH, rx + boxW - r, ry + boxH);
+  ctx.lineTo(rx + r, ry + boxH);
+  ctx.quadraticCurveTo(rx, ry + boxH, rx, ry + boxH - r);
+  ctx.lineTo(rx, ry + r);
+  ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+  ctx.closePath();
+
+  ctx.fillStyle = 'rgba(11,15,24,0.94)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(125,196,255,0.5)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#c9d1d9';
+  for (var j = 0; j < lines.length; j++) {
+    ctx.fillText(lines[j], rx + padX, ry + padY + lineH * j);
   }
 }
 
@@ -1748,6 +1822,7 @@ function handleTranslateDrag(pos) {
 function startDrag(mode, pos) {
   state.dragMode = mode;
   state.playing = false;
+  state.hintShown = false;
   freezeCamera();
   if (mode === 'arrow') {
     dragInitialTipX = handleScreenX;
