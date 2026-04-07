@@ -129,6 +129,19 @@
   .readout-label { color: var(--text-dim); }
   .readout-val { color: var(--text); }
 
+  .gauge-bar {
+    width: 100%; height: 4px;
+    background: var(--panel-border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: -2px;
+  }
+  .gauge-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+  }
+
   .boost-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 10px 0;
@@ -280,6 +293,27 @@
         <span class="readout-label" id="lblDefl">Deflection</span>
         <span class="readout-val" id="deflVal">&mdash;</span>
       </div>
+      <div class="readout-row">
+        <span class="readout-label" id="lblMinAlt">Min altitude</span>
+        <span class="readout-val" id="minAltVal">&mdash;</span>
+      </div>
+      <div class="readout-row">
+        <span class="readout-label" id="lblPlanetRadius">Planet radius</span>
+        <span class="readout-val" id="planetRadiusVal">&mdash;</span>
+      </div>
+      <div class="readout-row">
+        <span class="readout-label" id="lblPlanetVel">Planet velocity</span>
+        <span class="readout-val" id="planetVelKmsVal">&mdash;</span>
+      </div>
+      <div class="readout-row">
+        <span class="readout-label" id="lblCurSpeed">Current speed</span>
+        <span class="readout-val" id="curSpeedVal">&mdash;</span>
+      </div>
+      <div class="gauge-bar"><div class="gauge-fill" id="gaugeFill"></div></div>
+      <div class="readout-row">
+        <span class="readout-label" id="lblCurAlt">Current altitude</span>
+        <span class="readout-val" id="curAltVal">&mdash;</span>
+      </div>
     </div>
 
     <div class="ctrl-group info-text">
@@ -314,6 +348,11 @@ const I18N = {
     speedIn: 'Speed in',
     speedOut: 'Speed out',
     deflection: 'Deflection',
+    minAltitude: 'Min altitude',
+    planetRadiusLabel: 'Planet radius',
+    planetVelKms: 'Planet velocity',
+    curSpeed: 'Current speed',
+    curAltitude: 'Current altitude',
     crash: 'CRASH',
     stationary: '(stationary)',
     infoCrash: 'The spacecraft flew too close and crashed into the planet! Increase the flyby altitude or spacecraft speed to survive the encounter.',
@@ -349,6 +388,11 @@ const I18N = {
     speedIn: 'Pr\u0119dko\u015B\u0107 wlotowa',
     speedOut: 'Pr\u0119dko\u015B\u0107 wylotowa',
     deflection: 'Odchylenie',
+    minAltitude: 'Min. wysoko\u015B\u0107',
+    planetRadiusLabel: 'Promie\u0144 planety',
+    planetVelKms: 'Pr\u0119dko\u015B\u0107 planety',
+    curSpeed: 'Bie\u017C\u0105ca pr\u0119dko\u015B\u0107',
+    curAltitude: 'Bie\u017C\u0105ca wysoko\u015B\u0107',
     crash: 'KATASTROFA',
     stationary: '(nieruchoma)',
     infoCrash: 'Statek kosmiczny przylecia\u0142 za blisko i rozbi\u0142 si\u0119 o planet\u0119! Zwi\u0119ksz wysoko\u015B\u0107 przelotu lub pr\u0119dko\u015B\u0107 statku.',
@@ -417,6 +461,7 @@ const state = {
   vOut: 0,
   deltaV: 0,
   deflectionAngle: 0,
+  maxSpeedSliderUnits: 0,
   gameTarget: null,
   gameResult: null,
   gameLaunched: false,
@@ -436,6 +481,15 @@ const SIM_DT      = 0.25;
 // MAX_STEPS bumped from 15000 to handle Jupiter-class encounters where the
 // integration starts at r ≈ 70k–80k and traverses ~160k of trajectory.
 const MAX_STEPS   = 80000;
+
+// Real-world unit conversions for the readouts. LENGTH is exact for all
+// planets because radiusRatio values come from real planetary data. VELOCITY
+// is anchored on Earth's orbital velocity (29.78 km/s at slider 3.0); other
+// planets are approximate (~2% Saturn → ~27% Uranus error at default slider)
+// because per-planet defaultSpeed values were tuned for visual effect, not
+// strict realism. Acceptable for educational scale awareness.
+const KM_PER_SIM_LENGTH  = 6371 / BASE_RADIUS;  // ≈ 530.92 km / sim unit
+const KMS_PER_SLIDER_VEL = 29.78 / 3.0;         // ≈ 9.93 km/s per slider unit
 
 // ══════════════════════════════════════════════
 // I18N FUNCTIONS
@@ -465,6 +519,11 @@ function applyTranslations() {
   document.getElementById('lblSpeedIn').textContent = l.speedIn;
   document.getElementById('lblSpeedOut').textContent = l.speedOut;
   document.getElementById('lblDefl').textContent = l.deflection;
+  document.getElementById('lblMinAlt').textContent = l.minAltitude;
+  document.getElementById('lblPlanetRadius').textContent = l.planetRadiusLabel;
+  document.getElementById('lblPlanetVel').textContent = l.planetVelKms;
+  document.getElementById('lblCurSpeed').textContent = l.curSpeed;
+  document.getElementById('lblCurAlt').textContent = l.curAltitude;
   document.getElementById('modeExploreBtn').classList.toggle('active', state.mode === 'explore');
   document.getElementById('modeGameBtn').classList.toggle('active', state.mode === 'game');
   populatePlanetSelect();
@@ -891,8 +950,22 @@ function computeResults() {
     state.vOut = 0;
     state.deltaV = 0;
     state.deflectionAngle = 0;
+    state.maxSpeedSliderUnits = 0;
     return;
   }
+
+  // Pre-pass: max Sun-frame speed across the trajectory, used as the gauge
+  // anchor for the live current-speed bar. Runs for both crash and non-crash
+  // paths (the gauge stays meaningful even when the spacecraft impacts).
+  var maxV2 = 0;
+  for (var k = 0; k < traj.length; k++) {
+    var pk = traj[k];
+    var sxk = pk.vx + vp;
+    var syk = pk.vy;
+    var v2 = sxk * sxk + syk * syk;
+    if (v2 > maxV2) maxV2 = v2;
+  }
+  state.maxSpeedSliderUnits = Math.sqrt(maxV2) / V_SCALE;
 
   // Asymptotic inbound: derived from the FIRST integrated sample via vis-viva
   // and the eccentricity vector. This is the actual asymptotic Sun-frame
@@ -937,6 +1010,8 @@ function drawScene() {
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#080c14';
   ctx.fillRect(0, 0, W, H);
+
+  updateLiveReadouts();
 
   var traj = state.trajectory;
   if (traj.length < 2) return;
@@ -1791,29 +1866,92 @@ document.addEventListener('keyup', function(e) {
 // ══════════════════════════════════════════════
 // READOUTS & INFO
 // ══════════════════════════════════════════════
+function formatKm(km) {
+  return Math.round(km).toLocaleString('en-US') + ' km';
+}
+
+function formatKmS(kmps) {
+  return kmps.toFixed(1) + ' km/s';
+}
+
+// Live readouts updated every animation frame from drawScene(). Reads the
+// current trajectory sample at state.currentIndex and refreshes the current
+// altitude, current speed, and the speed gauge fill. Cheap (~3 DOM ops) and
+// guarded against an empty trajectory.
+function updateLiveReadouts() {
+  var len = state.trajectory.length;
+  if (len === 0) {
+    document.getElementById('curSpeedVal').textContent = '\u2014';
+    document.getElementById('curAltVal').textContent = '\u2014';
+    document.getElementById('gaugeFill').style.width = '0%';
+    return;
+  }
+  var idx = Math.min(state.currentIndex, len - 1);
+  var pt = state.trajectory[idx];
+  var vp = state.planetVel * V_SCALE;
+
+  var r = Math.sqrt(pt.x * pt.x + pt.y * pt.y);
+  var altKm = Math.max(0, (r - state.planetRadius) * KM_PER_SIM_LENGTH);
+  document.getElementById('curAltVal').textContent = formatKm(altKm);
+
+  var sx = pt.vx + vp;
+  var sy = pt.vy;
+  var vSliderUnits = Math.sqrt(sx * sx + sy * sy) / V_SCALE;
+  document.getElementById('curSpeedVal').textContent =
+    formatKmS(vSliderUnits * KMS_PER_SLIDER_VEL);
+
+  var pct = state.maxSpeedSliderUnits > 0
+    ? (vSliderUnits / state.maxSpeedSliderUnits) * 100
+    : 0;
+  if (pct < 0) pct = 0;
+  if (pct > 100) pct = 100;
+  document.getElementById('gaugeFill').style.width = pct.toFixed(1) + '%';
+}
+
 function updateReadouts() {
+  // Planet radius and planet velocity are static within a flyby but cheap to
+  // recompute on every update. Both display regardless of crash state.
+  document.getElementById('planetRadiusVal').textContent =
+    formatKm(state.planetRadius * KM_PER_SIM_LENGTH);
+  document.getElementById('planetVelKmsVal').textContent =
+    formatKmS(state.planetVel * KMS_PER_SLIDER_VEL);
+
   if (state.crashed) {
-    document.getElementById('speedInVal').textContent = state.vIn.toFixed(1);
+    document.getElementById('speedInVal').textContent =
+      formatKmS(state.vIn * KMS_PER_SLIDER_VEL);
     document.getElementById('speedOutVal').textContent = '\u2014';
     var boostEl = document.getElementById('boostVal');
     boostEl.textContent = T('crash');
     boostEl.style.color = 'var(--loss)';
     document.getElementById('deflVal').textContent = '\u2014';
+    document.getElementById('minAltVal').textContent = formatKm(0);
     return;
   }
 
-  document.getElementById('speedInVal').textContent = state.vIn.toFixed(1);
-  document.getElementById('speedOutVal').textContent = state.vOut.toFixed(1);
+  document.getElementById('speedInVal').textContent =
+    formatKmS(state.vIn * KMS_PER_SLIDER_VEL);
+  document.getElementById('speedOutVal').textContent =
+    formatKmS(state.vOut * KMS_PER_SLIDER_VEL);
 
   var boostEl = document.getElementById('boostVal');
-  var dv = state.deltaV;
-  boostEl.textContent = (dv >= 0 ? '+' : '') + dv.toFixed(1);
-  if (dv > 0.15) boostEl.style.color = 'var(--gain)';
-  else if (dv < -0.15) boostEl.style.color = 'var(--loss)';
+  var dvKmS = state.deltaV * KMS_PER_SLIDER_VEL;
+  boostEl.textContent = (dvKmS >= 0 ? '+' : '') + dvKmS.toFixed(1) + ' km/s';
+  if (dvKmS > 0.15 * KMS_PER_SLIDER_VEL) boostEl.style.color = 'var(--gain)';
+  else if (dvKmS < -0.15 * KMS_PER_SLIDER_VEL) boostEl.style.color = 'var(--loss)';
   else boostEl.style.color = 'var(--text)';
 
   document.getElementById('deflVal').textContent =
     Math.abs(state.deflectionAngle).toFixed(0) + '\u00B0';
+
+  // Min altitude: closest approach above the planet surface, in km.
+  var closestPt = state.trajectory[state.closestIndex];
+  if (closestPt) {
+    var closestR = Math.sqrt(closestPt.x * closestPt.x + closestPt.y * closestPt.y);
+    var minAltKm = Math.max(0, (closestR - state.planetRadius) * KM_PER_SIM_LENGTH);
+    document.getElementById('minAltVal').textContent = formatKm(minAltKm);
+  } else {
+    document.getElementById('minAltVal').textContent = '\u2014';
+  }
 }
 
 function updateInfo() {
