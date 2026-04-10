@@ -303,13 +303,23 @@
 
   .result-overlay {
     position: fixed; inset: 0; z-index: 9999;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.6); cursor: pointer;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer;
     animation: overlayFadeIn 0.3s ease;
   }
-  .result-overlay .result-emoji { font-size: 120px; animation: overlayPop 0.4s ease; }
+  .overlay-emoji { font-size: 72px; animation: overlayPop 0.4s ease; }
+  .overlay-msg {
+    font-family: 'Outfit', sans-serif;
+    font-size: 24px; font-weight: 700;
+    margin-top: 16px; color: #fff;
+  }
+  .overlay-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; margin-top: 8px; color: rgba(255,255,255,0.6);
+  }
   @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes overlayPop { 0% { transform: scale(0.3); opacity: 0; } 60% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes overlayPop { 0% { transform: scale(0.3); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
   .not-bubble { fill: var(--gate-fill); stroke: var(--not-color); stroke-width: 2; }
   .xor-extra  { fill: none; stroke: var(--xor-color); stroke-width: 2; }
@@ -410,9 +420,20 @@ function setGuess(v) {
 }
 
 function showResultOverlay(correct) {
+  const existing = document.querySelector('.result-overlay');
+  if (existing) existing.remove();
+
   const overlay = document.createElement('div');
   overlay.className = 'result-overlay';
-  overlay.innerHTML = `<span class="result-emoji">${correct ? '\uD83C\uDF89' : '\uD83D\uDC4E\uD83C\uDFFB'}</span>`;
+
+  const emoji = correct ? '\uD83C\uDF89' : '\uD83D\uDC4E\uD83C\uDFFB';
+  const msg = correct ? 'Correct!' : 'Wrong!';
+  overlay.style.background = correct ? 'rgba(63,185,80,0.88)' : 'rgba(249,117,131,0.88)';
+  overlay.innerHTML =
+    '<div class="overlay-emoji">' + emoji + '</div>' +
+    '<div class="overlay-msg">' + msg + '</div>' +
+    '<div class="overlay-hint">click to dismiss</div>';
+
   overlay.addEventListener('click', () => overlay.remove());
   document.body.appendChild(overlay);
 }
