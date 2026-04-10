@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Mach-Zehnder Interferometer</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -28,7 +28,7 @@
   body {
     min-height: 100vh;
     background: linear-gradient(160deg, #FAFAF7 0%, #F0EDE6 100%);
-    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    font-family: 'Outfit', sans-serif;
     color: var(--text);
     -webkit-tap-highlight-color: transparent;
   }
@@ -39,17 +39,21 @@
     display: flex; align-items: center; gap: 12px;
   }
   header h1 { font-size: 18px; font-weight: 700; color: var(--text-head); display: flex; align-items: center; gap: 8px; }
-  header h1 svg { flex-shrink: 0; }
+  header h1 a { color: inherit; text-decoration: none; }
+  header h1 a:hover { opacity: .7; }
   header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
   .header-text { flex: 1; }
 
   .lang-btn {
-    background: none; border: 1px solid var(--panel-border); border-radius: 4px;
-    padding: 3px 4px; cursor: pointer; flex-shrink: 0;
-    transition: border-color 0.15s; line-height: 0; align-self: center;
+    background: none; border: 1px solid var(--panel-border);
+    border-radius: 4px; padding: 3px 8px;
+    cursor: pointer; flex-shrink: 0;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    transition: border-color 0.15s, color 0.15s;
   }
-  .lang-btn:hover { border-color: var(--accent); }
-  .lang-btn svg { display: block; }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   .main { display: flex; height: calc(100vh - 46px); }
 
@@ -75,7 +79,7 @@
 
   .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
   .ctrl-label {
-    font-family: 'DM Mono', monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
     color: var(--text-label);
   }
@@ -85,7 +89,7 @@
     flex: 1; padding: 8px 4px; border-radius: 8px;
     border: 2px solid transparent;
     background: #FAFAF7; color: #546E7A;
-    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+    font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 500;
     cursor: pointer; transition: all 0.15s; text-align: center;
     touch-action: manipulation;
   }
@@ -121,7 +125,7 @@
   }
   .slider-val {
     min-width: 36px; text-align: right;
-    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-head);
+    font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-head);
   }
 
   .stats {
@@ -134,7 +138,7 @@
     display: flex; align-items: center; gap: 8px;
   }
   .stat-label {
-    font-family: 'DM Mono', monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 13px; font-weight: 700; min-width: 24px;
   }
   .stat-bar {
@@ -148,11 +152,11 @@
   .d1-fill { background: var(--d1-color); }
   .d2-fill { background: var(--d2-color); }
   .stat-count {
-    font-family: 'DM Mono', monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 12px; min-width: 30px; text-align: right; color: var(--text);
   }
   .stat-pct {
-    font-family: 'DM Mono', monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 11px; min-width: 40px; text-align: right; color: var(--text-dim);
   }
   .hints-header {
@@ -163,7 +167,7 @@
   .hint-toggle {
     width: 28px; height: 28px; border-radius: 50%;
     border: 1.5px solid var(--panel-border); background: var(--panel);
-    color: var(--text-label); font-family: 'DM Mono', monospace;
+    color: var(--text-label); font-family: 'Share Tech Mono', monospace;
     font-size: 14px; font-weight: 700; cursor: pointer;
     transition: all 0.15s; line-height: 1;
   }
@@ -184,7 +188,7 @@
   }
 
   .stat-expected {
-    font-family: 'DM Mono', monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 10px; color: var(--text-dim);
     padding: 4px 20px 0;
   }
@@ -210,12 +214,10 @@
 
 <header>
   <div class="header-text">
-    <h1><span style="font-size:18px;line-height:1">&#x1F4A0;</span><span id="titleText">Mach-Zehnder Interferometer</span></h1>
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F4A0;</span></a> <span id="titleText">Mach-Zehnder Interferometer</span></h1>
     <p id="subtitleText">Fire single photons and discover how one particle can travel two paths at once.</p>
   </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">
-    <svg width="28" height="20" viewBox="0 0 28 20" id="langFlag"><rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/></svg>
-  </button>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
 </header>
 
 <div class="main">
@@ -302,6 +304,7 @@
 </div>
 
 <script>
+'use strict';
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
@@ -428,13 +431,7 @@ function applyTranslations() {
 
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
-  // Swap flag: show PL flag when lang is EN (click to switch to PL), UK flag when PL
-  const flag = document.getElementById('langFlag');
-  if (state.lang === 'en') {
-    flag.innerHTML = '<rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/>';
-  } else {
-    flag.innerHTML = '<rect width="28" height="20" fill="#012169"/><path d="M0 0L28 20M28 0L0 20" stroke="#fff" stroke-width="3"/><path d="M0 0L28 20M28 0L0 20" stroke="#C8102E" stroke-width="1.5"/><path d="M14 0V20M0 10H28" stroke="#fff" stroke-width="5"/><path d="M14 0V20M0 10H28" stroke="#C8102E" stroke-width="3"/>';
-  }
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
   applyTranslations();
 }
 
@@ -470,7 +467,7 @@ function pathLength(pts) {
 
 function posOnPath(pts, t) {
   const total = pathLength(pts);
-  let target = t * total, acc = 0;
+  const target = t * total; let acc = 0;
   for (let i = 1; i < pts.length; i++) {
     const dx = pts[i].x - pts[i-1].x, dy = pts[i].y - pts[i-1].y;
     const seg = Math.sqrt(dx*dx + dy*dy);
@@ -622,7 +619,7 @@ function drawDiagram() {
   c.setLineDash([]);
 
   // Path labels
-  c.font = `600 ${ts(30)}px "DM Sans", sans-serif`;
+  c.font = `600 ${ts(30)}px "Outfit", sans-serif`;
   c.fillStyle = 'rgba(69,90,100,0.3)';
   c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText('A', tx(500), ty(115));
@@ -664,7 +661,7 @@ function drawBeamSplitter(x, y, label) {
   c.strokeRect(-s/2, -s/6, s, s/3);
   c.restore();
 
-  c.font = `600 ${ts(20)}px "DM Mono", monospace`;
+  c.font = `600 ${ts(20)}px "Share Tech Mono", monospace`;
   c.fillStyle = '#90A4AE';
   c.textAlign = 'center'; c.textBaseline = 'top';
   c.fillText(label, tx(x), ty(y) + ts(46));
@@ -682,7 +679,7 @@ function drawMirror(x, y, label) {
   c.strokeRect(-s/2, -ts(5), s, ts(10));
   c.restore();
 
-  c.font = `600 ${ts(20)}px "DM Mono", monospace`;
+  c.font = `600 ${ts(20)}px "Share Tech Mono", monospace`;
   c.fillStyle = '#90A4AE';
   c.textAlign = 'center'; c.textBaseline = 'top';
   c.fillText(label, tx(x), ty(y) + ts(46));
@@ -697,12 +694,12 @@ function drawPhaseShifter(x, y) {
   c.fillRect(tx(x) - w/2, ty(y) - h/2, w, h);
   c.strokeRect(tx(x) - w/2, ty(y) - h/2, w, h);
 
-  c.font = `600 ${ts(18)}px "DM Mono", monospace`;
+  c.font = `600 ${ts(18)}px "Share Tech Mono", monospace`;
   c.fillStyle = '#78909C';
   c.textAlign = 'center'; c.textBaseline = 'top';
   c.fillText(`\u0394\u03C6 ${state.phaseDeg}\u00B0`, tx(x), ty(y) + ts(28));
 
-  c.font = `600 ${ts(20)}px "DM Mono", monospace`;
+  c.font = `600 ${ts(20)}px "Share Tech Mono", monospace`;
   c.fillStyle = '#90A4AE';
   c.fillText(T('phaseShifterLabel'), tx(x), ty(y) + ts(50));
 }
@@ -751,7 +748,7 @@ function drawSource(x, y) {
   c.lineTo(cx + ts(4), baseY);
   c.stroke();
   // Label
-  c.font = `600 ${ts(20)}px "DM Mono", monospace`;
+  c.font = `600 ${ts(20)}px "Share Tech Mono", monospace`;
   c.fillStyle = '#90A4AE';
   c.textAlign = 'center'; c.textBaseline = 'top';
   c.fillText(T('source'), cx, cy + ts(34));
@@ -773,7 +770,7 @@ function drawDetector(x, y, label, color) {
   c.closePath();
   c.fill(); c.stroke();
 
-  c.font = `700 ${ts(26)}px "DM Mono", monospace`;
+  c.font = `700 ${ts(26)}px "Share Tech Mono", monospace`;
   c.fillStyle = color;
   c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText(label, tx(x), ty(y));

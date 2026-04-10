@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Wave Interference</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -27,7 +27,7 @@
   body {
     min-height: 100vh;
     background: linear-gradient(160deg, #FAFAF7 0%, #F0EDE6 100%);
-    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    font-family: 'Outfit', sans-serif;
     color: var(--text);
     -webkit-tap-highlight-color: transparent;
   }
@@ -38,16 +38,21 @@
     display: flex; align-items: center; gap: 12px;
   }
   header h1 { font-size: 18px; font-weight: 700; color: var(--text-head); display: flex; align-items: center; gap: 8px; }
+  header h1 a { color: inherit; text-decoration: none; }
+  header h1 a:hover { opacity: .7; }
   header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
   .header-text { flex: 1; }
 
   .lang-btn {
-    background: none; border: 1px solid var(--panel-border); border-radius: 4px;
-    padding: 3px 4px; cursor: pointer; flex-shrink: 0;
-    transition: border-color 0.15s; line-height: 0; align-self: center;
+    background: none; border: 1px solid var(--panel-border);
+    border-radius: 4px; padding: 3px 8px;
+    cursor: pointer; flex-shrink: 0;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    transition: border-color 0.15s, color 0.15s;
   }
-  .lang-btn:hover { border-color: var(--accent); }
-  .lang-btn svg { display: block; }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   .main { display: flex; height: calc(100vh - 46px); }
 
@@ -73,7 +78,7 @@
 
   .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
   .ctrl-label {
-    font-family: 'DM Mono', monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
     color: var(--text-label);
   }
@@ -83,7 +88,7 @@
     flex: 1; padding: 8px 4px; border-radius: 8px;
     border: 2px solid transparent;
     background: #FAFAF7; color: #546E7A;
-    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+    font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 500;
     cursor: pointer; transition: all 0.15s; text-align: center;
     touch-action: manipulation;
   }
@@ -111,7 +116,7 @@
   }
   .slider-val {
     min-width: 36px; text-align: right;
-    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-head);
+    font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-head);
   }
 
   .info {
@@ -137,12 +142,10 @@
 
 <header>
   <div class="header-text">
-    <h1><span style="font-size:18px;line-height:1">&#x1F30A;</span><span id="titleText">Wave Interference</span></h1>
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F30A;</span></a> <span id="titleText">Wave Interference</span></h1>
     <p id="subtitleText">Discover how waves add up, cancel out, and create interference.</p>
   </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">
-    <svg width="28" height="20" viewBox="0 0 28 20" id="langFlag"><rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/></svg>
-  </button>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
 </header>
 
 <div class="main">
@@ -222,6 +225,7 @@
 </div>
 
 <script>
+'use strict';
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
@@ -338,12 +342,7 @@ function applyTranslations() {
 
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
-  const flag = document.getElementById('langFlag');
-  if (state.lang === 'en') {
-    flag.innerHTML = '<rect width="28" height="10" fill="#fff"/><rect y="10" width="28" height="10" fill="#DC143C"/>';
-  } else {
-    flag.innerHTML = '<rect width="28" height="20" fill="#012169"/><path d="M0 0L28 20M28 0L0 20" stroke="#fff" stroke-width="3"/><path d="M0 0L28 20M28 0L0 20" stroke="#C8102E" stroke-width="1.5"/><path d="M14 0V20M0 10H28" stroke="#fff" stroke-width="5"/><path d="M14 0V20M0 10H28" stroke="#C8102E" stroke-width="3"/>';
-  }
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
   applyTranslations();
 }
 
@@ -485,7 +484,7 @@ function drawRowLabels() {
   c.textBaseline = 'middle';
 
   // Wave A label
-  c.font = `600 ${ts(22)}px "DM Sans", sans-serif`;
+  c.font = `600 ${ts(22)}px "Outfit", sans-serif`;
   c.fillStyle = `rgba(${ROW_A.col.r},${ROW_A.col.g},${ROW_A.col.b},0.6)`;
   c.fillText(T(ROW_A.label), tx(60), ty(ROW_A.y));
 
@@ -568,7 +567,7 @@ function drawAnnotations(t) {
     c.fill();
 
     // Label
-    c.font = `500 ${ts(14)}px "DM Sans", sans-serif`;
+    c.font = `500 ${ts(14)}px "Outfit", sans-serif`;
     c.fillStyle = 'rgba(255,109,0,0.7)';
     c.textAlign = 'left';
     c.textBaseline = 'middle';
@@ -604,7 +603,7 @@ function drawAnnotations(t) {
     c.fill();
 
     // Label
-    c.font = `500 ${ts(14)}px "DM Sans", sans-serif`;
+    c.font = `500 ${ts(14)}px "Outfit", sans-serif`;
     c.fillStyle = 'rgba(255,109,0,0.7)';
     c.textAlign = 'center';
     c.textBaseline = 'top';
@@ -671,7 +670,7 @@ function drawPhaseDial() {
   }
 
   // Degree label
-  c.font = `700 ${ts(11)}px "DM Mono", monospace`;
+  c.font = `700 ${ts(11)}px "Share Tech Mono", monospace`;
   c.fillStyle = 'rgba(69,90,100,0.6)';
   c.textAlign = 'center';
   c.textBaseline = 'top';
@@ -693,7 +692,7 @@ function drawScene(now) {
 
     // Amplitude indicators on each wave
     const col = ROW_SUM.col;
-    ctx.font = `700 ${ts(14)}px "DM Mono", monospace`;
+    ctx.font = `700 ${ts(14)}px "Share Tech Mono", monospace`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
 
@@ -922,7 +921,7 @@ function drawCrosshair(t) {
     // Value label
     const valRounded = Math.round(val * 10) / 10;
     const labelText = waveFuncs[i].label + '=' + (Number.isInteger(valRounded) ? valRounded.toFixed(0) : valRounded.toFixed(1));
-    c.font = `700 ${ts(12)}px "DM Mono", monospace`;
+    c.font = `700 ${ts(12)}px "Share Tech Mono", monospace`;
     c.fillStyle = `rgba(${col.r},${col.g},${col.b},0.9)`;
     c.textAlign = 'left';
     c.textBaseline = 'bottom';
@@ -947,7 +946,7 @@ function drawCrosshair(t) {
   }
   const hAmpVal = -((cy - nearestRow) / ROW_AMP) * ampScale;
   const hLabel = (Math.round(hAmpVal * 10) / 10).toFixed(1);
-  c.font = `700 ${ts(11)}px "DM Mono", monospace`;
+  c.font = `700 ${ts(11)}px "Share Tech Mono", monospace`;
   const hlx = tx(WAVE_X_START) - ts(6);
   c.textAlign = 'right';
   c.textBaseline = 'middle';

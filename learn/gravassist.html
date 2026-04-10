@@ -33,6 +33,8 @@
   }
   .header-text { flex: 1; }
   header h1 { font-size: 22px; font-weight: 700; }
+  header h1 a { color: inherit; text-decoration: none; }
+  header h1 a:hover { opacity: .7; }
   header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 
   .lang-btn {
@@ -223,7 +225,7 @@
 
 <header>
   <div class="header-text">
-    <h1>&#x1F680; <span id="titleText">Gravity Assist Simulator</span></h1>
+    <h1><a href="/learn/">&#x1F680;</a> <span id="titleText">Gravity Assist Simulator</span></h1>
     <p id="subtitleText">Solar-system planets bend spacecraft paths with their gravity, and a moving planet adds speed for free. Explore freely or try to hit a target in Game mode.</p>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
@@ -345,6 +347,7 @@
 </div>
 
 <script>
+'use strict';
 // ══════════════════════════════════════════════
 // I18N
 // ══════════════════════════════════════════════
@@ -542,7 +545,7 @@ const KMS_PER_SLIDER_VEL = 29.78 / 30.0;        // ≈ 0.993 km/s per slider uni
 function T(key) { return I18N[state.lang][key]; }
 
 function applyTranslations() {
-  var l = I18N[state.lang];
+  const l = I18N[state.lang];
   document.title = l.title;
   document.documentElement.lang = state.lang;
   document.getElementById('titleText').textContent = l.title;
@@ -585,11 +588,11 @@ function toggleLang() {
 }
 
 function populatePlanetSelect() {
-  var sel = document.getElementById('planetSelect');
-  var cur = sel.value || state.selectedPlanet;
+  const sel = document.getElementById('planetSelect');
+  const cur = sel.value || state.selectedPlanet;
   sel.innerHTML = '';
   PLANET_DATA.forEach(function(p) {
-    var opt = document.createElement('option');
+    const opt = document.createElement('option');
     opt.value = p.key;
     opt.textContent = T(p.key);
     sel.appendChild(opt);
@@ -611,7 +614,7 @@ function setMode(mode) {
 
 
   if (mode === 'game') {
-    var planet = PLANET_DATA.find(function(p) { return p.key === state.selectedPlanet; });
+    const planet = PLANET_DATA.find(function(p) { return p.key === state.selectedPlanet; });
     state.planetVel = planet.defaultSpeed;
     document.getElementById('planetVelSlider').value = planet.defaultSpeed;
     document.getElementById('planetVelVal').textContent = planet.defaultSpeed;
@@ -627,14 +630,14 @@ function setMode(mode) {
 
 function generateTarget() {
   state.gameGhost = null;  // new target → previous attempts irrelevant
-  var planet = PLANET_DATA.find(function(p) { return p.key === state.selectedPlanet; });
+  const planet = PLANET_DATA.find(function(p) { return p.key === state.selectedPlanet; });
   state.planetVel = planet.defaultSpeed;
 
-  var target = null;
-  for (var attempt = 0; attempt < 20; attempt++) {
-    var solAngle = Math.PI + (Math.random() - 0.5) * 1.0;
-    var solAlt = state.planetRadius * (1 + Math.random() * 4);
-    var solSpeed = 30 + Math.random() * 50;
+  let target = null;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const solAngle = Math.PI + (Math.random() - 0.5) * 1.0;
+    const solAlt = state.planetRadius * (1 + Math.random() * 4);
+    const solSpeed = 30 + Math.random() * 50;
 
     state.approachAngle = solAngle;
     state.periapsisAlt = solAlt;
@@ -643,13 +646,13 @@ function generateTarget() {
     computeTrajectory();
 
     if (!state.crashed && state.trajectory.length >= 100) {
-      var outStart = state.closestIndex;
-      var outLen = state.trajectory.length - outStart;
-      var targetIdx = Math.min(
+      const outStart = state.closestIndex;
+      const outLen = state.trajectory.length - outStart;
+      const targetIdx = Math.min(
         outStart + Math.floor(outLen * (0.6 + Math.random() * 0.2)),
         state.trajectory.length - 1
       );
-      var sf = toSunFrame(targetIdx);
+      const sf = toSunFrame(targetIdx);
       target = {
         x: sf.x + (Math.random() - 0.5) * 20,
         y: sf.y + (Math.random() - 0.5) * 20,
@@ -694,20 +697,20 @@ function evaluateGame() {
     return;
   }
 
-  var hitTol = gameTolerance();
-  var hitTolSq = hitTol * hitTol;
+  const hitTol = gameTolerance();
+  const hitTolSq = hitTol * hitTol;
   // Close-miss boundary: 3× the hit radius (~33 px on screen). Tight enough
   // that "almost!" feels honest, generous enough that small misalignments
   // still get encouragement instead of the discouraging far-miss feedback.
-  var closeTol = hitTol * 3;
-  var closeTolSq = closeTol * closeTol;
-  var gx = state.gameTarget.x, gy = state.gameTarget.y;
-  var minDistSq = Infinity;
+  const closeTol = hitTol * 3;
+  const closeTolSq = closeTol * closeTol;
+  const gx = state.gameTarget.x, gy = state.gameTarget.y;
+  let minDistSq = Infinity;
 
-  for (var i = 0; i < state.trajectory.length; i++) {
-    var sf = toSunFrame(i);
-    var dx = sf.x - gx, dy = sf.y - gy;
-    var dSq = dx * dx + dy * dy;
+  for (let i = 0; i < state.trajectory.length; i++) {
+    const sf = toSunFrame(i);
+    const dx = sf.x - gx, dy = sf.y - gy;
+    const dSq = dx * dx + dy * dy;
     if (dSq < minDistSq) minDistSq = dSq;
     if (dSq < hitTolSq) {
       state.gameResult = 'success';
@@ -731,26 +734,26 @@ function showGameOverlay(result) {
   // the array small (~4000 points max) — at low alpha the ghost only needs
   // enough resolution to read as a curve.
   if (state.mode === 'game' && state.trajectory.length > 1) {
-    var glen = state.trajectory.length;
-    var gstep = Math.max(1, Math.floor(glen / 4000));
+    const glen = state.trajectory.length;
+    const gstep = Math.max(1, Math.floor(glen / 4000));
     state.gameGhost = [];
-    for (var gi = 0; gi < glen; gi += gstep) {
-      var gsf = toSunFrame(gi);
+    for (let gi = 0; gi < glen; gi += gstep) {
+      const gsf = toSunFrame(gi);
       state.gameGhost.push({ x: gsf.x, y: gsf.y });
     }
     if ((glen - 1) % gstep !== 0) {
-      var glast = toSunFrame(glen - 1);
+      const glast = toSunFrame(glen - 1);
       state.gameGhost.push({ x: glast.x, y: glast.y });
     }
   }
 
-  var existing = document.querySelector('.result-overlay');
+  const existing = document.querySelector('.result-overlay');
   if (existing) existing.remove();
 
-  var overlay = document.createElement('div');
+  const overlay = document.createElement('div');
   overlay.className = 'result-overlay';
 
-  var emoji, msg, bg;
+  let emoji, msg, bg;
   if (result === 'success') {
     emoji = '\uD83C\uDF89'; msg = T('gameSuccess'); bg = 'rgba(63,185,80,0.88)';
   } else if (result === 'crash') {
@@ -777,61 +780,61 @@ function showGameOverlay(result) {
 // VECTOR POSITION HELPERS
 // ══════════════════════════════════════════════
 function computeStartDist() {
-  var GM = state.planetMass * GM_BASE;
-  var vp = state.planetVel * V_SCALE;
-  var vScSun = state.approachSpeed * V_SCALE;
-  var vPfX = vScSun * Math.cos(state.approachAngle) - vp;
-  var vPfY = vScSun * Math.sin(state.approachAngle);
+  const GM = state.planetMass * GM_BASE;
+  const vp = state.planetVel * V_SCALE;
+  const vScSun = state.approachSpeed * V_SCALE;
+  const vPfX = vScSun * Math.cos(state.approachAngle) - vp;
+  const vPfY = vScSun * Math.sin(state.approachAngle);
   // vLocal2 is the local KE×2 in the planet frame (under the local semantic).
   // The formula 10*GM/v² places gravitational potential ≈ 0.4·KE at start,
   // leaving 60% as asymptotic vInf². Cap raised to 80000 to handle Jupiter
   // (which would otherwise be capped into a bound state). minR scales with
   // planetRadius so massive bodies leave visual room around the integration
   // start.
-  var vLocal2 = vPfX * vPfX + vPfY * vPfY;
-  var dynamic = Math.ceil(10 * GM / Math.max(vLocal2, 1));
-  var minR = Math.max(800, 30 * state.planetRadius);
+  const vLocal2 = vPfX * vPfX + vPfY * vPfY;
+  const dynamic = Math.ceil(10 * GM / Math.max(vLocal2, 1));
+  const minR = Math.max(800, 30 * state.planetRadius);
   return Math.max(minR, Math.min(80000, dynamic));
 }
 
 function initVecPosition() {
-  var startDist = computeStartDist();
-  var GM = state.planetMass * GM_BASE;
-  var vp = state.planetVel * V_SCALE;
-  var vScSun = state.approachSpeed * V_SCALE;
-  var alpha = state.approachAngle;
+  const startDist = computeStartDist();
+  const GM = state.planetMass * GM_BASE;
+  const vp = state.planetVel * V_SCALE;
+  const vScSun = state.approachSpeed * V_SCALE;
+  const alpha = state.approachAngle;
 
-  var vPfX = vScSun * Math.cos(alpha) - vp;
-  var vPfY = vScSun * Math.sin(alpha);
-  var vInf = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
-  var alphaPf = Math.atan2(vPfY, vPfX);
-  var safeVInf = Math.max(vInf, 0.01);
+  const vPfX = vScSun * Math.cos(alpha) - vp;
+  const vPfY = vScSun * Math.sin(alpha);
+  const vInf = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
+  const alphaPf = Math.atan2(vPfY, vPfX);
+  const safeVInf = Math.max(vInf, 0.01);
 
-  var rp = state.planetRadius + state.periapsisAlt;
-  var b = rp * Math.sqrt(1 + 2 * GM / (rp * safeVInf * safeVInf));
+  const rp = state.planetRadius + state.periapsisAlt;
+  const b = rp * Math.sqrt(1 + 2 * GM / (rp * safeVInf * safeVInf));
 
   state.vecPfX = -startDist * Math.cos(alphaPf) - b * Math.sin(alphaPf);
   state.vecPfY = -startDist * Math.sin(alphaPf) + b * Math.cos(alphaPf);
 }
 
 function computePeriapsisAltFromPosition() {
-  var GM = state.planetMass * GM_BASE;
-  var vp = state.planetVel * V_SCALE;
-  var vScSun = state.approachSpeed * V_SCALE;
-  var alpha = state.approachAngle;
+  const GM = state.planetMass * GM_BASE;
+  const vp = state.planetVel * V_SCALE;
+  const vScSun = state.approachSpeed * V_SCALE;
+  const alpha = state.approachAngle;
 
-  var vPfX = vScSun * Math.cos(alpha) - vp;
-  var vPfY = vScSun * Math.sin(alpha);
-  var vPfMag = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
+  const vPfX = vScSun * Math.cos(alpha) - vp;
+  const vPfY = vScSun * Math.sin(alpha);
+  const vPfMag = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
   if (vPfMag < 0.001) return;
 
-  var vHatX = vPfX / vPfMag;
-  var vHatY = vPfY / vPfMag;
-  var b = Math.abs(state.vecPfX * vHatY - state.vecPfY * vHatX);
+  const vHatX = vPfX / vPfMag;
+  const vHatY = vPfY / vPfMag;
+  const b = Math.abs(state.vecPfX * vHatY - state.vecPfY * vHatX);
 
-  var vInf2 = vPfMag * vPfMag;
-  var k = GM / vInf2;
-  var rp = -k + Math.sqrt(k * k + b * b);
+  const vInf2 = vPfMag * vPfMag;
+  const k = GM / vInf2;
+  const rp = -k + Math.sqrt(k * k + b * b);
 
   state.periapsisAlt = Math.max(0, rp - state.planetRadius);
 }
@@ -839,31 +842,32 @@ function computePeriapsisAltFromPosition() {
 // ══════════════════════════════════════════════
 // CANVAS SETUP
 // ══════════════════════════════════════════════
-var canvas = document.getElementById('canvas');
-var ctx = canvas.getContext('2d');
-var W, H;
-var bgStars = [];
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+let bgStars = [];
 
-var handleScreenX = 0, handleScreenY = 0;
-var scStartScreenX = 0, scStartScreenY = 0;
-var lastScale = 1;
-var cameraFrozen = false;
-var frozenScale = 1, frozenCamX = 0, frozenCamY = 0;
-var dragInitialTipX = 0, dragInitialTipY = 0;
-var dragAccumX = 0, dragAccumY = 0;
-var dragLastPosX = 0, dragLastPosY = 0;
-var frozenRootX = 0, frozenRootY = 0;
-var dragPrevX = 0, dragPrevY = 0;
-var targetScreenX = 0, targetScreenY = 0;
-var cameraMode = 'auto';
-var manualScale = 1, manualCamX = 0, manualCamY = 0;
-var zoomFactor = 1;
-var targetGrabOfsX = 0, targetGrabOfsY = 0;
-var MIN_ARROW_PX = 68, MAX_ARROW_PX = 188;
+let handleScreenX = 0, handleScreenY = 0;
+let scStartScreenX = 0, scStartScreenY = 0;
+let lastScale = 1;
+let cameraFrozen = false;
+let frozenScale = 1, frozenCamX = 0, frozenCamY = 0;
+let dragInitialTipX = 0, dragInitialTipY = 0;
+let dragAccumX = 0, dragAccumY = 0;
+let dragLastPosX = 0, dragLastPosY = 0;
+let frozenRootX = 0, frozenRootY = 0;
+let dragPrevX = 0, dragPrevY = 0;
+let targetScreenX = 0, targetScreenY = 0;
+let cameraMode = 'auto';
+let manualScale = 1;
+const manualCamX = 0, manualCamY = 0;
+let zoomFactor = 1;
+let targetGrabOfsX = 0, targetGrabOfsY = 0;
+const MIN_ARROW_PX = 68, MAX_ARROW_PX = 188;
 
 function initBgStars(n) {
   bgStars = [];
-  for (var i = 0; i < n; i++) {
+  for (let i = 0; i < n; i++) {
     bgStars.push({
       x: Math.random(), y: Math.random(),
       r: Math.random() * 1.2 + 0.3,
@@ -874,8 +878,8 @@ function initBgStars(n) {
 initBgStars(200);
 
 function resize() {
-  var rect = canvas.parentElement.getBoundingClientRect();
-  var dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
   W = rect.width;
   H = rect.height;
   canvas.width = W * dpr;
@@ -890,58 +894,58 @@ window.addEventListener('resize', function() { resize(); });
 // PHYSICS
 // ══════════════════════════════════════════════
 function computeTrajectory() {
-  var startDist = computeStartDist();
-  var GM = state.planetMass * GM_BASE;
-  var vp = state.planetVel * V_SCALE;
-  var vScSun = state.approachSpeed * V_SCALE;
-  var alpha = state.approachAngle;
-  var collisionR = state.planetRadius;
+  const startDist = computeStartDist();
+  const GM = state.planetMass * GM_BASE;
+  const vp = state.planetVel * V_SCALE;
+  const vScSun = state.approachSpeed * V_SCALE;
+  const alpha = state.approachAngle;
+  const collisionR = state.planetRadius;
 
-  var vPfX = vScSun * Math.cos(alpha) - vp;
-  var vPfY = vScSun * Math.sin(alpha);
-  var vInfPlanet = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
-  var alphaPf = Math.atan2(vPfY, vPfX);
-  var safePf = Math.max(vInfPlanet, 0.01);
+  const vPfX = vScSun * Math.cos(alpha) - vp;
+  const vPfY = vScSun * Math.sin(alpha);
+  const vInfPlanet = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
+  const alphaPf = Math.atan2(vPfY, vPfX);
+  const safePf = Math.max(vInfPlanet, 0.01);
 
-  var x = state.vecPfX;
-  var y = state.vecPfY;
-  var vx = safePf * Math.cos(alphaPf);
-  var vy = safePf * Math.sin(alphaPf);
+  let x = state.vecPfX;
+  let y = state.vecPfY;
+  let vx = safePf * Math.cos(alphaPf);
+  let vy = safePf * Math.sin(alphaPf);
 
-  var points = [];
-  var minDist = Infinity;
-  var closestIdx = 0;
-  var crashed = false;
+  const points = [];
+  let minDist = Infinity;
+  let closestIdx = 0;
+  let crashed = false;
 
-  for (var i = 0; i < MAX_STEPS; i++) {
-    var r = Math.sqrt(x * x + y * y);
+  for (let i = 0; i < MAX_STEPS; i++) {
+    const r = Math.sqrt(x * x + y * y);
     points.push({ x: x, y: y, vx: vx, vy: vy });
 
     if (r < minDist) { minDist = r; closestIdx = i; }
 
-    var rScale = collisionR;
-    var substeps = r < rScale * 1.7 ? 32 : r < rScale * 3.3 ? 16 : r < rScale * 6.7 ? 8 : r < rScale * 13 ? 4 : 1;
-    var subdt = SIM_DT / substeps;
+    const rScale = collisionR;
+    const substeps = r < rScale * 1.7 ? 32 : r < rScale * 3.3 ? 16 : r < rScale * 6.7 ? 8 : r < rScale * 13 ? 4 : 1;
+    const subdt = SIM_DT / substeps;
 
-    for (var s = 0; s < substeps; s++) {
-      var xPrev = x, yPrev = y;
-      var rs = Math.sqrt(x * x + y * y);
-      var rs3 = rs * rs * rs;
-      var ax = -GM * x / rs3;
-      var ay = -GM * y / rs3;
+    for (let s = 0; s < substeps; s++) {
+      const xPrev = x, yPrev = y;
+      const rs = Math.sqrt(x * x + y * y);
+      const rs3 = rs * rs * rs;
+      const ax = -GM * x / rs3;
+      const ay = -GM * y / rs3;
 
       x = x + vx * subdt + 0.5 * ax * subdt * subdt;
       y = y + vy * subdt + 0.5 * ay * subdt * subdt;
-      var rs1 = Math.sqrt(x * x + y * y);
-      var rs1_3 = rs1 * rs1 * rs1;
-      var ax1 = -GM * x / rs1_3;
-      var ay1 = -GM * y / rs1_3;
+      const rs1 = Math.sqrt(x * x + y * y);
+      const rs1_3 = rs1 * rs1 * rs1;
+      const ax1 = -GM * x / rs1_3;
+      const ay1 = -GM * y / rs1_3;
 
       vx += 0.5 * (ax + ax1) * subdt;
       vy += 0.5 * (ay + ay1) * subdt;
 
       if (rs1 <= collisionR && rs > collisionR) {
-        var f = (rs - collisionR) / (rs - rs1);
+        const f = (rs - collisionR) / (rs - rs1);
         x = xPrev + f * (x - xPrev);
         y = yPrev + f * (y - yPrev);
         crashed = true;
@@ -950,7 +954,7 @@ function computeTrajectory() {
     }
     if (crashed) { points.push({ x: x, y: y, vx: vx, vy: vy }); break; }
 
-    var rEnd = Math.sqrt(x * x + y * y);
+    const rEnd = Math.sqrt(x * x + y * y);
     if (rEnd > startDist && i > closestIdx + 50) break;
   }
 
@@ -973,15 +977,15 @@ function computeTrajectory() {
 // physically missed. Anchoring at sample 0 makes toSunFrame(0).x = vecPfX,
 // stable for the entire drag.
 function planetPos(idx) {
-  var vp = state.planetVel * V_SCALE;
-  var tRel = idx * SIM_DT;
+  const vp = state.planetVel * V_SCALE;
+  const tRel = idx * SIM_DT;
   return { x: vp * tRel, y: 0 };
 }
 
 function toSunFrame(idx) {
-  var p = state.trajectory[idx];
-  var vp = state.planetVel * V_SCALE;
-  var tRel = idx * SIM_DT;
+  const p = state.trajectory[idx];
+  const vp = state.planetVel * V_SCALE;
+  const tRel = idx * SIM_DT;
   return {
     x: p.x + vp * tRel,
     y: p.y,
@@ -1006,38 +1010,38 @@ function toSunFrame(idx) {
 // - perifocal y-axis ê_q = sgn(h)·(-eY, eX)/e (in direction of motion at periapsis)
 // - planet-frame asymptote = perX·ê_p + perY·ê_q, scaled by vInf
 function asymptoticVelocityPf(rx, ry, vx, vy, mu, branch) {
-  var r = Math.sqrt(rx * rx + ry * ry);
-  var v2 = vx * vx + vy * vy;
-  var vInf2 = v2 - 2 * mu / r;
+  const r = Math.sqrt(rx * rx + ry * ry);
+  const v2 = vx * vx + vy * vy;
+  const vInf2 = v2 - 2 * mu / r;
   if (vInf2 <= 0) return { x: vx, y: vy };
-  var vInf = Math.sqrt(vInf2);
+  const vInf = Math.sqrt(vInf2);
 
-  var coeffR = (v2 - mu / r) / mu;
-  var rDotV = rx * vx + ry * vy;
-  var coeffV = rDotV / mu;
-  var eX = coeffR * rx - coeffV * vx;
-  var eY = coeffR * ry - coeffV * vy;
-  var e = Math.sqrt(eX * eX + eY * eY);
+  const coeffR = (v2 - mu / r) / mu;
+  const rDotV = rx * vx + ry * vy;
+  const coeffV = rDotV / mu;
+  const eX = coeffR * rx - coeffV * vx;
+  const eY = coeffR * ry - coeffV * vy;
+  const e = Math.sqrt(eX * eX + eY * eY);
   if (e <= 1.0001) return { x: vx, y: vy };
 
-  var sqrtE2m1 = Math.sqrt(e * e - 1);
-  var perX = (branch === 'in') ? (1 / e) : (-1 / e);
-  var perY = sqrtE2m1 / e;
+  const sqrtE2m1 = Math.sqrt(e * e - 1);
+  const perX = (branch === 'in') ? (1 / e) : (-1 / e);
+  const perY = sqrtE2m1 / e;
 
-  var h = rx * vy - ry * vx;
-  var sgnH = h >= 0 ? 1 : -1;
-  var ePx = eX / e, ePy = eY / e;
-  var eQx = -sgnH * eY / e, eQy = sgnH * eX / e;
+  const h = rx * vy - ry * vx;
+  const sgnH = h >= 0 ? 1 : -1;
+  const ePx = eX / e, ePy = eY / e;
+  const eQx = -sgnH * eY / e, eQy = sgnH * eX / e;
 
-  var planetX = perX * ePx + perY * eQx;
-  var planetY = perX * ePy + perY * eQy;
+  const planetX = perX * ePx + perY * eQx;
+  const planetY = perX * ePy + perY * eQy;
   return { x: planetX * vInf, y: planetY * vInf };
 }
 
 function computeResults() {
-  var vp = state.planetVel * V_SCALE;
-  var mu = state.planetMass * GM_BASE;
-  var traj = state.trajectory;
+  const vp = state.planetVel * V_SCALE;
+  const mu = state.planetMass * GM_BASE;
+  const traj = state.trajectory;
 
   if (traj.length === 0) {
     state.vIn = 0;
@@ -1051,12 +1055,12 @@ function computeResults() {
   // Pre-pass: max Sun-frame speed across the trajectory, used as the gauge
   // anchor for the live current-speed bar. Runs for both crash and non-crash
   // paths (the gauge stays meaningful even when the spacecraft impacts).
-  var maxV2 = 0;
-  for (var k = 0; k < traj.length; k++) {
-    var pk = traj[k];
-    var sxk = pk.vx + vp;
-    var syk = pk.vy;
-    var v2 = sxk * sxk + syk * syk;
+  let maxV2 = 0;
+  for (let k = 0; k < traj.length; k++) {
+    const pk = traj[k];
+    const sxk = pk.vx + vp;
+    const syk = pk.vy;
+    const v2 = sxk * sxk + syk * syk;
     if (v2 > maxV2) maxV2 = v2;
   }
   state.maxSpeedSliderUnits = Math.sqrt(maxV2) / V_SCALE;
@@ -1064,10 +1068,10 @@ function computeResults() {
   // Asymptotic inbound: derived from the FIRST integrated sample via vis-viva
   // and the eccentricity vector. This is the actual asymptotic Sun-frame
   // entry speed, not the slider value.
-  var first = traj[0];
-  var asymIn = asymptoticVelocityPf(first.x, first.y, first.vx, first.vy, mu, 'in');
-  var vInSunX = asymIn.x + vp;
-  var vInSunY = asymIn.y;
+  const first = traj[0];
+  const asymIn = asymptoticVelocityPf(first.x, first.y, first.vx, first.vy, mu, 'in');
+  const vInSunX = asymIn.x + vp;
+  const vInSunY = asymIn.y;
   state.vIn = Math.sqrt(vInSunX * vInSunX + vInSunY * vInSunY) / V_SCALE;
 
   if (state.crashed) {
@@ -1080,18 +1084,18 @@ function computeResults() {
   // Asymptotic outbound: derived from the LAST integrated sample. Computing
   // inbound from first and outbound from last also serves as a built-in
   // integrator-drift check (energy conservation requires |asymIn| = |asymOut|).
-  var last = traj[traj.length - 1];
-  var asymOut = asymptoticVelocityPf(last.x, last.y, last.vx, last.vy, mu, 'out');
-  var vOutSunX = asymOut.x + vp;
-  var vOutSunY = asymOut.y;
+  const last = traj[traj.length - 1];
+  const asymOut = asymptoticVelocityPf(last.x, last.y, last.vx, last.vy, mu, 'out');
+  const vOutSunX = asymOut.x + vp;
+  const vOutSunY = asymOut.y;
   state.vOut = Math.sqrt(vOutSunX * vOutSunX + vOutSunY * vOutSunY) / V_SCALE;
   state.deltaV = state.vOut - state.vIn;
 
   // Deflection: signed angle between asymptotic inbound and outbound vectors
   // in the planet frame. Equals 2·asin(1/e) in magnitude for a clean orbit.
-  var inAngle = Math.atan2(asymIn.y, asymIn.x);
-  var outAngle = Math.atan2(asymOut.y, asymOut.x);
-  var da = (outAngle - inAngle) * 180 / Math.PI;
+  const inAngle = Math.atan2(asymIn.y, asymIn.x);
+  const outAngle = Math.atan2(asymOut.y, asymOut.x);
+  let da = (outAngle - inAngle) * 180 / Math.PI;
   while (da > 180) da -= 360;
   while (da < -180) da += 360;
   state.deflectionAngle = da;
@@ -1107,58 +1111,58 @@ function drawScene() {
 
   updateLiveReadouts();
 
-  var traj = state.trajectory;
+  const traj = state.trajectory;
   if (traj.length < 2) return;
-  var len = traj.length;
-  var idx = Math.min(state.currentIndex, len - 1);
+  const len = traj.length;
+  const idx = Math.min(state.currentIndex, len - 1);
 
   // ── Camera ──
-  var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  var sampleStep = Math.max(1, Math.floor(len / 3000));
-  for (var i = 0; i < len; i += sampleStep) {
-    var p = toSunFrame(i);
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  const sampleStep = Math.max(1, Math.floor(len / 3000));
+  for (let i = 0; i < len; i += sampleStep) {
+    const p = toSunFrame(i);
     if (p.x < minX) minX = p.x;
     if (p.x > maxX) maxX = p.x;
     if (p.y < minY) minY = p.y;
     if (p.y > maxY) maxY = p.y;
   }
-  var pL = toSunFrame(len - 1);
+  const pL = toSunFrame(len - 1);
   minX = Math.min(minX, pL.x); maxX = Math.max(maxX, pL.x);
   minY = Math.min(minY, pL.y); maxY = Math.max(maxY, pL.y);
 
-  var plS = planetPos(0);
-  var plE = planetPos(len - 1);
+  const plS = planetPos(0);
+  const plE = planetPos(len - 1);
   minX = Math.min(minX, plS.x, plE.x);
   maxX = Math.max(maxX, plS.x, plE.x);
   minY = Math.min(minY, plS.y, plE.y, -30);
   maxY = Math.max(maxY, plS.y, plE.y, 30);
 
   if (state.mode === 'game' && state.gameTarget) {
-    var tol = gameTolerance();
+    const tol = gameTolerance();
     minX = Math.min(minX, state.gameTarget.x - tol);
     maxX = Math.max(maxX, state.gameTarget.x + tol);
     minY = Math.min(minY, state.gameTarget.y - tol);
     maxY = Math.max(maxY, state.gameTarget.y + tol);
   }
 
-  var pad = 100;
-  var spanX = (maxX - minX) + 2 * pad;
-  var spanY = (maxY - minY) + 2 * pad;
-  var scale = Math.min(W / spanX, H / spanY);
-  var camX = (minX + maxX) / 2;
-  var camY = (minY + maxY) / 2;
+  const pad = 100;
+  const spanX = (maxX - minX) + 2 * pad;
+  const spanY = (maxY - minY) + 2 * pad;
+  let scale = Math.min(W / spanX, H / spanY);
+  let camX = (minX + maxX) / 2;
+  let camY = (minY + maxY) / 2;
 
   if (cameraFrozen) {
     scale = frozenScale;
     camX = frozenCamX;
     camY = frozenCamY;
   } else if (cameraMode === 'planet') {
-    var plFocus = planetPos(idx);
+    const plFocus = planetPos(idx);
     camX = plFocus.x; camY = plFocus.y;
     scale = manualScale;
     lastScale = scale; frozenCamX = camX; frozenCamY = camY;
   } else if (cameraMode === 'spacecraft') {
-    var scFocus = toSunFrame(idx);
+    const scFocus = toSunFrame(idx);
     camX = scFocus.x; camY = scFocus.y;
     scale = manualScale;
     lastScale = scale; frozenCamX = camX; frozenCamY = camY;
@@ -1184,8 +1188,8 @@ function drawScene() {
   });
 
   // ── Planet orbital path (straight dashed line) ──
-  var vp = state.planetVel * V_SCALE;
-  var pg = state.planetColors.glow;
+  const vp = state.planetVel * V_SCALE;
+  const pg = state.planetColors.glow;
   if (vp > 0.01) {
     ctx.setLineDash([4, 6]);
     ctx.strokeStyle = 'rgba(' + pg + ',0.12)';
@@ -1209,14 +1213,14 @@ function drawScene() {
   }
 
   // ── Planet ──
-  var plNow = planetPos(idx);
+  const plNow = planetPos(idx);
   drawPlanet(tx(plNow.x), ty(plNow.y), scale);
 
   // ── Planet velocity arrow ──
   if (vp > 0.01) {
-    var ppx = tx(plNow.x), ppy = ty(plNow.y);
-    var pr = Math.max(8, state.planetRadius * scale);
-    var arrowLen = Math.min(vp * 10, 60);
+    const ppx = tx(plNow.x), ppy = ty(plNow.y);
+    const pr = Math.max(8, state.planetRadius * scale);
+    const arrowLen = Math.min(vp * 10, 60);
     drawArrow(ppx + pr + 6, ppy, ppx + pr + 6 + arrowLen, ppy,
       'rgba(' + pg + ',0.5)', 1.5, 10);
     ctx.font = '14px "Share Tech Mono", monospace';
@@ -1227,7 +1231,7 @@ function drawScene() {
 
   // Render step: finer than the bounds-sampling step so the smoothed curve
   // has enough segments to follow sharp curvature near periapsis.
-  var renderStep = Math.max(1, Math.floor(len / 8000));
+  const renderStep = Math.max(1, Math.floor(len / 8000));
 
   // Smooth-polyline helper using quadratic Beziers through segment midpoints.
   // Each curve goes midpoint(i-1,i) → midpoint(i,i+1) with sample i as the
@@ -1235,19 +1239,19 @@ function drawScene() {
   // without changing the underlying physics.
   function strokeSmoothTrail(start, end, step) {
     if (end <= start) return;
-    var p0 = toSunFrame(start);
+    const p0 = toSunFrame(start);
     ctx.beginPath();
     ctx.moveTo(tx(p0.x), ty(p0.y));
-    for (var i = start + step; i + step <= end; i += step) {
-      var p = toSunFrame(i);
-      var pNext = toSunFrame(i + step);
-      var midX = tx((p.x + pNext.x) / 2);
-      var midY = ty((p.y + pNext.y) / 2);
+    for (let i = start + step; i + step <= end; i += step) {
+      const p = toSunFrame(i);
+      const pNext = toSunFrame(i + step);
+      const midX = tx((p.x + pNext.x) / 2);
+      const midY = ty((p.y + pNext.y) / 2);
       ctx.quadraticCurveTo(tx(p.x), ty(p.y), midX, midY);
     }
     // Finish exactly at the requested end sample (so the trail meets the
     // spacecraft icon and the faint trajectory ends at the true last point).
-    var pEnd = toSunFrame(end);
+    const pEnd = toSunFrame(end);
     ctx.lineTo(tx(pEnd.x), ty(pEnd.y));
     ctx.stroke();
   }
@@ -1266,7 +1270,7 @@ function drawScene() {
     ctx.strokeStyle = 'rgba(255,224,102,0.12)';
     ctx.beginPath();
     ctx.moveTo(tx(state.gameGhost[0].x), ty(state.gameGhost[0].y));
-    for (var ggi = 1; ggi < state.gameGhost.length; ggi++) {
+    for (let ggi = 1; ggi < state.gameGhost.length; ggi++) {
       ctx.lineTo(tx(state.gameGhost[ggi].x), ty(state.gameGhost[ggi].y));
     }
     ctx.stroke();
@@ -1274,7 +1278,7 @@ function drawScene() {
 
   // ── Animated trail ──
   if (idx > 0) {
-    var trailStep = Math.max(1, Math.floor(idx / 2000));
+    const trailStep = Math.max(1, Math.floor(idx / 2000));
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = 'rgba(255,224,102,0.55)';
     strokeSmoothTrail(0, idx, trailStep);
@@ -1282,13 +1286,13 @@ function drawScene() {
 
   // ── Game target ──
   if (state.mode === 'game' && state.gameTarget) {
-    var gtol = gameTolerance();
-    var gx = tx(state.gameTarget.x);
-    var gy = ty(state.gameTarget.y);
+    const gtol = gameTolerance();
+    const gx = tx(state.gameTarget.x);
+    const gy = ty(state.gameTarget.y);
     targetScreenX = gx;
     targetScreenY = gy;
-    var gr = gtol * scale;
-    var pulse = 1 + 0.06 * Math.sin(Date.now() / 250);
+    const gr = gtol * scale;
+    const pulse = 1 + 0.06 * Math.sin(Date.now() / 250);
 
     ctx.beginPath();
     ctx.arc(gx, gy, gr * pulse, 0, Math.PI * 2);
@@ -1307,7 +1311,7 @@ function drawScene() {
     ctx.fillStyle = 'rgba(255,107,107,0.8)';
     ctx.fill();
 
-    var ch = gr * 0.35;
+    const ch = gr * 0.35;
     ctx.strokeStyle = 'rgba(255,107,107,0.3)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -1318,10 +1322,10 @@ function drawScene() {
 
   // ── Crash overlay ──
   if (state.crashed && idx >= len - 1) {
-    var plCrash = planetPos(len - 1);
-    var cx = tx(plCrash.x), cy = ty(plCrash.y);
+    const plCrash = planetPos(len - 1);
+    const cx = tx(plCrash.x), cy = ty(plCrash.y);
 
-    var boom = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80);
+    const boom = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80);
     boom.addColorStop(0, 'rgba(255,140,50,0.7)');
     boom.addColorStop(0.3, 'rgba(255,80,30,0.4)');
     boom.addColorStop(0.7, 'rgba(255,50,20,0.1)');
@@ -1345,8 +1349,8 @@ function drawScene() {
 
   // ── Draggable velocity vector (arrow length = speed) ──
   (function() {
-    var sf0 = toSunFrame(0);
-    var sx, sy;
+    const sf0 = toSunFrame(0);
+    let sx, sy;
     if (state.dragMode === 'arrow' || state.dragMode === 'translate') {
       sx = frozenRootX;
       sy = frozenRootY;
@@ -1357,14 +1361,14 @@ function drawScene() {
     scStartScreenX = sx;
     scStartScreenY = sy;
 
-    var a = state.approachAngle;
-    var aLen = MIN_ARROW_PX + (state.approachSpeed - 10) * (MAX_ARROW_PX - MIN_ARROW_PX) / 90;
-    var tipX = sx + Math.cos(a) * aLen;
-    var tipY = sy - Math.sin(a) * aLen;
+    const a = state.approachAngle;
+    const aLen = MIN_ARROW_PX + (state.approachSpeed - 10) * (MAX_ARROW_PX - MIN_ARROW_PX) / 90;
+    const tipX = sx + Math.cos(a) * aLen;
+    const tipY = sy - Math.sin(a) * aLen;
     handleScreenX = tipX;
     handleScreenY = tipY;
 
-    var shaftColor = state.fineDrag ? '#7dffe7' : (state.dragMode ? '#7dc4ff' : '#58a6ff');
+    const shaftColor = state.fineDrag ? '#7dffe7' : (state.dragMode ? '#7dc4ff' : '#58a6ff');
 
     // Dotted circle guide while dragging
     if (state.dragMode === 'arrow') {
@@ -1377,9 +1381,9 @@ function drawScene() {
       ctx.setLineDash([]);
     }
 
-    var headAngle = Math.atan2(tipY - sy, tipX - sx);
-    var shaftEndX = tipX - 13 * Math.cos(headAngle);
-    var shaftEndY = tipY - 13 * Math.sin(headAngle);
+    const headAngle = Math.atan2(tipY - sy, tipX - sx);
+    const shaftEndX = tipX - 13 * Math.cos(headAngle);
+    const shaftEndY = tipY - 13 * Math.sin(headAngle);
     ctx.strokeStyle = shaftColor;
     ctx.lineWidth = 3;
     ctx.lineCap = 'butt';
@@ -1401,10 +1405,10 @@ function drawScene() {
     ctx.closePath();
     ctx.fill();
 
-    var perpX = -(tipY - sy);
-    var perpY = tipX - sx;
-    var perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
-    var midX = (sx + tipX) / 2, midY = (sy + tipY) / 2;
+    const perpX = -(tipY - sy);
+    const perpY = tipX - sx;
+    const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
+    const midX = (sx + tipX) / 2, midY = (sy + tipY) / 2;
     ctx.font = '17px "Share Tech Mono", monospace';
     ctx.fillStyle = '#58a6ff';
     ctx.textAlign = 'center';
@@ -1417,11 +1421,11 @@ function drawScene() {
 
   // ── Spacecraft (drawn LAST among game objects) ──
   if (idx < len) {
-    var sc = toSunFrame(idx);
-    var screenAngle = Math.atan2(-sc.vy, sc.vx);
-    var isDrag = (state.dragMode === 'arrow' || state.dragMode === 'translate');
-    var scx = (isDrag && idx === 0) ? frozenRootX : tx(sc.x);
-    var scy = (isDrag && idx === 0) ? frozenRootY : ty(sc.y);
+    const sc = toSunFrame(idx);
+    const screenAngle = Math.atan2(-sc.vy, sc.vx);
+    const isDrag = (state.dragMode === 'arrow' || state.dragMode === 'translate');
+    const scx = (isDrag && idx === 0) ? frozenRootX : tx(sc.x);
+    const scy = (isDrag && idx === 0) ? frozenRootY : ty(sc.y);
     drawSpacecraft(scx, scy, screenAngle);
   }
 
@@ -1429,7 +1433,7 @@ function drawScene() {
   ctx.font = '15px "Share Tech Mono", monospace';
   ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(110,122,138,0.7)';
-  var plLabelY = ty(plNow.y) + Math.max(8, state.planetRadius * scale) + 14;
+  const plLabelY = ty(plNow.y) + Math.max(8, state.planetRadius * scale) + 14;
   ctx.fillText(T(state.selectedPlanet).toUpperCase(), tx(plNow.x), plLabelY);
 
   if (vp < 0.01) {
@@ -1444,10 +1448,10 @@ function drawPlanet(px, py, scale) {
   // and atmosphere remain clamped for visibility, and a non-solid helper
   // marker is drawn at extreme zoom-out where physR would otherwise be too
   // small to see.
-  var physR = state.planetRadius * scale;
-  var glowR = Math.max(8, physR);
-  var bodyR = physR;
-  var c = state.planetColors;
+  const physR = state.planetRadius * scale;
+  const glowR = Math.max(8, physR);
+  const bodyR = physR;
+  const c = state.planetColors;
 
   // Atmosphere ring (visible scale)
   ctx.beginPath();
@@ -1457,7 +1461,7 @@ function drawPlanet(px, py, scale) {
   ctx.stroke();
 
   // Outer glow gradient (visible scale)
-  var glow = ctx.createRadialGradient(px, py, glowR * 0.3, px, py, glowR * 3);
+  const glow = ctx.createRadialGradient(px, py, glowR * 0.3, px, py, glowR * 3);
   glow.addColorStop(0, 'rgba(' + c.glow + ',0.2)');
   glow.addColorStop(0.5, 'rgba(' + c.glow + ',0.06)');
   glow.addColorStop(1, 'rgba(' + c.glow + ',0.0)');
@@ -1467,7 +1471,7 @@ function drawPlanet(px, py, scale) {
   ctx.fill();
 
   // Solid body at PHYSICAL scale — a safe flyby never visually intersects this
-  var bodyGrad = ctx.createRadialGradient(
+  const bodyGrad = ctx.createRadialGradient(
     px - bodyR * 0.3, py - bodyR * 0.3, bodyR * 0.1, px, py, bodyR);
   bodyGrad.addColorStop(0, c.hi);
   bodyGrad.addColorStop(0.7, c.mid);
@@ -1486,7 +1490,7 @@ function drawPlanet(px, py, scale) {
   // crosshair to indicate the planet's location without misrepresenting the
   // collision radius.
   if (physR < 1.5) {
-    var helperR = Math.max(6, glowR * 0.4);
+    const helperR = Math.max(6, glowR * 0.4);
     ctx.strokeStyle = 'rgba(' + c.glow + ',0.4)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -1506,37 +1510,37 @@ function drawPlanet(px, py, scale) {
 function drawVectorTooltip() {
   if (!state.hintShown) return;
 
-  var lines = [T('hintLine1'), T('hintLine2')];
+  const lines = [T('hintLine1'), T('hintLine2')];
 
   ctx.font = '13px "Share Tech Mono", monospace';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
 
-  var maxWidth = 0;
-  for (var i = 0; i < lines.length; i++) {
-    var w = ctx.measureText(lines[i]).width;
+  let maxWidth = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const w = ctx.measureText(lines[i]).width;
     if (w > maxWidth) maxWidth = w;
   }
 
-  var padX = 12, padY = 10;
-  var lineH = 17;
-  var boxW = maxWidth + padX * 2;
-  var boxH = lineH * lines.length + padY * 2 - 2;
+  const padX = 12, padY = 10;
+  const lineH = 17;
+  const boxW = maxWidth + padX * 2;
+  const boxH = lineH * lines.length + padY * 2 - 2;
 
   // Anchor: above the vector midpoint with a 60 px gap, then clamp to canvas.
-  var midX = (scStartScreenX + handleScreenX) / 2;
-  var midY = (scStartScreenY + handleScreenY) / 2;
-  var rx = midX - boxW / 2;
-  var ry = midY - 60 - boxH;
+  const midX = (scStartScreenX + handleScreenX) / 2;
+  const midY = (scStartScreenY + handleScreenY) / 2;
+  let rx = midX - boxW / 2;
+  let ry = midY - 60 - boxH;
 
-  var margin = 12;
+  const margin = 12;
   if (rx < margin) rx = margin;
   if (rx + boxW > W - margin) rx = W - margin - boxW;
   if (ry < margin) ry = margin;
   if (ry + boxH > H - margin) ry = H - margin - boxH;
 
   // Rounded rectangle backdrop (manual path for portability across browsers).
-  var r = 6;
+  const r = 6;
   ctx.beginPath();
   ctx.moveTo(rx + r, ry);
   ctx.lineTo(rx + boxW - r, ry);
@@ -1556,7 +1560,7 @@ function drawVectorTooltip() {
   ctx.stroke();
 
   ctx.fillStyle = '#c9d1d9';
-  for (var j = 0; j < lines.length; j++) {
+  for (let j = 0; j < lines.length; j++) {
     ctx.fillText(lines[j], rx + padX, ry + padY + lineH * j);
   }
 }
@@ -1566,7 +1570,7 @@ function drawSpacecraft(x, y, angle) {
   ctx.translate(x, y);
   ctx.rotate(angle);
 
-  var glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 20);
+  const glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 20);
   glow.addColorStop(0, 'rgba(255,224,102,0.45)');
   glow.addColorStop(1, 'rgba(255,224,102,0.0)');
   ctx.fillStyle = glow;
@@ -1586,7 +1590,7 @@ function drawSpacecraft(x, y, angle) {
 }
 
 function drawArrow(x1, y1, x2, y2, color, lineW, headSize) {
-  var angle = Math.atan2(y2 - y1, x2 - x1);
+  const angle = Math.atan2(y2 - y1, x2 - x1);
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.lineWidth = lineW;
@@ -1604,17 +1608,17 @@ function drawArrow(x1, y1, x2, y2, color, lineW, headSize) {
 }
 
 function drawVelocityArrows(len, tx, ty) {
-  var sl = toSunFrame(len - 1);
-  var maxSpeed = Math.max(state.vIn, state.vOut, 0.1);
-  var maxArrowPx = Math.min(W, H) * 0.14;
-  var arrowK = maxArrowPx / (maxSpeed * V_SCALE);
+  const sl = toSunFrame(len - 1);
+  const maxSpeed = Math.max(state.vIn, state.vOut, 0.1);
+  const maxArrowPx = Math.min(W, H) * 0.14;
+  const arrowK = maxArrowPx / (maxSpeed * V_SCALE);
 
   if (state.vOut > 0.01) {
-    var sx = tx(sl.x), sy = ty(sl.y);
-    var ex = sx + sl.vx * arrowK;
-    var ey = sy - sl.vy * arrowK;
+    const sx = tx(sl.x), sy = ty(sl.y);
+    const ex = sx + sl.vx * arrowK;
+    const ey = sy - sl.vy * arrowK;
 
-    var color = '#58a6ff';
+    let color = '#58a6ff';
     if (state.deltaV > 0.15) color = '#3fb950';
     else if (state.deltaV < -0.15) color = '#f97583';
 
@@ -1623,9 +1627,9 @@ function drawVelocityArrows(len, tx, ty) {
     ctx.font = '17px "Share Tech Mono", monospace';
     ctx.fillStyle = color;
     ctx.textAlign = 'center';
-    var mx = (sx + ex) / 2, my = (sy + ey) / 2;
-    var perpX = -(ey - sy), perpY = ex - sx;
-    var perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
+    const mx = (sx + ex) / 2, my = (sy + ey) / 2;
+    const perpX = -(ey - sy), perpY = ex - sx;
+    const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
     ctx.fillText('v=' + Math.round(state.vOut),
       mx + perpX / perpLen * 22, my + perpY / perpLen * 22);
   }
@@ -1634,27 +1638,27 @@ function drawVelocityArrows(len, tx, ty) {
 // ══════════════════════════════════════════════
 // ANIMATION
 // ══════════════════════════════════════════════
-var lastTime = 0;
-var stepAccum = 0;
+let lastTime = 0;
+let stepAccum = 0;
 
 function animate(timestamp) {
   if (!lastTime) lastTime = timestamp;
-  var dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
   lastTime = timestamp;
 
   if (state.playing && state.trajectory.length > 0) {
-    var baseStepsPerSec = Math.max(30, Math.ceil(state.trajectory.length / 3.5));
+    const baseStepsPerSec = Math.max(30, Math.ceil(state.trajectory.length / 3.5));
     stepAccum += dt * baseStepsPerSec * state.animSpeed;
-    var steps = Math.floor(stepAccum);
+    const steps = Math.floor(stepAccum);
     stepAccum -= steps;
     if (steps > 0) state.currentIndex += steps;
 
     // Check for target hit mid-flight (game mode)
     if (state.mode === 'game' && state.gameLaunched && state.gameTarget && !state.gameResult) {
-      var tol = gameTolerance(), tolSq = tol * tol;
-      var gx = state.gameTarget.x, gy = state.gameTarget.y;
-      var sc = toSunFrame(Math.min(state.currentIndex, state.trajectory.length - 1));
-      var ddx = sc.x - gx, ddy = sc.y - gy;
+      const tol = gameTolerance(), tolSq = tol * tol;
+      const gx = state.gameTarget.x, gy = state.gameTarget.y;
+      const sc = toSunFrame(Math.min(state.currentIndex, state.trajectory.length - 1));
+      const ddx = sc.x - gx, ddy = sc.y - gy;
       if (ddx * ddx + ddy * ddy < tolSq) {
         state.gameResult = 'success';
         state.playing = false;
@@ -1702,7 +1706,7 @@ function togglePlay() {
 // (one class toggle, one title write) so it's safe to call every animation
 // frame; the browser optimizes away no-op DOM writes.
 function updatePlayButton() {
-  var btn = document.getElementById('replayBtn');
+  const btn = document.getElementById('replayBtn');
   btn.classList.toggle('playing', state.playing);
   btn.title = state.playing ? T('pause') : T('play');
 }
@@ -1718,7 +1722,7 @@ function resetSim() {
 // double click → resetToDefaults (full per-planet reset). Uses a timer to
 // distinguish single from double click without firing resetSim twice during
 // a double-click sequence.
-var stopClickTimer = null;
+let stopClickTimer = null;
 function handleStopClick() {
   if (stopClickTimer !== null) {
     clearTimeout(stopClickTimer);
@@ -1748,9 +1752,9 @@ function recompute() {
 }
 
 function stepSlider(sliderId, delta) {
-  var slider = document.getElementById(sliderId);
-  var min = +slider.min, max = +slider.max, step = +slider.step;
-  var val = +slider.value + delta;
+  const slider = document.getElementById(sliderId);
+  const min = +slider.min, max = +slider.max, step = +slider.step;
+  let val = +slider.value + delta;
   val = Math.round(val / step) * step;
   val = Math.max(min, Math.min(max, val));
   val = Math.round(val * 1000) / 1000;
@@ -1759,7 +1763,7 @@ function stepSlider(sliderId, delta) {
 }
 
 function selectPlanet(key, keepTarget) {
-  var planet = PLANET_DATA.find(function(p) { return p.key === key; });
+  const planet = PLANET_DATA.find(function(p) { return p.key === key; });
   if (!planet) return;
   state.selectedPlanet = key;
   state.planetMass = planet.massRatio;
@@ -1856,10 +1860,10 @@ function resetView() {
 // ══════════════════════════════════════════════
 // DRAG INTERACTION
 // ══════════════════════════════════════════════
-var ARROW_HIT_DIST = 20;
+const ARROW_HIT_DIST = 20;
 
 function getCanvasPos(e) {
-  var rect = canvas.getBoundingClientRect();
+  const rect = canvas.getBoundingClientRect();
   if (e.touches) {
     return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
   }
@@ -1868,18 +1872,18 @@ function getCanvasPos(e) {
 
 function isNearArrow(pos) {
   // Check near tip (circle)
-  var dtx = pos.x - handleScreenX, dty = pos.y - handleScreenY;
+  const dtx = pos.x - handleScreenX, dty = pos.y - handleScreenY;
   if (dtx * dtx + dty * dty < 25 * 25) return true;
   // Check near shaft (segment)
-  var x1 = scStartScreenX, y1 = scStartScreenY;
-  var x2 = handleScreenX, y2 = handleScreenY;
-  var dx = x2 - x1, dy = y2 - y1;
-  var lenSq = dx * dx + dy * dy;
+  const x1 = scStartScreenX, y1 = scStartScreenY;
+  const x2 = handleScreenX, y2 = handleScreenY;
+  const dx = x2 - x1, dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
   if (lenSq < 1) return false;
-  var t = ((pos.x - x1) * dx + (pos.y - y1) * dy) / lenSq;
+  let t = ((pos.x - x1) * dx + (pos.y - y1) * dy) / lenSq;
   t = Math.max(0, Math.min(1, t));
-  var projX = x1 + t * dx, projY = y1 + t * dy;
-  var distSq = (pos.x - projX) * (pos.x - projX) + (pos.y - projY) * (pos.y - projY);
+  const projX = x1 + t * dx, projY = y1 + t * dy;
+  const distSq = (pos.x - projX) * (pos.x - projX) + (pos.y - projY) * (pos.y - projY);
   return distSq < ARROW_HIT_DIST * ARROW_HIT_DIST;
 }
 
@@ -1900,23 +1904,23 @@ function handleArrowDrag(pos, shiftHeld) {
   recomputeFineDrag();
   updatePrecisionUI();
 
-  var rawDx = pos.x - dragLastPosX;
-  var rawDy = pos.y - dragLastPosY;
-  var scale = state.fineDrag ? 0.125 : 1.0;
+  const rawDx = pos.x - dragLastPosX;
+  const rawDy = pos.y - dragLastPosY;
+  const scale = state.fineDrag ? 0.125 : 1.0;
   dragAccumX += rawDx * scale;
   dragAccumY += rawDy * scale;
   dragLastPosX = pos.x;
   dragLastPosY = pos.y;
 
-  var effX = dragInitialTipX + dragAccumX;
-  var effY = dragInitialTipY + dragAccumY;
-  var dx = effX - frozenRootX;
-  var dy = -(effY - frozenRootY);
-  var dist = Math.sqrt(dx * dx + dy * dy);
+  const effX = dragInitialTipX + dragAccumX;
+  const effY = dragInitialTipY + dragAccumY;
+  const dx = effX - frozenRootX;
+  const dy = -(effY - frozenRootY);
+  const dist = Math.sqrt(dx * dx + dy * dy);
 
   state.approachAngle = Math.atan2(dy, dx);
 
-  var speed = 10 + (dist - MIN_ARROW_PX) * 90 / (MAX_ARROW_PX - MIN_ARROW_PX);
+  const speed = 10 + (dist - MIN_ARROW_PX) * 90 / (MAX_ARROW_PX - MIN_ARROW_PX);
   state.approachSpeed = Math.max(10, Math.min(100, Math.round(speed)));
 
   state.currentIndex = 0;
@@ -1929,27 +1933,27 @@ function handleArrowDrag(pos, shiftHeld) {
 
 function isNearTarget(pos) {
   if (state.mode !== 'game' || !state.gameTarget) return false;
-  var dx = pos.x - targetScreenX, dy = pos.y - targetScreenY;
-  var hitR = Math.max(30, gameTolerance() * lastScale);
+  const dx = pos.x - targetScreenX, dy = pos.y - targetScreenY;
+  const hitR = Math.max(30, gameTolerance() * lastScale);
   return dx * dx + dy * dy < hitR * hitR;
 }
 
 function handleTargetDrag(pos) {
-  var sx = pos.x - targetGrabOfsX;
-  var sy = pos.y - targetGrabOfsY;
+  const sx = pos.x - targetGrabOfsX;
+  const sy = pos.y - targetGrabOfsY;
   state.gameTarget.x = frozenCamX + (sx - W / 2) / frozenScale;
   state.gameTarget.y = frozenCamY - (sy - H / 2) / frozenScale;
 
 }
 
 function isNearRoot(pos) {
-  var dx = pos.x - scStartScreenX, dy = pos.y - scStartScreenY;
+  const dx = pos.x - scStartScreenX, dy = pos.y - scStartScreenY;
   return dx * dx + dy * dy < 15 * 15;
 }
 
 function handleTranslateDrag(pos) {
-  var dx = pos.x - dragPrevX;
-  var dy = pos.y - dragPrevY;
+  const dx = pos.x - dragPrevX;
+  const dy = pos.y - dragPrevY;
   dragPrevX = pos.x;
   dragPrevY = pos.y;
   state.vecPfX += dx / frozenScale;
@@ -2016,7 +2020,7 @@ function togglePrecision() {
 }
 
 canvas.addEventListener('mousedown', function(e) {
-  var pos = getCanvasPos(e);
+  const pos = getCanvasPos(e);
   if (isNearTarget(pos)) {
     startDrag('target', pos);
     canvas.style.cursor = 'move';
@@ -2036,7 +2040,7 @@ canvas.addEventListener('mousedown', function(e) {
 });
 
 canvas.addEventListener('mousemove', function(e) {
-  var pos = getCanvasPos(e);
+  const pos = getCanvasPos(e);
   if (state.dragMode === 'arrow') {
     handleArrowDrag(pos, e.shiftKey);
     e.preventDefault();
@@ -2058,7 +2062,7 @@ canvas.addEventListener('mouseup', endDrag);
 canvas.addEventListener('mouseleave', endDrag);
 
 canvas.addEventListener('touchstart', function(e) {
-  var pos = getCanvasPos(e);
+  const pos = getCanvasPos(e);
   if (isNearTarget(pos)) {
     startDrag('target', pos);
     e.preventDefault();
@@ -2072,7 +2076,7 @@ canvas.addEventListener('touchstart', function(e) {
 }, { passive: false });
 
 canvas.addEventListener('touchmove', function(e) {
-  var pos = getCanvasPos(e);
+  const pos = getCanvasPos(e);
   if (state.dragMode === 'arrow') {
     handleArrowDrag(pos);
     e.preventDefault();
@@ -2133,28 +2137,28 @@ function formatKmS(kmps) {
 // altitude, current speed, and the speed gauge fill. Cheap (~3 DOM ops) and
 // guarded against an empty trajectory.
 function updateLiveReadouts() {
-  var len = state.trajectory.length;
+  const len = state.trajectory.length;
   if (len === 0) {
     document.getElementById('curSpeedVal').textContent = '\u2014';
     document.getElementById('curAltVal').textContent = '\u2014';
     document.getElementById('gaugeFill').style.width = '0%';
     return;
   }
-  var idx = Math.min(state.currentIndex, len - 1);
-  var pt = state.trajectory[idx];
-  var vp = state.planetVel * V_SCALE;
+  const idx = Math.min(state.currentIndex, len - 1);
+  const pt = state.trajectory[idx];
+  const vp = state.planetVel * V_SCALE;
 
-  var r = Math.sqrt(pt.x * pt.x + pt.y * pt.y);
-  var altKm = Math.max(0, (r - state.planetRadius) * KM_PER_SIM_LENGTH);
+  const r = Math.sqrt(pt.x * pt.x + pt.y * pt.y);
+  const altKm = Math.max(0, (r - state.planetRadius) * KM_PER_SIM_LENGTH);
   document.getElementById('curAltVal').textContent = formatKm(altKm);
 
-  var sx = pt.vx + vp;
-  var sy = pt.vy;
-  var vSliderUnits = Math.sqrt(sx * sx + sy * sy) / V_SCALE;
+  const sx = pt.vx + vp;
+  const sy = pt.vy;
+  const vSliderUnits = Math.sqrt(sx * sx + sy * sy) / V_SCALE;
   document.getElementById('curSpeedVal').textContent =
     formatKmS(vSliderUnits * KMS_PER_SLIDER_VEL);
 
-  var pct = state.maxSpeedSliderUnits > 0
+  let pct = state.maxSpeedSliderUnits > 0
     ? (vSliderUnits / state.maxSpeedSliderUnits) * 100
     : 0;
   if (pct < 0) pct = 0;
@@ -2174,7 +2178,7 @@ function updateReadouts() {
     document.getElementById('speedInVal').textContent =
       formatKmS(state.vIn * KMS_PER_SLIDER_VEL);
     document.getElementById('speedOutVal').textContent = '\u2014';
-    var boostEl = document.getElementById('boostVal');
+    const boostEl = document.getElementById('boostVal');
     boostEl.textContent = T('crash');
     boostEl.style.color = 'var(--loss)';
     document.getElementById('deflVal').textContent = '\u2014';
@@ -2187,8 +2191,8 @@ function updateReadouts() {
   document.getElementById('speedOutVal').textContent =
     formatKmS(state.vOut * KMS_PER_SLIDER_VEL);
 
-  var boostEl = document.getElementById('boostVal');
-  var dvKmS = state.deltaV * KMS_PER_SLIDER_VEL;
+  const boostEl = document.getElementById('boostVal');
+  const dvKmS = state.deltaV * KMS_PER_SLIDER_VEL;
   boostEl.textContent = (dvKmS >= 0 ? '+' : '') + dvKmS.toFixed(1) + ' km/s';
   if (dvKmS > 0.15 * KMS_PER_SLIDER_VEL) boostEl.style.color = 'var(--gain)';
   else if (dvKmS < -0.15 * KMS_PER_SLIDER_VEL) boostEl.style.color = 'var(--loss)';
@@ -2198,10 +2202,10 @@ function updateReadouts() {
     Math.abs(state.deflectionAngle).toFixed(0) + '\u00B0';
 
   // Min altitude: closest approach above the planet surface, in km.
-  var closestPt = state.trajectory[state.closestIndex];
+  const closestPt = state.trajectory[state.closestIndex];
   if (closestPt) {
-    var closestR = Math.sqrt(closestPt.x * closestPt.x + closestPt.y * closestPt.y);
-    var minAltKm = Math.max(0, (closestR - state.planetRadius) * KM_PER_SIM_LENGTH);
+    const closestR = Math.sqrt(closestPt.x * closestPt.x + closestPt.y * closestPt.y);
+    const minAltKm = Math.max(0, (closestR - state.planetRadius) * KM_PER_SIM_LENGTH);
     document.getElementById('minAltVal').textContent = formatKm(minAltKm);
   } else {
     document.getElementById('minAltVal').textContent = '\u2014';
@@ -2209,7 +2213,7 @@ function updateReadouts() {
 }
 
 function updateInfo() {
-  var text;
+  let text;
   if (state.mode === 'game') {
     text = T('infoGame');
   } else if (state.crashed) {

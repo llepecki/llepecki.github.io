@@ -91,6 +91,8 @@
     font-family: 'Share Tech Mono', monospace; font-size: 22px;
     letter-spacing: 2px; color: var(--accent); text-transform: uppercase; margin-bottom: 4px;
   }
+  header h1 a { color: inherit; text-decoration: none; }
+  header h1 a:hover { opacity: .7; }
   header p { color: var(--text-dim); font-size: 13px; }
 
   .config {
@@ -341,7 +343,7 @@
 </head>
 <body>
 <header>
-  <h1>⚡ Logic Gate Trainer</h1>
+  <h1><a href="/learn/">⚡</a> Logic Gate Trainer</h1>
   <p>Practice solving circuits — set inputs, predict the output, then reveal!</p>
   <div class="theme-toggle" onclick="toggleTheme()">
     <span class="theme-toggle-icon" id="themeIcon">⚪</span>
@@ -392,6 +394,7 @@
 </div>
 
 <script>
+'use strict';
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
