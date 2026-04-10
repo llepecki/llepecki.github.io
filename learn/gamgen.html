@@ -195,7 +195,7 @@
 
 <div class="header">
   <div style="flex:1">
-    <h1 id="titleText">🎹 Generator Schematów Gam</h1>
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">🎹</span></a> <span id="titleText">Generator Schematów Gam</span></h1>
     <p id="subtitleText">Automatyczne tworzenie schematów ćwiczeniowych dla obu rąk</p>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">EN</button>
@@ -391,7 +391,7 @@ function T(key) { return I18N[state.lang][key]; }
 function applyTranslations() {
   document.documentElement.lang = state.lang;
   document.title = '🎹 ' + T('title');
-  document.getElementById('titleText').textContent = '🎹 ' + T('title');
+  document.getElementById('titleText').textContent = T('title');
   document.getElementById('subtitleText').textContent = T('subtitle');
   document.getElementById('lblPattern').textContent = T('pattern');
   const lenVal = document.getElementById('lengthLabel').textContent;
