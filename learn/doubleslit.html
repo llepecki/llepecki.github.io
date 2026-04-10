@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Interactive double-slit experiment simulator. Fire single photons and watch an interference pattern emerge one particle at a time.">
+<meta name="author" content="Łukasz Łepecki">
+<link rel="canonical" href="https://lepecki.com/learn/doubleslit.html">
+<meta property="og:title" content="Double-Slit Experiment">
+<meta property="og:description" content="Interactive double-slit experiment simulator. Fire single photons and watch an interference pattern emerge one particle at a time.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lepecki.com/learn/doubleslit.html">
+<meta property="og:site_name" content="Łukasz Łepecki">
+<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Double-Slit Experiment">
+<meta name="twitter:description" content="Interactive double-slit experiment simulator. Fire single photons and watch an interference pattern emerge one particle at a time.">
 <title>Double-Slit Experiment</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -279,7 +291,7 @@
 // STATE
 // ══════════════════════════════════════════════
 const state = {
-  lang: 'en',
+  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
   mode: 'continuous',    // 'continuous' or 'photon'
   slitCount: 1,
   slitWidth: 5,
@@ -1235,6 +1247,8 @@ function updateInfoText() {
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
+document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+applyTranslations();
 resize();
 document.getElementById('slitSepSlider').disabled = (state.slitCount === 1);
 setMode('continuous');

@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Interactive Mach-Zehnder interferometer simulator. Fire photons, adjust phase shifts, and block paths to explore quantum interference.">
+<meta name="author" content="Łukasz Łepecki">
+<link rel="canonical" href="https://lepecki.com/learn/mzinterferometer.html">
+<meta property="og:title" content="Mach-Zehnder Interferometer">
+<meta property="og:description" content="Interactive Mach-Zehnder interferometer simulator. Fire photons, adjust phase shifts, and block paths to explore quantum interference.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lepecki.com/learn/mzinterferometer.html">
+<meta property="og:site_name" content="Łukasz Łepecki">
+<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Mach-Zehnder Interferometer">
+<meta name="twitter:description" content="Interactive Mach-Zehnder interferometer simulator. Fire photons, adjust phase shifts, and block paths to explore quantum interference.">
 <title>Mach-Zehnder Interferometer</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -319,7 +331,7 @@ const state = {
   d2Count: 0,
   absorbedCount: 0,
   photons: [],
-  lang: 'en',
+  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
   hasFired: false,
 };
 
@@ -1238,6 +1250,8 @@ function updateInfoText() {
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
+document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+applyTranslations();
 resize();
 updateExpected();
 setMode('continuous');

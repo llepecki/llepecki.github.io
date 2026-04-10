@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images.">
+<meta name="author" content="Łukasz Łepecki">
+<link rel="canonical" href="https://lepecki.com/learn/gravlens.html">
+<meta property="og:title" content="Gravitational Lens Simulator">
+<meta property="og:description" content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lepecki.com/learn/gravlens.html">
+<meta property="og:site_name" content="Łukasz Łepecki">
+<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Gravitational Lens Simulator">
+<meta name="twitter:description" content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images.">
 <title>Gravitational Lens Simulator</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -213,7 +225,7 @@ const state = {
   sourceY: 0,       // source offset from optical axis (normalized, -1 to 1)
   sourceSize: 8,    // source star radius in source-plane units
   showRays: false,
-  lang: 'en',
+  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
 };
 
 function hasLens() { return state.mass > 0; }
@@ -745,6 +757,8 @@ window.addEventListener('touchend', () => { dragging = false; });
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
+document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+applyTranslations();
 resize();
 </script>
 </body>

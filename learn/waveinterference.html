@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Interactive wave interference simulator. Visualize constructive and destructive interference with adjustable amplitude, wavelength, and phase.">
+<meta name="author" content="Łukasz Łepecki">
+<link rel="canonical" href="https://lepecki.com/learn/waveinterference.html">
+<meta property="og:title" content="Wave Interference">
+<meta property="og:description" content="Interactive wave interference simulator. Visualize constructive and destructive interference with adjustable amplitude, wavelength, and phase.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lepecki.com/learn/waveinterference.html">
+<meta property="og:site_name" content="Łukasz Łepecki">
+<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Wave Interference">
+<meta name="twitter:description" content="Interactive wave interference simulator. Visualize constructive and destructive interference with adjustable amplitude, wavelength, and phase.">
 <title>Wave Interference</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -230,7 +242,7 @@
 // STATE
 // ══════════════════════════════════════════════
 const state = {
-  lang: 'en',
+  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
   step: 1,
   playing: true,
   ampA: 5,
@@ -1034,6 +1046,8 @@ window.addEventListener('touchend', () => { state.dragging = null; });
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
+document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+applyTranslations();
 resize();
 setStep(1);
 applyTranslations();
