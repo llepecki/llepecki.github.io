@@ -517,12 +517,14 @@ function applyTranslations() {
   if (outLbl) outLbl.textContent = T('outLabel');
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleLang() {
   lang = lang === 'en' ? 'pl' : 'en';
   document.getElementById('langBtn').textContent = lang === 'en' ? 'PL' : 'EN';
   applyTranslations();
 }
 
+// eslint-disable-next-line no-unused-vars
 function setGuess(v) {
   if (revealed) return;
   userGuess = v;
@@ -551,6 +553,7 @@ function showResultOverlay(correct) {
   document.body.appendChild(overlay);
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleTheme() {
   const html = document.documentElement;
   const isLight = html.getAttribute('data-theme') === 'light';
@@ -566,6 +569,7 @@ function toggleTheme() {
 function getSelectedGates() {
   return Array.from(document.querySelectorAll('.gate-toggle.active')).map(b => b.dataset.gate);
 }
+// eslint-disable-next-line no-unused-vars
 function toggleGateType(btn) {
   btn.classList.toggle('active');
   if (!getSelectedGates().length) btn.classList.add('active');
@@ -944,16 +948,19 @@ function getStepDelay() {
   return SPEED_STEPS[+document.getElementById('speedSlider').value];
 }
 
+// eslint-disable-next-line no-unused-vars
 function updateSpeedLabel() {
   document.getElementById('speedValue').textContent = SPEED_LABELS[+document.getElementById('speedSlider').value];
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleWireLabels() {
   const btn = document.getElementById('wireLabelsBtn');
   btn.classList.toggle('active');
   document.getElementById('circuit').classList.toggle('wire-labels-hidden', !btn.classList.contains('active'));
 }
 
+// eslint-disable-next-line no-unused-vars
 function randomizeInputs() {
   if (!circuit || revealed) return;
   circuit.inputs.forEach((inp, i) => {
@@ -969,6 +976,7 @@ function randomizeInputs() {
   });
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleInput(i) {
   if (!circuit || revealed) return;
   const v = circuit.inputs[i].value = circuit.inputs[i].value ? 0 : 1;
@@ -981,6 +989,7 @@ function toggleInput(i) {
   lbl.textContent = v; lbl.classList.toggle('high', hi); lbl.classList.toggle('low', !hi);
 }
 
+// eslint-disable-next-line no-unused-vars
 function handleRevealReset() {
   if (!circuit) return;
   if (revealed) resetCircuit();

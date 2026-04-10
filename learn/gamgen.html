@@ -465,6 +465,7 @@ function hexToRgb(hex) {
   return 'rgb(' + r + ', ' + g + ', ' + b + ')';
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';

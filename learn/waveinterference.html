@@ -352,6 +352,7 @@ function applyTranslations() {
   updateInfoText();
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
@@ -808,6 +809,7 @@ function setStep(n) {
   updateInfoText();
 }
 
+// eslint-disable-next-line no-unused-vars
 function setPreset(type) {
   if (type === 'constructive') {
     state.phaseDeg = 0;
@@ -824,6 +826,7 @@ function setPreset(type) {
   updateInfoText();
 }
 
+// eslint-disable-next-line no-unused-vars
 function togglePlay() {
   state.playing = !state.playing;
   document.getElementById('playBtn').innerHTML = state.playing ? T('pause') : T('play');

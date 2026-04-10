@@ -441,6 +441,7 @@ function applyTranslations() {
   updateStatsDOM();
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
@@ -808,6 +809,7 @@ const COL_SOURCE = { r: 255, g: 152, b: 0 };    // orange — initial photon
 const COL_PHOTON = { r: 0, g: 137, b: 123 };    // teal — known state
 const COL_ARM_A  = { r: 255, g: 60, b: 0 };     // red — superposition
 const COL_ARM_B  = { r: 230, g: 180, b: 0 };    // gold — superposition
+const COL_GHOST  = { r: 158, g: 158, b: 158 };   // grey — unknown state
 
 function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
   const c = ctx;
@@ -817,7 +819,7 @@ function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
 
   // Gaussian wave packet: oscillating filled ribbon, brightest at center, fading both ways
   const N = 60;                    // sample points across the packet
-  const halfLen = ts(35);          // half-length of the packet along travel dir
+  const halfLen = ts(18);          // half-length of the packet along travel dir
   const waveAmp = ts(7) * amplitude; // max perpendicular oscillation
   const sigma = halfLen * 0.38;    // gaussian width
 
@@ -827,7 +829,7 @@ function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
     const t = (i / N) * 2 - 1;              // -1 (back) to +1 (front)
     const d = t * halfLen;                   // distance from center along travel
     const env = Math.exp(-(d * d) / (2 * sigma * sigma)); // gaussian envelope
-    const osc = Math.sin(wavePhase + t * 7) * waveAmp * env * amplitude;
+    const osc = Math.sin(wavePhase + t * 14) * waveAmp * env * amplitude;
     const bx = px + dirx * d;
     const by = py + diry * d;
     upper.push({ x: bx + perpx * osc, y: by + perpy * osc });
@@ -850,7 +852,7 @@ function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
     const t = (i / N) * 2 - 1;
     const d = t * halfLen;
     const env = Math.exp(-(d * d) / (2 * sigma * sigma));
-    const osc = Math.sin(wavePhase + t * 7) * waveAmp * env * amplitude;
+    const osc = Math.sin(wavePhase + t * 14) * waveAmp * env * amplitude;
     const bx = px + dirx * d;
     const by = py + diry * d;
     const wx = bx + perpx * osc;
@@ -874,26 +876,23 @@ function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
 function drawPhotonPhase(p, now) {
   if (p.phase === 'entry') {
     const pos = posOnPath(PATH_ENTRY, p.t);
-    drawWavePacket(tx(pos.x), ty(pos.y), pos.dx, pos.dy, 1, now * 12, COL_SOURCE);
+    drawWavePacket(tx(pos.x), ty(pos.y), pos.dx, pos.dy, 1, now * 24, COL_SOURCE);
   }
   else if (p.phase === 'split') {
     const ampA = state.blockA ? 0 : 0.7;
     const ampB = state.blockB ? 0 : 0.7;
     if (ampA > 0) {
       const posA = posOnPath(PATH_A, p.t);
-      drawWavePacket(tx(posA.x), ty(posA.y), posA.dx, posA.dy, ampA, now * 12, COL_ARM_A);
+      drawWavePacket(tx(posA.x), ty(posA.y), posA.dx, posA.dy, ampA, now * 24, COL_GHOST);
     }
     if (ampB > 0) {
       const posB = posOnPath(PATH_B, p.t);
-      drawWavePacket(tx(posB.x), ty(posB.y), posB.dx, posB.dy, ampB, now * 12 + state.phaseDeg * Math.PI / 180, COL_ARM_B);
+      drawWavePacket(tx(posB.x), ty(posB.y), posB.dx, posB.dy, ampB, now * 24 + state.phaseDeg * Math.PI / 180, COL_GHOST);
     }
   }
   else if (p.phase === 'recombine') {
     // Both superposition arms meet at BS2 — brief, compact interference flash
     const alpha = Math.sin(p.t * Math.PI) * 0.35;
-    const phi = state.phaseDeg * Math.PI / 180;
-    const pD1 = Math.cos(phi / 2) ** 2;
-    const pD2 = Math.sin(phi / 2) ** 2;
     const bx = tx(MZ.bs2.x), by = ty(MZ.bs2.y);
     const gr = ts(30); // compact glow radius
 
@@ -908,7 +907,7 @@ function drawPhotonPhase(p, now) {
     // Back to orange — the photon's state is now determined
     const path = p.detection.result === 'd1' ? PATH_D1 : PATH_D2;
     const pos = posOnPath(path, p.t);
-    drawWavePacket(tx(pos.x), ty(pos.y), pos.dx, pos.dy, 1, now * 12, COL_SOURCE);
+    drawWavePacket(tx(pos.x), ty(pos.y), pos.dx, pos.dy, 1, now * 24, COL_SOURCE);
   }
   else if (p.phase === 'flash') {
     if (p.detection.result === 'absorbed') {
@@ -1125,6 +1124,7 @@ document.getElementById('speedSlider').addEventListener('input', e => {
   document.getElementById('speedVal').textContent = state.speed + 'x';
 });
 
+// eslint-disable-next-line no-unused-vars
 function toggleBlock(path) {
   if (path === 'a') {
     state.blockA = !state.blockA;
@@ -1138,6 +1138,7 @@ function toggleBlock(path) {
   updateExpected();
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleHints() {
   const body = document.getElementById('hintsBody');
   const btn = document.getElementById('hintToggle');
@@ -1145,6 +1146,7 @@ function toggleHints() {
   btn.classList.toggle('active', !body.classList.contains('hidden'));
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleAuto() {
   state.autoFire = !state.autoFire;
   autoTimer = 0;

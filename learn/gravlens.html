@@ -292,6 +292,7 @@ function applyTranslations() {
   render();
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
@@ -712,6 +713,7 @@ function updateInfo() {
 // ══════════════════════════════════════════════
 // INTERACTION
 // ══════════════════════════════════════════════
+// eslint-disable-next-line no-unused-vars
 function stepSlider(name, dir) {
   const slider = document.getElementById(name + 'Slider');
   const val = Math.min(+slider.max, Math.max(+slider.min, +slider.value + dir * +slider.step));
@@ -719,6 +721,7 @@ function stepSlider(name, dir) {
   slider.dispatchEvent(new Event('input'));
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleRays() {
   state.showRays = !state.showRays;
   document.getElementById('raysToggle').classList.toggle('active', state.showRays);

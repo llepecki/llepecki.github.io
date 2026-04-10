@@ -592,6 +592,7 @@ function applyTranslations() {
   updateInfo();
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
   // Button label shows the language you'd switch TO (the inverse of current).
@@ -615,6 +616,7 @@ function populatePlanetSelect() {
 // ══════════════════════════════════════════════
 // MODE & GAME
 // ══════════════════════════════════════════════
+// eslint-disable-next-line no-unused-vars
 function setMode(mode) {
   state.mode = mode;
   document.getElementById('modeExploreBtn').classList.toggle('active', mode === 'explore');
@@ -690,6 +692,7 @@ function generateTarget() {
   state.playing = false;
 }
 
+// eslint-disable-next-line no-unused-vars
 function newTarget() { generateTarget(); }
 
 function gameTolerance() {
@@ -1697,6 +1700,7 @@ function animate(timestamp) {
 // trajectory, resumes from the current sample. If paused at the end of the
 // trajectory (or never started), restarts from the beginning. In game mode,
 // every fresh start clears the previous result and re-arms gameLaunched.
+// eslint-disable-next-line no-unused-vars
 function togglePlay() {
   if (state.playing) {
     state.playing = false;
@@ -1735,6 +1739,7 @@ function resetSim() {
 // distinguish single from double click without firing resetSim twice during
 // a double-click sequence.
 let stopClickTimer = null;
+// eslint-disable-next-line no-unused-vars
 function handleStopClick() {
   if (stopClickTimer !== null) {
     clearTimeout(stopClickTimer);
@@ -1763,6 +1768,7 @@ function recompute() {
 
 }
 
+// eslint-disable-next-line no-unused-vars
 function stepSlider(sliderId, delta) {
   const slider = document.getElementById(sliderId);
   const min = +slider.min, max = +slider.max, step = +slider.step;
@@ -1848,21 +1854,26 @@ function applyZoom(factor) {
   updateViewButtons();
 }
 
+// eslint-disable-next-line no-unused-vars
 function zoomIn()  { applyZoom(1.3); }
+// eslint-disable-next-line no-unused-vars
 function zoomOut() { applyZoom(1 / 1.3); }
 
+// eslint-disable-next-line no-unused-vars
 function focusPlanet() {
   manualScale = Math.min(W, H) / (state.planetRadius * 25);
   cameraMode = 'planet';
   updateViewButtons();
 }
 
+// eslint-disable-next-line no-unused-vars
 function focusSpacecraft() {
   manualScale = lastScale * 1.5;
   cameraMode = 'spacecraft';
   updateViewButtons();
 }
 
+// eslint-disable-next-line no-unused-vars
 function resetView() {
   cameraMode = 'auto';
   zoomFactor = 1;
@@ -2025,6 +2036,7 @@ function updatePrecisionUI() {
   document.getElementById('precisionBtn').classList.toggle('active', state.fineDrag);
 }
 
+// eslint-disable-next-line no-unused-vars
 function togglePrecision() {
   state.precisionMode = !state.precisionMode;
   recomputeFineDrag();

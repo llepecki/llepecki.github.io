@@ -434,6 +434,7 @@ function applyTranslations() {
   updateInfoText();
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
@@ -576,7 +577,7 @@ function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
   const { r: cr, g: cg, b: cb } = col || COL_SOURCE;
 
   const N = 60;
-  const halfLen = ts(35);
+  const halfLen = ts(18);
   const waveAmp = ts(7) * amplitude;
   const sigma = halfLen * 0.38;
 
@@ -585,7 +586,7 @@ function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
     const t = (i / N) * 2 - 1;
     const d = t * halfLen;
     const env = Math.exp(-(d * d) / (2 * sigma * sigma));
-    const osc = Math.sin(wavePhase + t * 7) * waveAmp * env * amplitude;
+    const osc = Math.sin(wavePhase + t * 14) * waveAmp * env * amplitude;
     const bx = px + dirx * d;
     const by = py + diry * d;
     upper.push({ x: bx + perpx * osc, y: by + perpy * osc });
@@ -606,7 +607,7 @@ function drawWavePacket(px, py, dirx, diry, amplitude, wavePhase, col) {
     const t = (i / N) * 2 - 1;
     const d = t * halfLen;
     const env = Math.exp(-(d * d) / (2 * sigma * sigma));
-    const osc = Math.sin(wavePhase + t * 7) * waveAmp * env * amplitude;
+    const osc = Math.sin(wavePhase + t * 14) * waveAmp * env * amplitude;
     const bx = px + dirx * d;
     const by = py + diry * d;
     const wx = bx + perpx * osc;
@@ -794,7 +795,7 @@ function drawContinuousWavefronts(now) {
 
   const colors = state.slitCount === 1
     ? ['255,152,0']
-    : ['255,100,50', '255,200,50'];
+    : ['255,152,0', '255,152,0'];
 
   for (let s = 0; s < slitCenters.length; s++) {
     const cy = ty(slitCenters[s]);
@@ -929,7 +930,7 @@ function drawPhotonWavefronts(p, now) {
 
   const colors = state.slitCount === 1
     ? ['255,152,0']
-    : ['255,100,50', '255,200,50'];
+    : ['255,152,0', '255,152,0'];
 
   for (let s = 0; s < slitCenters.length; s++) {
     const cy = ty(slitCenters[s]);
@@ -972,7 +973,7 @@ function drawScreenGlow(p) {
 function drawPhoton(p, now) {
   if (p.phase === 'travel') {
     const px = DS.sourceX + (DS.barrierX - DS.sourceX) * p.t;
-    drawWavePacket(tx(px), ty(DS.centerY), 1, 0, 1, now * 12 + p.wavePhaseOffset, COL_SOURCE);
+    drawWavePacket(tx(px), ty(DS.centerY), 1, 0, 1, now * 24 + p.wavePhaseOffset, COL_SOURCE);
   }
   else if (p.phase === 'wave') {
     drawPhotonWavefronts(p, now);
@@ -1177,6 +1178,7 @@ function setMode(mode) {
   updateInfoText();
 }
 
+// eslint-disable-next-line no-unused-vars
 function setSlits(n) {
   state.slitCount = n;
   document.getElementById('slit1Btn').classList.toggle('active', n === 1);
@@ -1212,6 +1214,7 @@ function resetStats() {
   updateInfoText();
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleAuto() {
   state.autoFire = !state.autoFire;
   autoTimer = 0;
