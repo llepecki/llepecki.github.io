@@ -77,9 +77,18 @@
   .gen-btn svg{flex-shrink:0;transition:transform .3s}
   .gen-btn:active svg{transform:rotate(-180deg)}
 
-  .legend{display:flex;gap:20px}
-  .legend-item{display:flex;align-items:center;gap:8px;font-size:13px;color:#546E7A}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 20px}
+  .legend-group{display:flex;flex-direction:column;gap:6px}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:13px;color:#546E7A;cursor:pointer;user-select:none}
   .legend-line{width:24px;height:3px;border-radius:2px}
+  .color-row{display:none;gap:6px}
+  .color-row.open{display:flex}
+  .color-dot{
+    width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+    transition:border-color .15s,transform .15s;flex-shrink:0;
+  }
+  .color-dot:hover{transform:scale(1.2)}
+  .color-dot.active{border-color:#263238}
 
   .diagram-panel{background:#fff;border-radius:14px;border:1px solid #E0DDD6;padding:24px 20px;box-shadow:0 2px 12px rgba(0,0,0,.04);position:relative;transition:min-height .3s}
   .diagram-panel svg{display:block;width:100%;height:auto}
@@ -109,6 +118,24 @@
 
   .random-opt{display:none}
   .random-opt.visible{display:block}
+
+  .custom-opt{display:none}
+  .custom-opt.visible{display:block}
+
+  .preset-btn[data-id="custom"]{grid-column:1 / -1}
+
+  .custom-hint{
+    text-align:center;font-size:13px;color:#78909C;padding:8px 0 4px;min-height:28px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .custom-hint.hidden{display:none}
+
+  .undo-btn{
+    padding:4px 12px;background:#ECEFF1;border:1px solid #CFD8DC;border-radius:6px;
+    cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;color:#78909C;
+  }
+  .undo-btn:hover{background:#CFD8DC}
+  .undo-btn:disabled{opacity:.4;cursor:default}
 
   .zen-btn{
     position:absolute;top:12px;right:12px;
@@ -190,14 +217,21 @@
     </button>
 
     <div class="card legend">
-      <div class="legend-item"><div class="legend-line" style="background:#D32F2F"></div>Prawa ręka</div>
-      <div class="legend-item"><div class="legend-line" style="background:#1565C0"></div>Lewa ręka</div>
+      <div class="legend-group">
+        <div class="legend-item" id="legendItemL"><div class="legend-line" id="legendLineL" style="background:#1565C0"></div>Lewa ręka</div>
+        <div class="color-row" id="colorRowL"></div>
+      </div>
+      <div class="legend-group">
+        <div class="legend-item" id="legendItemR"><div class="legend-line" id="legendLineR" style="background:#D32F2F"></div>Prawa ręka</div>
+        <div class="color-row" id="colorRowR"></div>
+      </div>
     </div>
   </div>
 
   <div class="content">
     <div class="diagram-panel">
       <button class="zen-btn" id="zenBtn">Zen</button>
+      <div class="custom-hint hidden" id="customHint"><span id="customHintText"></span><button class="undo-btn" id="undoBtn" style="display:none">↩ Cofnij</button></div>
       <div id="svgContainer"><svg viewBox="0 0 440 348" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arR" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#D32F2F"></polygon></marker><marker id="arL" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#1565C0"></polygon></marker></defs><circle cx="36" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="36" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="82" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="128" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="174" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="220" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="266" r="2.2" fill="#BDBDBD"></circle><circle cx="36" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="82" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="128" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="174" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="220" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="266" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="312" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="358" cy="312" r="2.2" fill="#BDBDBD"></circle><circle cx="404" cy="312" r="2.2" fill="#BDBDBD"></circle><line x1="40.242640687119284" y1="169.7573593128807" x2="77.75735931288071" y2="132.2426406871193" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="86.24264068711929" y1="123.75735931288071" x2="123.75735931288071" y2="86.24264068711929" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="132.2426406871193" y1="86.24264068711929" x2="169.7573593128807" y2="123.75735931288071" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="178.2426406871193" y1="132.2426406871193" x2="215.7573593128807" y2="169.7573593128807" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="224.2426406871193" y1="169.7573593128807" x2="261.75735931288074" y2="132.2426406871193" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="270.24264068711926" y1="123.75735931288071" x2="307.75735931288074" y2="86.24264068711929" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="316.24264068711926" y1="86.24264068711929" x2="353.75735931288074" y2="123.75735931288071" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="362.24264068711926" y1="132.2426406871193" x2="399.75735931288074" y2="169.7573593128807" stroke="#D32F2F" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arR)"></line><line x1="40.242640687119284" y1="215.7573593128807" x2="77.75735931288071" y2="178.2426406871193" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="86.24264068711929" y1="169.7573593128807" x2="123.75735931288071" y2="132.2426406871193" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="132.2426406871193" y1="132.2426406871193" x2="169.7573593128807" y2="169.7573593128807" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="178.2426406871193" y1="178.2426406871193" x2="215.7573593128807" y2="215.7573593128807" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="224.2426406871193" y1="215.7573593128807" x2="261.75735931288074" y2="178.2426406871193" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="270.24264068711926" y1="169.7573593128807" x2="307.75735931288074" y2="132.2426406871193" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="316.24264068711926" y1="132.2426406871193" x2="353.75735931288074" y2="169.7573593128807" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><line x1="362.24264068711926" y1="178.2426406871193" x2="399.75735931288074" y2="215.7573593128807" stroke="#1565C0" stroke-width="2.8" stroke-linecap="round" marker-end="url(#arL)"></line><circle cx="36" cy="174" r="5" fill="#D32F2F" opacity=".3"></circle><circle cx="36" cy="220" r="5" fill="#1565C0" opacity=".3"></circle></svg></div>
       <div class="detail-bar" id="detailBar">
         <div class="playback" id="playbackBar" style="display: flex;">
@@ -218,8 +252,20 @@
 const MAX_OCT = 7;
 const CELL = 46;
 const PAD = { t: 36, r: 36, b: 36, l: 36 };
-const RC = '#D32F2F', RCL = '#FFCDD2';
-const LC = '#1565C0', LCL = '#BBDEFB';
+const DEFAULT_RC = '#D32F2F', DEFAULT_LC = '#1565C0';
+let RC = DEFAULT_RC, RCL = '#FFCDD2';
+let LC = DEFAULT_LC, LCL = '#BBDEFB';
+
+const COLOR_PALETTE = [
+  { c: '#D32F2F', cl: '#FFCDD2', name: 'Czerwony' },
+  { c: '#1565C0', cl: '#BBDEFB', name: 'Niebieski' },
+  { c: '#2E7D32', cl: '#C8E6C9', name: 'Zielony' },
+  { c: '#6A1B9A', cl: '#E1BEE7', name: 'Fioletowy' },
+  { c: '#E65100', cl: '#FFE0B2', name: 'Pomarańczowy' },
+  { c: '#00838F', cl: '#B2EBF2', name: 'Turkusowy' },
+  { c: '#AD1457', cl: '#F8BBD0', name: 'Różowy' },
+  { c: '#4E342E', cl: '#D7CCC8', name: 'Brązowy' },
+];
 const DOT = '#BDBDBD';
 const SVGNS = 'http://www.w3.org/2000/svg';
 const M_CELL = 7, M_PAD = 4;
@@ -237,6 +283,9 @@ let state = {
   isPlaying: false,
   timer: null,
   zen: false,
+  customRight: [],
+  customLeft: [],
+  customDrawing: null,
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -479,6 +528,7 @@ const PRESETS = [
   { id: 'fan',      name: 'Fala',            fn: presetWave,             maxVariants: 2 },
   { id: 'zigzag',   name: 'Zygzak',          fn: presetZigzag,           maxVariants: 4 },
   { id: 'random',   name: 'Losowy',          fn: null,                   maxVariants: 1 },
+  { id: 'custom',   name: 'Własny',          fn: null,                   maxVariants: 1 },
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -557,7 +607,20 @@ function renderMiniDiagram(R, L, steps) {
   return svg;
 }
 
+function refreshMiniPreviews() {
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    const pid = btn.dataset.id;
+    const miniDiv = btn.querySelector('.mini-svg');
+    if (!miniDiv) return;
+    miniDiv.innerHTML = '';
+    if (pid === 'custom') { miniDiv.appendChild(renderMiniEmptyGrid(8)); return; }
+    const preview = getMiniPreviewData(pid);
+    if (preview) miniDiv.appendChild(renderMiniDiagram(preview.right, preview.left, preview.steps));
+  });
+}
+
 function getMiniPreviewData(pid) {
+  if (pid === 'custom') return null;
   if (pid === 'random') return centerPattern(generateRandom(8, true, null));
   return centerPattern(PRESETS.find(x => x.id === pid).fn(8));
 }
@@ -623,6 +686,11 @@ function generate() {
   stopAnimation();
   state.playStep = 0;
 
+  if (state.preset === 'custom') {
+    if (state.result) redraw();
+    return;
+  }
+
   let res;
   if (state.preset === 'random') {
     res = generateRandom(state.numSteps, state.returnToStart, state.result);
@@ -652,6 +720,7 @@ function generate() {
 
   state.result = res;
   redraw();
+  updateURLForPreset();
 }
 
 function redraw() {
@@ -703,6 +772,294 @@ function toggleZen() {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   CUSTOM MODE
+   ═══════════════════════════════════════════════════════════ */
+function clearCustomDrawing() {
+  stopAnimation();
+  state.customRight = [];
+  state.customLeft = [];
+  state.customDrawing = 'right';
+  state.result = null;
+  state.playStep = 0;
+  if (window.location.search) history.replaceState(null, '', window.location.pathname);
+  redrawCustom();
+}
+
+function renderMiniEmptyGrid(steps) {
+  const w = M_PAD * 2 + steps * M_CELL;
+  const h = M_PAD * 2 + (MAX_OCT - 1) * M_CELL;
+  const toX = s => M_PAD + s * M_CELL;
+  const toY = o => M_PAD + (MAX_OCT - o) * M_CELL;
+  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, xmlns: SVGNS, width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet' });
+  for (let oi = 0; oi < MAX_OCT; oi++) {
+    const oct = MAX_OCT - oi;
+    for (let si = 0; si <= steps; si++) {
+      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '.6', fill: '#D0D0D0' }));
+    }
+  }
+  // pencil icon
+  const cx = w / 2, cy = h / 2, sc = 0.6;
+  const g = el('g', { transform: `translate(${cx - 6 * sc},${cy - 6 * sc}) scale(${sc})` });
+  g.appendChild(el('path', { d: 'M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z', fill: 'none', stroke: '#90A4AE', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+  svg.appendChild(g);
+  return svg;
+}
+
+function renderCustomDiagram(steps, cR, cL, phase) {
+  const w = PAD.l + steps * CELL + PAD.r;
+  const h = PAD.t + (MAX_OCT - 1) * CELL + PAD.b;
+  const toX = s => PAD.l + s * CELL;
+  const toY = o => PAD.t + (MAX_OCT - o) * CELL;
+
+  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, xmlns: SVGNS });
+  const defs = el('defs');
+  function mkM(id, c) {
+    const m = el('marker', { id, markerWidth: '7', markerHeight: '5', refX: '6', refY: '2.5', orient: 'auto' });
+    m.appendChild(el('polygon', { points: '0 0,7 2.5,0 5', fill: c }));
+    return m;
+  }
+  defs.appendChild(mkM('arR', RC));
+  defs.appendChild(mkM('arL', LC));
+  svg.appendChild(defs);
+
+  // grid dots
+  for (let oi = 0; oi < MAX_OCT; oi++) {
+    const oct = MAX_OCT - oi;
+    for (let si = 0; si <= steps; si++) {
+      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '2.2', fill: DOT }));
+    }
+  }
+
+  // draw completed arrows
+  function drawArr(path, color, mid) {
+    for (let i = 0; i < path.length - 1; i++) {
+      const x1 = toX(i), y1 = toY(path[i]), x2 = toX(i + 1), y2 = toY(path[i + 1]);
+      const dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy), sh = 6;
+      svg.appendChild(el('line', {
+        x1: x1 + dx / len * sh, y1: y1 + dy / len * sh,
+        x2: x2 - dx / len * sh, y2: y2 - dy / len * sh,
+        stroke: color, 'stroke-width': '2.8', 'stroke-linecap': 'round',
+        'marker-end': `url(#${mid})`
+      }));
+    }
+  }
+  if (cR.length > 1) drawArr(cR, RC, 'arR');
+  if (cL.length > 1) drawArr(cL, LC, 'arL');
+
+  // start markers
+  if (cR.length > 0) svg.appendChild(el('circle', { cx: toX(0), cy: toY(cR[0]), r: '5', fill: RC, opacity: '.3' }));
+  if (cL.length > 0) svg.appendChild(el('circle', { cx: toX(0), cy: toY(cL[0]), r: '5', fill: LC, opacity: '.3' }));
+
+  // clickable targets
+  if (phase) {
+    const arr = phase === 'right' ? cR : cL;
+    const color = phase === 'right' ? RC : LC;
+    const lightColor = phase === 'right' ? RCL : LCL;
+    const nextCol = arr.length;
+
+    let targets = [];
+    if (nextCol === 0) {
+      for (let o = 1; o <= MAX_OCT; o++) targets.push(o);
+    } else {
+      const last = arr[arr.length - 1];
+      if (last + 1 <= MAX_OCT) targets.push(last + 1);
+      if (last - 1 >= 1) targets.push(last - 1);
+    }
+    // left hand must stay below right hand at every step
+    if (phase === 'left') {
+      const rAtCol = cR[nextCol];
+      targets = targets.filter(o => o < rAtCol);
+    }
+
+    targets.forEach(oct => {
+      // highlight ring
+      svg.appendChild(el('circle', { cx: toX(nextCol), cy: toY(oct), r: '6', fill: lightColor, opacity: '.5' }));
+      svg.appendChild(el('circle', { cx: toX(nextCol), cy: toY(oct), r: '3.5', fill: color, opacity: '.7' }));
+      // invisible hit area
+      const hit = el('circle', { cx: toX(nextCol), cy: toY(oct), r: '15', fill: 'transparent', 'pointer-events': 'all' });
+      hit.style.cursor = 'pointer';
+      hit.addEventListener('click', () => onCustomDotClick(nextCol, oct));
+      svg.appendChild(hit);
+    });
+  }
+
+  return svg;
+}
+
+function onCustomDotClick(col, octave) {
+  const phase = state.customDrawing;
+  if (!phase) return;
+  const arr = phase === 'right' ? state.customRight : state.customLeft;
+  if (col !== arr.length) return;
+  if (col > 0 && Math.abs(octave - arr[col - 1]) !== 1) return;
+  if (phase === 'left' && octave >= state.customRight[col]) return;
+
+  arr.push(octave);
+
+  if (arr.length === state.numSteps + 1) {
+    if (phase === 'right') {
+      state.customDrawing = 'left';
+    } else {
+      state.customDrawing = null;
+      state.result = { right: [...state.customRight], left: [...state.customLeft], steps: state.numSteps };
+      updateURLWithCustomPattern();
+    }
+  }
+  redrawCustom();
+}
+
+function redrawCustom() {
+  const c = document.getElementById('svgContainer');
+  c.innerHTML = '';
+  c.appendChild(renderCustomDiagram(state.numSteps, state.customRight, state.customLeft, state.customDrawing));
+
+  const hint = document.getElementById('customHint');
+  const hintText = document.getElementById('customHintText');
+  const undoBtn = document.getElementById('undoBtn');
+  const playback = document.getElementById('playbackBar');
+  const seqBox = document.getElementById('seqBox');
+
+  if (state.customDrawing) {
+    hint.classList.remove('hidden');
+    const isRight = state.customDrawing === 'right';
+    const isEmpty = isRight ? state.customRight.length === 0 : state.customLeft.length === 0;
+    if (isEmpty) {
+      hintText.innerHTML = isRight
+        ? `Kliknij punkt startowy <b style="color:${RC}">prawej ręki</b>`
+        : `Kliknij punkt startowy <b style="color:${LC}">lewej ręki</b>`;
+    } else {
+      hintText.innerHTML = isRight
+        ? `Kliknij następny punkt <b style="color:${RC}">prawej ręki</b> ↗↘`
+        : `Kliknij następny punkt <b style="color:${LC}">lewej ręki</b> ↗↘`;
+    }
+    undoBtn.style.display = (state.customRight.length > 0) ? '' : 'none';
+    playback.style.display = 'none';
+    seqBox.style.display = 'none';
+  } else {
+    hint.classList.add('hidden');
+    undoBtn.style.display = 'none';
+    if (state.result) {
+      playback.style.display = 'flex';
+      seqBox.style.display = 'block';
+      document.getElementById('stepCounter').textContent = `Krok 0 / ${state.result.steps}`;
+      renderKeyboard(state.result.right, state.result.left, 0);
+      renderSequence(state.result.right, state.result.left, 0);
+    }
+  }
+}
+
+function undoCustomStep() {
+  if (state.customDrawing === 'left' && state.customLeft.length === 0) {
+    state.customDrawing = 'right';
+    state.customRight.pop();
+  } else if (state.customDrawing === 'left') {
+    state.customLeft.pop();
+  } else if (state.customDrawing === 'right' && state.customRight.length > 0) {
+    state.customRight.pop();
+  }
+  redrawCustom();
+}
+
+function updateGenButtonForCustom(isCustom) {
+  const btn = document.getElementById('genBtn');
+  if (isCustom) {
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Wyczyść';
+  } else {
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg> Generuj';
+  }
+}
+
+/* ── URL encode/decode for all presets ── */
+function appendColorParams(params) {
+  const ri = COLOR_PALETTE.findIndex(p => p.c === RC);
+  const li = COLOR_PALETTE.findIndex(p => p.c === LC);
+  if (ri > 0) params.set('rc', ri + 1);
+  if (li > 1) params.set('lc', li + 1);
+}
+
+function applyColorFromParams(params) {
+  const rc = parseInt(params.get('rc'));
+  const lc = parseInt(params.get('lc'));
+  if (rc >= 1 && rc <= COLOR_PALETTE.length) { const e = COLOR_PALETTE[rc - 1]; RC = e.c; RCL = e.cl; }
+  if (lc >= 1 && lc <= COLOR_PALETTE.length) { const e = COLOR_PALETTE[lc - 1]; LC = e.c; LCL = e.cl; }
+}
+
+function updateURLForPreset() {
+  if (state.preset === 'custom') return;
+  const params = new URLSearchParams();
+  params.set('s', state.preset);
+  if (state.variant !== 0) params.set('v', state.variant);
+  if (state.numSteps !== 8) params.set('n', state.numSteps);
+  if (state.preset === 'random' && state.returnToStart) params.set('r', '1');
+  appendColorParams(params);
+  history.replaceState(null, '', window.location.pathname + '?' + params.toString());
+}
+
+function decodePresetFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const s = params.get('s');
+  if (!s) return null;
+  const preset = PRESETS.find(p => p.id === s);
+  if (!preset) return null;
+  const v = parseInt(params.get('v') || '0');
+  const n = parseInt(params.get('n') || '8');
+  applyColorFromParams(params);
+  return {
+    preset: s,
+    variant: Math.max(0, Math.min(v, preset.maxVariants - 1)),
+    numSteps: Math.max(4, Math.min(10, isNaN(n) ? 8 : n)),
+    returnToStart: params.get('r') === '1',
+  };
+}
+
+/* ── URL encode/decode for custom patterns ── */
+function encodeCustomToURL(result) {
+  const rMoves = result.right.slice(1).map((v, i) => v > result.right[i] ? 'u' : 'd').join('');
+  const lMoves = result.left.slice(1).map((v, i) => v > result.left[i] ? 'u' : 'd').join('');
+  return `?p=${result.steps}-${result.right[0]}${rMoves}-${result.left[0]}${lMoves}`;
+}
+
+function updateURLWithCustomPattern() {
+  if (!state.result) return;
+  const params = new URLSearchParams(encodeCustomToURL(state.result).slice(1));
+  appendColorParams(params);
+  history.replaceState(null, '', window.location.pathname + '?' + params.toString());
+}
+
+function decodeCustomFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const p = params.get('p');
+  if (!p) return null;
+  const parts = p.split('-');
+  if (parts.length !== 3) return null;
+
+  const steps = parseInt(parts[0]);
+  if (isNaN(steps) || steps < 4 || steps > 10) return null;
+
+  function decodePath(s) {
+    const start = parseInt(s[0]);
+    if (isNaN(start) || start < 1 || start > MAX_OCT) return null;
+    const moves = s.slice(1);
+    if (moves.length !== steps) return null;
+    const path = [start];
+    for (let i = 0; i < moves.length; i++) {
+      const ch = moves[i];
+      if (ch !== 'u' && ch !== 'd') return null;
+      const next = path[path.length - 1] + (ch === 'u' ? 1 : -1);
+      if (next < 1 || next > MAX_OCT) return null;
+      path.push(next);
+    }
+    return path;
+  }
+
+  const right = decodePath(parts[1]);
+  const left = decodePath(parts[2]);
+  if (!right || !left) return null;
+  applyColorFromParams(params);
+  return { right, left, steps };
+}
+
+/* ═══════════════════════════════════════════════════════════
    UI INIT
    ═══════════════════════════════════════════════════════════ */
 let _initialized = false;
@@ -721,6 +1078,7 @@ function initUI() {
     miniDiv.className = 'mini-svg';
     const preview = getMiniPreviewData(p.id);
     if (preview) miniDiv.appendChild(renderMiniDiagram(preview.right, preview.left, preview.steps));
+    else if (p.id === 'custom') miniDiv.appendChild(renderMiniEmptyGrid(8));
 
     const nameDiv = document.createElement('div');
     nameDiv.className = 'p-name';
@@ -730,11 +1088,37 @@ function initUI() {
     btn.appendChild(nameDiv);
 
     btn.addEventListener('click', () => {
+      const wasCustom = state.preset === 'custom';
+      const isSame = state.preset === p.id;
+
+      if (isSame) {
+        // same preset clicked again — act like "Generuj" button
+        if (p.id === 'custom') {
+          clearCustomDrawing();
+        } else if (p.id === 'random') {
+          generate();
+        } else {
+          state.variant = (state.variant + 1) % p.maxVariants;
+          generate();
+        }
+        return;
+      }
+
       state.preset = p.id;
       state.variant = 0;
       document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.dataset.id === p.id));
       document.getElementById('randomOpt').classList.toggle('visible', p.id === 'random');
-      generate();
+      if (p.id === 'custom') {
+        updateGenButtonForCustom(true);
+        clearCustomDrawing();
+      } else {
+        if (wasCustom) {
+          updateGenButtonForCustom(false);
+          document.getElementById('customHint').classList.add('hidden');
+          if (window.location.search) history.replaceState(null, '', window.location.pathname);
+        }
+        generate();
+      }
     });
     pl.appendChild(btn);
   });
@@ -760,7 +1144,11 @@ function initUI() {
     state.numSteps = v;
     lenLabel.textContent = v;
     updateReturnChk();
-    generate();
+    if (state.preset === 'custom') {
+      clearCustomDrawing();
+    } else {
+      generate();
+    }
   }
 
   slider.addEventListener('input', () => setLength(+slider.value));
@@ -774,9 +1162,48 @@ function initUI() {
 
   updateReturnChk();
 
-  // Generate button: cycle variants for presets, regenerate for random
+  // Color pickers
+  function buildColorRow(containerId, hand) {
+    const row = document.getElementById(containerId);
+    COLOR_PALETTE.forEach(({ c, cl }) => {
+      const dot = document.createElement('div');
+      dot.className = 'color-dot' + (c === (hand === 'right' ? RC : LC) ? ' active' : '');
+      dot.style.background = c;
+      dot.title = COLOR_PALETTE.find(p => p.c === c).name;
+      dot.addEventListener('click', () => {
+        if (hand === 'right') { RC = c; RCL = cl; }
+        else { LC = c; LCL = cl; }
+        document.getElementById(hand === 'right' ? 'legendLineR' : 'legendLineL').style.background = c;
+        row.querySelectorAll('.color-dot').forEach(d => d.classList.toggle('active', d.style.backgroundColor === dot.style.backgroundColor));
+        row.classList.remove('open');
+        refreshMiniPreviews();
+        if (state.preset === 'custom') {
+          if (state.customDrawing) redrawCustom();
+          else if (state.result) { redraw(); updateURLWithCustomPattern(); }
+        } else if (state.result) {
+          redraw();
+          updateURLForPreset();
+        }
+      });
+      row.appendChild(dot);
+    });
+  }
+  buildColorRow('colorRowR', 'right');
+  buildColorRow('colorRowL', 'left');
+  document.getElementById('legendItemR').addEventListener('click', () => {
+    document.getElementById('colorRowR').classList.toggle('open');
+    document.getElementById('colorRowL').classList.remove('open');
+  });
+  document.getElementById('legendItemL').addEventListener('click', () => {
+    document.getElementById('colorRowL').classList.toggle('open');
+    document.getElementById('colorRowR').classList.remove('open');
+  });
+
+  // Generate button: cycle variants for presets, regenerate for random, clear for custom
   document.getElementById('genBtn').addEventListener('click', () => {
-    if (state.preset === 'random') {
+    if (state.preset === 'custom') {
+      clearCustomDrawing();
+    } else if (state.preset === 'random') {
       generate();
     } else {
       const preset = PRESETS.find(p => p.id === state.preset);
@@ -787,13 +1214,58 @@ function initUI() {
 
   document.getElementById('playBtn').addEventListener('click', playAnimation);
   document.getElementById('zenBtn').addEventListener('click', toggleZen);
+  document.getElementById('undoBtn').addEventListener('click', undoCustomStep);
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && state.zen) toggleZen();
     if (e.key === 'z' && !e.ctrlKey && !e.metaKey && e.target === document.body) toggleZen();
+    if (e.key === 'z' && (e.ctrlKey || e.metaKey) && state.preset === 'custom' && state.customDrawing) {
+      e.preventDefault();
+      undoCustomStep();
+    }
   });
 
-  generate();
+  // Sync legend colors with current RC/LC
+  function syncLegendColors() {
+    document.getElementById('legendLineR').style.background = RC;
+    document.getElementById('legendLineL').style.background = LC;
+    document.querySelectorAll('#colorRowR .color-dot').forEach(d => d.classList.toggle('active', d.style.backgroundColor === RC));
+    document.querySelectorAll('#colorRowL .color-dot').forEach(d => d.classList.toggle('active', d.style.backgroundColor === LC));
+  }
+
+  // Restore state from URL
+  const customRestored = decodeCustomFromURL();
+  const presetRestored = !customRestored ? decodePresetFromURL() : null;
+
+  if (customRestored) {
+    state.preset = 'custom';
+    state.numSteps = customRestored.steps;
+    state.result = customRestored;
+    state.customRight = [...customRestored.right];
+    state.customLeft = [...customRestored.left];
+    state.customDrawing = null;
+    slider.value = customRestored.steps;
+    lenLabel.textContent = customRestored.steps;
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.dataset.id === 'custom'));
+    updateGenButtonForCustom(true);
+    syncLegendColors();
+    redraw();
+  } else if (presetRestored) {
+    state.preset = presetRestored.preset;
+    state.variant = presetRestored.variant;
+    state.numSteps = presetRestored.numSteps;
+    state.returnToStart = presetRestored.returnToStart;
+    slider.value = presetRestored.numSteps;
+    lenLabel.textContent = presetRestored.numSteps;
+    returnChk.checked = presetRestored.returnToStart;
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.dataset.id === presetRestored.preset));
+    document.getElementById('randomOpt').classList.toggle('visible', presetRestored.preset === 'random');
+    updateReturnChk();
+    syncLegendColors();
+    generate();
+  } else {
+    generate();
+  }
 }
 
 if (document.readyState === 'loading') {
