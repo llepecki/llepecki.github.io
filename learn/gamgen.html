@@ -160,7 +160,7 @@
   }
   .zen-btn:hover,.zen-btn:active{background:#CFD8DC;color:#455A64}
 
-  body.zen{background:#fff}
+  body.zen{background:#fff;transition:none}
   body.zen .header{display:none}
   body.zen .sidebar{display:none}
   body.zen .detail-bar{display:none}
@@ -191,6 +191,43 @@
 
   .lang-btn{background:none;border:1px solid #E0DDD6;border-radius:4px;padding:3px 8px;cursor:pointer;flex-shrink:0;color:#90A4AE;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;letter-spacing:1px;transition:border-color .15s,color .15s}
   .lang-btn:hover{border-color:#455A64;color:#455A64}
+  .dark-btn{background:none;border:1px solid #E0DDD6;border-radius:4px;padding:3px 8px;cursor:pointer;flex-shrink:0;font-size:15px;transition:border-color .15s,color .15s;color:#90A4AE;line-height:1}
+  .dark-btn:hover{border-color:#455A64;color:#455A64}
+
+  /* ── Dark mode ── */
+  body.dark{background:linear-gradient(160deg,#1a1a2e 0%,#16213e 100%);color:#B0BEC5}
+  body.dark .header{border-bottom-color:#2a2a3e}
+  body.dark .header h1{color:#ECEFF1}
+  body.dark .header p{color:#78909C}
+  body.dark .card{background:#1e1e30;border-color:#2a2a3e;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+  body.dark .card-label{color:#78909C}
+  body.dark .preset-btn{background:#252540}
+  body.dark .preset-btn:hover,body.dark .preset-btn:active{background:#2a2a4a}
+  body.dark .preset-btn.active{border-color:#90A4AE;background:#2a2a4a}
+  body.dark .preset-btn .p-name{color:#B0BEC5}
+  body.dark .slider-row input[type=range]{background:#2a2a3e}
+  body.dark .slider-val{color:#ECEFF1}
+  body.dark .len-btn{background:#252540;border-color:#2a2a3e;color:#B0BEC5}
+  body.dark .chk-label{color:#B0BEC5}
+  body.dark .gen-btn{background:#ECEFF1;color:#1a1a2e}
+  body.dark .legend-item{color:#B0BEC5}
+  body.dark .color-dot.active{border-color:#ECEFF1}
+  body.dark .diagram-panel{background:#1e1e30;border-color:#2a2a3e;box-shadow:0 2px 12px rgba(0,0,0,.15)}
+  body.dark .play-btn{background:#252540;border-color:#2a2a3e;color:#B0BEC5}
+  body.dark .play-btn:disabled{background:#2a2a3e}
+  body.dark .step-counter{color:#78909C}
+  body.dark .seq-box{background:#252540;color:#78909C}
+  body.dark .custom-hint{color:#78909C}
+  body.dark .undo-btn{background:#252540;border-color:#2a2a3e;color:#78909C}
+  body.dark .zen-btn{background:#252540;border-color:#2a2a3e;color:#78909C}
+  body.dark .zen-btn:hover{background:#2a2a3e;color:#B0BEC5}
+  body.dark .lang-btn{border-color:#2a2a3e;color:#78909C}
+  body.dark .lang-btn:hover{border-color:#90A4AE;color:#90A4AE}
+  body.dark .dark-btn{border-color:#2a2a3e;color:#78909C}
+  body.dark .dark-btn:hover{border-color:#90A4AE;color:#90A4AE}
+  body.dark.zen{background:#1a1a2e}
+  body.dark.zen .diagram-panel{background:transparent}
+  body.dark.zen .zen-btn{background:#252540}
 </style>
 </head>
 <body class="">
@@ -200,6 +237,7 @@
     <h1><a href="/learn/"><span style="font-size:18px;line-height:1">🎹</span></a> <span id="titleText">Generator Schematów Gam</span></h1>
     <p id="subtitleText">Automatyczne tworzenie schematów ćwiczeniowych dla obu rąk</p>
   </div>
+  <button class="dark-btn" id="darkBtn" onclick="toggleDark()">☽</button>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">EN</button>
 </div>
 
@@ -277,17 +315,21 @@ const DEFAULT_RC = '#D32F2F', DEFAULT_LC = '#1565C0';
 let RC = DEFAULT_RC, RCL = '#FFCDD2';
 let LC = DEFAULT_LC, LCL = '#BBDEFB';
 
-const COLOR_PALETTE = [
+const LIGHT_PALETTE = [
   { c: '#D32F2F', cl: '#FFCDD2', nameKey: 'red' },
   { c: '#1565C0', cl: '#BBDEFB', nameKey: 'blue' },
   { c: '#2E7D32', cl: '#C8E6C9', nameKey: 'green' },
   { c: '#6A1B9A', cl: '#E1BEE7', nameKey: 'purple' },
-  { c: '#E65100', cl: '#FFE0B2', nameKey: 'orange' },
-  { c: '#00838F', cl: '#B2EBF2', nameKey: 'teal' },
-  { c: '#AD1457', cl: '#F8BBD0', nameKey: 'pink' },
-  { c: '#4E342E', cl: '#D7CCC8', nameKey: 'brown' },
 ];
-const DOT = '#BDBDBD';
+const DARK_PALETTE = [
+  { c: '#FF6659', cl: '#4E1A1A', nameKey: 'red' },
+  { c: '#64B5F6', cl: '#1A2E4E', nameKey: 'blue' },
+  { c: '#66BB6A', cl: '#1A3D1E', nameKey: 'green' },
+  { c: '#CE93D8', cl: '#3A1A4E', nameKey: 'purple' },
+];
+let COLOR_PALETTE = LIGHT_PALETTE;
+function getDot() { return state.dark ? '#4a4a5e' : '#BDBDBD'; }
+function getMiniDot() { return state.dark ? '#3a3a4e' : '#D0D0D0'; }
 const SVGNS = 'http://www.w3.org/2000/svg';
 const M_CELL = 7, M_PAD = 4;
 
@@ -296,6 +338,7 @@ const M_CELL = 7, M_PAD = 4;
    ═══════════════════════════════════════════════════════════ */
 const state = {
   lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
+  dark: false,
   preset: 'classic',
   numSteps: 8,
   variant: 0,
@@ -345,10 +388,8 @@ const I18N = {
     blue: 'Blue',
     green: 'Green',
     purple: 'Purple',
-    orange: 'Orange',
-    teal: 'Teal',
-    pink: 'Pink',
-    brown: 'Brown',
+    darkMode: 'Dark mode',
+    lightMode: 'Light mode',
   },
   pl: {
     title: 'Generator Schematów Gam',
@@ -381,10 +422,8 @@ const I18N = {
     blue: 'Niebieski',
     green: 'Zielony',
     purple: 'Fioletowy',
-    orange: 'Pomarańczowy',
-    teal: 'Turkusowy',
-    pink: 'Różowy',
-    brown: 'Brązowy',
+    darkMode: 'Tryb ciemny',
+    lightMode: 'Tryb jasny',
   },
 };
 
@@ -425,6 +464,9 @@ function applyTranslations() {
   if (undoBtn) {
     undoBtn.textContent = '↩ ' + T('undo');
   }
+
+  // Update dark mode button title
+  document.getElementById('darkBtn').title = T(state.dark ? 'lightMode' : 'darkMode');
 
   // Update step counter
   if (state.result) {
@@ -744,7 +786,7 @@ function renderDiagram(R, L, steps) {
   for (let oi = 0; oi < MAX_OCT; oi++) {
     const oct = MAX_OCT - oi;
     for (let si = 0; si <= steps; si++) {
-      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '2.2', fill: DOT }));
+      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '2.2', fill: getDot() }));
     }
   }
 
@@ -778,7 +820,7 @@ function renderMiniDiagram(R, L, steps) {
   for (let oi = 0; oi < MAX_OCT; oi++) {
     const oct = MAX_OCT - oi;
     for (let si = 0; si <= steps; si++) {
-      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '.6', fill: '#D0D0D0' }));
+      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '.6', fill: getMiniDot() }));
     }
   }
   function draw(path, c) {
@@ -823,13 +865,14 @@ function renderKeyboard(R, L, step) {
     k.className = 'kb-key';
     k.style.height = (isR || isL ? 28 : 22) + 'px';
     if (isBoth) {
+      const bothC = state.dark ? '#CE93D8' : '#7B1FA2';
       k.style.background = 'linear-gradient(135deg,' + RCL + ' 50%,' + LCL + ' 50%)';
-      k.style.borderColor = '#7B1FA2';
-      k.style.color = '#7B1FA2';
+      k.style.borderColor = bothC;
+      k.style.color = bothC;
     } else {
-      k.style.background = isR ? RCL : isL ? LCL : '#F5F5F5';
-      k.style.borderColor = isR ? RC : isL ? LC : '#E0E0E0';
-      k.style.color = isR ? RC : isL ? LC : '#BDBDBD';
+      k.style.background = isR ? RCL : isL ? LCL : (state.dark ? '#252540' : '#F5F5F5');
+      k.style.borderColor = isR ? RC : isL ? LC : (state.dark ? '#2a2a3e' : '#E0E0E0');
+      k.style.color = isR ? RC : isL ? LC : (state.dark ? '#4a4a5e' : '#BDBDBD');
     }
     k.style.fontWeight = isR || isL ? 700 : 400;
     k.textContent = i;
@@ -978,7 +1021,7 @@ function renderMiniEmptyGrid(steps) {
   for (let oi = 0; oi < MAX_OCT; oi++) {
     const oct = MAX_OCT - oi;
     for (let si = 0; si <= steps; si++) {
-      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '.6', fill: '#D0D0D0' }));
+      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '.6', fill: getMiniDot() }));
     }
   }
   // pencil icon
@@ -1010,7 +1053,7 @@ function renderCustomDiagram(steps, cR, cL, phase) {
   for (let oi = 0; oi < MAX_OCT; oi++) {
     const oct = MAX_OCT - oi;
     for (let si = 0; si <= steps; si++) {
-      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '2.2', fill: DOT }));
+      svg.appendChild(el('circle', { cx: toX(si), cy: toY(oct), r: '2.2', fill: getDot() }));
     }
   }
 
@@ -1202,6 +1245,7 @@ function encodeStateToHex() {
     {value: Math.max(0, ri), count: 3},
     {value: Math.max(0, li), count: 3},
     {value: state.returnToStart ? 1 : 0, count: 1},
+    {value: state.dark ? 1 : 0, count: 1},
   ];
   if (presetIdx >= 5 && state.result) {
     for (const oct of state.result.right) fields.push({value: oct - 1, count: 3});
@@ -1219,18 +1263,26 @@ function decodeHexToState(hex) {
   const rcolor = r.read(3);
   const lcolor = r.read(3);
   const ret = r.read(1);
+  const darkBit = r.read(1);
   if (presetIdx === null || steps === null) return null;
   if (presetIdx < 0 || presetIdx >= PRESETS.length) return null;
   const numSteps = steps + 4;
   if (numSteps < 4 || numSteps > 10) return null;
 
-  // Apply colors
-  if (rcolor >= 0 && rcolor < COLOR_PALETTE.length) {
-    RC = COLOR_PALETTE[rcolor].c; RCL = COLOR_PALETTE[rcolor].cl;
+  // Apply dark mode from URL (if bit present)
+  if (darkBit === 1) {
+    state.dark = true;
+    COLOR_PALETTE = DARK_PALETTE;
+  } else {
+    state.dark = false;
+    COLOR_PALETTE = LIGHT_PALETTE;
   }
-  if (lcolor >= 0 && lcolor < COLOR_PALETTE.length) {
-    LC = COLOR_PALETTE[lcolor].c; LCL = COLOR_PALETTE[lcolor].cl;
-  }
+
+  // Apply colors (map legacy 8-color indices to 4-color palette)
+  const ri = (rcolor >= 0 ? rcolor % COLOR_PALETTE.length : 0);
+  const li = (lcolor >= 0 ? lcolor % COLOR_PALETTE.length : 1);
+  RC = COLOR_PALETTE[ri].c; RCL = COLOR_PALETTE[ri].cl;
+  LC = COLOR_PALETTE[li].c; LCL = COLOR_PALETTE[li].cl;
 
   const result = {
     preset: PRESETS[presetIdx].id,
@@ -1262,6 +1314,87 @@ function updateURL() {
   const hex = encodeStateToHex();
   history.replaceState(null, '', window.location.pathname + '?p=' + hex);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   COLOR PICKERS
+   ═══════════════════════════════════════════════════════════ */
+function buildColorRow(containerId, hand) {
+  const row = document.getElementById(containerId);
+  COLOR_PALETTE.forEach(({ c, cl }) => {
+    const dot = document.createElement('div');
+    dot.className = 'color-dot' + (c === (hand === 'right' ? RC : LC) ? ' active' : '');
+    dot.style.background = c;
+    dot.title = T(COLOR_PALETTE.find(p => p.c === c).nameKey);
+    dot.addEventListener('click', () => {
+      if (hand === 'right') { RC = c; RCL = cl; }
+      else { LC = c; LCL = cl; }
+      document.getElementById(hand === 'right' ? 'legendLineR' : 'legendLineL').style.background = c;
+      row.querySelectorAll('.color-dot').forEach(d => d.classList.toggle('active', d.style.backgroundColor === dot.style.backgroundColor));
+      row.classList.remove('open');
+      refreshMiniPreviews();
+      if (state.preset === 'custom') {
+        if (state.customDrawing) redrawCustom();
+        else if (state.result) { redraw(); updateURL(); }
+      } else if (state.result) {
+        redraw();
+        updateURL();
+      }
+    });
+    row.appendChild(dot);
+  });
+}
+
+function rebuildColorRows() {
+  const rRow = document.getElementById('colorRowR');
+  const lRow = document.getElementById('colorRowL');
+  rRow.innerHTML = '';
+  lRow.innerHTML = '';
+  rRow.classList.remove('open');
+  lRow.classList.remove('open');
+  buildColorRow('colorRowR', 'right');
+  buildColorRow('colorRowL', 'left');
+}
+
+function syncLegendColors() {
+  document.getElementById('legendLineR').style.background = RC;
+  document.getElementById('legendLineL').style.background = LC;
+  document.querySelectorAll('#colorRowR .color-dot').forEach(d => d.classList.toggle('active', d.style.backgroundColor === RC));
+  document.querySelectorAll('#colorRowL .color-dot').forEach(d => d.classList.toggle('active', d.style.backgroundColor === LC));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE
+   ═══════════════════════════════════════════════════════════ */
+function setDarkMode(isDark) {
+  const oldPalette = COLOR_PALETTE;
+  state.dark = isDark;
+  document.body.classList.toggle('dark', isDark);
+  document.getElementById('darkBtn').textContent = isDark ? '☀' : '☽';
+  document.getElementById('darkBtn').title = T(isDark ? 'lightMode' : 'darkMode');
+  localStorage.setItem('gamgen-dark', isDark ? '1' : '0');
+
+  COLOR_PALETTE = isDark ? DARK_PALETTE : LIGHT_PALETTE;
+
+  // Remap current colors by index
+  const riOld = oldPalette.findIndex(p => p.c === RC);
+  const liOld = oldPalette.findIndex(p => p.c === LC);
+  const ri = riOld >= 0 && riOld < COLOR_PALETTE.length ? riOld : 0;
+  const li = liOld >= 0 && liOld < COLOR_PALETTE.length ? liOld : (ri === 0 ? 1 : 0);
+  RC = COLOR_PALETTE[ri].c; RCL = COLOR_PALETTE[ri].cl;
+  LC = COLOR_PALETTE[li].c; LCL = COLOR_PALETTE[li].cl;
+
+  rebuildColorRows();
+  syncLegendColors();
+  refreshMiniPreviews();
+  if (state.result) {
+    redraw();
+    updateURL();
+  } else if (state.preset === 'custom' && state.customDrawing) {
+    redrawCustom();
+  }
+}
+
+function toggleDark() { setDarkMode(!state.dark); }
 
 /* ═══════════════════════════════════════════════════════════
    UI INIT
@@ -1368,31 +1501,6 @@ function initUI() {
   updateReturnChk();
 
   // Color pickers
-  function buildColorRow(containerId, hand) {
-    const row = document.getElementById(containerId);
-    COLOR_PALETTE.forEach(({ c, cl }) => {
-      const dot = document.createElement('div');
-      dot.className = 'color-dot' + (c === (hand === 'right' ? RC : LC) ? ' active' : '');
-      dot.style.background = c;
-      dot.title = T(COLOR_PALETTE.find(p => p.c === c).nameKey);
-      dot.addEventListener('click', () => {
-        if (hand === 'right') { RC = c; RCL = cl; }
-        else { LC = c; LCL = cl; }
-        document.getElementById(hand === 'right' ? 'legendLineR' : 'legendLineL').style.background = c;
-        row.querySelectorAll('.color-dot').forEach(d => d.classList.toggle('active', d.style.backgroundColor === dot.style.backgroundColor));
-        row.classList.remove('open');
-        refreshMiniPreviews();
-        if (state.preset === 'custom') {
-          if (state.customDrawing) redrawCustom();
-          else if (state.result) { redraw(); updateURL(); }
-        } else if (state.result) {
-          redraw();
-          updateURL();
-        }
-      });
-      row.appendChild(dot);
-    });
-  }
   buildColorRow('colorRowR', 'right');
   buildColorRow('colorRowL', 'left');
   document.getElementById('legendItemR').addEventListener('click', () => {
@@ -1424,24 +1532,38 @@ function initUI() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && state.zen) toggleZen();
     if (e.key === 'z' && !e.ctrlKey && !e.metaKey && e.target === document.body) toggleZen();
+    if (e.key === 'd' && !e.ctrlKey && !e.metaKey && e.target === document.body) toggleDark();
     if (e.key === 'z' && (e.ctrlKey || e.metaKey) && state.preset === 'custom' && state.customDrawing) {
       e.preventDefault();
       undoCustomStep();
     }
   });
 
-  // Sync legend colors with current RC/LC
-  function syncLegendColors() {
-    document.getElementById('legendLineR').style.background = RC;
-    document.getElementById('legendLineL').style.background = LC;
-    document.querySelectorAll('#colorRowR .color-dot').forEach(d => d.classList.toggle('active', d.style.backgroundColor === RC));
-    document.querySelectorAll('#colorRowL .color-dot').forEach(d => d.classList.toggle('active', d.style.backgroundColor === LC));
-  }
-
-  // Restore state from URL
+  // Dark mode: detect from URL, localStorage, or system preference
   const params = new URLSearchParams(window.location.search);
   const hexParam = params.get('p');
   const restored = hexParam ? decodeHexToState(hexParam) : null;
+
+  if (!restored) {
+    // No URL state — detect from localStorage or system preference
+    const saved = localStorage.getItem('gamgen-dark');
+    if (saved !== null) {
+      state.dark = saved === '1';
+    } else {
+      state.dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    COLOR_PALETTE = state.dark ? DARK_PALETTE : LIGHT_PALETTE;
+    RC = COLOR_PALETTE[0].c; RCL = COLOR_PALETTE[0].cl;
+    LC = COLOR_PALETTE[1].c; LCL = COLOR_PALETTE[1].cl;
+  }
+  // Apply dark class and button state
+  document.body.classList.toggle('dark', state.dark);
+  document.getElementById('darkBtn').textContent = state.dark ? '☀' : '☽';
+
+  // Listen for system dark mode changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (localStorage.getItem('gamgen-dark') === null) setDarkMode(e.matches);
+  });
 
   if (restored && restored.path) {
     // random or custom — restore with path data

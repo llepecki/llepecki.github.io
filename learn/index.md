@@ -9,6 +9,10 @@ permalink: /learn/
 
 Discover why total momentum never changes in a collision. Adjust mass, velocity, and collision type, then watch momentum bars prove conservation in real time. Includes a challenge mode!
 
+### [Conservation of Angular Momentum](angularmomentum.html) `Classical mechanics`
+
+See how a spinning platform speeds up when you pull weights inward. Drag weights to change the moment of inertia and watch angular velocity respond — proving angular momentum is always conserved. Includes a challenge mode!
+
 ### [Piano Scale Pattern Generator](gamgen.html) `Music`
 
 Visual generator for piano scale patterns. Pick a root note and scale type to see the notes laid out on a keyboard diagram.

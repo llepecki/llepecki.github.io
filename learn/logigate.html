@@ -376,7 +376,7 @@
   <div class="header-right">
     <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
     <div class="theme-toggle" onclick="toggleTheme()">
-      <span class="theme-toggle-icon" id="themeIcon">⚪</span>
+      <span class="theme-toggle-icon" id="themeIcon">☀</span>
     </div>
   </div>
 </header>
@@ -473,7 +473,7 @@ const I18N = {
     outputPrefix: 'Wyj\u015bcie = ',
     high: 'WYS (1)',
     low: 'NIS (0)',
-    outLabel: 'WYJ',
+    outLabel: 'WYJŚCIE',
     pickGuess: 'Najpierw wybierz <span style="color:#e3b341">0</span> lub <span style="color:#e3b341">1</span> obok wyj\u015bcia!',
     instructions: 'Ustaw wej\u015bcia, wybierz odpowied\u017a, a potem kliknij <span style="color:#e3b341">Sprawdź</span>.',
     revealing: 'Ujawnianie\u2026',
@@ -558,10 +558,10 @@ function toggleTheme() {
   const isLight = html.getAttribute('data-theme') === 'light';
   if (isLight) {
     html.removeAttribute('data-theme');
-    document.getElementById('themeIcon').textContent = '\u26AA';
+    document.getElementById('themeIcon').textContent = '☀';
   } else {
     html.setAttribute('data-theme', 'light');
-    document.getElementById('themeIcon').textContent = '\u26AB';
+    document.getElementById('themeIcon').textContent = '☽';
   }
 }
 

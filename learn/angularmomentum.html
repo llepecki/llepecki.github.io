@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conservation of Angular Momentum</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #FAFAF7;
+  --panel: #ffffff;
+  --panel-border: #E0DDD6;
+  --text: #37474F;
+  --text-head: #263238;
+  --text-dim: #78909C;
+  --text-label: #90A4AE;
+  --accent: #455A64;
+  --accent-light: #ECEFF1;
+  --canvas-bg: #f5f3ee;
+  --col-l: #00C853;
+  --col-i: #FF6D00;
+  --col-omega: #2979FF;
+}
+body {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #FAFAF7 0%, #F0EDE6 100%);
+  font-family: 'Outfit', sans-serif;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+header {
+  padding: 6px 28px 5px;
+  border-bottom: 1px solid var(--panel-border);
+  display: flex; align-items: center; gap: 12px;
+}
+.header-text { flex: 1; }
+header h1 {
+  font-size: 18px; font-weight: 700; color: var(--text-head);
+  display: flex; align-items: center; gap: 8px;
+}
+header h1 a { color: inherit; text-decoration: none; }
+header h1 a:hover { opacity: .7; }
+header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
+.lang-btn {
+  background: none; border: 1px solid var(--panel-border);
+  border-radius: 4px; padding: 3px 8px;
+  cursor: pointer; flex-shrink: 0;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+.main { display: flex; height: calc(100vh - 46px); }
+.canvas-wrap {
+  flex: 1; position: relative; min-width: 0;
+  background: var(--canvas-bg);
+  border-right: 1px solid var(--panel-border);
+}
+canvas { display: block; width: 100%; height: 100%; cursor: default; }
+canvas.dragging { cursor: grabbing !important; }
+canvas.hover-weight { cursor: grab; }
+.panel {
+  width: 300px; flex-shrink: 0;
+  background: var(--panel);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.controls {
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 18px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+#grpExplore, #grpGame { display: flex; flex-direction: column; gap: 18px; }
+.section-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-label);
+  padding-bottom: 2px; border-bottom: 1px solid var(--panel-border);
+}
+.ctrl-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-label);
+}
+.type-toggle { display: flex; gap: 6px; }
+.type-btn {
+  flex: 1; padding: 8px 4px; border-radius: 8px;
+  border: 2px solid transparent;
+  background: #FAFAF7; color: #546E7A;
+  font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; text-align: center;
+  touch-action: manipulation;
+}
+.type-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.type-btn:hover { background: #F0EDE6; }
+.type-btn:disabled { opacity: 0.4; pointer-events: none; }
+.slider-row { display: flex; align-items: center; gap: 8px; }
+.slider-row input[type=range] {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 6px; background: #E0DDD6; border-radius: 3px; outline: none;
+  touch-action: none;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.slider-row input[type=range]::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.slider-row input[type=range]:disabled { opacity: 0.4; }
+.slider-val {
+  min-width: 52px; text-align: right;
+  font-family: 'Share Tech Mono', monospace; font-size: 13px;
+  font-weight: 700; color: var(--text-head);
+}
+#playBtn, #stopBtn {
+  display: flex; align-items: center; justify-content: center;
+  padding: 10px;
+}
+#playBtn .pause-icon { display: none; }
+#playBtn.playing .play-icon { display: none; }
+#playBtn.playing .pause-icon { display: block; }
+.btn-row { display: flex; gap: 8px; }
+.fire-btn {
+  width: 100%; padding: 12px 4px; font-size: 14px; font-weight: 600;
+  background: var(--text-head); color: #fff; border: none; border-radius: 10px;
+  cursor: pointer; transition: background 0.15s;
+  font-family: 'Outfit', sans-serif;
+}
+.fire-btn:hover { background: #37474F; }
+.fire-btn:active { transform: scale(0.97); }
+.readout-section { display: flex; flex-direction: column; gap: 3px; }
+.readout-row { display: flex; justify-content: space-between; align-items: baseline; padding: 1px 0; }
+.readout-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text-label);
+}
+.readout-val {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px; font-weight: 700; color: var(--text-head);
+}
+.readout-val.vl { color: var(--col-l); }
+.readout-val.vi { color: var(--col-i); }
+.readout-val.vw { color: var(--col-omega); }
+.info { padding: 16px 20px; flex: 1; }
+.info-text { font-size: 13px; color: #546E7A; line-height: 1.6; }
+.info-text a { color: var(--accent); }
+.challenge-info {
+  margin-top: 4px; padding: 8px 10px;
+  border-radius: 6px; background: #E8F5E9; color: #2E7D32;
+  font-family: 'Share Tech Mono', monospace; font-size: 12px;
+  font-weight: 700; text-align: center;
+}
+.result-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  animation: overlayFadeIn 0.3s ease;
+}
+.overlay-emoji { font-size: 72px; animation: overlayPop 0.4s ease; }
+.overlay-msg {
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px; font-weight: 700;
+  margin-top: 16px; color: #fff;
+}
+.overlay-hint {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px; margin-top: 8px; color: rgba(255,255,255,0.6);
+}
+@keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlayPop {
+  0% { transform: scale(0.3); }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@media (max-width: 700px) {
+  .main { flex-direction: column; height: auto; min-height: calc(100vh - 46px); }
+  .canvas-wrap { min-height: 320px; height: 50vh; border-right: none; border-bottom: 1px solid var(--panel-border); }
+  .panel { width: 100%; }
+  .controls { flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
+  .ctrl-group { min-width: 120px; flex: 1; }
+  .btn-row { min-width: 100%; }
+  .info { padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F300;</span></a> <span id="titleText">Conservation of Angular Momentum</span></h1>
+    <p id="subtitleText">See how a spinning platform speeds up when you pull weights inward.</p>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="panel">
+    <div class="controls">
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblMode">Mode</span>
+        <div class="type-toggle">
+          <button class="type-btn active" id="modeExploreBtn" onclick="setMode('explore')">Explore</button>
+          <button class="type-btn" id="modeGameBtn" onclick="setMode('game')">Game</button>
+        </div>
+      </div>
+
+      <div id="grpExplore">
+        <span class="section-label" id="lblWeights">Weights</span>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblWeightCount">Count</span>
+          <div class="type-toggle">
+            <button class="type-btn" id="wc1Btn" onclick="setWeightCount(1)">1</button>
+            <button class="type-btn active" id="wc2Btn" onclick="setWeightCount(2)">2</button>
+            <button class="type-btn" id="wc3Btn" onclick="setWeightCount(3)">3</button>
+            <button class="type-btn" id="wc4Btn" onclick="setWeightCount(4)">4</button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblWeightMass">Weight mass</span>
+          <div class="slider-row">
+            <input type="range" id="weightMassSlider" min="1" max="20" value="2" step="1">
+            <span class="slider-val" id="weightMassVal">2 kg</span>
+          </div>
+        </div>
+
+        <span class="section-label" id="lblSpin">Spin</span>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblInitOmega">Initial &#x03c9;</span>
+          <div class="slider-row">
+            <input type="range" id="omegaSlider" min="5" max="100" value="30" step="5">
+            <span class="slider-val" id="omegaVal">30 RPM</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="grpGame" style="display:none">
+        <div class="ctrl-group">
+          <div class="challenge-info" id="challengeInfo">
+            <span id="challengeTargetText"></span>
+          </div>
+        </div>
+        <button class="fire-btn" id="checkBtn" onclick="evaluateChallenge()">Check</button>
+        <div class="type-toggle" style="margin-top:6px">
+          <button class="type-btn" id="newTargetBtn" onclick="generateTarget()">New target</button>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="type-btn" id="playBtn" onclick="togglePlay()" style="flex:1">
+          <svg class="play-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>
+          <svg class="pause-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+        </button>
+        <button class="type-btn" id="stopBtn" onclick="resetSim()" style="flex:1">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+        </button>
+      </div>
+
+      <div id="grpReadouts">
+        <div class="readout-section">
+          <div class="readout-row">
+            <span class="readout-label" id="lblReadL">L (angular)</span>
+            <span class="readout-val vl" id="readoutL">0.0</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblReadI">I (inertia)</span>
+            <span class="readout-val vi" id="readoutI">0.0</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblReadOmega">&#x03c9; (angular vel)</span>
+            <span class="readout-val vw" id="readoutOmega">0.0</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="info">
+      <div class="info-text" id="infoText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ───────── I18N ───────── */
+const I18N = {
+  en: {
+    title: 'Conservation of Angular Momentum',
+    subtitle: 'See how a spinning platform speeds up when you pull weights inward.',
+    mode: 'Mode', explore: 'Explore', game: 'Game',
+    weights: 'Weights', spin: 'Spin',
+    weightCount: 'Count', weightMass: 'Weight mass',
+    initialOmega: 'Initial angular velocity',
+    check: 'Check',
+    newTarget: 'New target',
+    readL: 'L (angular)',
+    readI: 'I (inertia)',
+    readOmega: 'Angular velocity',
+    angMomentum: 'ANGULAR MOMENTUM',
+    challengeTarget: 'Target: {0} RPM',
+    challengeSuccess: 'Nailed it!',
+    challengeClose: 'So close! Try again',
+    challengeMiss: 'Not quite! Try again',
+    clickToDismiss: 'Click to continue',
+    infoExplore: '<strong>Angular momentum = moment of inertia \u00d7 angular velocity</strong> (L = I \u00d7 \u03c9).<br><br>Drag the weights closer to the center and watch the platform spin faster! Move them outward and it slows down.<br><br>The green <strong>L bar</strong> stays constant \u2014 that\u2019s conservation of angular momentum!',
+    infoGame: 'Drag the weights to make the platform spin at the target angular velocity. When you think you\'re close, hit <strong>Check</strong>!',
+  },
+  pl: {
+    title: 'Zasada zachowania momentu p\u0119du',
+    subtitle: 'Zobacz, jak wiruj\u0105ca platforma przyspiesza, gdy przyci\u0105gasz ci\u0119\u017carki do \u015brodka.',
+    mode: 'Tryb', explore: 'Eksploruj', game: 'Gra',
+    weights: 'Ci\u0119\u017carki', spin: 'Obr\u00f3t',
+    weightCount: 'Ilo\u015b\u0107', weightMass: 'Masa ci\u0119\u017carka',
+    initialOmega: 'Pocz\u0105tkowa pr\u0119dko\u015b\u0107 k\u0105towa',
+    check: 'Sprawd\u017a',
+    newTarget: 'Nowy cel',
+    readL: 'L (k\u0105towy)',
+    readI: 'I (bezw\u0142adno\u015b\u0107)',
+    readOmega: 'Pr\u0119dko\u015b\u0107 k\u0105towa',
+    angMomentum: 'MOMENT P\u0118DU',
+    challengeTarget: 'Cel: {0} RPM',
+    challengeSuccess: '\u015awietnie!',
+    challengeClose: 'Prawie! Spr\u00f3buj ponownie',
+    challengeMiss: 'Daleko! Spr\u00f3buj ponownie',
+    clickToDismiss: 'Kliknij, aby kontynuowa\u0107',
+    infoExplore: '<strong>Moment p\u0119du = moment bezw\u0142adno\u015bci \u00d7 pr\u0119dko\u015b\u0107 k\u0105towa</strong> (L = I \u00d7 \u03c9).<br><br>Przeci\u0105gnij ci\u0119\u017carki bli\u017cej \u015brodka i zobacz, jak platforma przyspiesza! Przesu\u0144 je na zewn\u0105trz, a zwolni.<br><br>Zielony pasek <strong>L</strong> nie zmienia si\u0119 \u2014 to zasada zachowania momentu p\u0119du!',
+    infoGame: 'Przeci\u0105gnij ci\u0119\u017carki, aby platforma obr\u00f3ci\u0142a si\u0119 z docelow\u0105 pr\u0119dko\u015bci\u0105 k\u0105tow\u0105. Gdy b\u0119dziesz blisko, naci\u015bnij <strong>Sprawd\u017a</strong>!',
+  },
+};
+function T(key) { return I18N[state.lang][key]; }
+
+/* ───────── CONSTANTS ───────── */
+const PLATFORM_CX = 500;
+const PLATFORM_CY = 255;
+const PLATFORM_R = 245;
+const MIN_WEIGHT_R = 40;
+const WEIGHT_VR_BASE = 14;
+const R_TO_M = 0.005;
+
+const BAR_X = 180;
+const BAR_MAX_W = 500;
+const BAR_H = 24;
+const BAR_GAP = 14;
+
+const COL_L = '#00C853';
+const COL_I = '#FF6D00';
+const COL_OMEGA = '#2979FF';
+const WEIGHT_COLORS = ['#D32F2F', '#1565C0', '#EF6C00', '#00838F'];
+
+function weightVR(mass) { return WEIGHT_VR_BASE + Math.sqrt(mass) * 4; }
+
+/* ───────── STATE ───────── */
+const state = {
+  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
+  mode: 'explore',
+  weights: [
+    { mass: 2, r: 100, angle: 0 },
+    { mass: 2, r: 100, angle: Math.PI },
+  ],
+  weightMass: 2,
+  omega: 30 * Math.PI / 30,
+  initialOmega: 30 * Math.PI / 30,
+  L: 0,
+  I: 0,
+  platformAngle: 0,
+  playing: true,
+  draggingIdx: -1,
+  tapStart: null,
+  selectedWeight: -1,
+  selectedTimeout: null,
+  challengeTarget: 0,
+  gameShowOmega: false,
+  refAngle: 0,
+  iRangeMax: 1,
+  maxOmega: 1,
+};
+
+/* ───────── CANVAS SETUP ───────── */
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H, scaleF, ox, oy;
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  W = rect.width; H = rect.height;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  scaleF = Math.min(W / 1000, H / 680) * 0.92;
+  ox = (W - 1000 * scaleF) / 2;
+  oy = (H - 680 * scaleF) / 2;
+}
+window.addEventListener('resize', resize);
+
+function tx(x) { return ox + x * scaleF; }
+function ty(y) { return oy + y * scaleF; }
+function ts(s) { return s * scaleF; }
+
+/* ───────── PHYSICS ───────── */
+function totalI() {
+  let I = 0;
+  for (const w of state.weights) {
+    const r = w.r * R_TO_M;
+    I += w.mass * r * r;
+  }
+  return I;
+}
+
+function getIRange() {
+  const rMin = MIN_WEIGHT_R * R_TO_M;
+  const rMax = (PLATFORM_R - 5) * R_TO_M;
+  let minI = 0, maxI = 0;
+  for (const w of state.weights) {
+    if (w.fixed) {
+      var fI = w.mass * (w.r * R_TO_M) * (w.r * R_TO_M);
+      minI += fI;
+      maxI += fI;
+    } else {
+      minI += w.mass * rMin * rMin;
+      maxI += w.mass * rMax * rMax;
+    }
+  }
+  return { min: minI, max: maxI };
+}
+
+function conserveL() {
+  state.I = totalI();
+  state.omega = state.L / state.I;
+}
+
+function initPhysics() {
+  state.I = totalI();
+  state.L = state.I * state.initialOmega;
+  state.omega = state.initialOmega;
+  state.platformAngle = 0;
+  const range = getIRange();
+  state.iRangeMax = range.max;
+  state.maxOmega = state.L / range.min;
+}
+
+function fmtNum(v) { return parseFloat(v.toPrecision(3)).toString(); }
+function toRPM(omega) { return omega * 30 / Math.PI; }
+function fromRPM(rpm) { return rpm * Math.PI / 30; }
+
+/* ───────── DRAWING HELPERS ───────── */
+function roundRect(x, y, w, h, r) {
+  if (w < 0) { x += w; w = -w; }
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+/* ───────── DRAW: PLATFORM ───────── */
+function drawPlatform() {
+  const cx = tx(PLATFORM_CX), cy = ty(PLATFORM_CY);
+  const r = ts(PLATFORM_R);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  ctx.beginPath();
+  ctx.arc(cx + ts(3), cy + ts(4), r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Platform body
+  const grad = ctx.createRadialGradient(cx - r * 0.15, cy - r * 0.15, r * 0.1, cx, cy, r);
+  grad.addColorStop(0, '#E4E6E8');
+  grad.addColorStop(1, '#CDD1D5');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rim
+  ctx.strokeStyle = '#B0B5BA';
+  ctx.lineWidth = ts(2);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Rotating spoke lines
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(state.platformAngle);
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+  ctx.lineWidth = ts(1.5);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const cosA = Math.cos(a), sinA = Math.sin(a);
+    ctx.beginPath();
+    ctx.moveTo(ts(12) * cosA, ts(12) * sinA);
+    ctx.lineTo((r - ts(4)) * cosA, (r - ts(4)) * sinA);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Guide circles (non-rotating)
+  ctx.setLineDash([ts(3), ts(5)]);
+  ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+  ctx.lineWidth = ts(1);
+  for (const frac of [0.25, 0.5, 0.75]) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * frac, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Center hub
+  ctx.fillStyle = '#A0A5AA';
+  ctx.beginPath();
+  ctx.arc(cx, cy, ts(8), 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/* ───────── DRAW: WEIGHTS ───────── */
+function getWeightWorldPos(i) {
+  const w = state.weights[i];
+  const a = state.platformAngle + w.angle;
+  return {
+    x: PLATFORM_CX + w.r * Math.cos(a),
+    y: PLATFORM_CY + w.r * Math.sin(a),
+  };
+}
+
+var COL_FIXED = '#455A64';
+
+function getWeightColor(idx) {
+  if (state.weights[idx].fixed) return COL_FIXED;
+  var fi = 0;
+  for (var j = 0; j < idx; j++) {
+    if (!state.weights[j].fixed) fi++;
+  }
+  return WEIGHT_COLORS[fi % WEIGHT_COLORS.length];
+}
+
+function drawWeights() {
+  state.weights.forEach((w, i) => {
+    const pos = getWeightWorldPos(i);
+    const color = getWeightColor(i);
+    const vr = weightVR(w.mass);
+    const sx = tx(pos.x), sy = ty(pos.y);
+
+    // Radius line while dragging
+    if (state.draggingIdx === i) {
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = ts(1.5);
+      ctx.setLineDash([ts(4), ts(4)]);
+      ctx.beginPath();
+      ctx.moveTo(tx(PLATFORM_CX), ty(PLATFORM_CY));
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+
+      // Distance label
+      ctx.fillStyle = color;
+      ctx.font = ts(11) + 'px "Share Tech Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      const mx = (PLATFORM_CX + pos.x) / 2, my = (PLATFORM_CY + pos.y) / 2;
+      ctx.fillText('r=' + Math.round(w.r), tx(mx), ty(my) - ts(4));
+    }
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.beginPath();
+    ctx.arc(sx + ts(2), sy + ts(2), ts(vr), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(sx, sy, ts(vr), 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3D highlight
+    const hl = ctx.createRadialGradient(
+      sx - ts(vr * 0.3), sy - ts(vr * 0.3), ts(vr * 0.1),
+      sx, sy, ts(vr)
+    );
+    hl.addColorStop(0, 'rgba(255,255,255,0.35)');
+    hl.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hl;
+    ctx.beginPath();
+    ctx.arc(sx, sy, ts(vr), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mass label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + ts(11) + 'px "Share Tech Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(w.mass + 'kg', sx, sy);
+  });
+}
+
+/* ───────── DRAW: ROTATION ARROW ───────── */
+function drawRotationArrow() {
+  if (Math.abs(state.omega) < 0.1) return;
+
+  const cx = tx(PLATFORM_CX), cy = ty(PLATFORM_CY);
+  const r = ts(PLATFORM_R + 18);
+  const arcLen = Math.min(Math.abs(state.omega) * 0.12, 1.0);
+  const mid = -Math.PI / 2;
+  const a1 = mid - arcLen / 2;
+  const a2 = mid + arcLen / 2;
+
+  ctx.strokeStyle = '#90A4AE';
+  ctx.lineWidth = ts(2.5);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, a1, a2);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // Arrowhead at the tip in rotation direction
+  const tipA = state.omega > 0 ? a2 : a1;
+  const tipX = cx + r * Math.cos(tipA);
+  const tipY = cy + r * Math.sin(tipA);
+
+  ctx.save();
+  ctx.translate(tipX, tipY);
+  ctx.rotate(state.omega > 0 ? tipA + Math.PI / 2 : tipA - Math.PI / 2);
+  const hs = ts(8);
+  ctx.fillStyle = '#90A4AE';
+  ctx.beginPath();
+  ctx.moveTo(hs, 0);
+  ctx.lineTo(-hs * 0.4, -hs * 0.5);
+  ctx.lineTo(-hs * 0.4, hs * 0.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Omega value (hidden in game mode after first interaction)
+  if (state.mode !== 'game' || state.gameShowOmega) {
+    ctx.fillStyle = COL_OMEGA;
+    ctx.font = 'bold ' + ts(14) + 'px "Share Tech Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(fmtNum(toRPM(state.omega)) + ' RPM', cx, cy - r - ts(6));
+  }
+}
+
+/* ───────── DRAW: SINGLE BAR ───────── */
+function drawSingleBar(y, barW, color, label, value) {
+  ctx.fillStyle = '#90A4AE';
+  ctx.font = 'bold ' + ts(14) + 'px "Share Tech Mono", monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, tx(BAR_X - 10), ty(y + BAR_H / 2));
+
+  if (barW > 0.5) {
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = color;
+    roundRect(tx(BAR_X), ty(y), ts(barW), ts(BAR_H), ts(4));
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = ts(2);
+    roundRect(tx(BAR_X), ty(y), ts(barW), ts(BAR_H), ts(4));
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = color;
+  ctx.font = 'bold ' + ts(13) + 'px "Share Tech Mono", monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(fmtNum(value), tx(BAR_X + barW + 8), ty(y + BAR_H / 2));
+}
+
+/* ───────── DRAW: ALL BARS ───────── */
+function drawBars() {
+  const sectionY = 570;
+
+  ctx.fillStyle = '#90A4AE';
+  ctx.font = 'bold ' + ts(13) + 'px "Share Tech Mono", monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(T('angMomentum'), tx(BAR_X), ty(sectionY));
+
+  // L bar
+  const lBarY = sectionY + 14;
+  const lBarW = BAR_MAX_W * 0.7;
+  drawSingleBar(lBarY, lBarW, COL_L, 'L', state.L);
+
+  // Dashed reference line for L
+  ctx.strokeStyle = COL_L;
+  ctx.lineWidth = ts(2);
+  ctx.setLineDash([ts(3), ts(3)]);
+  ctx.beginPath();
+  ctx.moveTo(tx(BAR_X + lBarW), ty(lBarY - 3));
+  ctx.lineTo(tx(BAR_X + lBarW), ty(lBarY + BAR_H + 3));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // I and omega bars
+  const iMax = Math.max(state.iRangeMax, 0.001);
+  const omegaMax = Math.max(state.maxOmega, 0.001);
+
+  const iBarY = lBarY + BAR_H + BAR_GAP;
+  const iBarW = (state.I / iMax) * BAR_MAX_W * 0.85;
+  drawSingleBar(iBarY, iBarW, COL_I, 'I', state.I);
+
+  const wBarY = iBarY + BAR_H + BAR_GAP;
+  const wBarW = (state.omega / omegaMax) * BAR_MAX_W * 0.85;
+  drawSingleBar(wBarY, wBarW, COL_OMEGA, 'RPM', toRPM(state.omega));
+}
+
+/* ───────── DRAW: REFERENCE PLATFORM (game) ───────── */
+function drawRefPlatform() {
+  if (state.mode !== 'game') return;
+  var rcx = tx(880), rcy = ty(600), rr = ts(45);
+
+  // Label above
+  ctx.fillStyle = '#90A4AE';
+  ctx.font = 'bold ' + ts(12) + 'px "Share Tech Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('TARGET', rcx, rcy - rr - ts(6));
+
+  // Disc
+  ctx.fillStyle = '#D8D8D8';
+  ctx.beginPath();
+  ctx.arc(rcx, rcy, rr, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#B0B0B0';
+  ctx.lineWidth = ts(1.5);
+  ctx.beginPath();
+  ctx.arc(rcx, rcy, rr, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Spokes
+  ctx.save();
+  ctx.translate(rcx, rcy);
+  ctx.rotate(state.refAngle);
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+  ctx.lineWidth = ts(1);
+  for (var i = 0; i < 6; i++) {
+    var a = (i / 6) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(ts(6) * Math.cos(a), ts(6) * Math.sin(a));
+    ctx.lineTo((rr - ts(3)) * Math.cos(a), (rr - ts(3)) * Math.sin(a));
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Center dot
+  ctx.fillStyle = '#A0A0A0';
+  ctx.beginPath();
+  ctx.arc(rcx, rcy, ts(4), 0, Math.PI * 2);
+  ctx.fill();
+
+  // RPM below
+  ctx.fillStyle = '#78909C';
+  ctx.font = ts(12) + 'px "Share Tech Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(state.challengeTarget + ' RPM', rcx, rcy + rr + ts(4));
+}
+
+/* ───────── DRAW: SCENE ───────── */
+function drawScene() {
+  ctx.fillStyle = '#f5f3ee';
+  ctx.fillRect(0, 0, W, H);
+
+  drawPlatform();
+  drawWeights();
+  drawRotationArrow();
+  if (state.mode !== 'game') drawBars();
+  drawRefPlatform();
+  drawWeightButtons();
+}
+
+/* ───────── INTERACTION HELPERS ───────── */
+function screenToLogical(sx, sy) {
+  var rect = canvas.getBoundingClientRect();
+  return {
+    x: (sx - rect.left - ox) / scaleF,
+    y: (sy - rect.top - oy) / scaleF,
+  };
+}
+
+function hitTestWeight(lx, ly) {
+  for (var i = state.weights.length - 1; i >= 0; i--) {
+    var pos = getWeightWorldPos(i);
+    var vr = weightVR(state.weights[i].mass);
+    if (Math.hypot(lx - pos.x, ly - pos.y) < vr + 8) return i;
+  }
+  return -1;
+}
+
+function handleWeightDrag(sx, sy) {
+  var w = state.weights[state.draggingIdx];
+  if (w.fixed) return;
+  state.gameShowOmega = false;
+  var lp = screenToLogical(sx, sy);
+  var dx = lp.x - PLATFORM_CX;
+  var dy = lp.y - PLATFORM_CY;
+  var dist = Math.hypot(dx, dy);
+  w.r = Math.max(MIN_WEIGHT_R, Math.min(PLATFORM_R - 5, dist));
+  w.angle = Math.atan2(dy, dx) - state.platformAngle;
+  conserveL();
+  updateReadouts();
+}
+
+/* ───────── WEIGHT +/− BUTTONS ───────── */
+var BTN_R = 13;
+var BTN_GAP = 15;
+
+function adjustWeightMass(idx, delta) {
+  var w = state.weights[idx];
+  w.mass = Math.max(1, Math.min(20, w.mass + delta));
+  state.gameShowOmega = false;
+  conserveL();
+  updateReadouts();
+  // Reset dismiss timer
+  clearTimeout(state.selectedTimeout);
+  state.selectedTimeout = setTimeout(deselectWeight, 4000);
+}
+
+function selectWeight(idx) {
+  state.selectedWeight = idx;
+  clearTimeout(state.selectedTimeout);
+  state.selectedTimeout = setTimeout(deselectWeight, 4000);
+}
+
+function deselectWeight() {
+  state.selectedWeight = -1;
+  clearTimeout(state.selectedTimeout);
+  state.selectedTimeout = null;
+}
+
+function getWeightBtnPos(i) {
+  var pos = getWeightWorldPos(i);
+  var sx = tx(pos.x), sy = ty(pos.y);
+  var vr = ts(weightVR(state.weights[i].mass));
+  var btnY = sy + vr + 4 + BTN_R;
+  return {
+    minus: { x: sx - BTN_GAP, y: btnY },
+    plus:  { x: sx + BTN_GAP, y: btnY },
+  };
+}
+
+function hitTestSelectedButton(sx, sy) {
+  if (state.selectedWeight < 0) return null;
+  var rect = canvas.getBoundingClientRect();
+  var cx = sx - rect.left;
+  var cy = sy - rect.top;
+  var b = getWeightBtnPos(state.selectedWeight);
+  if (Math.hypot(cx - b.minus.x, cy - b.minus.y) < BTN_R + 5) return 'minus';
+  if (Math.hypot(cx - b.plus.x,  cy - b.plus.y)  < BTN_R + 5) return 'plus';
+  return null;
+}
+
+function drawWeightButtons() {
+  if (state.selectedWeight < 0 || state.selectedWeight >= state.weights.length) return;
+  var i = state.selectedWeight;
+  var b = getWeightBtnPos(i);
+  var color = getWeightColor(i);
+
+  // Minus
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  ctx.arc(b.minus.x, b.minus.y, BTN_R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(b.minus.x, b.minus.y, BTN_R, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.font = 'bold 16px "Share Tech Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('\u2212', b.minus.x, b.minus.y);
+
+  // Plus
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  ctx.arc(b.plus.x, b.plus.y, BTN_R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(b.plus.x, b.plus.y, BTN_R, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.fillText('+', b.plus.x, b.plus.y);
+}
+
+/* ───────── EVENT HANDLERS ───────── */
+function handlePointerDown(sx, sy, e) {
+  // 1. Check +/− buttons of selected weight
+  var btn = hitTestSelectedButton(sx, sy);
+  if (btn) {
+    adjustWeightMass(state.selectedWeight, btn === 'plus' ? 1 : -1);
+    if (e) e.preventDefault();
+    return;
+  }
+
+  // 2. Hit test weights — deferred drag (to detect taps), skip fixed
+  var lp = screenToLogical(sx, sy);
+  var hit = hitTestWeight(lp.x, lp.y);
+  if (hit >= 0 && !state.weights[hit].fixed) {
+    state.tapStart = { lx: lp.x, ly: lp.y, idx: hit };
+    if (e) e.preventDefault();
+    return;
+  }
+
+  // 3. Tap anywhere on platform — play/pause
+  var dist = Math.hypot(lp.x - PLATFORM_CX, lp.y - PLATFORM_CY);
+  if (dist < PLATFORM_R) {
+    togglePlay();
+    if (e) e.preventDefault();
+    deselectWeight();
+    return;
+  }
+
+  // 4. Tapped empty space — deselect
+  deselectWeight();
+}
+
+function handlePointerMove(sx, sy, e) {
+  if (state.draggingIdx >= 0) {
+    handleWeightDrag(sx, sy);
+    if (e) e.preventDefault();
+    return;
+  }
+  if (state.tapStart) {
+    var lp = screenToLogical(sx, sy);
+    if (Math.hypot(lp.x - state.tapStart.lx, lp.y - state.tapStart.ly) > 5) {
+      state.draggingIdx = state.tapStart.idx;
+      state.tapStart = null;
+      deselectWeight();
+      canvas.classList.add('dragging');
+      handleWeightDrag(sx, sy);
+      if (e) e.preventDefault();
+    }
+    return;
+  }
+  // Hover cursor
+  var rect = canvas.getBoundingClientRect();
+  if (sx >= rect.left && sx <= rect.right && sy >= rect.top && sy <= rect.bottom) {
+    var lp2 = screenToLogical(sx, sy);
+    canvas.classList.toggle('hover-weight', hitTestWeight(lp2.x, lp2.y) >= 0);
+  }
+}
+
+function handlePointerUp() {
+  if (state.draggingIdx >= 0) {
+    state.draggingIdx = -1;
+    canvas.classList.remove('dragging');
+  } else if (state.tapStart) {
+    selectWeight(state.tapStart.idx);
+    state.tapStart = null;
+  }
+}
+
+canvas.addEventListener('mousedown', function(e) {
+  handlePointerDown(e.clientX, e.clientY, e);
+});
+window.addEventListener('mousemove', function(e) {
+  handlePointerMove(e.clientX, e.clientY, e);
+});
+window.addEventListener('mouseup', function() {
+  handlePointerUp();
+});
+
+canvas.addEventListener('touchstart', function(e) {
+  var t = e.touches[0];
+  handlePointerDown(t.clientX, t.clientY, e);
+}, { passive: false });
+window.addEventListener('touchmove', function(e) {
+  if (state.draggingIdx >= 0 || state.tapStart) {
+    handlePointerMove(e.touches[0].clientX, e.touches[0].clientY, e);
+  }
+}, { passive: false });
+window.addEventListener('touchend', function() {
+  handlePointerUp();
+});
+
+
+/* ───────── ANIMATION ───────── */
+let lastTime = 0;
+
+function animate(now) {
+  now /= 1000;
+  const dt = lastTime ? Math.min(now - lastTime, 0.05) : 0;
+  lastTime = now;
+
+  if (state.playing) {
+    state.platformAngle += state.omega * dt;
+    if (state.platformAngle > 1e6) state.platformAngle %= (Math.PI * 2);
+    if (state.mode === 'game') {
+      state.refAngle += fromRPM(state.challengeTarget) * dt;
+      if (state.refAngle > 1e6) state.refAngle %= (Math.PI * 2);
+    }
+  }
+
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+/* ───────── UI: SLIDERS ───────── */
+function syncSlider(id, val, suffix) {
+  document.getElementById(id).value = val;
+  document.getElementById(id.replace('Slider', 'Val')).textContent = val + suffix;
+}
+
+document.getElementById('weightMassSlider').addEventListener('input', function(e) {
+  state.weightMass = +e.target.value;
+  document.getElementById('weightMassVal').textContent = e.target.value + ' kg';
+  state.weights.forEach(function(w) { w.mass = state.weightMass; });
+  initPhysics();
+  updateReadouts();
+});
+
+document.getElementById('omegaSlider').addEventListener('input', function(e) {
+  state.initialOmega = fromRPM(+e.target.value);
+  document.getElementById('omegaVal').textContent = e.target.value + ' RPM';
+  initPhysics();
+  updateReadouts();
+});
+
+/* ───────── UI: WEIGHT COUNT ───────── */
+function setWeightCount(n) {
+  [1, 2, 3, 4].forEach(function(i) {
+    document.getElementById('wc' + i + 'Btn').classList.toggle('active', i === n);
+  });
+  var avgR = state.weights.length > 0
+    ? state.weights.reduce(function(s, w) { return s + w.r; }, 0) / state.weights.length
+    : PLATFORM_R * 0.6;
+  var step = (2 * Math.PI) / n;
+  state.weights = [];
+  for (var i = 0; i < n; i++) {
+    state.weights.push({ mass: state.weightMass, r: avgR, angle: i * step });
+  }
+  initPhysics();
+  updateReadouts();
+}
+
+/* ───────── UI: PLAY / PAUSE / STOP ───────── */
+function togglePlay() {
+  state.playing = !state.playing;
+  updatePlayButton();
+}
+
+function updatePlayButton() {
+  document.getElementById('playBtn').classList.toggle('playing', state.playing);
+}
+
+function resetSim() {
+  state.playing = true;
+  var n = state.weights.length;
+  var step = (2 * Math.PI) / n;
+  var defaultR = PLATFORM_R * 0.7;
+  state.weights = [];
+  for (var i = 0; i < n; i++) {
+    state.weights.push({ mass: state.weightMass, r: defaultR, angle: i * step });
+  }
+  initPhysics();
+  updatePlayButton();
+  updateReadouts();
+}
+
+/* ───────── UI: MODE ───────── */
+function setMode(mode) {
+  state.mode = mode;
+  document.getElementById('modeExploreBtn').classList.toggle('active', mode === 'explore');
+  document.getElementById('modeGameBtn').classList.toggle('active', mode === 'game');
+  document.getElementById('grpExplore').style.display = mode === 'explore' ? '' : 'none';
+  document.getElementById('grpReadouts').style.display = mode === 'explore' ? '' : 'none';
+  document.getElementById('grpGame').style.display = mode === 'game' ? '' : 'none';
+
+  if (mode === 'game') {
+    generateTarget();
+  } else {
+    resetSim();
+  }
+  updateInfoText();
+}
+
+/* ───────── GAME MODE ───────── */
+function generateTarget() {
+  var numWeights = 1 + Math.floor(Math.random() * 4);
+  var numFixed = Math.floor(Math.random() * numWeights); // 0 to numWeights-1
+  var numFree = numWeights - numFixed;
+  var startRPM = 20 + Math.floor(Math.random() * 6) * 5;
+  state.initialOmega = fromRPM(startRPM);
+
+  var step = (2 * Math.PI) / numWeights;
+  state.weights = [];
+
+  // Fixed weights first
+  for (var i = 0; i < numFixed; i++) {
+    state.weights.push({
+      mass: 1 + Math.floor(Math.random() * 20),
+      r: 50 + Math.floor(Math.random() * 150),
+      angle: i * step,
+      fixed: true,
+    });
+  }
+  // Free weights
+  for (var j = 0; j < numFree; j++) {
+    state.weights.push({
+      mass: 1 + Math.floor(Math.random() * 20),
+      r: 50 + Math.floor(Math.random() * 150),
+      angle: (numFixed + j) * step,
+      fixed: false,
+    });
+  }
+
+  initPhysics();
+
+  // Compute achievable omega range
+  var rMin = MIN_WEIGHT_R * R_TO_M;
+  var rMax = (PLATFORM_R - 5) * R_TO_M;
+  var Ifixed = 0;
+  for (var k = 0; k < state.weights.length; k++) {
+    if (state.weights[k].fixed) {
+      var rm = state.weights[k].r * R_TO_M;
+      Ifixed += state.weights[k].mass * rm * rm;
+    }
+  }
+  var IfreeMin = numFree * 1 * rMin * rMin;
+  var IfreeMax = numFree * 20 * rMax * rMax;
+  var omegaMin = state.L / (Ifixed + IfreeMax);
+  var omegaMax = state.L / (Ifixed + IfreeMin);
+
+  // Pick target within achievable range (with margin)
+  var lo = omegaMin + (omegaMax - omegaMin) * 0.08;
+  var hi = omegaMax - (omegaMax - omegaMin) * 0.08;
+  var targetOmega = lo + Math.random() * (hi - lo);
+
+  state.challengeTarget = Math.round(toRPM(targetOmega));
+  state.gameShowOmega = true;
+  state.refAngle = 0;
+  state.playing = true;
+  updatePlayButton();
+  updateChallengeDisplay();
+  updateReadouts();
+}
+
+function updateChallengeDisplay() {
+  document.getElementById('challengeTargetText').textContent =
+    T('challengeTarget').replace('{0}', state.challengeTarget);
+}
+
+function evaluateChallenge() {
+  if (state.mode !== 'game') return;
+  var currentRPM = toRPM(state.omega);
+  var pct = Math.abs(currentRPM - state.challengeTarget) / state.challengeTarget * 100;
+
+  if (pct < 5) {
+    showOverlay('success', currentRPM, pct);
+  } else if (pct < 15) {
+    showOverlay('close', currentRPM, pct);
+  } else {
+    showOverlay('miss', currentRPM, pct);
+  }
+}
+
+function showOverlay(result, currentRPM, pct) {
+  var existing = document.querySelector('.result-overlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.className = 'result-overlay';
+
+  var emoji, msg, bg;
+  if (result === 'success') {
+    emoji = '\uD83C\uDF89'; msg = T('challengeSuccess'); bg = 'rgba(63,185,80,0.88)';
+  } else if (result === 'close') {
+    emoji = '\uD83D\uDC4D\uD83C\uDFFB'; msg = T('challengeClose'); bg = 'rgba(88,166,255,0.88)';
+  } else {
+    emoji = '\uD83D\uDC4E\uD83C\uDFFB'; msg = T('challengeMiss'); bg = 'rgba(240,180,60,0.92)';
+  }
+
+  overlay.style.background = bg;
+  var omegaLine = currentRPM != null
+    ? '<div style="font-family:\'Share Tech Mono\',monospace;font-size:16px;margin-top:12px;color:rgba(255,255,255,0.85)">' + Math.round(currentRPM) + ' RPM (' + Math.round(pct) + '% off)</div>'
+    : '';
+  overlay.innerHTML =
+    '<div class="overlay-emoji">' + emoji + '</div>' +
+    '<div class="overlay-msg">' + msg + '</div>' +
+    omegaLine +
+    '<div class="overlay-hint">' + T('clickToDismiss') + '</div>';
+
+  overlay.addEventListener('click', function() { overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+/* ───────── READOUTS ───────── */
+function updateReadouts() {
+  document.getElementById('readoutL').textContent = fmtNum(state.L) + ' kg\u00b7m\u00b2/s';
+  document.getElementById('readoutI').textContent = fmtNum(state.I) + ' kg\u00b7m\u00b2';
+  document.getElementById('readoutOmega').textContent = fmtNum(toRPM(state.omega)) + ' RPM';
+}
+
+/* ───────── INFO TEXT ───────── */
+function updateInfoText() {
+  document.getElementById('infoText').innerHTML =
+    state.mode === 'game' ? T('infoGame') : T('infoExplore');
+}
+
+/* ───────── TRANSLATIONS ───────── */
+function applyTranslations() {
+  document.title = T('title');
+  document.documentElement.lang = state.lang;
+  document.getElementById('titleText').textContent = T('title');
+  document.getElementById('subtitleText').textContent = T('subtitle');
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+  document.getElementById('lblMode').textContent = T('mode');
+  document.getElementById('modeExploreBtn').textContent = T('explore');
+  document.getElementById('modeGameBtn').textContent = T('game');
+  document.getElementById('lblWeights').textContent = T('weights');
+  document.getElementById('lblWeightCount').textContent = T('weightCount');
+  document.getElementById('lblWeightMass').textContent = T('weightMass');
+  document.getElementById('lblSpin').textContent = T('spin');
+  document.getElementById('lblInitOmega').textContent = T('initialOmega');
+  document.getElementById('checkBtn').textContent = T('check');
+  document.getElementById('newTargetBtn').textContent = T('newTarget');
+  document.getElementById('lblReadL').textContent = T('readL');
+  document.getElementById('lblReadI').textContent = T('readI');
+  document.getElementById('lblReadOmega').textContent = T('readOmega');
+
+  if (state.mode === 'game') updateChallengeDisplay();
+  updatePlayButton();
+  updateInfoText();
+  updateReadouts();
+}
+
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'pl' : 'en';
+  applyTranslations();
+}
+
+/* ───────── INIT ───────── */
+function init() {
+  resize();
+  initPhysics();
+  applyTranslations();
+  requestAnimationFrame(animate);
+}
+
+init();
+</script>
+</body>
+</html>
