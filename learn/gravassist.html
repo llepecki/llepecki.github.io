@@ -111,14 +111,14 @@
   .slider-row { display: flex; align-items: center; gap: 6px; }
   .slider-row input[type=range] {
     flex: 1; -webkit-appearance: none; appearance: none;
-    height: 4px; background: var(--panel-border); border-radius: 2px; outline: none;
+    height: 6px; background: var(--panel-border); border-radius: 3px; outline: none;
   }
   .slider-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
     background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
   }
   .slider-row input[type=range]::-moz-range-thumb {
-    width: 18px; height: 18px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
     background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
   }
   .slider-val {
@@ -128,17 +128,16 @@
 
   .step-btn {
     width: 28px; height: 28px; border-radius: 50%;
-    border: 1px solid var(--panel-border);
+    border: 1.5px solid var(--panel-border);
     background: var(--panel); color: var(--text-dim);
-    font-size: 16px; font-weight: 700;
+    font-family: 'Share Tech Mono', monospace; font-size: 16px; line-height: 1;
+    cursor: pointer; transition: all 0.2s;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; flex-shrink: 0;
-    transition: border-color 0.15s;
-    font-family: 'Outfit', sans-serif;
+    flex-shrink: 0;
     touch-action: manipulation;
   }
-  .step-btn:hover { border-color: var(--accent); }
-  .step-btn:active { background: var(--panel-border); }
+  .step-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .step-btn:active { background: var(--accent); color: var(--bg); }
 
   .planet-select {
     width: 100%; padding: 8px 10px; border-radius: 6px;

@@ -5,6 +5,10 @@ subtitle: Fun learning apps for kids
 permalink: /learn/
 ---
 
+### [Conservation of Momentum](momentum.html) `Classical mechanics`
+
+Discover why total momentum never changes in a collision. Adjust mass, velocity, and collision type, then watch momentum bars prove conservation in real time. Includes a challenge mode!
+
 ### [Piano Scale Pattern Generator](gamgen.html) `Music`
 
 Visual generator for piano scale patterns. Pick a root note and scale type to see the notes laid out on a keyboard diagram.
