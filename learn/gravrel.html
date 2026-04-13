@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Interactive gravitational time dilation simulator. Fly two spacecraft past black holes and compare pilot aging.">
+<meta name="author" content="Łukasz Łepecki">
+<link rel="canonical" href="https://lepecki.com/learn/gravrel.html">
+<meta property="og:title" content="Gravitational Route Time Dilation">
+<meta property="og:description" content="Interactive gravitational time dilation simulator. Fly two spacecraft past black holes and compare pilot aging.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lepecki.com/learn/gravrel.html">
+<meta property="og:site_name" content="Łukasz Łepecki">
+<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Gravitational Route Time Dilation">
+<meta name="twitter:description" content="Interactive gravitational time dilation simulator. Fly two spacecraft past black holes and compare pilot aging.">
+<title>Gravitational Route Time Dilation</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f18;
+    --panel: #131825;
+    --panel-border: #1e2a3a;
+    --text: #c9d1d9;
+    --text-dim: #6e7a8a;
+    --accent: #58a6ff;
+    --earth-color: #4db8ff;
+    --ship-a: #ffb347;
+    --ship-b: #66d9c2;
+    --star-color: #fff1a8;
+    --hole-core: #05070c;
+    --hole-ring: #ff7a59;
+    --danger: #f97583;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Outfit', sans-serif;
+    color: var(--text);
+  }
+
+  header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .header-text { flex: 1; }
+  header h1 { font-size: 22px; font-weight: 700; }
+  header h1 a { color: inherit; text-decoration: none; }
+  header h1 a:hover { opacity: .7; }
+  header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
+
+  .lang-btn {
+    background: none; border: 1px solid var(--panel-border);
+    border-radius: 4px; padding: 3px 8px;
+    cursor: pointer; flex-shrink: 0;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .main { display: flex; height: calc(100vh - 80px); }
+
+  .canvas-wrap {
+    flex: 1; position: relative;
+    background: #080c14; min-width: 0;
+  }
+  .canvas-wrap canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+
+  .controls {
+    width: 320px; flex-shrink: 0;
+    padding: 18px;
+    border-left: 1px solid var(--panel-border);
+    display: flex; flex-direction: column; gap: 14px;
+    overflow-y: auto;
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+
+  .slider-row { display: flex; align-items: center; gap: 6px; }
+  .slider-row input[type=range] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 6px; background: var(--panel-border); border-radius: 3px; outline: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+  .slider-row input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+  .slider-val {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; min-width: 56px; text-align: right; color: var(--text);
+  }
+
+  .step-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: all 0.15s; flex-shrink: 0;
+  }
+  .step-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .step-btn:active { background: var(--accent); color: var(--bg); }
+
+  .type-toggle { display: flex; gap: 6px; }
+  .type-btn {
+    flex: 1; padding: 7px 0; border-radius: 6px;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
+    cursor: pointer; font-family: 'Outfit', sans-serif;
+    font-size: 13px; font-weight: 600; transition: all 0.15s; text-align: center;
+  }
+  .type-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .type-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,0.08); }
+  .type-btn:disabled { opacity: 0.4; pointer-events: none; }
+  .type-btn.full-width { width: 100%; flex: none; }
+
+  .star-select {
+    width: 100%; padding: 7px 10px; border-radius: 6px;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text);
+    font-family: 'Outfit', sans-serif; font-size: 13px; outline: none; cursor: pointer;
+  }
+  .star-select:focus { border-color: var(--accent); }
+  .star-select:disabled { opacity: 0.5; }
+
+  .readout-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+  .readout-label { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); }
+  .readout-val { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text); }
+
+  .ship-header { display: flex; align-items: center; gap: 6px; }
+  .ship-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .route-warning {
+    color: var(--danger);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+
+  .info-text {
+    font-size: 12px; color: var(--text-dim); line-height: 1.6;
+    border-top: 1px solid var(--panel-border); padding-top: 12px;
+  }
+
+  .result-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(11,15,24,0.94);
+    cursor: pointer;
+    animation: overlayFadeIn 0.3s ease;
+  }
+  .overlay-title { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 20px; }
+  .overlay-detail {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px; color: var(--text); line-height: 2.2; text-align: left;
+  }
+  .overlay-conclusion {
+    font-size: 18px; font-weight: 600; color: #fff;
+    margin-top: 24px; text-align: center; max-width: 500px; line-height: 1.5;
+  }
+  .overlay-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; margin-top: 16px; color: rgba(255,255,255,0.4);
+  }
+  @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .name-panel {
+    position: absolute; top: 10px; left: 10px; z-index: 10;
+    background: rgba(19,24,37,0.85); border: 1px solid var(--panel-border);
+    border-radius: 8px; padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    backdrop-filter: blur(4px);
+  }
+  .name-row { display: flex; align-items: center; gap: 8px; }
+  .ship-dot {
+    width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+  }
+  .name-input {
+    width: 140px; padding: 7px 10px; border-radius: 6px;
+    border: 1px solid var(--panel-border); background: rgba(11,15,24,0.7);
+    color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 14px;
+    outline: none;
+  }
+  .name-input:focus { border-color: var(--accent); }
+  .name-input::placeholder { color: var(--text-dim); }
+
+  @media (max-width: 700px) {
+    .main { flex-direction: column; height: auto; min-height: 100vh; }
+    .canvas-wrap { min-height: 350px; flex: none; height: 50vh; }
+    .controls {
+      width: 100%; border-left: none;
+      border-top: 1px solid var(--panel-border);
+      padding: 14px 16px; max-height: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Gravitational Route Time Dilation</span></h1>
+    <p id="subtitleText">Two spacecraft, one star, different routes through gravity — who ages less?</p>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+    <div class="name-panel" id="namePanel">
+      <div class="name-row">
+        <span class="ship-dot" style="background:var(--ship-a)"></span>
+        <input id="captainA" class="name-input" placeholder="Captain A" maxlength="14">
+        <input id="shipNameA" class="name-input" placeholder="Ship A" maxlength="14">
+      </div>
+      <div class="name-row">
+        <span class="ship-dot" style="background:var(--ship-b)"></span>
+        <input id="captainB" class="name-input" placeholder="Captain B" maxlength="14">
+        <input id="shipNameB" class="name-input" placeholder="Ship B" maxlength="14">
+      </div>
+    </div>
+  </div>
+  <div class="controls">
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblDestination">Destination</span>
+      <select class="star-select" id="starSelect" onchange="handleStarChange()"></select>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblSpeed">Cruise Speed</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('speedSlider',-0.01)">&minus;</button>
+        <input type="range" id="speedSlider" min="0.10" max="0.99" value="0.50" step="0.01" oninput="handleSpeedChange()">
+        <button class="step-btn" onclick="stepSlider('speedSlider',0.01)">+</button>
+        <span class="slider-val" id="speedVal">0.50c</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblBhCount">Black Holes</span>
+      <div class="type-toggle">
+        <button class="type-btn" id="bhBtn1" onclick="setBhCount(1)">1</button>
+        <button class="type-btn active" id="bhBtn2" onclick="setBhCount(2)">2</button>
+        <button class="type-btn" id="bhBtn3" onclick="setBhCount(3)">3</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group" id="bh1MassGroup">
+      <span class="ctrl-label" id="lblBh1Mass">BH 1 Mass</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('bh1MassSlider',-1)">&minus;</button>
+        <input type="range" id="bh1MassSlider" min="3" max="9" value="6" step="1" oninput="handleBhMassChange(0)">
+        <button class="step-btn" onclick="stepSlider('bh1MassSlider',1)">+</button>
+        <span class="slider-val" id="bh1MassVal">10⁶ M☉</span>
+      </div>
+    </div>
+    <div class="ctrl-group" id="bh2MassGroup">
+      <span class="ctrl-label" id="lblBh2Mass">BH 2 Mass</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('bh2MassSlider',-1)">&minus;</button>
+        <input type="range" id="bh2MassSlider" min="3" max="9" value="6" step="1" oninput="handleBhMassChange(1)">
+        <button class="step-btn" onclick="stepSlider('bh2MassSlider',1)">+</button>
+        <span class="slider-val" id="bh2MassVal">10⁶ M☉</span>
+      </div>
+    </div>
+    <div class="ctrl-group" id="bh3MassGroup" style="display:none">
+      <span class="ctrl-label" id="lblBh3Mass">BH 3 Mass</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('bh3MassSlider',-1)">&minus;</button>
+        <input type="range" id="bh3MassSlider" min="3" max="9" value="6" step="1" oninput="handleBhMassChange(2)">
+        <button class="step-btn" onclick="stepSlider('bh3MassSlider',1)">+</button>
+        <span class="slider-val" id="bh3MassVal">10⁶ M☉</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblRoutes">Routes</span>
+      <div class="type-toggle">
+        <button class="type-btn" id="btnStraightenA" onclick="straightenRoute('A')">Straighten A</button>
+        <button class="type-btn" id="btnStraightenB" onclick="straightenRoute('B')">Straighten B</button>
+      </div>
+      <button class="type-btn full-width" id="btnClearPoints" onclick="clearAllPoints()">Clear Points</button>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="type-toggle">
+        <button class="type-btn" id="launchBtn" onclick="handlePlayPause()">Launch</button>
+        <button class="type-btn" id="resetBtn" onclick="handleReset()" disabled>Reset</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblAnimSpeed">Playback Speed</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('animSpeedSlider',-0.5)">&minus;</button>
+        <input type="range" id="animSpeedSlider" min="0.5" max="5" value="1" step="0.5" oninput="handleAnimSpeedChange()">
+        <button class="step-btn" onclick="stepSlider('animSpeedSlider',0.5)">+</button>
+        <span class="slider-val" id="animSpeedVal">1.0×</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblMissionData">Mission Data</span>
+      <div class="readout-row"><span class="readout-label" id="lblDistLabel">Distance</span><span class="readout-val" id="readDistance">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblSpeedLabel">Speed</span><span class="readout-val" id="readSpeed">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblGammaLabel">Lorentz &gamma;</span><span class="readout-val" id="readGamma">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblBhCountLabel">Black holes</span><span class="readout-val" id="readBhCount">&mdash;</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ship-header">
+        <div class="ship-dot" style="background:var(--ship-a)"></div>
+        <span class="ctrl-label" id="lblShipA">Ship A</span>
+      </div>
+      <div id="readAWarning" class="route-warning" style="display:none"></div>
+      <div class="readout-row"><span class="readout-label" id="lrALen">Route length</span><span class="readout-val" id="readALength">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lrAMission">Mission time</span><span class="readout-val" id="readAMission">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lrAPilot">Pilot time</span><span class="readout-val" id="readAPilot">&mdash;</span></div>
+      <div class="readout-row" id="readAMin1Row" style="display:none"><span class="readout-label" id="lrAMin1">Min BH 1</span><span class="readout-val" id="readAMin1">&mdash;</span></div>
+      <div class="readout-row" id="readAMin2Row" style="display:none"><span class="readout-label" id="lrAMin2">Min BH 2</span><span class="readout-val" id="readAMin2">&mdash;</span></div>
+      <div class="readout-row" id="readAMin3Row" style="display:none"><span class="readout-label" id="lrAMin3">Min BH 3</span><span class="readout-val" id="readAMin3">&mdash;</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ship-header">
+        <div class="ship-dot" style="background:var(--ship-b)"></div>
+        <span class="ctrl-label" id="lblShipB">Ship B</span>
+      </div>
+      <div id="readBWarning" class="route-warning" style="display:none"></div>
+      <div class="readout-row"><span class="readout-label" id="lrBLen">Route length</span><span class="readout-val" id="readBLength">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lrBMission">Mission time</span><span class="readout-val" id="readBMission">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lrBPilot">Pilot time</span><span class="readout-val" id="readBPilot">&mdash;</span></div>
+      <div class="readout-row" id="readBMin1Row" style="display:none"><span class="readout-label" id="lrBMin1">Min BH 1</span><span class="readout-val" id="readBMin1">&mdash;</span></div>
+      <div class="readout-row" id="readBMin2Row" style="display:none"><span class="readout-label" id="lrBMin2">Min BH 2</span><span class="readout-val" id="readBMin2">&mdash;</span></div>
+      <div class="readout-row" id="readBMin3Row" style="display:none"><span class="readout-label" id="lrBMin3">Min BH 3</span><span class="readout-val" id="readBMin3">&mdash;</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblAgeDiffLabel">Pilot Age Difference</span>
+      <div class="readout-row"><span class="readout-val" id="readAgeDiff" style="font-size:15px">&mdash;</span></div>
+      <div id="readAgeDesc" style="font-size:12px;color:var(--text-dim)"></div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="info-text" id="infoText"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ====================== CONSTANTS ======================
+
+var EPS_BETA    = 1e-10;
+var EPS_G       = 1e-12;
+var G_MIN       = 0.001;
+var EPS_LENGTH  = 1e-6;
+var BETA_MIN    = 0.10;
+var BETA_MAX    = 0.99;
+var DELTA_SAFE  = 0.35;
+var KEEPOUT_MIN       = 60;
+var ENDPOINT_MARGIN   = 20;
+var MIN_BH_SEPARATION = 10;
+var RSAFE_FACTOR = 1.35;
+var RINF_FACTOR  = 6;
+var RINF_FADE_START = 0.80;
+var RH_MIN       = 10;
+var RH_PER_EXP   = 2;
+var CP_HIT_RADIUS    = 12;
+var ROUTE_HIT_RADIUS = 16;
+var BH_HIT_EXTRA     = 10;
+var CP_VISUAL_RADIUS = 5;
+var EARTH_RADIUS = 14;
+var STAR_RADIUS  = 8;
+var EARTH_X_FRAC = 0.10;
+var STAR_X_FRAC  = 0.90;
+var NUM_BG_STARS = 200;
+var SAMPLES_PER_SEG = 50;
+var WALL_SECONDS = 8.0;
+var HYSTERESIS_ENTER = 1.0;
+var HYSTERESIS_EXIT  = 1.08;
+
+var SUP = ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'];
+
+// ====================== STAR DATA ======================
+
+var STARS = [
+  { nameEn: 'Proxima Centauri', namePl: 'Proxima Centauri', dist: 4.24 },
+  { nameEn: "Barnard's Star",   namePl: 'Gwiazda Barnarda', dist: 5.96 },
+  { nameEn: 'Sirius',           namePl: 'Syriusz',          dist: 8.60 },
+  { nameEn: 'Epsilon Eridani',  namePl: 'Epsilon Eridani',  dist: 10.47 },
+  { nameEn: 'Tau Ceti',         namePl: 'Tau Ceti',         dist: 11.91 },
+  { nameEn: 'Altair',           namePl: 'Altair',           dist: 16.73 },
+  { nameEn: 'Vega',             namePl: 'Wega',             dist: 25.04 },
+  { nameEn: 'Arcturus',         namePl: 'Arktur',           dist: 36.66 },
+];
+
+// ====================== I18N ======================
+
+var I18N = {
+  en: {
+    title: 'Gravitational Route Time Dilation',
+    subtitle: 'Two spacecraft, one star, different routes through gravity \u2014 who ages less?',
+    lblDestination: 'Destination',
+    lblSpeed: 'Cruise Speed',
+    lblBlackHoles: 'Black Holes',
+    lblBhMass1: 'BH 1 Mass', lblBhMass2: 'BH 2 Mass', lblBhMass3: 'BH 3 Mass',
+    lblRoutes: 'Routes',
+    btnStraightenA: 'Straighten A', btnStraightenB: 'Straighten B',
+    btnClearPoints: 'Clear Points',
+    btnLaunch: 'Launch', btnPause: 'Pause', btnResume: 'Resume', btnReset: 'Reset',
+    lblAnimSpeed: 'Playback Speed',
+    lblMissionData: 'Mission Data',
+    lblDistance: 'Distance', lblCruiseSpeed: 'Speed', lblLorentz: 'Lorentz \u03B3', lblBhCountRead: 'Black holes',
+    lblShipA: 'Ship A', lblShipB: 'Ship B',
+    phCaptainA: 'Captain A', phCaptainB: 'Captain B',
+    phShipA: 'Ship A', phShipB: 'Ship B',
+    lblRouteLength: 'Route length', lblMissionTime: 'Mission time', lblPilotTime: 'Pilot time',
+    lblMinBh: 'Min BH',
+    lblInvalidRoute: '\u26A0 INVALID ROUTE',
+    lblAgeDiff: 'Pilot Age Difference',
+    lblAgesLess: '{ship} ages {diff} yr less',
+    lblIdentical: 'Same aging',
+    lblEarth: 'Earth',
+    lblBhLabel: 'BH',
+    lblMission: 'Mission', lblPilot: 'Pilot',
+    lblYr: 'yr', lblLy: 'ly',
+    summaryTitle: 'Mission Complete',
+    summaryConclusion: 'Pilot {ship} aged {diff} years less by flying deeper through strong gravity.',
+    summaryEqual: 'Both pilots aged the same \u2014 their routes had equal gravitational exposure.',
+    clickToDismiss: 'Click to dismiss',
+    infoDefault: 'Drag either route to bend it around black holes. The pilot whose ship flies closer to a black hole ages less due to gravitational time dilation.\n\nHow this model works:\n\u2022 Star distances are real. The map is schematic, not to astronomical scale.\n\u2022 Each black hole uses the Schwarzschild time-dilation factor, exact for one isolated non-rotating mass.\n\u2022 Multiple black holes are combined by multiplying their factors \u2014 a teaching heuristic, not exact general relativity.\n\u2022 The speed factor (1/\u03B3) assumes local speed relative to static observers near each hole.\n\u2022 Encounter distances are compressed for interactivity. The horizon ring is a visual stand-in, not a literal Schwarzschild radius.\n\u2022 The mission clock near Earth is a far-away reference clock, kept safe from black-hole influence by a keep-out zone.',
+    infoFlying: 'Ships are in flight. Watch the pilot clocks \u2014 the one deeper in gravity ticks slower.',
+    infoComplete: 'Both ships arrived. Check the summary to see who aged less!',
+    infoInvalid: 'A route crosses a black hole safety zone. Drag it away to enable launch.',
+  },
+  pl: {
+    title: 'Dylatacja Czasu na Trasie Grawitacyjnej',
+    subtitle: 'Dwa statki, jedna gwiazda, r\u00F3\u017Cne trasy przez grawitacj\u0119 \u2014 kto zestarzeje si\u0119 mniej?',
+    lblDestination: 'Cel podr\u00F3\u017Cy',
+    lblSpeed: 'Pr\u0119dko\u015B\u0107 przelotowa',
+    lblBlackHoles: 'Czarne dziury',
+    lblBhMass1: 'Masa CD 1', lblBhMass2: 'Masa CD 2', lblBhMass3: 'Masa CD 3',
+    lblRoutes: 'Trasy',
+    btnStraightenA: 'Wyprostuj A', btnStraightenB: 'Wyprostuj B',
+    btnClearPoints: 'Wyczy\u015B\u0107 punkty',
+    btnLaunch: 'Start', btnPause: 'Pauza', btnResume: 'Wzn\u00F3w', btnReset: 'Resetuj',
+    lblAnimSpeed: 'Pr\u0119dko\u015B\u0107 odtwarzania',
+    lblMissionData: 'Dane misji',
+    lblDistance: 'Odleg\u0142o\u015B\u0107', lblCruiseSpeed: 'Pr\u0119dko\u015B\u0107', lblLorentz: 'Lorentz \u03B3', lblBhCountRead: 'Czarne dziury',
+    lblShipA: 'Statek A', lblShipB: 'Statek B',
+    phCaptainA: 'Kapitan A', phCaptainB: 'Kapitan B',
+    phShipA: 'Statek A', phShipB: 'Statek B',
+    lblRouteLength: 'D\u0142ugo\u015B\u0107 trasy', lblMissionTime: 'Czas misji', lblPilotTime: 'Czas pilota',
+    lblMinBh: 'Min CD',
+    lblInvalidRoute: '\u26A0 NIEPRAWID\u0141OWA TRASA',
+    lblAgeDiff: 'R\u00F3\u017Cnica Wieku Pilot\u00F3w',
+    lblAgesLess: '{ship} starzeje si\u0119 o {diff} lat mniej',
+    lblIdentical: 'Takie samo starzenie',
+    lblEarth: 'Ziemia',
+    lblBhLabel: 'CD',
+    lblMission: 'Misja', lblPilot: 'Pilot',
+    lblYr: 'lat', lblLy: 'ly',
+    summaryTitle: 'Misja zako\u0144czona',
+    summaryConclusion: 'Pilot {ship} zestarza\u0142 si\u0119 o {diff} lat mniej, lec\u0105c bli\u017Cej silnej grawitacji.',
+    summaryEqual: 'Obaj piloci zestarzeli si\u0119 tak samo \u2014 ich trasy mia\u0142y r\u00F3wn\u0105 ekspozycj\u0119 grawitacyjn\u0105.',
+    clickToDismiss: 'Kliknij, aby zamkn\u0105\u0107',
+    infoDefault: 'Przeci\u0105gnij tras\u0119, aby zakrzywi\u0107 j\u0105 wok\u00F3\u0142 czarnych dziur. Pilot, kt\u00F3rego statek leci bli\u017Cej czarnej dziury, starzeje si\u0119 mniej dzi\u0119ki grawitacyjnej dylatacji czasu.\n\nJak dzia\u0142a ten model:\n\u2022 Odleg\u0142o\u015Bci gwiazd s\u0105 prawdziwe. Mapa jest schematyczna, nie w skali astronomicznej.\n\u2022 Ka\u017Cda czarna dziura u\u017Cywa czynnika dylatacji Schwarzschilda, dok\u0142adnego dla pojedynczej izolowanej nierotuj\u0105cej masy.\n\u2022 Wiele czarnych dziur \u0142\u0105czymy mno\u017C\u0105c ich czynniki \u2014 to przybli\u017Cenie edukacyjne, nie dok\u0142adna og\u00F3lna teoria wzgl\u0119dno\u015Bci.\n\u2022 Czynnik pr\u0119dko\u015Bci (1/\u03B3) zak\u0142ada lokaln\u0105 pr\u0119dko\u015B\u0107 wzgl\u0119dem statycznych obserwator\u00F3w przy ka\u017Cdej dziurze.\n\u2022 Odleg\u0142o\u015Bci spotka\u0144 s\u0105 skompresowane dla interaktywno\u015Bci. Pier\u015Bcie\u0144 horyzontu to wizualne przybli\u017Cenie, nie dos\u0142owny promie\u0144 Schwarzschilda.\n\u2022 Zegar misji przy Ziemi to odleg\u0142y zegar odniesienia, chroniony stref\u0105 buforow\u0105 przed wp\u0142ywem czarnych dziur.',
+    infoFlying: 'Statki s\u0105 w locie. Obserwuj zegary pilot\u00F3w \u2014 ten g\u0142\u0119biej w grawitacji tyka wolniej.',
+    infoComplete: 'Oba statki dotar\u0142y. Sprawd\u017A podsumowanie, kto zestarza\u0142 si\u0119 mniej!',
+    infoInvalid: 'Trasa przecina stref\u0119 bezpiecze\u0144stwa czarnej dziury. Odsu\u0144 j\u0105, aby umo\u017Cliwi\u0107 start.',
+  },
+};
+
+// ====================== STATE ======================
+
+var state = {
+  lang: navigator.language && navigator.language.startsWith('pl') ? 'pl' : 'en',
+  phase: 'idle',
+  starIndex: 0,
+  beta: 0.50,
+  bhCount: 2,
+  animSpeed: 1.0,
+  blackHoles: [
+    { x: 0, y: 0, massExp: 6, Rh: 0, Rsafe: 0, Rinf: 0 },
+    { x: 0, y: 0, massExp: 6, Rh: 0, Rsafe: 0, Rinf: 0 },
+    { x: 0, y: 0, massExp: 6, Rh: 0, Rsafe: 0, Rinf: 0 },
+  ],
+  routeA: null,
+  routeB: null,
+  shipA: { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false },
+  shipB: { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false },
+  missionTime: 0,
+  dragMode: null,
+  dragIndex: -1,
+  dragOffsetX: 0,
+  dragOffsetY: 0,
+};
+
+// ====================== UTILITY ======================
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function T(key) { return I18N[state.lang][key] || key; }
+function fmtMass(exp) { return '10' + SUP[exp] + ' M\u2609'; }
+function fmt(v) { return v.toFixed(2); }
+
+function getCaptainName(which) {
+  var el = document.getElementById('captain' + which);
+  var v = el ? el.value.trim() : '';
+  return v || (T('lblPilot') + ' ' + which);
+}
+function getShipName(which) {
+  var el = document.getElementById('shipName' + which);
+  var v = el ? el.value.trim() : '';
+  return v || T('lblShip' + which);
+}
+
+// ====================== CANVAS SETUP ======================
+
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var W = 0, H = 0;
+var bgStars = [];
+var lastTime = 0;
+var timeScale = 1;
+
+function resize() {
+  var rect = canvas.parentElement.getBoundingClientRect();
+  var dpr = window.devicePixelRatio || 1;
+  var prevW = W, prevH = H;
+  W = rect.width;
+  H = rect.height;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  if (prevW > 0 && prevH > 0 && (prevW !== W || prevH !== H)) {
+    var sx = W / prevW, sy = H / prevH;
+    for (var i = 0; i < 3; i++) {
+      state.blackHoles[i].x *= sx;
+      state.blackHoles[i].y *= sy;
+    }
+    if (state.routeA) {
+      for (var j = 0; j < state.routeA.controlPoints.length; j++) {
+        state.routeA.controlPoints[j].x *= sx;
+        state.routeA.controlPoints[j].y *= sy;
+      }
+    }
+    if (state.routeB) {
+      for (var j = 0; j < state.routeB.controlPoints.length; j++) {
+        state.routeB.controlPoints[j].x *= sx;
+        state.routeB.controlPoints[j].y *= sy;
+      }
+    }
+    lockEndpoints();
+    rebuildAllPhysics();
+  }
+}
+
+function initBgStars(n) {
+  bgStars = [];
+  for (var i = 0; i < n; i++) {
+    bgStars.push({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.2 + 0.3,
+      b: Math.random() * 0.4 + 0.2,
+    });
+  }
+}
+
+// ====================== LAYOUT HELPERS ======================
+
+function getEarthPos() { return { x: W * EARTH_X_FRAC, y: H * 0.5 }; }
+function getStarPos() { return { x: W * STAR_X_FRAC, y: H * 0.5 }; }
+
+function straightLineMapLength() {
+  var ep = getEarthPos(), sp = getStarPos();
+  var dx = sp.x - ep.x, dy = sp.y - ep.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function lockEndpoints() {
+  var ep = getEarthPos(), sp = getStarPos();
+  if (state.routeA && state.routeA.controlPoints.length >= 2) {
+    state.routeA.controlPoints[0] = { x: ep.x, y: ep.y };
+    state.routeA.controlPoints[state.routeA.controlPoints.length - 1] = { x: sp.x, y: sp.y };
+  }
+  if (state.routeB && state.routeB.controlPoints.length >= 2) {
+    state.routeB.controlPoints[0] = { x: ep.x, y: ep.y };
+    state.routeB.controlPoints[state.routeB.controlPoints.length - 1] = { x: sp.x, y: sp.y };
+  }
+}
+
+// ====================== BLACK HOLE FUNCTIONS ======================
+
+// Encounter-scale compression: physical r_s is proportional to M, but we compress
+// 10^3..10^9 M_sun into Rh = 10..22 px for interactive usability on the schematic map.
+// Rh is the app's local horizon stand-in, not a literal Schwarzschild radius.
+function computeRh(massExp) {
+  return RH_MIN + RH_PER_EXP * (massExp - 3);
+}
+
+function updateBlackHoleRadii(bh) {
+  bh.Rh = computeRh(bh.massExp);
+  bh.Rsafe = RSAFE_FACTOR * bh.Rh;
+  bh.Rinf = RINF_FACTOR * bh.Rh;
+}
+
+function initBlackHoles() {
+  state.blackHoles[0].x = W * 0.45; state.blackHoles[0].y = H * 0.33; state.blackHoles[0].massExp = 6;
+  state.blackHoles[1].x = W * 0.55; state.blackHoles[1].y = H * 0.67; state.blackHoles[1].massExp = 6;
+  state.blackHoles[2].x = W * 0.35; state.blackHoles[2].y = H * 0.50; state.blackHoles[2].massExp = 6;
+  for (var i = 0; i < 3; i++) updateBlackHoleRadii(state.blackHoles[i]);
+}
+
+function endpointKeepout(bh) {
+  return Math.max(KEEPOUT_MIN, bh.Rinf + ENDPOINT_MARGIN);
+}
+
+function constrainBlackHole(x, y, bhIdx) {
+  var ep = getEarthPos(), sp = getStarPos();
+  var dx, dy, d;
+  var ko = endpointKeepout(state.blackHoles[bhIdx]);
+
+  dx = x - ep.x; dy = y - ep.y; d = Math.sqrt(dx * dx + dy * dy);
+  if (d < ko && d > 0) { x = ep.x + dx / d * ko; y = ep.y + dy / d * ko; }
+
+  dx = x - sp.x; dy = y - sp.y; d = Math.sqrt(dx * dx + dy * dy);
+  if (d < ko && d > 0) { x = sp.x + dx / d * ko; y = sp.y + dy / d * ko; }
+
+  for (var i = 0; i < state.bhCount; i++) {
+    if (i === bhIdx) continue;
+    var other = state.blackHoles[i];
+    var minDist = state.blackHoles[bhIdx].Rsafe + other.Rsafe + MIN_BH_SEPARATION;
+    dx = x - other.x; dy = y - other.y; d = Math.sqrt(dx * dx + dy * dy);
+    if (d < minDist && d > 0) { x = other.x + dx / d * minDist; y = other.y + dy / d * minDist; }
+  }
+
+  x = clamp(x, 30, W - 30);
+  y = clamp(y, 30, H - 30);
+  return [x, y];
+}
+
+// ====================== CATMULL-ROM SPLINE ======================
+
+function catmullRomPoint(P0, P1, P2, P3, t) {
+  var d01 = Math.pow(Math.hypot(P1.x - P0.x, P1.y - P0.y), 0.5);
+  var d12 = Math.pow(Math.hypot(P2.x - P1.x, P2.y - P1.y), 0.5);
+  var d23 = Math.pow(Math.hypot(P3.x - P2.x, P3.y - P2.y), 0.5);
+  d01 = Math.max(d01, 1e-4); d12 = Math.max(d12, 1e-4); d23 = Math.max(d23, 1e-4);
+
+  var t0 = 0, t1 = t0 + d01, t2 = t1 + d12, t3 = t2 + d23;
+  var tt = t1 + t * (t2 - t1);
+
+  var A1x = (t1 - tt) / (t1 - t0) * P0.x + (tt - t0) / (t1 - t0) * P1.x;
+  var A1y = (t1 - tt) / (t1 - t0) * P0.y + (tt - t0) / (t1 - t0) * P1.y;
+  var A2x = (t2 - tt) / (t2 - t1) * P1.x + (tt - t1) / (t2 - t1) * P2.x;
+  var A2y = (t2 - tt) / (t2 - t1) * P1.y + (tt - t1) / (t2 - t1) * P2.y;
+  var A3x = (t3 - tt) / (t3 - t2) * P2.x + (tt - t2) / (t3 - t2) * P3.x;
+  var A3y = (t3 - tt) / (t3 - t2) * P2.y + (tt - t2) / (t3 - t2) * P3.y;
+
+  var B1x = (t2 - tt) / (t2 - t0) * A1x + (tt - t0) / (t2 - t0) * A2x;
+  var B1y = (t2 - tt) / (t2 - t0) * A1y + (tt - t0) / (t2 - t0) * A2y;
+  var B2x = (t3 - tt) / (t3 - t1) * A2x + (tt - t1) / (t3 - t1) * A3x;
+  var B2y = (t3 - tt) / (t3 - t1) * A2y + (tt - t1) / (t3 - t1) * A3y;
+
+  var Cx = (t2 - tt) / (t2 - t1) * B1x + (tt - t1) / (t2 - t1) * B2x;
+  var Cy = (t2 - tt) / (t2 - t1) * B1y + (tt - t1) / (t2 - t1) * B2y;
+
+  return { x: Cx, y: Cy };
+}
+
+// ====================== ROUTE FUNCTIONS ======================
+
+function createRoute(start, end) {
+  return {
+    controlPoints: [{ x: start.x, y: start.y }, { x: end.x, y: end.y }],
+    samples: [],
+    lengthMap: 0,
+    lengthPhysical: 0,
+    refTime: 0,
+    pilotTime: 0,
+    valid: true,
+    wasInvalid: false,
+    invalidSegments: [],
+    minDist: [],
+  };
+}
+
+function initRoutes() {
+  var ep = getEarthPos(), sp = getStarPos();
+  state.routeA = createRoute(ep, sp);
+  state.routeB = createRoute(ep, sp);
+}
+
+function resampleRoute(route) {
+  var cps = route.controlPoints;
+  var n = cps.length;
+  if (n < 2) { route.samples = []; route.lengthMap = 0; return; }
+
+  var samples = [];
+  for (var i = 0; i < n - 1; i++) {
+    var P0 = (i > 0) ? cps[i - 1] : { x: 2 * cps[0].x - cps[1].x, y: 2 * cps[0].y - cps[1].y };
+    var P1 = cps[i];
+    var P2 = cps[i + 1];
+    var P3 = (i < n - 2) ? cps[i + 2] : { x: 2 * cps[n - 1].x - cps[n - 2].x, y: 2 * cps[n - 1].y - cps[n - 2].y };
+
+    var startJ = (i === 0) ? 0 : 1;
+    for (var j = startJ; j <= SAMPLES_PER_SEG; j++) {
+      var t = j / SAMPLES_PER_SEG;
+      var pt = catmullRomPoint(P0, P1, P2, P3, t);
+      pt.segIdx = i;
+      samples.push(pt);
+    }
+  }
+
+  var cumLen = 0;
+  samples[0].cumLen = 0;
+  samples[0].cumPilotTime = 0;
+  for (var k = 1; k < samples.length; k++) {
+    var dx = samples[k].x - samples[k - 1].x;
+    var dy = samples[k].y - samples[k - 1].y;
+    cumLen += Math.sqrt(dx * dx + dy * dy);
+    samples[k].cumLen = cumLen;
+    samples[k].cumPilotTime = 0;
+  }
+
+  route.samples = samples;
+  route.lengthMap = cumLen;
+}
+
+function straightenRouteObj(route) {
+  var ep = getEarthPos(), sp = getStarPos();
+  route.controlPoints = [{ x: ep.x, y: ep.y }, { x: sp.x, y: sp.y }];
+  resampleRoute(route);
+  computeRoutePhysics(route);
+}
+
+// ====================== PHYSICS ======================
+
+function minDistSegToPoint(ax, ay, bx, by, px, py) {
+  var dx = bx - ax, dy = by - ay;
+  var lenSq = dx * dx + dy * dy;
+  if (lenSq < 1e-12) return Math.hypot(px - ax, py - ay);
+  var t = clamp(((px - ax) * dx + (py - ay) * dy) / lenSq, 0, 1);
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+function computeGamma(beta) {
+  var b = clamp(beta, BETA_MIN, BETA_MAX);
+  return 1 / Math.sqrt(Math.max(EPS_BETA, 1 - b * b));
+}
+
+function computeEffectiveGravity(px, py) {
+  // Log-space multiplication of per-hole Schwarzschild factors with smooth
+  // taper to g=1 at the influence ring so the drawn ring matches the physics.
+  var logG = 0;
+  for (var i = 0; i < state.bhCount; i++) {
+    var bh = state.blackHoles[i];
+    var dx = px - bh.x, dy = py - bh.y;
+    var dCanvas = Math.sqrt(dx * dx + dy * dy);
+    if (dCanvas >= bh.Rinf) continue; // beyond influence ring: no contribution
+    var rOverRs = Math.max(dCanvas / Math.max(bh.Rh, 1), 1 + DELTA_SAFE);
+    var term = Math.max(EPS_G, 1 - 1 / rOverRs);
+    var contrib = 0.5 * Math.log(term);
+    // Smooth fade in outer portion of influence zone to avoid ring discontinuity
+    var frac = dCanvas / bh.Rinf;
+    if (frac > RINF_FADE_START) {
+      contrib *= (1 - frac) / (1 - RINF_FADE_START);
+    }
+    logG += contrib;
+  }
+  return clamp(Math.exp(logG), G_MIN, 1);
+}
+
+function computeRoutePhysics(route) {
+  var samples = route.samples;
+  if (samples.length < 2) {
+    route.refTime = 0; route.pilotTime = 0; route.valid = true;
+    route.invalidSegments = []; route.minDist = []; route.lengthPhysical = 0;
+    return;
+  }
+
+  var star = STARS[state.starIndex];
+  var L0_map = straightLineMapLength();
+  if (L0_map < EPS_LENGTH) return;
+
+  var beta = clamp(state.beta, BETA_MIN, BETA_MAX);
+  var gamma = computeGamma(beta);
+  var invGamma = 1 / gamma;
+
+  var cumRefTime = 0, cumPilotTime = 0;
+  var anyInvalid = false;
+  var invalidSegs = [];
+  var minDists = [];
+  for (var i = 0; i < state.bhCount; i++) minDists.push(Infinity);
+
+  samples[0].cumPilotTime = 0;
+
+  for (var i = 1; i < samples.length; i++) {
+    var prev = samples[i - 1], cur = samples[i];
+    var dx = cur.x - prev.x, dy = cur.y - prev.y;
+    var dsMap = Math.sqrt(dx * dx + dy * dy);
+
+    if (dsMap < 1e-8) { cur.cumPilotTime = cumPilotTime; continue; }
+
+    var dsPhysical = star.dist * (dsMap / L0_map);
+    var dtRef = dsPhysical / beta;
+    var mx = (prev.x + cur.x) * 0.5, my = (prev.y + cur.y) * 0.5;
+    var g = computeEffectiveGravity(mx, my);
+    var dPilot = dtRef * invGamma * g;
+
+    cumRefTime += dtRef;
+    cumPilotTime += dPilot;
+    cur.cumPilotTime = cumPilotTime;
+
+    // Validation: true segment-circle minimum distance, not midpoint
+    var segInvalid = false;
+    for (var j = 0; j < state.bhCount; j++) {
+      var bh = state.blackHoles[j];
+      var dist = minDistSegToPoint(prev.x, prev.y, cur.x, cur.y, bh.x, bh.y);
+      if (dist < minDists[j]) minDists[j] = dist;
+      // Hysteresis: tighter threshold to enter invalid, looser to leave
+      var threshold = route.wasInvalid ? (bh.Rsafe * HYSTERESIS_EXIT) : (bh.Rsafe * HYSTERESIS_ENTER);
+      if (dist < threshold) segInvalid = true;
+    }
+
+    if (segInvalid) {
+      anyInvalid = true;
+      invalidSegs.push({ fromIdx: i - 1, toIdx: i });
+    }
+  }
+
+  route.lengthPhysical = star.dist * (route.lengthMap / L0_map);
+  route.wasInvalid = route.valid === false;
+  route.valid = !anyInvalid;
+  route.invalidSegments = mergeInvalidSegments(invalidSegs);
+  route.minDist = minDists;
+
+  // G4: invalid routes do not return physical timing data
+  if (anyInvalid) {
+    route.refTime = NaN;
+    route.pilotTime = NaN;
+  } else {
+    route.refTime = cumRefTime;
+    route.pilotTime = cumPilotTime;
+  }
+}
+
+function mergeInvalidSegments(segs) {
+  if (segs.length === 0) return [];
+  var merged = [{ fromIdx: segs[0].fromIdx, toIdx: segs[0].toIdx }];
+  for (var i = 1; i < segs.length; i++) {
+    var last = merged[merged.length - 1];
+    if (segs[i].fromIdx <= last.toIdx + 1) {
+      last.toIdx = Math.max(last.toIdx, segs[i].toIdx);
+    } else {
+      merged.push({ fromIdx: segs[i].fromIdx, toIdx: segs[i].toIdx });
+    }
+  }
+  return merged;
+}
+
+function rebuildAllPhysics() {
+  for (var i = 0; i < 3; i++) updateBlackHoleRadii(state.blackHoles[i]);
+  if (state.routeA) { resampleRoute(state.routeA); computeRoutePhysics(state.routeA); }
+  if (state.routeB) { resampleRoute(state.routeB); computeRoutePhysics(state.routeB); }
+}
+
+// ====================== INTERPOLATION ======================
+
+function interpolateRoute(route, fraction) {
+  var samples = route.samples;
+  if (!samples || samples.length < 2) return getEarthPos();
+  if (fraction <= 0) return { x: samples[0].x, y: samples[0].y };
+  if (fraction >= 1) return { x: samples[samples.length - 1].x, y: samples[samples.length - 1].y };
+
+  var targetLen = fraction * route.lengthMap;
+  var lo = 0, hi = samples.length - 1;
+  while (lo < hi - 1) {
+    var mid = (lo + hi) >> 1;
+    if (samples[mid].cumLen < targetLen) lo = mid; else hi = mid;
+  }
+  var s0 = samples[lo], s1 = samples[hi];
+  var segLen = s1.cumLen - s0.cumLen;
+  if (segLen < 1e-8) return { x: s0.x, y: s0.y };
+  var t = (targetLen - s0.cumLen) / segLen;
+  return { x: s0.x + t * (s1.x - s0.x), y: s0.y + t * (s1.y - s0.y) };
+}
+
+function interpolatePilotTime(route, fraction) {
+  var samples = route.samples;
+  if (!samples || samples.length < 2) return 0;
+  if (fraction <= 0) return 0;
+  if (fraction >= 1) return route.pilotTime;
+
+  var targetLen = fraction * route.lengthMap;
+  var lo = 0, hi = samples.length - 1;
+  while (lo < hi - 1) {
+    var mid = (lo + hi) >> 1;
+    if (samples[mid].cumLen < targetLen) lo = mid; else hi = mid;
+  }
+  var s0 = samples[lo], s1 = samples[hi];
+  var segLen = s1.cumLen - s0.cumLen;
+  if (segLen < 1e-8) return s0.cumPilotTime || 0;
+  var t = (targetLen - s0.cumLen) / segLen;
+  return (s0.cumPilotTime || 0) + t * ((s1.cumPilotTime || 0) - (s0.cumPilotTime || 0));
+}
+
+function getRouteTangent(route, fraction) {
+  var samples = route.samples;
+  if (!samples || samples.length < 2) return 0;
+  var targetLen = clamp(fraction, 0, 1) * route.lengthMap;
+  var idx = 0;
+  for (var i = 1; i < samples.length; i++) {
+    if (samples[i].cumLen >= targetLen) { idx = i; break; }
+    idx = i;
+  }
+  var prev = samples[Math.max(0, idx - 1)];
+  var cur = samples[idx];
+  return Math.atan2(cur.y - prev.y, cur.x - prev.x);
+}
+
+// ====================== DRAWING ======================
+
+function drawStarfield() {
+  for (var i = 0; i < bgStars.length; i++) {
+    var s = bgStars[i];
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(200,210,220,' + (s.b * 0.3) + ')';
+    ctx.fill();
+  }
+}
+
+function drawBaseline() {
+  var ep = getEarthPos(), sp = getStarPos();
+  ctx.setLineDash([4, 8]);
+  ctx.strokeStyle = 'rgba(201,209,217,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ep.x, ep.y);
+  ctx.lineTo(sp.x, sp.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawBlackHoleZones(bh, idx) {
+  ctx.setLineDash([4, 6]);
+  ctx.strokeStyle = 'rgba(255,122,89,0.10)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(bh.x, bh.y, bh.Rinf, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(249,117,131,0.30)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(bh.x, bh.y, bh.Rsafe, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawBlackHoleCore(bh, idx) {
+  ctx.strokeStyle = '#ff7a59';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(bh.x, bh.y, bh.Rh, 0, Math.PI * 2);
+  ctx.stroke();
+
+  var coreGrad = ctx.createRadialGradient(bh.x, bh.y, 0, bh.x, bh.y, bh.Rh);
+  coreGrad.addColorStop(0, '#05070c');
+  coreGrad.addColorStop(0.8, '#05070c');
+  coreGrad.addColorStop(1, 'rgba(255,122,89,0.25)');
+  ctx.beginPath();
+  ctx.arc(bh.x, bh.y, bh.Rh, 0, Math.PI * 2);
+  ctx.fillStyle = coreGrad;
+  ctx.fill();
+
+  var label = T('lblBhLabel') + ' ' + (idx + 1);
+  ctx.font = '11px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(255,122,89,0.6)';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, bh.x, bh.y - bh.Rh - 8);
+}
+
+function drawRoute(route, color, progress) {
+  var samples = route.samples;
+  if (!samples || samples.length < 2) return;
+
+  // Find the sample index where the ship currently is
+  var splitIdx = 0;
+  if (progress > 0 && progress < 1 && route.lengthMap > 0) {
+    var targetLen = progress * route.lengthMap;
+    for (var s = 1; s < samples.length; s++) {
+      if (samples[s].cumLen >= targetLen) { splitIdx = s; break; }
+      splitIdx = s;
+    }
+  } else if (progress >= 1) {
+    splitIdx = samples.length - 1;
+  }
+
+  // Planned route: dashed, faint (ahead of ship, or entire route when idle)
+  var planStart = (progress > 0) ? Math.max(0, splitIdx - 1) : 0;
+  if (planStart < samples.length - 1) {
+    ctx.save();
+    ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.moveTo(samples[planStart].x, samples[planStart].y);
+    for (var i = planStart + 1; i < samples.length; i++) ctx.lineTo(samples[i].x, samples[i].y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Traveled route: solid, bright (behind ship during flight)
+  if (splitIdx > 0 && progress > 0) {
+    ctx.beginPath();
+    ctx.moveTo(samples[0].x, samples[0].y);
+    for (var i = 1; i <= splitIdx; i++) ctx.lineTo(samples[i].x, samples[i].y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
+
+  // Invalid segments: always visible as red glow
+  if (route.invalidSegments.length > 0) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(249,117,131,0.8)';
+    ctx.lineWidth = 4;
+    ctx.shadowColor = '#f97583';
+    ctx.shadowBlur = 8;
+    for (var s = 0; s < route.invalidSegments.length; s++) {
+      var seg = route.invalidSegments[s];
+      ctx.beginPath();
+      ctx.moveTo(samples[seg.fromIdx].x, samples[seg.fromIdx].y);
+      for (var k = seg.fromIdx + 1; k <= Math.min(seg.toIdx, samples.length - 1); k++) {
+        ctx.lineTo(samples[k].x, samples[k].y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawControlPoints(route, color) {
+  if (state.phase !== 'idle') return;
+  var cps = route.controlPoints;
+  for (var i = 0; i < cps.length; i++) {
+    var cp = cps[i];
+    var isEnd = (i === 0 || i === cps.length - 1);
+    ctx.beginPath();
+    ctx.arc(cp.x, cp.y, isEnd ? 4 : CP_VISUAL_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = isEnd ? 'rgba(201,209,217,0.4)' : color;
+    ctx.fill();
+    if (!isEnd) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+}
+
+function drawEarth() {
+  var ep = getEarthPos(), r = EARTH_RADIUS;
+  var glow = ctx.createRadialGradient(ep.x, ep.y, r * 0.5, ep.x, ep.y, r * 2.5);
+  glow.addColorStop(0, 'rgba(77,184,255,0.25)');
+  glow.addColorStop(1, 'rgba(77,184,255,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(ep.x - r * 3, ep.y - r * 3, r * 6, r * 6);
+
+  var grad = ctx.createRadialGradient(ep.x - r * 0.3, ep.y - r * 0.3, r * 0.1, ep.x, ep.y, r);
+  grad.addColorStop(0, '#7ed6f7');
+  grad.addColorStop(0.5, '#4db8ff');
+  grad.addColorStop(1, '#1a6e8e');
+  ctx.beginPath();
+  ctx.arc(ep.x, ep.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.font = '12px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(201,209,217,0.7)';
+  ctx.textAlign = 'center';
+  ctx.fillText(T('lblEarth'), ep.x, ep.y + r + 16);
+}
+
+function drawDestStar() {
+  var sp = getStarPos(), r = STAR_RADIUS;
+  var glow = ctx.createRadialGradient(sp.x, sp.y, r * 0.5, sp.x, sp.y, r * 4);
+  glow.addColorStop(0, 'rgba(255,241,168,0.35)');
+  glow.addColorStop(1, 'rgba(255,241,168,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(sp.x - r * 5, sp.y - r * 5, r * 10, r * 10);
+
+  ctx.beginPath();
+  ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff1a8';
+  ctx.fill();
+
+  var star = STARS[state.starIndex];
+  var name = state.lang === 'en' ? star.nameEn : star.namePl;
+  ctx.font = '12px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(255,241,168,0.8)';
+  ctx.textAlign = 'center';
+  ctx.fillText(name, sp.x, sp.y + r + 16);
+  ctx.font = '10px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(255,241,168,0.5)';
+  ctx.fillText(star.dist.toFixed(2) + ' ' + T('lblLy'), sp.x, sp.y + r + 30);
+}
+
+function drawShip(ship, route, color, label) {
+  var pos = interpolateRoute(route, ship.progress);
+  var angle = getRouteTangent(route, ship.progress);
+
+  ctx.save();
+  ctx.translate(pos.x, pos.y);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(10, 0);
+  ctx.lineTo(-6, -5);
+  ctx.lineTo(-3, 0);
+  ctx.lineTo(-6, 5);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.restore();
+
+  if (ship.arrived) {
+    ctx.save();
+    ctx.globalAlpha = 0.25 + 0.1 * Math.sin(Date.now() * 0.005);
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  var offsetY = label === 'A' ? -14 : 14;
+  ctx.font = '11px "Share Tech Mono", monospace';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left';
+  var pilotText = getCaptainName(label) + ': ' + ship.pilotTimeElapsed.toFixed(2) + ' ' + T('lblYr');
+  ctx.fillText(pilotText, pos.x + 14, pos.y + offsetY);
+}
+
+function drawRouteLabel(route, color, above) {
+  var samples = route.samples;
+  if (!samples || samples.length < 2 || !isFinite(route.lengthPhysical)) return;
+  // Place label at the route midpoint by arc length
+  var midPos = interpolateRoute(route, 0.5);
+  // Compute local tangent to offset perpendicular to the route
+  var angle = getRouteTangent(route, 0.5);
+  var perpX = -Math.sin(angle), perpY = Math.cos(angle);
+  var offsetDist = above ? -16 : 16;
+  var lx = midPos.x + perpX * offsetDist;
+  var ly = midPos.y + perpY * offsetDist;
+  // Clamp within canvas
+  lx = clamp(lx, 40, W - 40);
+  ly = clamp(ly, 14, H - 6);
+  var text = route.lengthPhysical.toFixed(2) + ' ' + T('lblLy');
+  ctx.font = '11px "Share Tech Mono", monospace';
+  ctx.textAlign = 'center';
+  // Background pill for legibility
+  var tw = ctx.measureText(text).width;
+  ctx.fillStyle = 'rgba(11,15,24,0.7)';
+  ctx.beginPath();
+  ctx.roundRect(lx - tw / 2 - 4, ly - 9, tw + 8, 14, 3);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.fillText(text, lx, ly + 2);
+}
+
+function drawMissionClock() {
+  if (state.phase === 'idle') return;
+  var ep = getEarthPos();
+  var maxRef = Math.max(state.routeA.refTime, state.routeB.refTime);
+  var displayed = Math.min(state.missionTime, maxRef);
+  ctx.font = '12px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(201,209,217,0.8)';
+  ctx.textAlign = 'center';
+  ctx.fillText(T('lblMission') + ': ' + displayed.toFixed(2) + ' ' + T('lblYr'), ep.x, ep.y - EARTH_RADIUS - 20);
+}
+
+function drawScene() {
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, W, H);
+
+  drawStarfield();
+  drawBaseline();
+
+  for (var i = 0; i < state.bhCount; i++) drawBlackHoleZones(state.blackHoles[i], i);
+
+  var progA = (state.phase !== 'idle') ? state.shipA.progress : 0;
+  var progB = (state.phase !== 'idle') ? state.shipB.progress : 0;
+  if (state.routeA) drawRoute(state.routeA, '#ffb347', progA);
+  if (state.routeB) drawRoute(state.routeB, '#66d9c2', progB);
+
+  if (state.routeA) drawRouteLabel(state.routeA, '#ffb347', true);
+  if (state.routeB) drawRouteLabel(state.routeB, '#66d9c2', false);
+
+  if (state.routeA) drawControlPoints(state.routeA, '#ffb347');
+  if (state.routeB) drawControlPoints(state.routeB, '#66d9c2');
+
+  for (var i = 0; i < state.bhCount; i++) drawBlackHoleCore(state.blackHoles[i], i);
+
+  drawEarth();
+  drawDestStar();
+
+  if (state.phase !== 'idle') {
+    drawShip(state.shipA, state.routeA, '#ffb347', 'A');
+    drawShip(state.shipB, state.routeB, '#66d9c2', 'B');
+    drawMissionClock();
+  }
+}
+
+// ====================== INTERACTION ======================
+
+function getCanvasPos(e) {
+  var rect = canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function hitTestControlPoints(px, py) {
+  var routes = [
+    { key: 'cpA', route: state.routeA },
+    { key: 'cpB', route: state.routeB },
+  ];
+  for (var r = 0; r < routes.length; r++) {
+    var route = routes[r].route;
+    if (!route) continue;
+    var cps = route.controlPoints;
+    for (var i = 1; i < cps.length - 1; i++) {
+      var dx = px - cps[i].x, dy = py - cps[i].y;
+      if (dx * dx + dy * dy < CP_HIT_RADIUS * CP_HIT_RADIUS) {
+        return { key: routes[r].key, route: route, index: i };
+      }
+    }
+  }
+  return null;
+}
+
+function hitTestBlackHole(px, py) {
+  for (var i = 0; i < state.bhCount; i++) {
+    var bh = state.blackHoles[i];
+    var dx = px - bh.x, dy = py - bh.y;
+    var r = bh.Rh + BH_HIT_EXTRA;
+    if (dx * dx + dy * dy < r * r) return i;
+  }
+  return -1;
+}
+
+function findNearestSampleOnRoute(route, px, py) {
+  var bestDist = Infinity, bestIdx = -1;
+  var samples = route.samples;
+  if (!samples) return { dist: Infinity, idx: -1 };
+  for (var i = 0; i < samples.length; i++) {
+    var dx = samples[i].x - px, dy = samples[i].y - py;
+    var d = dx * dx + dy * dy;
+    if (d < bestDist) { bestDist = d; bestIdx = i; }
+  }
+  return { dist: Math.sqrt(bestDist), idx: bestIdx };
+}
+
+function insertControlPointOnRoute(route, sampleIdx) {
+  var sample = route.samples[sampleIdx];
+  var cpIdx = sample.segIdx + 1;
+  route.controlPoints.splice(cpIdx, 0, { x: sample.x, y: sample.y });
+  resampleRoute(route);
+  computeRoutePhysics(route);
+  return cpIdx;
+}
+
+function handlePointerDown(px, py) {
+  if (state.phase !== 'idle') return false;
+
+  var cpHit = hitTestControlPoints(px, py);
+  if (cpHit) {
+    state.dragMode = cpHit.key;
+    state.dragIndex = cpHit.index;
+    return true;
+  }
+
+  var bhHit = hitTestBlackHole(px, py);
+  if (bhHit >= 0) {
+    state.dragMode = 'bh';
+    state.dragIndex = bhHit;
+    state.dragOffsetX = px - state.blackHoles[bhHit].x;
+    state.dragOffsetY = py - state.blackHoles[bhHit].y;
+    return true;
+  }
+
+  var bestDist = Infinity, bestRoute = null, bestKey = null, bestIdx = -1;
+  var checks = [
+    { key: 'cpA', route: state.routeA },
+    { key: 'cpB', route: state.routeB },
+  ];
+  for (var c = 0; c < checks.length; c++) {
+    if (!checks[c].route) continue;
+    var hit = findNearestSampleOnRoute(checks[c].route, px, py);
+    if (hit.dist < bestDist) {
+      bestDist = hit.dist;
+      bestRoute = checks[c].route;
+      bestKey = checks[c].key;
+      bestIdx = hit.idx;
+    }
+  }
+  if (bestDist < ROUTE_HIT_RADIUS && bestRoute) {
+    var cpIdx = insertControlPointOnRoute(bestRoute, bestIdx);
+    state.dragMode = bestKey;
+    state.dragIndex = cpIdx;
+    return true;
+  }
+
+  return false;
+}
+
+function handlePointerMove(px, py) {
+  if (state.dragMode === 'cpA' || state.dragMode === 'cpB') {
+    var route = state.dragMode === 'cpA' ? state.routeA : state.routeB;
+    if (state.dragIndex > 0 && state.dragIndex < route.controlPoints.length - 1) {
+      route.controlPoints[state.dragIndex].x = px;
+      route.controlPoints[state.dragIndex].y = py;
+      resampleRoute(route);
+      computeRoutePhysics(route);
+      updateReadouts();
+    }
+    return;
+  }
+
+  if (state.dragMode === 'bh') {
+    var nx = px - state.dragOffsetX;
+    var ny = py - state.dragOffsetY;
+    var c = constrainBlackHole(nx, ny, state.dragIndex);
+    state.blackHoles[state.dragIndex].x = c[0];
+    state.blackHoles[state.dragIndex].y = c[1];
+    rebuildAllPhysics();
+    updateReadouts();
+    return;
+  }
+}
+
+function handlePointerUp() {
+  if (state.dragMode) {
+    state.dragMode = null;
+    canvas.style.cursor = 'default';
+  }
+}
+
+function updateHoverCursor(px, py) {
+  if (state.phase !== 'idle') { canvas.style.cursor = 'default'; return; }
+  if (hitTestControlPoints(px, py)) { canvas.style.cursor = 'grab'; return; }
+  if (hitTestBlackHole(px, py) >= 0) { canvas.style.cursor = 'move'; return; }
+  var routes = [state.routeA, state.routeB];
+  for (var r = 0; r < routes.length; r++) {
+    if (routes[r] && findNearestSampleOnRoute(routes[r], px, py).dist < ROUTE_HIT_RADIUS) {
+      canvas.style.cursor = 'pointer';
+      return;
+    }
+  }
+  canvas.style.cursor = 'default';
+}
+
+canvas.addEventListener('mousedown', function(e) {
+  var pos = getCanvasPos(e);
+  if (handlePointerDown(pos.x, pos.y)) {
+    canvas.style.cursor = state.dragMode === 'bh' ? 'move' : 'grabbing';
+    e.preventDefault();
+  }
+});
+
+canvas.addEventListener('mousemove', function(e) {
+  var pos = getCanvasPos(e);
+  if (state.dragMode) handlePointerMove(pos.x, pos.y);
+  else updateHoverCursor(pos.x, pos.y);
+});
+
+canvas.addEventListener('mouseup', handlePointerUp);
+canvas.addEventListener('mouseleave', handlePointerUp);
+
+canvas.addEventListener('touchstart', function(e) {
+  if (!e.touches.length) return;
+  var pos = getCanvasPos(e.touches[0]);
+  if (handlePointerDown(pos.x, pos.y)) e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchmove', function(e) {
+  if (!state.dragMode || !e.touches.length) return;
+  var pos = getCanvasPos(e.touches[0]);
+  handlePointerMove(pos.x, pos.y);
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchend', handlePointerUp);
+
+canvas.addEventListener('dblclick', function(e) {
+  if (state.phase !== 'idle') return;
+  var pos = getCanvasPos(e);
+  var cpHit = hitTestControlPoints(pos.x, pos.y);
+  if (cpHit && cpHit.index > 0 && cpHit.index < cpHit.route.controlPoints.length - 1) {
+    cpHit.route.controlPoints.splice(cpHit.index, 1);
+    resampleRoute(cpHit.route);
+    computeRoutePhysics(cpHit.route);
+    updateReadouts();
+  }
+});
+
+// ====================== CONTROL HANDLERS ======================
+
+function stepSlider(id, delta) {
+  var s = document.getElementById(id);
+  var step = parseFloat(s.step) || 1;
+  var v = parseFloat(s.value) + delta;
+  v = Math.round(v / step) * step;
+  v = Math.max(parseFloat(s.min), Math.min(parseFloat(s.max), v));
+  v = Math.round(v * 10000) / 10000;
+  s.value = v;
+  s.dispatchEvent(new Event('input'));
+}
+
+function handleStarChange() {
+  state.starIndex = parseInt(document.getElementById('starSelect').value) || 0;
+  rebuildAllPhysics();
+  updateReadouts();
+}
+
+function handleSpeedChange() {
+  state.beta = parseFloat(document.getElementById('speedSlider').value);
+  document.getElementById('speedVal').textContent = state.beta.toFixed(2) + 'c';
+  if (state.routeA) computeRoutePhysics(state.routeA);
+  if (state.routeB) computeRoutePhysics(state.routeB);
+  updateReadouts();
+}
+
+function setBhCount(count) {
+  state.bhCount = count;
+  for (var i = 1; i <= 3; i++) {
+    document.getElementById('bhBtn' + i).classList.toggle('active', i === count);
+    document.getElementById('bh' + i + 'MassGroup').style.display = i <= count ? '' : 'none';
+  }
+  rebuildAllPhysics();
+  updateReadouts();
+}
+
+function handleBhMassChange(bhIndex) {
+  var slider = document.getElementById('bh' + (bhIndex + 1) + 'MassSlider');
+  state.blackHoles[bhIndex].massExp = parseInt(slider.value);
+  updateBlackHoleRadii(state.blackHoles[bhIndex]);
+  // Re-constrain position: larger mass means larger keep-out from endpoints
+  var bh = state.blackHoles[bhIndex];
+  var c = constrainBlackHole(bh.x, bh.y, bhIndex);
+  bh.x = c[0]; bh.y = c[1];
+  document.getElementById('bh' + (bhIndex + 1) + 'MassVal').textContent = fmtMass(state.blackHoles[bhIndex].massExp);
+  rebuildAllPhysics();
+  updateReadouts();
+}
+
+function handleAnimSpeedChange() {
+  state.animSpeed = parseFloat(document.getElementById('animSpeedSlider').value);
+  document.getElementById('animSpeedVal').textContent = state.animSpeed.toFixed(1) + '\u00D7';
+}
+
+function straightenRoute(which) {
+  if (state.phase !== 'idle') return;
+  if (which === 'A' && state.routeA) straightenRouteObj(state.routeA);
+  if (which === 'B' && state.routeB) straightenRouteObj(state.routeB);
+  updateReadouts();
+}
+
+function clearAllPoints() {
+  if (state.phase !== 'idle') return;
+  if (state.routeA) straightenRouteObj(state.routeA);
+  if (state.routeB) straightenRouteObj(state.routeB);
+  updateReadouts();
+}
+
+function handlePlayPause() {
+  if (state.phase === 'idle') {
+    if (!state.routeA || !state.routeB) return;
+    if (!state.routeA.valid || !state.routeB.valid) return;
+    state.phase = 'flying';
+    state.missionTime = 0;
+    state.shipA = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
+    state.shipB = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
+    var maxRef = Math.max(state.routeA.refTime, state.routeB.refTime);
+    timeScale = maxRef > 0 ? maxRef / WALL_SECONDS : 1;
+    lastTime = 0;
+  } else if (state.phase === 'flying') {
+    state.phase = 'paused';
+  } else if (state.phase === 'paused') {
+    state.phase = 'flying';
+    lastTime = 0;
+  }
+  updateControlStates();
+  updateReadouts();
+}
+
+function handleReset() {
+  state.phase = 'idle';
+  state.missionTime = 0;
+  state.shipA = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
+  state.shipB = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
+  lastTime = 0;
+  var overlay = document.querySelector('.result-overlay');
+  if (overlay) overlay.remove();
+  updateControlStates();
+  updateReadouts();
+}
+
+function updateControlStates() {
+  var idle = state.phase === 'idle';
+  var flying = state.phase === 'flying';
+  var paused = state.phase === 'paused';
+
+  var playBtn = document.getElementById('launchBtn');
+  if (idle) {
+    playBtn.textContent = T('btnLaunch');
+    playBtn.disabled = !(state.routeA && state.routeB && state.routeA.valid && state.routeB.valid);
+  } else if (flying) {
+    playBtn.textContent = T('btnPause');
+    playBtn.disabled = false;
+  } else if (paused) {
+    playBtn.textContent = T('btnResume');
+    playBtn.disabled = false;
+  } else {
+    playBtn.textContent = T('btnLaunch');
+    playBtn.disabled = true;
+  }
+
+  document.getElementById('resetBtn').textContent = T('btnReset');
+  document.getElementById('resetBtn').disabled = idle;
+  document.getElementById('starSelect').disabled = !idle;
+  document.getElementById('speedSlider').disabled = !idle;
+  document.getElementById('btnStraightenA').disabled = !idle;
+  document.getElementById('btnStraightenB').disabled = !idle;
+  document.getElementById('btnClearPoints').disabled = !idle;
+  for (var i = 1; i <= 3; i++) {
+    document.getElementById('bhBtn' + i).disabled = !idle;
+    var slider = document.getElementById('bh' + i + 'MassSlider');
+    if (slider) slider.disabled = !idle;
+  }
+}
+
+// ====================== READOUTS ======================
+
+function updateReadouts() {
+  if (!state.routeA || !state.routeB) return;
+  var star = STARS[state.starIndex];
+  var gamma = computeGamma(state.beta);
+  var yr = T('lblYr'), ly = T('lblLy');
+
+  document.getElementById('readDistance').textContent = star.dist.toFixed(2) + ' ' + ly;
+  document.getElementById('readSpeed').textContent = state.beta.toFixed(2) + 'c';
+  document.getElementById('readGamma').textContent = gamma.toFixed(2);
+  document.getElementById('readBhCount').textContent = state.bhCount;
+
+  updateShipReadout('A', state.routeA, state.shipA, yr, ly);
+  updateShipReadout('B', state.routeB, state.shipB, yr, ly);
+  updateAgeDiff(yr);
+  updateControlStates();
+}
+
+function updateShipReadout(label, route, ship, yr, ly) {
+  var warn = document.getElementById('read' + label + 'Warning');
+  if (!route.valid) {
+    warn.textContent = T('lblInvalidRoute');
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+
+  var isLive = state.phase === 'flying' || state.phase === 'paused' || state.phase === 'complete';
+
+  var hasLength = isFinite(route.lengthPhysical);
+  document.getElementById('read' + label + 'Length').textContent = hasLength ? route.lengthPhysical.toFixed(2) + ' ' + ly : '\u2014';
+
+  if (isLive) {
+    document.getElementById('read' + label + 'Mission').textContent = ship.refTimeElapsed.toFixed(2) + ' ' + yr;
+    document.getElementById('read' + label + 'Pilot').textContent = ship.pilotTimeElapsed.toFixed(2) + ' ' + yr;
+  } else {
+    var hasTime = route.valid && isFinite(route.refTime);
+    document.getElementById('read' + label + 'Mission').textContent = hasTime ? route.refTime.toFixed(2) + ' ' + yr : '\u2014';
+    document.getElementById('read' + label + 'Pilot').textContent = hasTime ? route.pilotTime.toFixed(2) + ' ' + yr : '\u2014';
+  }
+
+  for (var i = 0; i < 3; i++) {
+    var row = document.getElementById('read' + label + 'Min' + (i + 1) + 'Row');
+    if (i < state.bhCount && route.minDist && route.minDist[i] !== undefined && isFinite(route.minDist[i])) {
+      row.style.display = '';
+      var minR = route.minDist[i] / Math.max(state.blackHoles[i].Rh, 1);
+      var val = document.getElementById('read' + label + 'Min' + (i + 1));
+      val.textContent = minR.toFixed(1) + '\u00D7rh';
+      val.style.color = minR < 1.5 ? 'var(--danger)' : (minR < 3 ? 'var(--star-color)' : '');
+      document.getElementById('lr' + label + 'Min' + (i + 1)).textContent = T('lblMinBh') + ' ' + (i + 1);
+    } else {
+      row.style.display = 'none';
+    }
+  }
+}
+
+function updateAgeDiff(yr) {
+  if (!yr) yr = T('lblYr');
+  var el = document.getElementById('readAgeDiff');
+  var desc = document.getElementById('readAgeDesc');
+  var isLive = state.phase === 'flying' || state.phase === 'paused' || state.phase === 'complete';
+
+  var pA, pB;
+  if (isLive) {
+    pA = state.shipA.pilotTimeElapsed;
+    pB = state.shipB.pilotTimeElapsed;
+  } else {
+    if (!state.routeA.valid || !state.routeB.valid) {
+      el.textContent = '\u2014'; desc.textContent = ''; return;
+    }
+    pA = state.routeA.pilotTime;
+    pB = state.routeB.pilotTime;
+  }
+
+  var diff = Math.abs(pA - pB);
+  el.textContent = diff.toFixed(2) + ' ' + yr;
+
+  if (diff < 0.005) {
+    desc.textContent = T('lblIdentical');
+    desc.style.color = 'var(--text-dim)';
+  } else if (pA < pB) {
+    desc.textContent = T('lblAgesLess').replace('{ship}', getCaptainName('A')).replace('{diff}', diff.toFixed(2));
+    desc.style.color = 'var(--ship-a)';
+  } else {
+    desc.textContent = T('lblAgesLess').replace('{ship}', getCaptainName('B')).replace('{diff}', diff.toFixed(2));
+    desc.style.color = 'var(--ship-b)';
+  }
+}
+
+function updateInfo() {
+  var text;
+  if (state.routeA && state.routeB && (!state.routeA.valid || !state.routeB.valid)) text = T('infoInvalid');
+  else if (state.phase === 'flying' || state.phase === 'paused') text = T('infoFlying');
+  else if (state.phase === 'complete') text = T('infoComplete');
+  else text = T('infoDefault');
+  document.getElementById('infoText').innerHTML = text.replace(/\n/g, '<br>');
+}
+
+// ====================== I18N FUNCTIONS ======================
+
+function applyTranslations() {
+  var l = I18N[state.lang];
+  document.title = l.title;
+  document.documentElement.lang = state.lang;
+
+  var ids = {
+    titleText: 'title', subtitleText: 'subtitle',
+    lblDestination: 'lblDestination', lblSpeed: 'lblSpeed',
+    lblBhCount: 'lblBlackHoles',
+    lblBh1Mass: 'lblBhMass1', lblBh2Mass: 'lblBhMass2', lblBh3Mass: 'lblBhMass3',
+    lblRoutes: 'lblRoutes',
+    btnStraightenA: 'btnStraightenA', btnStraightenB: 'btnStraightenB', btnClearPoints: 'btnClearPoints',
+    lblAnimSpeed: 'lblAnimSpeed',
+    lblMissionData: 'lblMissionData',
+    lblDistLabel: 'lblDistance', lblSpeedLabel: 'lblCruiseSpeed',
+    lblGammaLabel: 'lblLorentz', lblBhCountLabel: 'lblBhCountRead',
+    lrALen: 'lblRouteLength', lrAMission: 'lblMissionTime', lrAPilot: 'lblPilotTime',
+    lrBLen: 'lblRouteLength', lrBMission: 'lblMissionTime', lrBPilot: 'lblPilotTime',
+    lblAgeDiffLabel: 'lblAgeDiff',
+  };
+  for (var id in ids) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = l[ids[id]];
+  }
+
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+
+  // Ship headers use custom names or translated defaults
+  document.getElementById('lblShipA').textContent = getShipName('A');
+  document.getElementById('lblShipB').textContent = getShipName('B');
+
+  // Name panel placeholders
+  document.getElementById('captainA').placeholder = T('phCaptainA');
+  document.getElementById('captainB').placeholder = T('phCaptainB');
+  document.getElementById('shipNameA').placeholder = T('phShipA');
+  document.getElementById('shipNameB').placeholder = T('phShipB');
+
+  populateStarSelect();
+  updateControlStates();
+  updateReadouts();
+  updateInfo();
+}
+
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'pl' : 'en';
+  applyTranslations();
+}
+
+function populateStarSelect() {
+  var sel = document.getElementById('starSelect');
+  sel.innerHTML = '';
+  for (var i = 0; i < STARS.length; i++) {
+    var s = STARS[i];
+    var name = state.lang === 'en' ? s.nameEn : s.namePl;
+    var opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = name + ' (' + s.dist.toFixed(2) + ' ly)';
+    if (i === state.starIndex) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+// ====================== ANIMATION ======================
+
+function updateShipProgress(ship, route) {
+  if (ship.arrived) return;
+  ship.refTimeElapsed = Math.min(state.missionTime, route.refTime);
+  ship.progress = route.refTime > 0 ? ship.refTimeElapsed / route.refTime : 1;
+  ship.pilotTimeElapsed = interpolatePilotTime(route, ship.progress);
+  if (ship.progress >= 1) {
+    ship.arrived = true;
+    ship.progress = 1;
+    ship.refTimeElapsed = route.refTime;
+    ship.pilotTimeElapsed = route.pilotTime;
+  }
+}
+
+function animate(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  var rawDt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+
+  if (state.phase === 'flying') {
+    state.missionTime += rawDt * state.animSpeed * timeScale;
+    updateShipProgress(state.shipA, state.routeA);
+    updateShipProgress(state.shipB, state.routeB);
+
+    if (state.shipA.arrived && state.shipB.arrived) {
+      state.phase = 'complete';
+      state.missionTime = Math.max(state.routeA.refTime, state.routeB.refTime);
+      updateControlStates();
+      setTimeout(showSummaryOverlay, 400);
+    }
+
+    updateReadouts();
+  }
+
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+// ====================== SUMMARY OVERLAY ======================
+
+function showSummaryOverlay() {
+  var existing = document.querySelector('.result-overlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.className = 'result-overlay';
+
+  var aRef = state.routeA.refTime.toFixed(2);
+  var aPilot = state.routeA.pilotTime.toFixed(2);
+  var bRef = state.routeB.refTime.toFixed(2);
+  var bPilot = state.routeB.pilotTime.toFixed(2);
+  var diff = Math.abs(state.routeA.pilotTime - state.routeB.pilotTime).toFixed(2);
+  var yr = T('lblYr');
+
+  var conclusion;
+  if (Math.abs(state.routeA.pilotTime - state.routeB.pilotTime) < 0.005) {
+    conclusion = T('summaryEqual');
+  } else {
+    var younger = state.routeA.pilotTime < state.routeB.pilotTime ? 'A' : 'B';
+    conclusion = T('summaryConclusion').replace('{ship}', getCaptainName(younger)).replace('{diff}', diff);
+  }
+
+  overlay.innerHTML =
+    '<div class="overlay-title">' + T('summaryTitle') + '</div>' +
+    '<div class="overlay-detail">' +
+      '<span style="color:var(--ship-a)">' + getShipName('A') + ' — ' + getCaptainName('A') + '</span><br>' +
+      T('lblMissionTime') + ': ' + aRef + ' ' + yr + '<br>' +
+      T('lblPilotTime') + ': ' + aPilot + ' ' + yr + '<br><br>' +
+      '<span style="color:var(--ship-b)">' + getShipName('B') + ' — ' + getCaptainName('B') + '</span><br>' +
+      T('lblMissionTime') + ': ' + bRef + ' ' + yr + '<br>' +
+      T('lblPilotTime') + ': ' + bPilot + ' ' + yr + '<br><br>' +
+      T('lblAgeDiff') + ': <b>' + diff + ' ' + yr + '</b>' +
+    '</div>' +
+    '<div class="overlay-conclusion">' + conclusion + '</div>' +
+    '<div class="overlay-hint">' + T('clickToDismiss') + '</div>';
+
+  overlay.addEventListener('click', function() { overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var overlay = document.querySelector('.result-overlay');
+    if (overlay) overlay.remove();
+  }
+});
+
+// ====================== INITIALIZATION ======================
+
+window.addEventListener('resize', function() { resize(); });
+
+resize();
+initBgStars(NUM_BG_STARS);
+initBlackHoles();
+initRoutes();
+rebuildAllPhysics();
+populateStarSelect();
+applyTranslations();
+updateReadouts();
+updateInfo();
+
+// Refresh readout headers when names are typed
+['captainA', 'shipNameA', 'captainB', 'shipNameB'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', function() {
+    document.getElementById('lblShipA').textContent = getShipName('A');
+    document.getElementById('lblShipB').textContent = getShipName('B');
+    updateReadouts();
+  });
+});
+
+requestAnimationFrame(animate);
+
+</script>
+</body>
+</html>

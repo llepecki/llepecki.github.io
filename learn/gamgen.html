@@ -1245,7 +1245,6 @@ function encodeStateToHex() {
     {value: Math.max(0, ri), count: 3},
     {value: Math.max(0, li), count: 3},
     {value: state.returnToStart ? 1 : 0, count: 1},
-    {value: state.dark ? 1 : 0, count: 1},
   ];
   if (presetIdx >= 5 && state.result) {
     for (const oct of state.result.right) fields.push({value: oct - 1, count: 3});
@@ -1263,20 +1262,10 @@ function decodeHexToState(hex) {
   const rcolor = r.read(3);
   const lcolor = r.read(3);
   const ret = r.read(1);
-  const darkBit = r.read(1);
   if (presetIdx === null || steps === null) return null;
   if (presetIdx < 0 || presetIdx >= PRESETS.length) return null;
   const numSteps = steps + 4;
   if (numSteps < 4 || numSteps > 10) return null;
-
-  // Apply dark mode from URL (if bit present)
-  if (darkBit === 1) {
-    state.dark = true;
-    COLOR_PALETTE = DARK_PALETTE;
-  } else {
-    state.dark = false;
-    COLOR_PALETTE = LIGHT_PALETTE;
-  }
 
   // Apply colors (map legacy 8-color indices to 4-color palette)
   const ri = (rcolor >= 0 ? rcolor % COLOR_PALETTE.length : 0);
@@ -1312,7 +1301,8 @@ function decodeHexToState(hex) {
 
 function updateURL() {
   const hex = encodeStateToHex();
-  history.replaceState(null, '', window.location.pathname + '?p=' + hex);
+  const q = '?p=' + hex + (state.dark ? '&d=1' : '');
+  history.replaceState(null, '', window.location.pathname + q);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1544,17 +1534,25 @@ function initUI() {
   const hexParam = params.get('p');
   const restored = hexParam ? decodeHexToState(hexParam) : null;
 
-  if (!restored) {
-    // No URL state — detect from localStorage or system preference
+  // Detect dark mode: URL param > localStorage > system preference
+  if (params.has('d')) {
+    state.dark = params.get('d') === '1';
+  } else {
     const saved = localStorage.getItem('gamgen-dark');
-    if (saved !== null) {
-      state.dark = saved === '1';
-    } else {
-      state.dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    COLOR_PALETTE = state.dark ? DARK_PALETTE : LIGHT_PALETTE;
+    state.dark = saved !== null ? saved === '1' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  COLOR_PALETTE = state.dark ? DARK_PALETTE : LIGHT_PALETTE;
+  if (!restored) {
     RC = COLOR_PALETTE[0].c; RCL = COLOR_PALETTE[0].cl;
     LC = COLOR_PALETTE[1].c; LCL = COLOR_PALETTE[1].cl;
+  } else {
+    // Remap decoded colors (which used whatever palette was active) to correct palette
+    const ri = LIGHT_PALETTE.findIndex(p => p.c === RC);
+    const li = LIGHT_PALETTE.findIndex(p => p.c === LC);
+    const rIdx = ri >= 0 && ri < COLOR_PALETTE.length ? ri : 0;
+    const lIdx = li >= 0 && li < COLOR_PALETTE.length ? li : (rIdx === 0 ? 1 : 0);
+    RC = COLOR_PALETTE[rIdx].c; RCL = COLOR_PALETTE[rIdx].cl;
+    LC = COLOR_PALETTE[lIdx].c; LCL = COLOR_PALETTE[lIdx].cl;
   }
   // Apply dark class and button state
   document.body.classList.toggle('dark', state.dark);

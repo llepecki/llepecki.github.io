@@ -33,6 +33,14 @@ See how spacecraft use a planet's gravity and motion to speed up or slow down wi
 
 Time your launch and burns to transfer between neighboring planets on a minimum-energy Hohmann orbit. Wait for the right planetary alignment, hold the engine for departure, coast through space, then burn again to capture orbit at the destination.
 
+### [Time Dilation Simulator](timerel.html) `Astrophysics`
+
+A twin on Earth, a twin in a rocket — who ages less? Pick a real star, set the speed as a fraction of light, and watch two clocks tick at different rates as the Lorentz factor stretches time.
+
+### [Gravitational Route Time Dilation](gravrel.html) `Astrophysics`
+
+Fly two spacecraft from Earth to a real star along different routes past black holes. Bend each path to see how flying deeper through strong gravity makes a pilot age less. Compare onboard clocks at arrival to discover gravitational time dilation.
+
 ### [Copernican Reference Frame Simulator](copernicus.html) `Astrophysics`
 
 Switch the center of the Solar System between the Sun, Mercury, Venus, Earth, and Mars. See how Copernicus's heliocentric model turns complex retrograde loops into clean elliptical orbits.

@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Interactive time dilation simulator. Watch the twin paradox unfold as a rocket travels to real stars near the speed of light.">
+<meta name="author" content="Łukasz Łepecki">
+<link rel="canonical" href="https://lepecki.com/learn/timerel.html">
+<meta property="og:title" content="Time Dilation Simulator">
+<meta property="og:description" content="Interactive time dilation simulator. Watch the twin paradox unfold as a rocket travels to real stars near the speed of light.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lepecki.com/learn/timerel.html">
+<meta property="og:site_name" content="Łukasz Łepecki">
+<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Time Dilation Simulator">
+<meta name="twitter:description" content="Interactive time dilation simulator. Watch the twin paradox unfold as a rocket travels to real stars near the speed of light.">
+<title>Time Dilation Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f18;
+    --panel: #131825;
+    --panel-border: #1e2a3a;
+    --text: #c9d1d9;
+    --text-dim: #6e7a8a;
+    --accent: #58a6ff;
+    --earth-color: #4db8ff;
+    --rocket-color: #ffb347;
+    --star-glow: #fff8e1;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Outfit', sans-serif;
+    color: var(--text);
+  }
+
+  header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .header-text { flex: 1; }
+  header h1 { font-size: 22px; font-weight: 700; }
+  header h1 a { color: inherit; text-decoration: none; }
+  header h1 a:hover { opacity: .7; }
+  header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
+
+  .lang-btn {
+    background: none; border: 1px solid var(--panel-border);
+    border-radius: 4px; padding: 3px 8px;
+    cursor: pointer; flex-shrink: 0;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .main { display: flex; height: calc(100vh - 80px); }
+
+  .canvas-wrap {
+    flex: 1; position: relative;
+    background: #080c14; min-width: 0;
+  }
+  .canvas-wrap canvas { width: 100%; height: 100%; display: block; }
+
+  .controls {
+    width: 300px; flex-shrink: 0;
+    padding: 20px;
+    border-left: 1px solid var(--panel-border);
+    display: flex; flex-direction: column; gap: 16px;
+    overflow-y: auto;
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+
+  .slider-row { display: flex; align-items: center; gap: 6px; }
+  .slider-row input[type=range] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 6px; background: var(--panel-border); border-radius: 3px; outline: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+  .slider-row input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+  .slider-row input[type=range]:disabled { opacity: 0.4; }
+  .slider-val {
+    min-width: 40px; text-align: right;
+    font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text);
+  }
+
+  .step-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace; font-size: 16px; line-height: 1;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; touch-action: manipulation;
+  }
+  .step-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .step-btn:active { background: var(--accent); color: var(--bg); }
+  .step-btn:disabled { opacity: 0.4; pointer-events: none; }
+
+  .star-select {
+    width: 100%; padding: 8px 10px; border-radius: 6px;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text);
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    cursor: pointer; outline: none;
+  }
+  .star-select:focus { border-color: var(--accent); }
+  .star-select:disabled { opacity: 0.5; }
+  .star-select option { background: var(--panel); color: var(--text); }
+
+  .type-toggle { display: flex; gap: 6px; }
+  .type-btn {
+    flex: 1; padding: 10px 4px; border-radius: 6px;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .type-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .type-btn:disabled { opacity: 0.4; pointer-events: none; }
+
+  #launchBtn .pause-icon { display: none; }
+  #launchBtn.playing .play-icon { display: none; }
+  #launchBtn.playing .pause-icon { display: block; }
+
+  .readouts { gap: 6px; }
+  .readout-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    padding: 2px 0;
+  }
+  .readout-label { color: var(--text-dim); }
+  .readout-val { color: var(--text); font-size: 13px; }
+
+  .info-text {
+    font-size: 12px; color: var(--text-dim); line-height: 1.6;
+    border-top: 1px solid var(--panel-border); padding-top: 12px;
+  }
+
+  .result-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(11,15,24,0.94);
+    cursor: pointer;
+    animation: overlayFadeIn 0.3s ease;
+  }
+  .overlay-title { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 20px; }
+  .overlay-detail {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px; color: var(--text); line-height: 2.2; text-align: left;
+  }
+  .overlay-conclusion {
+    font-size: 18px; font-weight: 600; color: #fff;
+    margin-top: 24px; text-align: center; max-width: 500px; line-height: 1.5;
+  }
+  .overlay-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; margin-top: 16px; color: rgba(255,255,255,0.4);
+  }
+  @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .name-panel {
+    position: absolute; top: 10px; left: 10px; z-index: 10;
+    background: rgba(19,24,37,0.85); border: 1px solid var(--panel-border);
+    border-radius: 8px; padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    backdrop-filter: blur(4px);
+  }
+  .name-row { display: flex; align-items: center; gap: 8px; }
+  .ship-dot {
+    width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+  }
+  .name-input {
+    width: 170px; padding: 7px 10px; border-radius: 6px;
+    border: 1px solid var(--panel-border); background: rgba(11,15,24,0.7);
+    color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 14px;
+    outline: none;
+  }
+  .name-input:focus { border-color: var(--accent); }
+  .name-input::placeholder { color: var(--text-dim); }
+
+  @media (max-width: 700px) {
+    .main { flex-direction: column; height: auto; min-height: 100vh; }
+    .canvas-wrap { min-height: 350px; flex: none; height: 50vh; }
+    .controls {
+      width: 100%; border-left: none;
+      border-top: 1px solid var(--panel-border);
+      padding: 14px 16px; max-height: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Time Dilation Simulator</span></h1>
+    <p id="subtitleText">A twin on Earth, a twin in a rocket — who ages less on a round trip near the speed of light?</p>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+    <div class="name-panel">
+      <div class="name-row">
+        <span class="ship-dot" style="background:var(--earth-color)"></span>
+        <input id="earthTwinName" class="name-input" maxlength="14">
+      </div>
+      <div class="name-row">
+        <span class="ship-dot" style="background:var(--rocket-color)"></span>
+        <input id="rocketTwinName" class="name-input" maxlength="14">
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblStar">Destination Star</span>
+      <select class="star-select" id="starSelect" onchange="handleStarChange()"></select>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblSpeed">Travel Speed</span>
+      <div class="slider-row">
+        <button class="step-btn" id="speedMinus" onclick="stepSlider('speedSlider',-0.01)">&minus;</button>
+        <input type="range" id="speedSlider" min="0.10" max="0.99" value="0.50" step="0.01" oninput="handleSpeedChange()">
+        <button class="step-btn" id="speedPlus" onclick="stepSlider('speedSlider',0.01)">+</button>
+        <span class="slider-val" id="speedVal">0.50c</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblAnimSpeed">Playback Speed</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('animSlider',-0.1)">&minus;</button>
+        <input type="range" id="animSlider" min="0.1" max="5" value="1" step="0.1" oninput="handleAnimSpeedChange()">
+        <button class="step-btn" onclick="stepSlider('animSlider',0.1)">+</button>
+        <span class="slider-val" id="animSpeedVal">1.0&times;</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="type-toggle">
+        <button class="type-btn" id="launchBtn" onclick="handleLaunch()">
+          <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>
+          <svg class="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+          <span id="launchLabel" style="margin-left:6px">Launch</span>
+        </button>
+        <button class="type-btn" id="resetBtn" onclick="handleReset()">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+          <span id="resetLabel" style="margin-left:6px">Reset</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="ctrl-group readouts">
+      <div class="readout-row"><span class="readout-label" id="lblDistance">Distance</span><span class="readout-val" id="readDistance">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblBeta">Speed</span><span class="readout-val" id="readBeta">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblGamma">Lorentz &gamma;</span><span class="readout-val" id="readGamma">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblEarthTime">Earth time</span><span class="readout-val" id="readEarthTime" style="color:var(--earth-color)">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblRocketTime">Rocket time</span><span class="readout-val" id="readRocketTime" style="color:var(--rocket-color)">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblTimeDiff">Difference</span><span class="readout-val" id="readTimeDiff">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblPhase">Phase</span><span class="readout-val" id="readPhase">&mdash;</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="info-text" id="infoText"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ====================== CONSTANTS ======================
+
+var EPS_BETA = 1e-10;
+var BETA_MIN = 0.10;
+var BETA_MAX = 0.99;
+var ALPHA = 1.032;  // 1g proper acceleration in ly/yr² (natural units, c=1)
+var DT_CAP = 0.05;
+var NUM_BG_STARS = 200;
+var WALL_SECONDS_BASE = 10;
+var EARTH_RADIUS = 18;
+var EARTH_X_FRAC = 0.10;
+var STAR_X_MAX_FRAC = 0.85;
+var CLOCK_RADIUS = 28;
+
+// ====================== STAR DATA ======================
+
+var STARS = [
+  { nameEn: 'Proxima Centauri', namePl: 'Proxima Centauri', dist: 4.24,   approx: false, color: '#ff9988', glowRgb: '255,153,136', radius: 5,  noteEn: 'Nearest star to the Sun', notePl: 'Najbli\u017Csza gwiazda do S\u0142o\u0144ca' },
+  { nameEn: 'Sirius',           namePl: 'Syriusz',          dist: 8.6,    approx: false, color: '#ccddff', glowRgb: '204,221,255', radius: 7,  noteEn: 'Brightest star in the night sky', notePl: 'Najja\u015Bniejsza gwiazda na niebie' },
+  { nameEn: 'Vega',             namePl: 'Wega',             dist: 25,     approx: false, color: '#ffffff', glowRgb: '255,255,255', radius: 6,  noteEn: 'One of the brightest northern stars', notePl: 'Jedna z najja\u015Bniejszych gwiazd p\u00F3\u0142nocnych' },
+  { nameEn: 'Polaris',          namePl: 'Gwiazda Polarna',  dist: 430,    approx: true,  color: '#fff5d0', glowRgb: '255,245,208', radius: 6,  noteEn: 'The North Star', notePl: 'Gwiazda P\u00F3\u0142nocna' },
+  { nameEn: 'Betelgeuse',       namePl: 'Betelgeza',        dist: 500,    approx: true,  color: '#ff8844', glowRgb: '255,136,68',  radius: 10, noteEn: 'Red supergiant in Orion', notePl: 'Czerwony nadolbrzym w Orionie' },
+  { nameEn: 'Deneb',            namePl: 'Deneb',            dist: 1410,   approx: true,  color: '#aaccff', glowRgb: '170,204,255', radius: 8,  noteEn: 'Distant bright star in Cygnus', notePl: 'Odleg\u0142a jasna gwiazda w \u0141ab\u0119dziu' },
+];
+
+// ====================== I18N ======================
+
+var I18N = {
+  en: {
+    title: 'Time Dilation Simulator',
+    subtitle: 'A twin on Earth, a twin in a rocket \u2014 who ages less on a round trip near the speed of light?',
+    lblStar: 'Destination Star',
+    lblSpeed: 'Travel Speed',
+    lblAnimSpeed: 'Playback Speed',
+    launch: 'Launch',
+    pause: 'Pause',
+    reset: 'Reset',
+    lblDistance: 'Distance',
+    lblBeta: 'Speed',
+    lblGamma: 'Lorentz \u03B3',
+    lblEarthTime: 'Earth time',
+    lblRocketTime: 'Rocket time',
+    lblTimeDiff: 'Difference',
+    lblPhase: 'Phase',
+    phaseIdle: 'Ready',
+    phaseAccel: 'Accelerating',
+    phaseCruise: 'Cruising',
+    phaseDecel: 'Decelerating',
+    phaseTurnaround: 'At star',
+    phaseLanded: 'Complete',
+    yr: 'yr',
+    ly: 'ly',
+    earthLabel: 'Earth',
+    rocketLabel: 'Rocket',
+    earthClock: 'Earth Clock',
+    spacecraftClock: 'Spacecraft Clock',
+    earthPerson: 'Earth twin',
+    rocketPerson: 'Rocket twin',
+    phEarthTwin: 'Earth twin name',
+    phRocketTwin: 'Rocket twin name',
+    overlayTitle: 'Journey Complete!',
+    overlayConclusion: '{rocketName} aged {diff} years less than {earthName}!',
+    clickToDismiss: 'Click to dismiss',
+    infoIdle: 'What is time dilation?\n\nWhen something moves very fast \u2014 close to the speed of light \u2014 time passes more slowly for it. This is Einstein\'s special relativity.\n\nIn this simulator, one twin stays on Earth and the other flies to a star and back. The rocket accelerates at 1g (comfortable Earth gravity) up to the selected cruise speed, cruises, then decelerates to stop at the star \u2014 and repeats for the return trip.\n\nThe faster the rocket goes, the bigger the Lorentz factor \u03B3, and the greater the difference in aging. During each cruise segment, for every year on the rocket, \u03B3 years pass on Earth.\n\nIs this real? Yes! Time dilation has been confirmed by atomic clocks flown on aircraft. Relativistic corrections \u2014 both from special and general relativity \u2014 are essential for GPS satellites to work correctly.\n\nNote: this display shows elapsed times in the Earth frame alongside the traveler\'s proper time. It is not a simulation of what each twin would literally see through a telescope.\n\nFormula: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
+    infoCruise: 'Watch the clocks! During cruise, the Earth clock (blue) ticks faster than the rocket clock (amber). The ratio of their rates equals the Lorentz factor \u03B3 = {gamma}.\n\nDuring acceleration and deceleration, the difference is smaller because the ship hasn\'t yet reached full speed.',
+    infoTurnaround: 'The rocket has decelerated to a stop at the star and is preparing to head back. The clocks are paused during the turnaround.',
+    infoPaused: 'Simulation paused. Both clocks are frozen. Press play to resume.',
+    infoLanded: 'The round trip is over.\n\nThe rocket traveler aged {rocketTime} years, while {earthTime} years passed on Earth \u2014 a difference of {diff} years.\n\nThe faster you go, the bigger the difference. Try 0.99c!',
+  },
+  pl: {
+    title: 'Symulator Dylatacji Czasu',
+    subtitle: 'Bli\u017Aniak na Ziemi, bli\u017Aniak w rakiecie \u2014 kto zestarzeje si\u0119 mniej po podr\u00F3\u017Cy blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a?',
+    lblStar: 'Gwiazda docelowa',
+    lblSpeed: 'Pr\u0119dko\u015B\u0107 podr\u00F3\u017Cy',
+    lblAnimSpeed: 'Pr\u0119dko\u015B\u0107 odtwarzania',
+    launch: 'Start',
+    pause: 'Pauza',
+    reset: 'Resetuj',
+    lblDistance: 'Odleg\u0142o\u015B\u0107',
+    lblBeta: 'Pr\u0119dko\u015B\u0107',
+    lblGamma: 'Lorentz \u03B3',
+    lblEarthTime: 'Czas Ziemi',
+    lblRocketTime: 'Czas rakiety',
+    lblTimeDiff: 'R\u00F3\u017Cnica',
+    lblPhase: 'Faza',
+    phaseIdle: 'Gotowy',
+    phaseAccel: 'Przyspieszanie',
+    phaseCruise: 'Lot swobodny',
+    phaseDecel: 'Hamowanie',
+    phaseTurnaround: 'Przy gwi\u017Adzie',
+    phaseLanded: 'Uko\u0144czono',
+    yr: 'lat',
+    ly: 'ly',
+    earthLabel: 'Ziemia',
+    rocketLabel: 'Rakieta',
+    earthClock: 'Zegar Ziemi',
+    spacecraftClock: 'Zegar statku',
+    earthPerson: 'Bli\u017Aniak ziemski',
+    rocketPerson: 'Bli\u017Aniak w rakiecie',
+    phEarthTwin: 'Imi\u0119 bli\u017Aniaka ziemskiego',
+    phRocketTwin: 'Imi\u0119 bli\u017Aniaka w rakiecie',
+    overlayTitle: 'Podr\u00F3\u017C zako\u0144czona!',
+    overlayConclusion: '{rocketName} zestarza\u0142(a) si\u0119 o {diff} lat mniej ni\u017C {earthName}!',
+    clickToDismiss: 'Kliknij, aby zamkn\u0105\u0107',
+    infoIdle: 'Czym jest dylatacja czasu?\n\nGdy co\u015B porusza si\u0119 bardzo szybko \u2014 blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a \u2014 czas p\u0142ynie dla niego wolniej. To szczeg\u00F3lna teoria wzgl\u0119dno\u015Bci Einsteina.\n\nW tym symulatorze jeden bli\u017Aniak zostaje na Ziemi, a drugi leci do gwiazdy i wraca. Rakieta przyspiesza z 1g (komfortowa grawitacja ziemska) do wybranej pr\u0119dko\u015Bci przelotowej, leci z t\u0105 pr\u0119dko\u015Bci\u0105, a potem hamuje, by zatrzyma\u0107 si\u0119 przy gwi\u017Adzie \u2014 i powtarza to na drodze powrotnej.\n\nIm szybciej leci rakieta, tym wi\u0119kszy wsp\u00F3\u0142czynnik Lorentza \u03B3 i tym wi\u0119ksza r\u00F3\u017Cnica w starzeniu si\u0119. Podczas lotu swobodnego, na ka\u017Cdy rok w rakiecie, na Ziemi mija \u03B3 lat.\n\nCzy to prawda? Tak! Dylatacja czasu zosta\u0142a potwierdzona zegarami atomowymi na samolotach. Korekty relatywistyczne \u2014 zar\u00F3wno ze szczeg\u00F3lnej, jak i og\u00F3lnej teorii wzgl\u0119dno\u015Bci \u2014 s\u0105 niezb\u0119dne do dzia\u0142ania satelit\u00F3w GPS.\n\nUwaga: ten widok por\u00F3wnuje czas up\u0142ywaj\u0105cy w uk\u0142adzie Ziemi z czasem w\u0142asnym podr\u00F3\u017Cnika. Nie jest to symulacja tego, co ka\u017Cdy bli\u017Aniak zobaczy\u0142by przez teleskop.\n\nWz\u00F3r: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
+    infoCruise: 'Obserwuj zegary! Podczas lotu swobodnego zegar Ziemi (niebieski) tyka szybciej ni\u017C zegar rakiety (pomara\u0144czowy). Stosunek ich pr\u0119dko\u015Bci to wsp\u00F3\u0142czynnik Lorentza \u03B3 = {gamma}.\n\nPodczas przyspieszania i hamowania r\u00F3\u017Cnica jest mniejsza, bo rakieta nie osi\u0105gn\u0119\u0142a jeszcze pe\u0142nej pr\u0119dko\u015Bci.',
+    infoTurnaround: 'Rakieta wyhamowa\u0142a do zera przy gwi\u017Adzie i przygotowuje si\u0119 do drogi powrotnej. Zegary s\u0105 wstrzymane podczas zawracania.',
+    infoPaused: 'Symulacja wstrzymana. Oba zegary s\u0105 zamro\u017Cone. Naci\u015Bnij play, aby wznowi\u0107.',
+    infoLanded: 'Podr\u00F3\u017C dobieg\u0142a ko\u0144ca.\n\nPodr\u00F3\u017Cnik zestarza\u0142 si\u0119 o {rocketTime} lat, a na Ziemi min\u0119\u0142o {earthTime} lat \u2014 r\u00F3\u017Cnica {diff} lat.\n\nIm szybciej lecisz, tym wi\u0119ksza r\u00F3\u017Cnica. Spr\u00F3buj 0.99c!',
+  },
+};
+
+// ====================== STATE ======================
+
+var state = {
+  lang: navigator.language && navigator.language.startsWith('pl') ? 'pl' : 'en',
+  phase: 'idle',
+  starIndex: 0,
+  beta: 0.50,
+  gamma: 1.1547,
+  animSpeed: 1.0,
+  paused: false,
+  progress: 0,
+  turnaroundTimer: 0,
+  earthElapsed: 0,
+  rocketElapsed: 0,
+  earthTotalYears: 0,
+  rocketTotalYears: 0,
+  // Acceleration model per-leg values
+  hasCruise: true,
+  t_accel: 0,
+  tau_accel: 0,
+  t_cruise: 0,
+  tau_cruise: 0,
+  legEarthTotal: 0,
+  legRocketTotal: 0,
+  betaActual: 0,    // actual max speed reached (= beta if cruise, < beta if no cruise)
+  gammaActual: 0,
+  currentBeta: 0,   // instantaneous velocity during animation
+};
+
+// ====================== UTILITIES ======================
+
+function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function T(key) { return I18N[state.lang][key] || key; }
+function arctanh(x) { return 0.5 * Math.log((1 + x) / (1 - x)); }
+
+function getEarthTwinName() {
+  var el = document.getElementById('earthTwinName');
+  var v = el ? el.value.trim() : '';
+  return v || T('earthPerson');
+}
+
+function getRocketTwinName() {
+  var el = document.getElementById('rocketTwinName');
+  var v = el ? el.value.trim() : '';
+  return v || T('rocketPerson');
+}
+
+// ====================== CANVAS SETUP ======================
+
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var W, H;
+var bgStars = [];
+
+function initBgStars(n) {
+  bgStars = [];
+  for (var i = 0; i < n; i++) {
+    bgStars.push({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.2 + 0.3,
+      b: Math.random() * 0.4 + 0.2,
+    });
+  }
+}
+
+function resize() {
+  var rect = canvas.parentElement.getBoundingClientRect();
+  var dpr = window.devicePixelRatio || 1;
+  W = rect.width;
+  H = rect.height;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+// ====================== PHYSICS ======================
+
+function recalcPhysics() {
+  var star = STARS[state.starIndex];
+  var d = star.dist;
+  state.beta = clamp(parseFloat(document.getElementById('speedSlider').value), BETA_MIN, BETA_MAX);
+  state.gamma = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - state.beta * state.beta));
+
+  // Acceleration model: accel → cruise → decel per leg, at 1g proper acceleration
+  var d_accel = (state.gamma - 1) / ALPHA;
+
+  if (d >= 2 * d_accel) {
+    // Cruise phase exists
+    state.hasCruise = true;
+    state.betaActual = state.beta;
+    state.gammaActual = state.gamma;
+    state.t_accel = state.beta * state.gamma / ALPHA;
+    state.tau_accel = arctanh(state.beta) / ALPHA;
+    var d_cruise = d - 2 * d_accel;
+    state.t_cruise = d_cruise / state.beta;
+    state.tau_cruise = state.t_cruise / state.gamma;
+  } else {
+    // Can't reach target speed — accel to midpoint then decel
+    state.hasCruise = false;
+    state.gammaActual = ALPHA * d / 2 + 1;
+    state.betaActual = Math.sqrt(Math.max(0, 1 - 1 / (state.gammaActual * state.gammaActual)));
+    state.t_accel = state.betaActual * state.gammaActual / ALPHA;
+    state.tau_accel = arctanh(state.betaActual) / ALPHA;
+    state.t_cruise = 0;
+    state.tau_cruise = 0;
+  }
+
+  state.legEarthTotal = 2 * state.t_accel + state.t_cruise;
+  state.legRocketTotal = 2 * state.tau_accel + state.tau_cruise;
+  state.earthTotalYears = 2 * state.legEarthTotal;
+  state.rocketTotalYears = 2 * state.legRocketTotal;
+}
+
+function updateElapsedFromProgress() {
+  var p = clamp(state.progress, 0, 1);
+  // Each leg is symmetric, so compute elapsed for one leg then offset
+  var legIndex, legProgress;
+  if (p <= 0.5) {
+    legIndex = 0;
+    legProgress = p / 0.5;
+  } else {
+    legIndex = 1;
+    legProgress = (p - 0.5) / 0.5;
+  }
+
+  // Earth time advances linearly within leg
+  var legEarth = legProgress * state.legEarthTotal;
+
+  // Derive rocket time piecewise from Earth time
+  var legRocket;
+  var ta = state.t_accel;
+  var tauA = state.tau_accel;
+  var tc = state.t_cruise;
+  var tauC = state.tau_cruise;
+
+  if (ta < EPS_BETA) {
+    legRocket = legEarth * state.legRocketTotal / Math.max(EPS_BETA, state.legEarthTotal);
+    state.currentBeta = state.betaActual;
+  } else if (legEarth <= ta) {
+    // Accelerating: v(t) = αt/√(1+α²t²), τ(t) = arcsinh(αt)/α
+    legRocket = Math.asinh(ALPHA * legEarth) / ALPHA;
+    state.currentBeta = ALPHA * legEarth / Math.sqrt(1 + ALPHA * ALPHA * legEarth * legEarth);
+  } else if (legEarth <= ta + tc) {
+    // Cruising: constant speed
+    legRocket = tauA + (legEarth - ta) / state.gammaActual;
+    state.currentBeta = state.betaActual;
+  } else {
+    // Decelerating: mirror of acceleration
+    var tRemaining = state.legEarthTotal - legEarth;
+    legRocket = tauA + tauC + (tauA - Math.asinh(ALPHA * tRemaining) / ALPHA);
+    state.currentBeta = ALPHA * tRemaining / Math.sqrt(1 + ALPHA * ALPHA * tRemaining * tRemaining);
+  }
+
+  state.earthElapsed = legIndex * state.legEarthTotal + legEarth;
+  state.rocketElapsed = legIndex * state.legRocketTotal + legRocket;
+}
+
+// ====================== SCENE POSITIONS ======================
+
+function getEarthX() { return W * EARTH_X_FRAC; }
+function getEarthY() { return H * 0.55; }
+
+function getStarScreenX() {
+  var d = STARS[state.starIndex].dist;
+  var dMin = STARS[0].dist;
+  var dMax = STARS[STARS.length - 1].dist;
+  var frac = Math.log(d / dMin) / Math.log(dMax / dMin);
+  var earthX = getEarthX();
+  return earthX + (W * STAR_X_MAX_FRAC - earthX) * Math.max(0.08, frac);
+}
+
+function getStarY() { return H * 0.55; }
+
+// Ellipse trajectory: Earth at left, star at right.
+// Ellipse trajectory. theta decreases clockwise.
+// BEGIN at theta = pi - earthDelta (upper-left, near Earth, outside Earth's area)
+// END   at theta = -(pi - earthDelta) (lower-left, near Earth)
+// Turnaround at theta near 0 (right end, behind star)
+var TURN_DELTA = Math.PI / 10; // angular gap at the star end for the U-turn
+
+function getEllipse() {
+  var earthX = getEarthX();
+  var earthY = getEarthY();
+  var starX = getStarScreenX();
+  var starR = STARS[state.starIndex].radius;
+  var pad = 8;
+  // Left edge at Earth center, right edge past star
+  var leftEdge = earthX;
+  var rightEdge = starX + starR + pad;
+  var a = (rightEdge - leftEdge) / 2;
+  var cx = leftEdge + a;
+  var cy = earthY;
+  var b = clamp(a * 0.25, 15, 60);
+  // Compute EARTH_DELTA so ship clears Earth's visual area
+  var clearance = EARTH_RADIUS + pad;
+  var cosVal = 1 - clearance / a;
+  var earthDelta = cosVal < -1 ? Math.PI * 0.4 : Math.acos(Math.max(-1, cosVal));
+  earthDelta = clamp(earthDelta, Math.PI / 8, Math.PI * 0.4);
+  return { cx: cx, cy: cy, a: a, b: b, earthDelta: earthDelta };
+}
+
+function ellipsePoint(e, theta) {
+  return { x: e.cx + e.a * Math.cos(theta), y: e.cy - e.b * Math.sin(theta) };
+}
+
+function ellipseTangentAngle(e, theta) {
+  // Tangent for clockwise motion (theta decreasing)
+  return Math.atan2(e.b * Math.cos(theta), e.a * Math.sin(theta));
+}
+
+function getTurnaroundDuration() {
+  // Compute duration so angular velocity matches the outbound/return legs
+  var e = getEllipse();
+  var thetaBegin = Math.PI - e.earthDelta;
+  var legSpan = thetaBegin - TURN_DELTA;
+  // Leg angular velocity = legSpan / WALL_SECONDS_BASE rad/s (at 1x)
+  // Turnaround covers 2*TURN_DELTA at the same rate
+  return 2 * TURN_DELTA * WALL_SECONDS_BASE / legSpan;
+}
+
+function getRocketPos() {
+  var e = getEllipse();
+  var thetaBegin = Math.PI - e.earthDelta;
+  var legSpan = thetaBegin - TURN_DELTA;
+  var turnDuration = getTurnaroundDuration();
+  var theta;
+
+  if (state.phase === 'turnaround') {
+    var f = clamp(state.turnaroundTimer / turnDuration, 0, 1);
+    theta = TURN_DELTA - 2 * TURN_DELTA * f;
+  } else {
+    var p = clamp(state.progress, 0, 1);
+    if (state.phase === 'outbound' || state.phase === 'idle') {
+      var legP = p / 0.5;
+      theta = thetaBegin - legSpan * legP;
+    } else {
+      var legP = (p - 0.5) / 0.5;
+      theta = -TURN_DELTA - legSpan * legP;
+    }
+  }
+
+  var pt = ellipsePoint(e, theta);
+  return { x: pt.x, y: pt.y, angle: ellipseTangentAngle(e, theta), theta: theta };
+}
+
+// ====================== DRAWING ======================
+
+function drawStarfield() {
+  for (var i = 0; i < bgStars.length; i++) {
+    var s = bgStars[i];
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(200,210,220,' + (s.b * 0.3) + ')';
+    ctx.fill();
+  }
+}
+
+function drawEarth() {
+  var cx = getEarthX();
+  var cy = getEarthY();
+  var r = EARTH_RADIUS;
+
+  // Atmosphere glow
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 1.15, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(77,184,255,0.12)';
+  ctx.lineWidth = r * 0.15;
+  ctx.stroke();
+
+  // Outer glow
+  var glow = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r * 3);
+  glow.addColorStop(0, 'rgba(77,184,255,0.25)');
+  glow.addColorStop(0.5, 'rgba(77,184,255,0.06)');
+  glow.addColorStop(1, 'rgba(77,184,255,0.0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Body
+  var bodyGrad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+  bodyGrad.addColorStop(0, '#7ed6f7');
+  bodyGrad.addColorStop(0.7, '#3aa8d8');
+  bodyGrad.addColorStop(1, '#1a6e8e');
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(77,184,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Label — left side of Earth
+  ctx.font = '15px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(77,184,255,0.7)';
+  ctx.textAlign = 'right';
+  ctx.fillText(T('earthLabel'), cx - r - 8, cy + r + 6);
+}
+
+function drawDestStar() {
+  var star = STARS[state.starIndex];
+  var cx = getStarScreenX();
+  var cy = getStarY();
+  var r = star.radius;
+  var rgb = star.glowRgb;
+
+  // Outer glow
+  var glow = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r * 4);
+  glow.addColorStop(0, 'rgba(' + rgb + ',0.4)');
+  glow.addColorStop(0.4, 'rgba(' + rgb + ',0.1)');
+  glow.addColorStop(1, 'rgba(' + rgb + ',0.0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Body
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = star.color;
+  ctx.fill();
+
+  // Label
+  // Label — right side of the ellipse, past the star
+  var name = state.lang === 'en' ? star.nameEn : star.namePl;
+  var e = getEllipse();
+  var labelX = e.cx + e.a + 10;
+  ctx.font = '15px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(255,248,225,0.7)';
+  ctx.textAlign = 'left';
+  ctx.fillText(name, labelX, cy - 2);
+  ctx.font = '13px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(255,248,225,0.4)';
+  ctx.fillText((star.approx ? '~' : '') + star.dist + ' ' + T('ly'), labelX, cy + 14);
+}
+
+function drawSpacecraft(x, y, angle) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  var glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 20);
+  glow.addColorStop(0, 'rgba(255,224,102,0.45)');
+  glow.addColorStop(1, 'rgba(255,224,102,0.0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 20, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffe066';
+  ctx.beginPath();
+  ctx.moveTo(13, 0);
+  ctx.lineTo(-7, -6.5);
+  ctx.lineTo(-7, 6.5);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawStickFigure(cx, cy, color, seated) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+
+  var headR = 4;
+  var bodyLen = 12;
+  var limbLen = 8;
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(cx, cy - bodyLen - headR, headR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Body
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - bodyLen);
+  ctx.lineTo(cx, cy);
+  ctx.stroke();
+
+  if (seated) {
+    // Arms forward
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - bodyLen + 4);
+    ctx.lineTo(cx + limbLen, cy - bodyLen + 4);
+    ctx.stroke();
+    // Legs bent (seated)
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + limbLen * 0.7, cy);
+    ctx.lineTo(cx + limbLen * 0.7, cy + limbLen * 0.6);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + limbLen * 0.4, cy);
+    ctx.lineTo(cx + limbLen * 0.4, cy + limbLen * 0.6);
+    ctx.stroke();
+  } else {
+    // Arms down/out
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - bodyLen + 4);
+    ctx.lineTo(cx - limbLen * 0.6, cy - bodyLen + 4 + limbLen * 0.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - bodyLen + 4);
+    ctx.lineTo(cx + limbLen * 0.6, cy - bodyLen + 4 + limbLen * 0.5);
+    ctx.stroke();
+    // Legs standing
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx - limbLen * 0.4, cy + limbLen);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + limbLen * 0.4, cy + limbLen);
+    ctx.stroke();
+  }
+}
+
+function computeYearsPerRev() {
+  var total = state.earthTotalYears;
+  if (total <= 20) return 1;
+  if (total <= 100) return 5;
+  if (total <= 1000) return 50;
+  return 500;
+}
+
+function drawAnalogClock(cx, cy, radius, elapsed, color, label, digitalText) {
+  var yearsPerRev = computeYearsPerRev();
+  var angle = ((elapsed / yearsPerRev) % 1) * Math.PI * 2 - Math.PI / 2;
+
+  // Background
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Tick marks
+  for (var i = 0; i < 12; i++) {
+    var tickAngle = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    var inner = radius * (i % 3 === 0 ? 0.75 : 0.82);
+    var outer = radius * 0.95;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(tickAngle) * inner, cy + Math.sin(tickAngle) * inner);
+    ctx.lineTo(cx + Math.cos(tickAngle) * outer, cy + Math.sin(tickAngle) * outer);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = (i % 3 === 0) ? 2 : 1;
+    ctx.stroke();
+  }
+
+  // Hand
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(angle) * radius * 0.7, cy + Math.sin(angle) * radius * 0.7);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  // Label above
+  ctx.font = '13px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(201,209,217,0.6)';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, cx, cy - radius - 10);
+
+  // Digital readout below
+  ctx.font = '15px "Share Tech Mono", monospace';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.fillText(digitalText, cx, cy + radius + 18);
+}
+
+function drawScene() {
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, W, H);
+
+  drawStarfield();
+  drawEarth();
+
+  var earthX = getEarthX();
+  var starX = getStarScreenX();
+  var rPos = getRocketPos();
+
+  // Trajectory shadow (faint full ellipse) — visible during flight and after landing
+  if (state.phase !== 'idle') {
+    var e = getEllipse();
+    ctx.beginPath();
+    ctx.ellipse(e.cx, e.cy, e.a, e.b, 0, 0, 2 * Math.PI);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,224,102,0.08)';
+    ctx.stroke();
+
+    // Bright trail — draw as ellipse arc from thetaBegin to current theta
+    var thetaBegin = Math.PI - e.earthDelta;
+    var TRAIL_STEPS = 120;
+    var tFrom = thetaBegin;
+    var tTo = rPos.theta;
+    ctx.beginPath();
+    for (var si = 0; si <= TRAIL_STEPS; si++) {
+      var th = tFrom + (tTo - tFrom) * si / TRAIL_STEPS;
+      var pt = ellipsePoint(e, th);
+      if (si === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    }
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(255,224,102,0.55)';
+    ctx.stroke();
+  }
+
+  drawSpacecraft(rPos.x, rPos.y, rPos.angle);
+  drawDestStar();
+
+  // Ship's initial position (for clock alignment)
+  var yr = T('yr');
+  var earthY = getEarthY();
+  var e = getEllipse();
+  var initPt = ellipsePoint(e, Math.PI - e.earthDelta);
+  var earthClockX = initPt.x;
+
+  // Equal distance from Earth center for both clocks
+  var clockOffset = Math.min(earthY * 0.65, (H - earthY) * 0.65, 150);
+  var topY = earthY - clockOffset;
+  var bottomY = earthY + clockOffset;
+
+  // ── Top zone: Earth Clock (fixed at ship's initial X) ──
+  drawStickFigure(earthClockX - 16, topY + 8, '#4db8ff', false);
+  drawAnalogClock(earthClockX + 28, topY, CLOCK_RADIUS,
+    state.earthElapsed, '#4db8ff', getEarthTwinName(),
+    state.earthElapsed.toFixed(2) + ' ' + yr);
+
+  // ── Bottom zone: Spacecraft Clock (X follows spacecraft) ──
+  var shipClockX = rPos.x;
+  drawStickFigure(shipClockX - 16, bottomY + 8, '#ffb347', false);
+  drawAnalogClock(shipClockX + 28, bottomY, CLOCK_RADIUS,
+    state.rocketElapsed, '#ffb347', getRocketTwinName(),
+    state.rocketElapsed.toFixed(2) + ' ' + yr);
+}
+
+// ====================== READOUTS ======================
+
+function updateReadouts() {
+  var star = STARS[state.starIndex];
+  var yr = T('yr');
+  var ly = T('ly');
+
+  document.getElementById('lblEarthTime').textContent = getEarthTwinName();
+  document.getElementById('lblRocketTime').textContent = getRocketTwinName();
+  document.getElementById('readDistance').textContent = (star.approx ? '~' : '') + star.dist + ' ' + ly;
+  if (state.phase !== 'idle' && state.phase !== 'landed') {
+    // Live speed and γ during animation
+    var liveBeta = state.currentBeta;
+    var liveGamma = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - liveBeta * liveBeta));
+    document.getElementById('readBeta').textContent = liveBeta.toFixed(2) + 'c';
+    document.getElementById('readGamma').textContent = liveGamma.toFixed(3);
+  } else if (!state.hasCruise && state.phase === 'idle') {
+    document.getElementById('readBeta').textContent = state.betaActual.toFixed(2) + 'c (max)';
+    document.getElementById('readGamma').textContent = state.gammaActual.toFixed(3);
+  } else {
+    document.getElementById('readBeta').textContent = state.beta.toFixed(2) + 'c';
+    document.getElementById('readGamma').textContent = state.gamma.toFixed(3);
+  }
+
+  if (state.phase === 'idle') {
+    document.getElementById('readEarthTime').textContent = state.earthTotalYears.toFixed(2) + ' ' + yr;
+    document.getElementById('readRocketTime').textContent = state.rocketTotalYears.toFixed(2) + ' ' + yr;
+    document.getElementById('readTimeDiff').textContent = (state.earthTotalYears - state.rocketTotalYears).toFixed(2) + ' ' + yr;
+    document.getElementById('readPhase').textContent = T('phaseIdle');
+  } else {
+    document.getElementById('readEarthTime').textContent = state.earthElapsed.toFixed(2) + ' ' + yr;
+    document.getElementById('readRocketTime').textContent = state.rocketElapsed.toFixed(2) + ' ' + yr;
+    document.getElementById('readTimeDiff').textContent = (state.earthElapsed - state.rocketElapsed).toFixed(2) + ' ' + yr;
+    var phaseLabel;
+    if (state.phase === 'turnaround') {
+      phaseLabel = T('phaseTurnaround');
+    } else if (state.phase === 'landed') {
+      phaseLabel = T('phaseLanded');
+    } else {
+      // Derive sub-phase from elapsed Earth time within current leg
+      var legEarth = state.earthElapsed % state.legEarthTotal;
+      if (legEarth <= state.t_accel) {
+        phaseLabel = T('phaseAccel');
+      } else if (legEarth <= state.t_accel + state.t_cruise) {
+        phaseLabel = T('phaseCruise');
+      } else {
+        phaseLabel = T('phaseDecel');
+      }
+    }
+    document.getElementById('readPhase').textContent = phaseLabel;
+  }
+}
+
+function updateInfo() {
+  var el = document.getElementById('infoText');
+  var text;
+  if (state.phase === 'idle') {
+    text = T('infoIdle');
+  } else if (state.phase === 'landed') {
+    text = T('infoLanded')
+      .replace('{rocketTime}', state.rocketTotalYears.toFixed(2))
+      .replace('{earthTime}', state.earthTotalYears.toFixed(2))
+      .replace('{diff}', (state.earthTotalYears - state.rocketTotalYears).toFixed(2));
+  } else if (state.paused) {
+    text = T('infoPaused');
+  } else if (state.phase === 'turnaround') {
+    text = T('infoTurnaround');
+  } else {
+    text = T('infoCruise')
+      .replace('{gamma}', state.gamma.toFixed(2));
+  }
+  el.textContent = '';
+  var paragraphs = text.split('\n\n');
+  for (var i = 0; i < paragraphs.length; i++) {
+    if (i > 0) {
+      el.appendChild(document.createElement('br'));
+      el.appendChild(document.createElement('br'));
+    }
+    el.appendChild(document.createTextNode(paragraphs[i]));
+  }
+}
+
+// ====================== CONTROLS ======================
+
+function populateStarSelect() {
+  var sel = document.getElementById('starSelect');
+  var cur = sel.value || '0';
+  sel.innerHTML = '';
+  for (var i = 0; i < STARS.length; i++) {
+    var s = STARS[i];
+    var opt = document.createElement('option');
+    opt.value = i;
+    var name = state.lang === 'en' ? s.nameEn : s.namePl;
+    opt.textContent = name + ' (' + (s.approx ? '~' : '') + s.dist + ' ly)';
+    sel.appendChild(opt);
+  }
+  sel.value = cur;
+}
+
+function handleStarChange() {
+  state.starIndex = parseInt(document.getElementById('starSelect').value) || 0;
+  if (state.phase !== 'idle') handleReset();
+  recalcPhysics();
+  updateReadouts();
+  updateInfo();
+}
+
+function handleSpeedChange() {
+  state.beta = clamp(parseFloat(document.getElementById('speedSlider').value), BETA_MIN, BETA_MAX);
+  document.getElementById('speedVal').textContent = state.beta.toFixed(2) + 'c';
+  if (state.phase !== 'idle') handleReset();
+  recalcPhysics();
+  updateReadouts();
+  updateInfo();
+}
+
+function handleAnimSpeedChange() {
+  state.animSpeed = parseFloat(document.getElementById('animSlider').value);
+  document.getElementById('animSpeedVal').innerHTML = state.animSpeed.toFixed(1) + '&times;';
+}
+
+function stepSlider(sliderId, delta) {
+  var slider = document.getElementById(sliderId);
+  var min = +slider.min, max = +slider.max, step = +slider.step;
+  var val = +slider.value + delta;
+  val = Math.round(val / step) * step;
+  val = Math.max(min, Math.min(max, val));
+  val = Math.round(val * 1000) / 1000;
+  slider.value = val;
+  slider.dispatchEvent(new Event('input'));
+}
+
+function handleLaunch() {
+  if (state.phase === 'idle') {
+    state.phase = 'outbound';
+    state.progress = 0;
+    state.paused = false;
+    state.turnaroundTimer = 0;
+  
+    recalcPhysics();
+    updateElapsedFromProgress();
+    setControlsLocked(true);
+    updateLaunchButton();
+    updateInfo();
+  } else if (state.phase === 'landed') {
+    // Do nothing, user should reset
+  } else {
+    state.paused = !state.paused;
+    if (state.paused) lastTime = 0;
+    updateLaunchButton();
+    updateInfo();
+  }
+}
+
+function handleReset() {
+  state.phase = 'idle';
+  state.progress = 0;
+  state.paused = false;
+  state.turnaroundTimer = 0;
+  state.earthElapsed = 0;
+  state.rocketElapsed = 0;
+
+  lastTime = 0;
+  recalcPhysics();
+  setControlsLocked(false);
+  updateLaunchButton();
+  updateReadouts();
+  updateInfo();
+  var overlay = document.querySelector('.result-overlay');
+  if (overlay) overlay.remove();
+}
+
+function setControlsLocked(locked) {
+  document.getElementById('starSelect').disabled = locked;
+  document.getElementById('speedSlider').disabled = locked;
+  document.getElementById('speedMinus').disabled = locked;
+  document.getElementById('speedPlus').disabled = locked;
+}
+
+function updateLaunchButton() {
+  var btn = document.getElementById('launchBtn');
+  var label = document.getElementById('launchLabel');
+  if (state.phase === 'idle') {
+    btn.classList.remove('playing');
+    label.textContent = T('launch');
+    btn.disabled = false;
+  } else if (state.phase === 'landed') {
+    btn.classList.remove('playing');
+    label.textContent = T('launch');
+    btn.disabled = true;
+  } else if (state.paused) {
+    btn.classList.remove('playing');
+    label.textContent = T('launch');
+    btn.disabled = false;
+  } else {
+    btn.classList.add('playing');
+    label.textContent = T('pause');
+    btn.disabled = false;
+  }
+}
+
+// ====================== OVERLAY ======================
+
+function showSummaryOverlay() {
+  var existing = document.querySelector('.result-overlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.className = 'result-overlay';
+
+  var yr = T('yr');
+  var diff = (state.earthTotalYears - state.rocketTotalYears).toFixed(2);
+  var conclusion = T('overlayConclusion')
+    .replace('{rocketName}', getRocketTwinName())
+    .replace('{earthName}', getEarthTwinName())
+    .replace('{diff}', diff);
+
+  overlay.innerHTML =
+    '<div class="overlay-title">' + T('overlayTitle') + '</div>' +
+    '<div class="overlay-detail">' +
+      '<span style="color:var(--earth-color)">' + getEarthTwinName() + '</span>: ' +
+      state.earthTotalYears.toFixed(2) + ' ' + yr + '<br>' +
+      '<span style="color:var(--rocket-color)">' + getRocketTwinName() + '</span>: ' +
+      state.rocketTotalYears.toFixed(2) + ' ' + yr + '<br><br>' +
+      '<b>' + T('lblTimeDiff') + ': ' + diff + ' ' + yr + '</b>' +
+    '</div>' +
+    '<div class="overlay-conclusion">' + conclusion + '</div>' +
+    '<div class="overlay-hint">' + T('clickToDismiss') + '</div>';
+
+  overlay.addEventListener('click', function() { overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// ====================== ANIMATION ======================
+
+var lastTime = 0;
+
+function animate(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  var dt = Math.min((timestamp - lastTime) / 1000, DT_CAP);
+  lastTime = timestamp;
+
+  if (!state.paused && (state.phase === 'outbound' || state.phase === 'return')) {
+    var progressPerSecond = (1 / (2 * WALL_SECONDS_BASE)) * state.animSpeed;
+    state.progress += dt * progressPerSecond;
+    state.progress = clamp(state.progress, 0, 1);
+    updateElapsedFromProgress();
+
+    if (state.phase === 'outbound' && state.progress >= 0.5) {
+      state.progress = 0.5;
+      updateElapsedFromProgress();
+      state.phase = 'turnaround';
+      state.turnaroundTimer = 0;
+      state.currentBeta = 0;
+      updateInfo();
+    }
+
+    if (state.phase === 'return' && state.progress >= 1.0) {
+      state.progress = 1.0;
+      updateElapsedFromProgress();
+      state.phase = 'landed';
+      updateLaunchButton();
+      updateInfo();
+      setTimeout(showSummaryOverlay, 400);
+    }
+  }
+
+  if (!state.paused && state.phase === 'turnaround') {
+    state.turnaroundTimer += dt * state.animSpeed;
+    // At v=0 both clocks tick at equal rate (γ=1) — advance by a small amount
+    var turnaroundTickRate = 0.02; // years per real second
+    var tickAmount = dt * turnaroundTickRate;
+    state.earthElapsed += tickAmount;
+    state.rocketElapsed += tickAmount;
+    var turnDuration = getTurnaroundDuration();
+    if (state.turnaroundTimer >= turnDuration) {
+      state.phase = 'return';
+      updateInfo();
+    }
+  }
+
+  if (state.phase !== 'idle') {
+    updateReadouts();
+  }
+
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+// ====================== I18N ======================
+
+function applyTranslations() {
+  document.title = T('title');
+  document.documentElement.lang = state.lang;
+  document.getElementById('titleText').textContent = T('title');
+  document.getElementById('subtitleText').textContent = T('subtitle');
+  document.getElementById('lblStar').textContent = T('lblStar');
+  document.getElementById('lblSpeed').textContent = T('lblSpeed');
+  document.getElementById('lblAnimSpeed').textContent = T('lblAnimSpeed');
+  document.getElementById('lblDistance').textContent = T('lblDistance');
+  document.getElementById('lblBeta').textContent = T('lblBeta');
+  document.getElementById('lblGamma').innerHTML = 'Lorentz &gamma;';
+  document.getElementById('lblEarthTime').textContent = getEarthTwinName();
+  document.getElementById('lblRocketTime').textContent = getRocketTwinName();
+  document.getElementById('lblTimeDiff').textContent = T('lblTimeDiff');
+  document.getElementById('lblPhase').textContent = T('lblPhase');
+  document.getElementById('resetLabel').textContent = T('reset');
+  document.getElementById('earthTwinName').placeholder = T('phEarthTwin');
+  document.getElementById('rocketTwinName').placeholder = T('phRocketTwin');
+  populateStarSelect();
+  updateLaunchButton();
+  updateReadouts();
+  updateInfo();
+}
+
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'pl' : 'en';
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+  applyTranslations();
+}
+
+// ====================== INIT ======================
+
+document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+
+// Personalization inputs
+document.getElementById('earthTwinName').placeholder = T('phEarthTwin');
+document.getElementById('rocketTwinName').placeholder = T('phRocketTwin');
+
+resize();
+initBgStars(NUM_BG_STARS);
+recalcPhysics();
+updateElapsedFromProgress();
+populateStarSelect();
+applyTranslations();
+requestAnimationFrame(animate);
+
+window.addEventListener('resize', function() { resize(); });
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var overlay = document.querySelector('.result-overlay');
+    if (overlay) overlay.remove();
+  }
+});
+</script>
+</body>
+</html>
