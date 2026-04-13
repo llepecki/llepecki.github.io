@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Interactive Copernican reference frame simulator. Choose a reference body to compare simple Sun-centered ellipses with complex relative paths.">
+<meta name="author" content="Łukasz Łepecki">
+<link rel="canonical" href="https://lepecki.com/learn/copernicus.html">
+<meta property="og:title" content="Copernican Reference Frame Simulator">
+<meta property="og:description" content="Interactive Copernican reference frame simulator. Choose a reference body to compare simple Sun-centered ellipses with complex relative paths.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lepecki.com/learn/copernicus.html">
+<meta property="og:site_name" content="Łukasz Łepecki">
+<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Copernican Reference Frame Simulator">
+<meta name="twitter:description" content="Interactive Copernican reference frame simulator. Choose a reference body to compare simple Sun-centered ellipses with complex relative paths.">
+<title>Copernican Reference Frame Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f18;
+    --panel: #131825;
+    --panel-border: #1e2a3a;
+    --text: #c9d1d9;
+    --text-dim: #6e7a8a;
+    --accent: #58a6ff;
+    --sun-color: #FFD700;
+    --mercury-color: #A0A0A0;
+    --venus-color: #F5DEB3;
+    --earth-color: #4db8ff;
+    --mars-color: #E05030;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Outfit', sans-serif;
+    color: var(--text);
+  }
+
+  header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .header-text { flex: 1; }
+  header h1 { font-size: 22px; font-weight: 700; }
+  header h1 a { color: inherit; text-decoration: none; }
+  header h1 a:hover { opacity: .7; }
+  header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
+
+  .lang-btn {
+    background: none; border: 1px solid var(--panel-border);
+    border-radius: 4px; padding: 3px 8px;
+    cursor: pointer; flex-shrink: 0;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .main { display: flex; height: calc(100vh - 80px); }
+
+  .canvas-wrap {
+    flex: 1; position: relative;
+    background: #080c14; min-width: 0;
+  }
+  .canvas-wrap canvas { width: 100%; height: 100%; display: block; }
+
+  .controls {
+    width: 300px; flex-shrink: 0;
+    padding: 20px;
+    border-left: 1px solid var(--panel-border);
+    display: flex; flex-direction: column; gap: 18px;
+    overflow-y: auto;
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+
+  .type-toggle { display: flex; gap: 6px; }
+  .type-btn {
+    padding: 10px 4px; border-radius: 6px;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+    flex: 1;
+    touch-action: manipulation;
+  }
+  .type-btn:hover { border-color: var(--accent); }
+  .type-btn.active { border-color: var(--accent); color: var(--accent); }
+  .planet-dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; vertical-align: middle; flex-shrink: 0;
+  }
+
+  .planet-list { display: flex; flex-direction: column; gap: 2px; }
+  .planet-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border-radius: 5px;
+  }
+  .planet-row .planet-name {
+    flex: 1;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .planet-row.state-0 .planet-name { opacity: 0.35; }
+  .planet-row.state-0 .planet-dot { opacity: 0.35; }
+  .master-row {
+    margin-top: 4px; padding-top: 8px;
+    border-top: 1px solid var(--panel-border);
+  }
+  .vis-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; touch-action: manipulation; position: relative;
+  }
+  .vis-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .vis-btn.active { border-color: var(--accent); color: var(--accent); }
+  .vis-btn.trail::after {
+    content: ''; position: absolute; bottom: 2px; left: 50%;
+    transform: translateX(-50%); width: 8px; height: 2px;
+    border-radius: 1px; background: currentColor;
+  }
+  .vis-btn[data-tip]:hover::before {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%);
+    padding: 3px 8px; border-radius: 4px;
+    background: var(--panel-border); color: var(--text);
+    font-size: 11px; white-space: nowrap; pointer-events: none;
+  }
+
+  .planet-select {
+    width: 100%; padding: 8px 10px; border-radius: 6px;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text);
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    cursor: pointer; outline: none;
+  }
+  .planet-select:focus { border-color: var(--accent); }
+  .planet-select option { background: var(--panel); color: var(--text); }
+
+  #playPauseBtn { display: flex; align-items: center; justify-content: center; }
+  #playPauseBtn .pause-icon { display: none; }
+  #playPauseBtn.playing .play-icon { display: none; }
+  #playPauseBtn.playing .pause-icon { display: block; }
+
+  .slider-row { display: flex; align-items: center; gap: 6px; }
+  .slider-row input[type=range] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 6px; background: var(--panel-border); border-radius: 3px; outline: none;
+    touch-action: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+  .slider-row input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+  .slider-val {
+    min-width: 36px; text-align: right;
+    font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text);
+  }
+
+  .step-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace; font-size: 16px; line-height: 1;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    touch-action: manipulation;
+  }
+  .step-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .step-btn:active { background: var(--accent); color: var(--bg); }
+
+  .readouts { gap: 6px; }
+  .readout-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+  }
+  .readout-label { color: var(--text-dim); }
+  .readout-val { color: var(--text); }
+
+  .info-text {
+    font-size: 12px; color: var(--text-dim); line-height: 1.6;
+  }
+  .info-text b { color: var(--text); font-weight: 600; }
+
+  @media (max-width: 700px) {
+    .main { flex-direction: column; }
+    .canvas-wrap { min-height: 350px; flex: 1; }
+    .controls {
+      width: 100%; flex-direction: row; flex-wrap: wrap;
+      border-left: none; border-top: 1px solid var(--panel-border);
+      padding: 12px 16px; gap: 12px;
+    }
+    .ctrl-group { min-width: 140px; flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x2604;</span></a> <span id="titleText">Copernican Reference Frame Simulator</span></h1>
+    <p id="subtitleText">Choose a reference body to compare simple Sun-centered ellipses with more complex relative paths.</p>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+  <div class="controls">
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblRefFrame">Reference Frame</span>
+      <select class="planet-select" id="refFrameSelect"></select>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblPlanets">Planets</span>
+      <div class="planet-list">
+        <div class="planet-row" id="rowSun">
+          <span class="planet-dot" style="background:var(--sun-color)"></span>
+          <span class="planet-name" id="nameSun">Sun</span>
+          <button class="vis-btn" id="visSun" onclick="cycleVis('sun')"></button>
+        </div>
+        <div class="planet-row" id="rowMercury">
+          <span class="planet-dot" style="background:var(--mercury-color)"></span>
+          <span class="planet-name" id="nameMercury">Mercury</span>
+          <button class="vis-btn" id="visMercury" onclick="cycleVis('mercury')"></button>
+        </div>
+        <div class="planet-row" id="rowVenus">
+          <span class="planet-dot" style="background:var(--venus-color)"></span>
+          <span class="planet-name" id="nameVenus">Venus</span>
+          <button class="vis-btn" id="visVenus" onclick="cycleVis('venus')"></button>
+        </div>
+        <div class="planet-row" id="rowEarth">
+          <span class="planet-dot" style="background:var(--earth-color)"></span>
+          <span class="planet-name" id="nameEarth">Earth</span>
+          <button class="vis-btn" id="visEarth" onclick="cycleVis('earth')"></button>
+        </div>
+        <div class="planet-row" id="rowMars">
+          <span class="planet-dot" style="background:var(--mars-color)"></span>
+          <span class="planet-name" id="nameMars">Mars</span>
+          <button class="vis-btn" id="visMars" onclick="cycleVis('mars')"></button>
+        </div>
+      </div>
+      <div class="planet-row master-row">
+        <span class="planet-name" id="allLabel">All</span>
+        <button class="vis-btn" id="visAll" onclick="cycleAll()"></button>
+        <button class="vis-btn" id="clearTrailsBtn" onclick="clearTrails()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblSpeed">Speed</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('speedSlider',-0.5)">&minus;</button>
+        <input type="range" id="speedSlider" min="0.5" max="10" value="1" step="0.5">
+        <button class="step-btn" onclick="stepSlider('speedSlider',0.5)">+</button>
+        <span class="slider-val" id="speedVal">1.0x</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="type-toggle">
+        <button class="type-btn playing" id="playPauseBtn" onclick="togglePlay()">
+          <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>
+          <svg class="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+        </button>
+        <button class="type-btn" id="resetBtn" onclick="resetSim()"><span id="resetLabel">Reset</span></button>
+      </div>
+    </div>
+
+    <div class="ctrl-group readouts">
+      <div class="readout-row">
+        <span class="readout-label" id="lblTime">Time</span>
+        <span class="readout-val" id="timeVal">T = 0.00 years</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="info-text" id="infoText"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ── Constants ─────────────────────────────────────────── */
+
+var TWO_PI = 2 * Math.PI;
+var DEG2RAD = Math.PI / 180;
+var SIM_RATE = 1 / 15;               // years per real-second at 1x
+var TRAIL_SAMPLE_INTERVAL = 0.0005;   // years between trail samples
+var MAX_TRAIL_POINTS = 10000;
+var MAX_DT = 0.05;                    // max real-time delta (seconds)
+function getAuMargin() {
+  var center = bodyByKey[state.center];
+  var maxDist = 0;
+  for (var i = 0; i < BODIES.length; i++) {
+    var b = BODIES[i];
+    if (b.key === state.center) continue;
+    var dist = b.a * (1 + b.e) + center.a * (1 + center.e);
+    if (dist > maxDist) maxDist = dist;
+  }
+  return maxDist * 1.12;               // 12% margin for labels/glow
+}
+
+/* ── Orbital Data ──────────────────────────────────────── */
+
+var BODIES = [
+  { key: 'sun',     color: '#FFD700', glow: '255,215,0',   radius: 12, a: 0, e: 0, T: 0, pomega: 0, L0: 0 },
+  { key: 'mercury', color: '#A0A0A0', glow: '160,160,160', radius: 4,  a: 0.3871, e: 0.2056, T: 0.2408, pomega: 77.46,  L0: 252.25 },
+  { key: 'venus',   color: '#F5DEB3', glow: '245,222,179', radius: 5,  a: 0.7233, e: 0.0068, T: 0.6152, pomega: 131.60, L0: 181.98 },
+  { key: 'earth',   color: '#4db8ff', glow: '77,184,255',  radius: 6,  a: 1.0000, e: 0.0167, T: 1.0000, pomega: 102.93, L0: 100.47 },
+  { key: 'mars',    color: '#E05030', glow: '224,80,48',   radius: 5,  a: 1.5237, e: 0.0934, T: 1.8809, pomega: 336.08, L0: 355.43 }
+];
+
+/* Precompute derived orbital quantities */
+BODIES.forEach(function(b) {
+  if (b.key === 'sun') return;
+  b.pomegaRad = b.pomega * DEG2RAD;
+  b.L0rad = b.L0 * DEG2RAD;
+  b.n = TWO_PI / b.T;
+  b.M0 = b.L0rad - b.pomegaRad;
+  b.bSemi = b.a * Math.sqrt(1 - b.e * b.e);
+  b.cosPom = Math.cos(b.pomegaRad);
+  b.sinPom = Math.sin(b.pomegaRad);
+});
+
+var bodyByKey = {};
+BODIES.forEach(function(b) { bodyByKey[b.key] = b; });
+
+/* ── State ─────────────────────────────────────────────── */
+
+var state = {
+  lang: (navigator.language || '').startsWith('pl') ? 'pl' : 'en',
+  center: 'sun',
+  bodyVis: { sun: 1, mercury: 1, venus: 1, earth: 1, mars: 1 },
+  speed: 1,
+  playing: true,
+  simTime: 0,
+  trailData: { sun: [], mercury: [], venus: [], earth: [], mars: [] }
+};
+
+/* ── I18N ──────────────────────────────────────────────── */
+
+var I18N = {
+  en: {
+    title: 'Copernican Reference Frame Simulator',
+    subtitle: 'Choose a reference body to compare simple Sun-centered ellipses with more complex relative paths.',
+    refFrame: 'Reference Frame',
+    sun: 'Sun', mercury: 'Mercury', venus: 'Venus', earth: 'Earth', mars: 'Mars',
+    planets: 'Planets',
+    all: 'All',
+    speed: 'Speed',
+    play: 'Play', pause: 'Pause',
+    reset: 'Reset',
+    time: 'Time',
+    years: 'years',
+    info: '<b>What is a reference frame?</b> It is a coordinate choice: you decide which body stays at the center while the others are described relative to it. Any body can be chosen, but some choices make the motion much simpler to describe.'
+      + '<br><br><b>What you are seeing:</b> This is an approximate top-down 2D model of the planets in the ecliptic plane. The planets move on independent Keplerian ellipses with fixed orbital elements. This is not a literal map of how planets move against the background stars in the sky.'
+      + '<br><br><b>Try this:</b> Start with the Sun at the center and turn on trails. You will see clean ellipses. Switch to Earth and Mars will draw looping relative paths. Those loops are not Mars literally circling Earth in space; they show the relative-motion geometry behind retrograde motion as Earth overtakes Mars.'
+      + '<br><br><b>Historical idea:</b> Ptolemy described the planets from Earth using epicycles. Copernicus moved Earth from the center and made the overall pattern easier to understand, although his own model still used circles. Kepler later showed that planetary orbits are ellipses, and that later Keplerian model is what this app uses.'
+      + '<br><br>Trails are cleared when you switch center because each trail only makes sense in the current reference frame.'
+  },
+  pl: {
+    title: 'Symulator Uk\u0142adu Odniesienia Kopernika',
+    subtitle: 'Wybierz cia\u0142o odniesienia i por\u00f3wnaj proste elipsy heliocentryczne z bardziej z\u0142o\u017conymi torami wzgl\u0119dnymi.',
+    refFrame: 'Uk\u0142ad odniesienia',
+    sun: 'S\u0142o\u0144ce', mercury: 'Merkury', venus: 'Wenus', earth: 'Ziemia', mars: 'Mars',
+    planets: 'Planety',
+    all: 'Wsz.',
+    speed: 'Pr\u0119dko\u015b\u0107',
+    play: 'Odtw\u00f3rz', pause: 'Pauza',
+    reset: 'Reset',
+    time: 'Czas',
+    years: 'lat',
+    info: '<b>Czym jest uk\u0142ad odniesienia?</b> To wyb\u00f3r wsp\u00f3\u0142rz\u0119dnych: decydujesz, kt\u00f3re cia\u0142o pozostaje w centrum, a ruch pozosta\u0142ych opisujesz wzgl\u0119dem niego. Mo\u017cna wybra\u0107 dowolne cia\u0142o, ale niekt\u00f3re wybory daj\u0105 znacznie prostszy opis ruchu.'
+      + '<br><br><b>Co tu wida\u0107:</b> To przybli\u017cony, dwuwymiarowy model z g\u00f3ry, w p\u0142aszczy\u017anie ekliptyki. Planety poruszaj\u0105 si\u0119 po niezale\u017cnych elipsach Keplerowskich o sta\u0142ych elementach orbitalnych. To nie jest dos\u0142owna mapa tego, jak planety przesuwaj\u0105 si\u0119 na niebie wzgl\u0119dem gwiazd t\u0142a.'
+      + '<br><br><b>Spr\u00f3buj:</b> Zacznij ze S\u0142o\u0144cem w centrum i w\u0142\u0105cz \u015blady. Zobaczysz czyste elipsy. Prze\u0142\u0105cz na Ziemi\u0119, a Mars zacznie rysowa\u0107 zap\u0119tlone tory wzgl\u0119dne. Te p\u0119tle nie oznaczaj\u0105, \u017ce Mars naprawd\u0119 kr\u0105\u017cy wok\u00f3\u0142 Ziemi; pokazuj\u0105 geometri\u0119 ruchu wzgl\u0119dnego, kt\u00f3ra prowadzi do retrogradacji, gdy Ziemia wyprzedza Marsa.'
+      + '<br><br><b>Idea historyczna:</b> Ptolemeusz opisywa\u0142 planety z perspektywy Ziemi za pomoc\u0105 epicykli. Kopernik usun\u0105\u0142 Ziemi\u0119 z centrum i dzi\u0119ki temu og\u00f3lny obraz sta\u0142 si\u0119 prostszy, cho\u0107 jego w\u0142asny model nadal u\u017cywa\u0142 okr\u0119g\u00f3w. Dopiero Kepler pokaza\u0142, \u017ce orbity planet s\u0105 elipsami, i to w\u0142a\u015bnie tego p\u00f3\u017aniejszego modelu Keplerowskiego u\u017cywa ta aplikacja.'
+      + '<br><br>\u015alady s\u0105 czyszczone po zmianie centrum, bo ka\u017cda \u015bcie\u017cka ma sens tylko w bie\u017c\u0105cym uk\u0142adzie odniesienia.'
+  }
+};
+
+function T(key) { return I18N[state.lang][key]; }
+
+/* ── Canvas Setup ──────────────────────────────────────── */
+
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var W = 0, H = 0, scale = 1;
+
+function resize() {
+  var rect = canvas.parentElement.getBoundingClientRect();
+  var dpr = window.devicePixelRatio || 1;
+  W = rect.width;
+  H = rect.height;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  scale = Math.min(W, H) / 2 / getAuMargin();
+}
+window.addEventListener('resize', resize);
+
+/* ── Starfield ─────────────────────────────────────────── */
+
+var bgStars = [];
+function initBgStars(n) {
+  bgStars = [];
+  for (var i = 0; i < n; i++) {
+    bgStars.push({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.2 + 0.3,
+      b: Math.random() * 0.4 + 0.2
+    });
+  }
+}
+initBgStars(200);
+
+/* ── Physics ───────────────────────────────────────────── */
+
+function solveKepler(M, e) {
+  var m = M % TWO_PI;
+  if (m > Math.PI) m -= TWO_PI;
+  if (m < -Math.PI) m += TWO_PI;
+  var E = m;
+  for (var i = 0; i < 10; i++) {
+    var dE = (E - e * Math.sin(E) - m) / (1 - e * Math.cos(E));
+    E -= dE;
+    if (Math.abs(dE) < 1e-12) break;
+  }
+  if (isNaN(E) || !isFinite(E)) E = m;
+  return E;
+}
+
+function helioPosition(body, t) {
+  if (body.key === 'sun') return { x: 0, y: 0 };
+  var M = body.M0 + body.n * t;
+  var E = solveKepler(M, body.e);
+  var xp = body.a * (Math.cos(E) - body.e);
+  var yp = body.bSemi * Math.sin(E);
+  return {
+    x: xp * body.cosPom - yp * body.sinPom,
+    y: xp * body.sinPom + yp * body.cosPom
+  };
+}
+
+function displayPosition(body, centerBody, t) {
+  var hp = helioPosition(body, t);
+  var hc = helioPosition(centerBody, t);
+  return { x: hp.x - hc.x, y: hp.y - hc.y };
+}
+
+/* ── Coordinate Transform ──────────────────────────────── */
+
+function toCanvas(auX, auY) {
+  return { cx: W / 2 + auX * scale, cy: H / 2 - auY * scale };
+}
+
+/* ── Trails ────────────────────────────────────────────── */
+
+function anyTrailEnabled() {
+  var keys = Object.keys(state.bodyVis);
+  for (var i = 0; i < keys.length; i++) {
+    if (state.bodyVis[keys[i]] === 2) return true;
+  }
+  return false;
+}
+
+function recordTrailPoints() {
+  var centerBody = bodyByKey[state.center];
+  for (var i = 0; i < BODIES.length; i++) {
+    var body = BODIES[i];
+    if (body.key === state.center) continue;
+    if (state.bodyVis[body.key] !== 2) continue;
+    var pos = displayPosition(body, centerBody, state.simTime);
+    var arr = state.trailData[body.key];
+    arr.push(pos);
+    if (arr.length > MAX_TRAIL_POINTS) {
+      arr.splice(0, arr.length - MAX_TRAIL_POINTS);
+    }
+  }
+}
+
+function clearAllTrails() {
+  var keys = Object.keys(state.trailData);
+  for (var i = 0; i < keys.length; i++) {
+    state.trailData[keys[i]] = [];
+  }
+  trailTimeAccum = 0;
+}
+
+/* ── Drawing ───────────────────────────────────────────── */
+
+function drawStarfield() {
+  for (var i = 0; i < bgStars.length; i++) {
+    var s = bgStars[i];
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * H, s.r, 0, TWO_PI);
+    ctx.fillStyle = 'rgba(200,210,220,' + (s.b * 0.3) + ')';
+    ctx.fill();
+  }
+}
+
+function drawOrbitalGuides() {
+  if (state.center !== 'sun') return;
+  for (var i = 0; i < BODIES.length; i++) {
+    var body = BODIES[i];
+    if (body.key === 'sun') continue;
+    if (state.bodyVis[body.key] === 0) continue;
+    var cxAu = -body.a * body.e * body.cosPom;
+    var cyAu = -body.a * body.e * body.sinPom;
+    var cc = toCanvas(cxAu, cyAu);
+    ctx.beginPath();
+    ctx.ellipse(cc.cx, cc.cy, body.a * scale, body.bSemi * scale, -body.pomegaRad, 0, TWO_PI);
+    ctx.strokeStyle = 'rgba(' + body.glow + ',0.18)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function drawTrails() {
+  for (var b = 0; b < BODIES.length; b++) {
+    var body = BODIES[b];
+    if (body.key === state.center) continue;
+    if (state.bodyVis[body.key] !== 2) continue;
+    var trail = state.trailData[body.key];
+    if (trail.length < 2) continue;
+    var len = trail.length;
+    var BATCH = 50;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (var start = 0; start < len - 1; start += BATCH) {
+      var end = Math.min(start + BATCH, len - 1);
+      var midIdx = (start + end) / 2;
+      var alpha = 0.1 + 0.9 * (midIdx / len);
+      ctx.beginPath();
+      var p0 = toCanvas(trail[start].x, trail[start].y);
+      ctx.moveTo(p0.cx, p0.cy);
+      for (var j = start + 1; j <= end; j++) {
+        var p = toCanvas(trail[j].x, trail[j].y);
+        ctx.lineTo(p.cx, p.cy);
+      }
+      ctx.strokeStyle = 'rgba(' + body.glow + ',' + alpha.toFixed(3) + ')';
+      ctx.stroke();
+    }
+  }
+}
+
+function drawCenterIndicator(cx, cy) {
+  ctx.beginPath();
+  ctx.arc(cx, cy, 20, 0, TWO_PI);
+  ctx.strokeStyle = 'rgba(88,166,255,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function drawPlanets() {
+  var centerBody = bodyByKey[state.center];
+  for (var i = 0; i < BODIES.length; i++) {
+    var body = BODIES[i];
+    if (state.bodyVis[body.key] === 0 && body.key !== state.center) continue;
+    var pos = displayPosition(body, centerBody, state.simTime);
+    var c = toCanvas(pos.x, pos.y);
+
+    /* Glow */
+    var grad = ctx.createRadialGradient(c.cx, c.cy, 0, c.cx, c.cy, body.radius * 3);
+    grad.addColorStop(0, 'rgba(' + body.glow + ',0.3)');
+    grad.addColorStop(1, 'rgba(' + body.glow + ',0)');
+    ctx.beginPath();
+    ctx.arc(c.cx, c.cy, body.radius * 3, 0, TWO_PI);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    /* Pinned indicator */
+    if (body.key === state.center) {
+      drawCenterIndicator(c.cx, c.cy);
+    }
+
+    /* Body */
+    ctx.beginPath();
+    ctx.arc(c.cx, c.cy, body.radius, 0, TWO_PI);
+    ctx.fillStyle = body.color;
+    ctx.fill();
+
+    /* Label */
+    ctx.font = '13px "Share Tech Mono", monospace';
+    ctx.fillStyle = body.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(T(body.key), c.cx, c.cy - body.radius - 6);
+  }
+}
+
+function updateTimeDisplay() {
+  var t = state.simTime.toFixed(2);
+  document.getElementById('timeVal').textContent = 'T = ' + t + ' ' + T('years');
+}
+
+function drawScene() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, W, H);
+  drawStarfield();
+  drawOrbitalGuides();
+  drawTrails();
+  drawPlanets();
+  updateTimeDisplay();
+}
+
+/* ── Animation Loop ────────────────────────────────────── */
+
+var lastTimestamp = 0;
+var trailTimeAccum = 0;
+
+function animate(timestamp) {
+  if (!lastTimestamp) lastTimestamp = timestamp;
+  var dtReal = Math.min((timestamp - lastTimestamp) / 1000, MAX_DT);
+  lastTimestamp = timestamp;
+
+  if (state.playing) {
+    var dtSim = dtReal * state.speed * SIM_RATE;
+    if (anyTrailEnabled()) {
+      var remaining = dtSim;
+      while (remaining > 1e-15) {
+        var step = Math.min(remaining, TRAIL_SAMPLE_INTERVAL - trailTimeAccum);
+        state.simTime += step;
+        remaining -= step;
+        trailTimeAccum += step;
+        if (trailTimeAccum >= TRAIL_SAMPLE_INTERVAL - 1e-15) {
+          trailTimeAccum = 0;
+          recordTrailPoints();
+        }
+      }
+    } else {
+      state.simTime += dtSim;
+    }
+  }
+
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+/* ── Controls ──────────────────────────────────────────── */
+
+function populateRefFrameSelect() {
+  var sel = document.getElementById('refFrameSelect');
+  var cur = sel.value || state.center;
+  sel.innerHTML = '';
+  for (var i = 0; i < BODIES.length; i++) {
+    var b = BODIES[i];
+    var opt = document.createElement('option');
+    opt.value = b.key;
+    opt.textContent = T(b.key);
+    sel.appendChild(opt);
+  }
+  sel.value = cur;
+}
+
+document.getElementById('refFrameSelect').addEventListener('change', function(e) {
+  setCenter(e.target.value);
+});
+
+function setCenter(bodyKey) {
+  if (bodyKey === state.center) return;
+  state.center = bodyKey;
+  clearAllTrails();
+  /* Reset all to visible (state 1), ensure center is not hidden */
+  var keys = Object.keys(state.bodyVis);
+  for (var i = 0; i < keys.length; i++) state.bodyVis[keys[i]] = 1;
+  document.getElementById('refFrameSelect').value = bodyKey;
+  resize();
+  updateVisUI();
+}
+
+/* SVG icon strings */
+var ICO_EYE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+var ICO_EYE_OFF = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function cycleVis(key) {
+  var cur = state.bodyVis[key];
+  if (key === state.center) {
+    /* Center body: cycle 1→2→1 only */
+    state.bodyVis[key] = cur === 2 ? 1 : 2;
+  } else {
+    /* Normal: 0→1→2→0 */
+    state.bodyVis[key] = (cur + 1) % 3;
+  }
+  /* Clear trail data when transitioning away from trail state */
+  if (state.bodyVis[key] !== 2) {
+    state.trailData[key] = [];
+  }
+  /* Clear trail data when entering trail state (fresh start) */
+  if (state.bodyVis[key] === 2) {
+    state.trailData[key] = [];
+  }
+  updateVisUI();
+}
+
+function cycleAll() {
+  /* Find the max state among non-center planets */
+  var maxState = 0;
+  var allSame = true;
+  var firstState = -1;
+  for (var i = 0; i < BODIES.length; i++) {
+    var key = BODIES[i].key;
+    if (key === state.center) continue;
+    var v = state.bodyVis[key];
+    if (firstState === -1) firstState = v;
+    else if (v !== firstState) allSame = false;
+    if (v > maxState) maxState = v;
+  }
+  /* If mixed, consolidate to max first; if uniform, advance */
+  var target = allSame ? (maxState + 1) % 3 : maxState;
+  for (var i = 0; i < BODIES.length; i++) {
+    var key = BODIES[i].key;
+    if (key === state.center) continue;
+    if (target === 2) state.trailData[key] = [];
+    if (state.bodyVis[key] === 2 && target !== 2) state.trailData[key] = [];
+    state.bodyVis[key] = target;
+  }
+  updateVisUI();
+}
+
+function updateVisUI() {
+  var anyTrail = anyTrailEnabled();
+  for (var i = 0; i < BODIES.length; i++) {
+    var key = BODIES[i].key;
+    var vis = state.bodyVis[key];
+    var btn = document.getElementById('vis' + capitalize(key));
+    var row = document.getElementById('row' + capitalize(key));
+    if (!btn || !row) continue;
+
+    row.className = 'planet-row state-' + vis;
+    btn.innerHTML = vis === 0 ? ICO_EYE_OFF : ICO_EYE;
+    btn.className = 'vis-btn' + (vis >= 1 ? ' active' : '') + (vis === 2 ? ' trail' : '');
+    btn.setAttribute('data-tip', vis === 0 ? T(key) + ' (hidden)' : vis === 1 ? T(key) : T(key) + ' (trail)');
+  }
+  /* Master cycle-all button — reflect consolidated state */
+  var allBtn = document.getElementById('visAll');
+  if (allBtn) {
+    var maxV = 0, allSame = true, fst = -1;
+    for (var j = 0; j < BODIES.length; j++) {
+      if (BODIES[j].key === state.center) continue;
+      var vv = state.bodyVis[BODIES[j].key];
+      if (fst === -1) fst = vv; else if (vv !== fst) allSame = false;
+      if (vv > maxV) maxV = vv;
+    }
+    var shown = allSame ? fst : maxV;
+    allBtn.innerHTML = shown === 0 ? ICO_EYE_OFF : ICO_EYE;
+    allBtn.className = 'vis-btn' + (shown >= 1 ? ' active' : '') + (shown === 2 ? ' trail' : '');
+  }
+}
+
+function clearTrails() {
+  clearAllTrails();
+}
+
+function togglePlay() {
+  state.playing = !state.playing;
+  if (state.playing) lastTimestamp = 0;
+  updatePlayButton();
+}
+
+function updatePlayButton() {
+  var btn = document.getElementById('playPauseBtn');
+  btn.classList.toggle('playing', state.playing);
+}
+
+function resetSim() {
+  state.simTime = 0;
+  state.playing = true;
+  clearAllTrails();
+  var keys = Object.keys(state.bodyVis);
+  for (var i = 0; i < keys.length; i++) state.bodyVis[keys[i]] = 1;
+  lastTimestamp = 0;
+  updatePlayButton();
+  updateVisUI();
+}
+
+function stepSlider(sliderId, delta) {
+  var slider = document.getElementById(sliderId);
+  var min = +slider.min, max = +slider.max, step = +slider.step;
+  var val = +slider.value + delta;
+  val = Math.round(val / step) * step;
+  val = Math.max(min, Math.min(max, val));
+  val = Math.round(val * 1000) / 1000;
+  slider.value = val;
+  slider.dispatchEvent(new Event('input'));
+}
+
+document.getElementById('speedSlider').addEventListener('input', function(e) {
+  state.speed = +e.target.value;
+  document.getElementById('speedVal').textContent = (+e.target.value).toFixed(1) + 'x';
+});
+
+/* ── Localization ──────────────────────────────────────── */
+
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'pl' : 'en';
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+  applyTranslations();
+}
+
+function applyTranslations() {
+  var l = I18N[state.lang];
+  document.title = l.title;
+  document.documentElement.lang = state.lang;
+  document.getElementById('titleText').textContent = l.title;
+  document.getElementById('subtitleText').textContent = l.subtitle;
+  document.getElementById('lblRefFrame').textContent = l.refFrame;
+  populateRefFrameSelect();
+  document.getElementById('lblPlanets').textContent = l.planets;
+  for (var i = 0; i < BODIES.length; i++) {
+    var el = document.getElementById('name' + capitalize(BODIES[i].key));
+    if (el) el.textContent = T(BODIES[i].key);
+  }
+  document.getElementById('allLabel').textContent = l.all;
+  updateVisUI();
+  document.getElementById('lblSpeed').textContent = l.speed;
+  document.getElementById('resetLabel').textContent = l.reset;
+  document.getElementById('lblTime').textContent = l.time;
+  document.getElementById('infoText').innerHTML = l.info;
+  updateTimeDisplay();
+}
+
+/* ── Init ──────────────────────────────────────────────── */
+
+resize();
+document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+applyTranslations();
+updatePlayButton();
+updateVisUI();
+requestAnimationFrame(animate);
+
+</script>
+</body>
+</html>

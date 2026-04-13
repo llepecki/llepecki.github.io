@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planet Cannon</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #FAFAF7;
+  --panel: #ffffff;
+  --panel-border: #E0DDD6;
+  --text: #37474F;
+  --text-head: #263238;
+  --text-dim: #78909C;
+  --text-label: #90A4AE;
+  --accent: #e76f51;
+  --accent-light: #fff1ec;
+  --canvas-bg: #f5f3ee;
+  --cannon-color: #264653;
+  --target-color: #ef476f;
+  --success-color: #2a9d8f;
+}
+body {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #FAFAF7 0%, #F0EDE6 100%);
+  font-family: 'Outfit', sans-serif;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+header {
+  padding: 6px 28px 5px;
+  border-bottom: 1px solid var(--panel-border);
+  display: flex; align-items: center; gap: 12px;
+}
+.header-text { flex: 1; }
+header h1 {
+  font-size: 18px; font-weight: 700; color: var(--text-head);
+  display: flex; align-items: center; gap: 8px;
+}
+header h1 a { color: inherit; text-decoration: none; }
+header h1 a:hover { opacity: .7; }
+header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
+.lang-btn {
+  background: none; border: 1px solid var(--panel-border);
+  border-radius: 4px; padding: 3px 8px;
+  cursor: pointer; flex-shrink: 0;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+.main { display: flex; height: calc(100vh - 46px); }
+.canvas-wrap {
+  flex: 1; position: relative; min-width: 0;
+  background: var(--canvas-bg);
+  border-right: 1px solid var(--panel-border);
+}
+canvas { display: block; width: 100%; height: 100%; cursor: default; }
+canvas.dragging { cursor: grabbing !important; }
+canvas.hover-arrow { cursor: grab; }
+.panel {
+  width: 300px; flex-shrink: 0;
+  background: var(--panel);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.controls {
+  padding: 16px 20px;
+  display: flex; flex-direction: column; gap: 14px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+.section-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-label);
+  padding-bottom: 2px; border-bottom: 1px solid var(--panel-border);
+}
+.ctrl-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-label);
+}
+.type-toggle { display: flex; gap: 6px; }
+.type-btn {
+  flex: 1; padding: 8px 4px; border-radius: 8px;
+  border: 2px solid transparent;
+  background: #FAFAF7; color: #546E7A;
+  font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; text-align: center;
+  touch-action: manipulation;
+}
+.type-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.type-btn:hover { background: #F0EDE6; }
+.type-btn:disabled { opacity: 0.4; pointer-events: none; }
+.world-select {
+  width: 100%; padding: 7px 10px; border-radius: 6px;
+  border: 1.5px solid var(--panel-border);
+  background: var(--panel); color: var(--text);
+  font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; outline: none;
+  transition: border-color 0.15s;
+}
+.world-select:focus { border-color: var(--accent); }
+.world-select:disabled { opacity: 0.4; pointer-events: none; }
+.world-row { display: flex; gap: 8px; align-items: center; }
+.world-row .world-select { flex: 1; }
+.world-swatch {
+  width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid rgba(0,0,0,0.15);
+}
+.slider-row { display: flex; align-items: center; gap: 8px; }
+.slider-row input[type=range] {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 6px; background: #E0DDD6; border-radius: 3px; outline: none;
+  touch-action: none;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.slider-row input[type=range]::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.slider-row input[type=range]:disabled { opacity: 0.4; }
+.slider-val {
+  min-width: 44px; text-align: right;
+  font-family: 'Share Tech Mono', monospace; font-size: 13px;
+  font-weight: 700; color: var(--text-head);
+}
+.step-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1.5px solid var(--panel-border);
+  background: var(--panel); color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace; font-size: 16px; line-height: 1;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+.step-btn:hover { border-color: var(--accent); color: var(--accent); }
+.step-btn:active { background: var(--accent); color: #fff; }
+.step-btn:disabled { opacity: 0.4; pointer-events: none; }
+.fire-btn {
+  padding: 12px 4px; font-size: 14px; font-weight: 600;
+  background: var(--accent); color: #fff; border: none; border-radius: 10px;
+  cursor: pointer; transition: all 0.15s; touch-action: manipulation;
+}
+.fire-btn:hover { filter: brightness(1.1); }
+.fire-btn:active { transform: scale(0.97); }
+.fire-btn:disabled { opacity: 0.4; pointer-events: none; }
+.btn-row { display: flex; gap: 8px; }
+.readouts {
+  padding: 12px 20px;
+  display: flex; flex-direction: column; gap: 3px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.readout-row { display: flex; justify-content: space-between; align-items: baseline; padding: 1px 0; }
+.readout-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text-label);
+}
+.readout-val {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px; font-weight: 700; color: var(--text-head);
+}
+.readout-compare {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; font-weight: 700; color: var(--text-dim);
+  margin-left: 6px;
+}
+.mass-note {
+  font-size: 11px; color: var(--success-color); font-style: italic;
+  font-family: 'Share Tech Mono', monospace;
+  margin-top: 4px;
+}
+.info { padding: 12px 20px; flex: 1; }
+.info-text { font-size: 13px; color: #546E7A; line-height: 1.6; }
+.result-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  animation: overlayFadeIn 0.3s ease;
+}
+.overlay-emoji { font-size: 72px; animation: overlayPop 0.4s ease; }
+.overlay-msg {
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px; font-weight: 700;
+  margin-top: 16px; color: #fff;
+}
+.overlay-hint {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px; margin-top: 8px; color: rgba(255,255,255,0.6);
+}
+@keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlayPop {
+  0% { transform: scale(0.3); }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@media (max-width: 700px) {
+  .main { flex-direction: column; height: auto; min-height: calc(100vh - 46px); }
+  .canvas-wrap { min-height: 320px; height: 50vh; border-right: none; border-bottom: 1px solid var(--panel-border); }
+  .panel { width: 100%; }
+  .controls { flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
+  .ctrl-group { min-width: 120px; flex: 1; }
+  .btn-row { min-width: 100%; }
+  .readouts { padding: 10px 16px; }
+  .info { padding: 10px 16px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F4A3;</span></a> <span id="titleText">Planet Cannon</span></h1>
+    <p id="subtitleText">Compare trajectories across worlds to see how gravity shapes the path.</p>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="panel">
+    <div class="controls">
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblMode">Mode</span>
+        <div class="type-toggle">
+          <button class="type-btn active" id="modeExploreBtn" onclick="setMode('explore')">Explore</button>
+          <button class="type-btn" id="modeTargetBtn" onclick="setMode('target')">Hit the Target</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group" id="grpWorld1">
+        <span class="ctrl-label" id="lblWorld1">World</span>
+        <div class="world-row">
+          <span class="world-swatch" id="swatch1"></span>
+          <select class="world-select" id="world1Select"></select>
+        </div>
+      </div>
+
+      <div class="ctrl-group" id="grpWorld2">
+        <span class="ctrl-label" id="lblWorld2">Compare with</span>
+        <div class="world-row">
+          <span class="world-swatch" id="swatch2"></span>
+          <select class="world-select" id="world2Select"></select>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblSpeed">Speed</span>
+        <div class="slider-row">
+          <button class="step-btn" id="stepSpeedDown" onclick="stepSlider('speedSlider',-5)">&minus;</button>
+          <input type="range" id="speedSlider" min="10" max="100" value="50" step="1">
+          <button class="step-btn" id="stepSpeedUp" onclick="stepSlider('speedSlider',5)">+</button>
+          <span class="slider-val" id="speedVal">50</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblAngle">Angle</span>
+        <div class="slider-row">
+          <button class="step-btn" id="stepAngleDown" onclick="stepSlider('angleSlider',-5)">&minus;</button>
+          <input type="range" id="angleSlider" min="0" max="90" value="45" step="1">
+          <button class="step-btn" id="stepAngleUp" onclick="stepSlider('angleSlider',5)">+</button>
+          <span class="slider-val" id="angleVal">45&deg;</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblMass">Mass</span>
+        <div class="slider-row">
+          <button class="step-btn" id="stepMassDown" onclick="stepSlider('massSlider',-0.5)">&minus;</button>
+          <input type="range" id="massSlider" min="0.5" max="20" value="5" step="0.5">
+          <button class="step-btn" id="stepMassUp" onclick="stepSlider('massSlider',0.5)">+</button>
+          <span class="slider-val" id="massVal">5.0 kg</span>
+        </div>
+      </div>
+
+      <button class="type-btn" id="precisionBtn" onclick="togglePrecision()" style="width:100%">Precision (Shift)</button>
+
+      <div class="btn-row">
+        <button class="fire-btn" id="launchBtn" onclick="launch()" style="flex:2">Launch</button>
+        <button class="type-btn" id="pauseBtn" onclick="togglePause()" style="flex:1;display:none">Pause</button>
+        <button class="type-btn" id="resetBtn" onclick="resetSim()" style="flex:1">Reset</button>
+      </div>
+
+      <div class="ctrl-group" id="grpNewTarget" style="display:none">
+        <button class="type-btn" id="newTargetBtn" onclick="newTarget()" style="width:100%">New Target</button>
+      </div>
+
+    </div>
+
+    <div class="readouts" id="readoutsPanel">
+      <span class="section-label" id="lblSectTrajectory">TRAJECTORY</span>
+      <div class="readout-row"><span class="readout-label" id="lblGravity">Gravity</span><span class="readout-val" id="valGravity">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblLaunchSpeed">Speed</span><span class="readout-val" id="valLaunchSpeed">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblLaunchAngle">Angle</span><span class="readout-val" id="valLaunchAngle">&mdash;</span></div>
+
+      <span class="section-label" id="lblSectFlight" style="margin-top:6px">FLIGHT</span>
+      <div class="readout-row"><span class="readout-label" id="lblTFlight">Flight time</span><span class="readout-val" id="valTFlight">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblMaxH">Max height</span><span class="readout-val" id="valMaxH">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblRange">Range</span><span class="readout-val" id="valRange">&mdash;</span></div>
+
+      <span class="section-label" id="lblSectMass" style="margin-top:6px">MASS EFFECTS</span>
+      <div class="readout-row"><span class="readout-label" id="lblMassVal">Mass</span><span class="readout-val" id="valMass">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblWeight">Weight</span><span class="readout-val" id="valWeight">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblMomentum">Momentum</span><span class="readout-val" id="valMomentum">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblKE">Kinetic energy</span><span class="readout-val" id="valKE">&mdash;</span></div>
+      <div class="mass-note" id="massNote"></div>
+    </div>
+
+    <div class="info">
+      <div class="info-text" id="infoText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   I18N
+   ═══════════════════════════════════════════════════════════ */
+const I18N = {
+  en: {
+    title: 'Planet Cannon',
+    subtitle: 'Compare trajectories across worlds to see how gravity shapes the path.',
+    mode: 'Mode',
+    explore: 'Explore',
+    hitTarget: 'Hit the Target',
+    world1: 'World',
+    world2: 'Compare with',
+    none: '\u2014 none \u2014',
+    speed: 'Speed',
+    angle: 'Angle',
+    mass: 'Mass',
+    launch: 'Launch',
+    pause: 'Pause',
+    resume: 'Resume',
+    reset: 'Reset',
+    newTarget: 'New Target',
+    precision: 'Precision (Shift)',
+    moon: 'Moon', mercury: 'Mercury', venus: 'Venus', earth: 'Earth', mars: 'Mars',
+    sectTrajectory: 'TRAJECTORY',
+    sectFlight: 'FLIGHT',
+    sectMass: 'MASS EFFECTS',
+    gravity: 'Gravity',
+    launchSpeed: 'Speed',
+    launchAngle: 'Angle',
+    tFlight: 'Flight time',
+    maxH: 'Max height',
+    range: 'Range',
+    massVal: 'Mass',
+    weight: 'Weight',
+    momentum: 'Momentum',
+    kineticEnergy: 'Kinetic energy',
+    massNote: 'Same path in vacuum \u2014 mass does not change the arc.',
+    hitSuccess: 'Direct hit!',
+    missMsg: 'Missed!',
+    hintAngleUp: 'Try a steeper angle.',
+    hintAngleDown: 'Try a shallower angle.',
+    hintMoreSpeed: 'Try more speed.',
+    hintLessSpeed: 'Try less speed.',
+    hintMass: 'Changing mass does not change the arc here.',
+    clickToDismiss: 'Click to continue',
+    infoExplore: '<strong>Projectile motion simulator.</strong><br><br>Drag the arrow to aim, pick one or two worlds, and fire! Watch how the same shot behaves under different gravity.<br><br>Change the <strong>mass</strong>: the arc stays the same, but weight and momentum change.',
+    infoTarget: 'Adjust <strong>speed</strong> and <strong>angle</strong> to hit the target. Changing <strong>mass</strong> alone won\'t help \u2014 the path stays the same!',
+    simplified: 'Simplified model: no air resistance, spin, or planetary curvature.',
+  },
+  pl: {
+    title: 'Armata Planetarna',
+    subtitle: 'Por\u00f3wnaj trajektorie na r\u00f3\u017cnych \u015bwiatach i zobacz, jak grawitacja kszta\u0142tuje tor lotu.',
+    mode: 'Tryb',
+    explore: 'Eksploruj',
+    hitTarget: 'Traf w cel',
+    world1: '\u015awiat',
+    world2: 'Por\u00f3wnaj z',
+    none: '\u2014 brak \u2014',
+    speed: 'Pr\u0119dko\u015b\u0107',
+    angle: 'K\u0105t',
+    mass: 'Masa',
+    launch: 'Ogie\u0144!',
+    pause: 'Pauza',
+    resume: 'Wzn\u00f3w',
+    reset: 'Reset',
+    newTarget: 'Nowy cel',
+    precision: 'Precyzja (Shift)',
+    moon: 'Ksi\u0119\u017cyc', mercury: 'Merkury', venus: 'Wenus', earth: 'Ziemia', mars: 'Mars',
+    sectTrajectory: 'TRAJEKTORIA',
+    sectFlight: 'LOT',
+    sectMass: 'EFEKTY MASY',
+    gravity: 'Grawitacja',
+    launchSpeed: 'Pr\u0119dko\u015b\u0107',
+    launchAngle: 'K\u0105t',
+    tFlight: 'Czas lotu',
+    maxH: 'Maks. wysoko\u015b\u0107',
+    range: 'Zasi\u0119g',
+    massVal: 'Masa',
+    weight: 'Ci\u0119\u017car',
+    momentum: 'P\u0119d',
+    kineticEnergy: 'Energia kinetyczna',
+    massNote: 'Ten sam tor w pr\u00f3\u017cni \u2014 masa nie zmienia trajektorii.',
+    hitSuccess: 'Trafienie!',
+    missMsg: 'Pud\u0142o!',
+    hintAngleUp: 'Spr\u00f3buj wi\u0119kszego k\u0105ta.',
+    hintAngleDown: 'Spr\u00f3buj mniejszego k\u0105ta.',
+    hintMoreSpeed: 'Spr\u00f3buj wi\u0119kszej pr\u0119dko\u015bci.',
+    hintLessSpeed: 'Spr\u00f3buj mniejszej pr\u0119dko\u015bci.',
+    hintMass: 'Zmiana masy nie zmienia toru lotu.',
+    clickToDismiss: 'Kliknij, aby kontynuowa\u0107',
+    infoExplore: '<strong>Symulator ruchu pocisku.</strong><br><br>Przeci\u0105gnij strza\u0142k\u0119, aby wycelowa\u0107, wybierz jeden lub dwa \u015bwiaty i strzelaj! Obserwuj, jak ten sam strza\u0142 zachowuje si\u0119 przy r\u00f3\u017cnej grawitacji.<br><br>Zmie\u0144 <strong>mas\u0119</strong>: tor jest taki sam, ale ci\u0119\u017car i p\u0119d si\u0119 zmieniaj\u0105.',
+    infoTarget: 'Dostosuj <strong>pr\u0119dko\u015b\u0107</strong> i <strong>k\u0105t</strong>, aby trafi\u0107 w cel. Zmiana samej <strong>masy</strong> nie pomo\u017ce \u2014 tor pozostaje taki sam!',
+    simplified: 'Model uproszczony: brak oporu powietrza, rotacji i krzywizny planety.',
+  },
+};
+function T(k) { return I18N[state.lang][k] || k; }
+
+/* ═══════════════════════════════════════════════════════════
+   WORLD DATA
+   ═══════════════════════════════════════════════════════════ */
+const WORLDS = [
+  { key: 'moon',    g: 1.62, color: '#8a8a8a', ballFill: '#b0b0b0', sky: ['#000000','#0a0a12'], ground: ['#9a9a9a','#6a6a6a'], stars: true,  clouds: false, haze: false, details: 'craters' },
+  { key: 'mercury', g: 3.70, color: '#a07848', ballFill: '#c09858', sky: ['#080604','#1a1210'], ground: ['#8b7355','#5c4a35'], stars: true,  clouds: false, haze: false, details: 'rocks'   },
+  { key: 'venus',   g: 8.87, color: '#c8963e', ballFill: '#d4a855', sky: ['#d4a855','#c8963e'], ground: ['#c8a060','#a07830'], stars: false, clouds: false, haze: true,  details: 'smooth'  },
+  { key: 'earth',   g: 9.81, color: '#3a86ff', ballFill: '#4a90d9', sky: ['#4a90d9','#87ceeb'], ground: ['#6b8e4e','#5a7a3e'], stars: false, clouds: true,  haze: false, details: 'grass'   },
+  { key: 'mars',    g: 3.71, color: '#c44e24', ballFill: '#e05535', sky: ['#c06030','#e8a880'], ground: ['#c44e24','#8b3a1f'], stars: false, clouds: false, haze: false, details: 'dusty'   },
+];
+function getWorld(key) { return WORLDS.find(function(w) { return w.key === key; }); }
+
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════════════════ */
+const H_MUZZLE = 2.0;
+const VIEWPORT_W = 500;
+const VIEWPORT_H = 260;
+const V_MIN = 10;
+const MASS_MIN = 0.5, MASS_MAX = 20;
+const MIN_ARROW_PX = 60, MAX_ARROW_PX = 180;
+const CANNON_MARGIN_X = 80, CANNON_MARGIN_Y = 60;
+const ARC_SAMPLES = 150;
+const TARGET_W = 10;
+const TARGET_H = 10;
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════ */
+const state = {
+  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
+  mode: 'explore',
+  world1: 'earth',
+  world2: 'none',
+
+  speed: 50,
+  angle: 45,
+  mass: 5.0,
+
+  // Frozen at launch
+  launchSpeed: 50,
+  launchAngle: 45,
+  launchMass: 5.0,
+  launchG1: 9.81,
+  launchG2: 0,
+  launchWorld2: 'none',
+
+  phase: 'idle',
+  simTime: 0,
+
+  forecast1: null,
+  forecast2: null,
+
+  camScale: 1,
+
+  dragMode: null,
+  dragAccumX: 0,
+  dragAccumY: 0,
+  shiftHeld: false,
+  precisionMode: false,
+  fineDrag: false,
+
+  gameTarget: null,
+  gameResult: null,
+  missHintKey: '',
+
+  recoilT: 0,
+  flashT: 0,
+  particles: [],
+
+  bgStars: [],
+  animTime: 0,
+};
+
+/* ═══════════════════════════════════════════════════════════
+   UTILITY
+   ═══════════════════════════════════════════════════════════ */
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function fmt(v, d) { return v.toFixed(d === undefined ? 1 : d); }
+function fmtInt(v) { return Math.round(v).toString(); }
+
+/* ═══════════════════════════════════════════════════════════
+   PHYSICS
+   ═══════════════════════════════════════════════════════════ */
+function makeForecast(v0, angleDeg, g, m) {
+  var theta = angleDeg * Math.PI / 180;
+  var vx0 = v0 * Math.cos(theta);
+  var vy0 = v0 * Math.sin(theta);
+  var disc = Math.max(0, vy0 * vy0 + 2 * g * H_MUZZLE);
+  var tHit = (vy0 + Math.sqrt(disc)) / g;
+  var tApex = vy0 / g;
+  var maxHeight = H_MUZZLE + (vy0 * vy0) / (2 * g);
+  var range = vx0 * tHit;
+  var arcPoints = [];
+  for (var i = 0; i <= ARC_SAMPLES; i++) {
+    var t = (i / ARC_SAMPLES) * tHit;
+    arcPoints.push({ x: vx0 * t, y: H_MUZZLE + vy0 * t - 0.5 * g * t * t });
+  }
+  return {
+    vx0: vx0, vy0: vy0, tHit: tHit, tApex: tApex, maxHeight: maxHeight, range: range,
+    arcPoints: arcPoints, weight: m * g, momentum: m * v0, kineticEnergy: 0.5 * m * v0 * v0,
+  };
+}
+
+function computeForecasts() {
+  var v0 = clamp(state.speed, V_MIN, getActiveVMax());
+  var m = clamp(state.mass, MASS_MIN, MASS_MAX);
+  var w1 = getWorld(state.world1);
+  state.forecast1 = makeForecast(v0, state.angle, w1.g, m);
+  if (state.world2 !== 'none') {
+    var w2 = getWorld(state.world2);
+    state.forecast2 = makeForecast(v0, state.angle, w2.g, m);
+  } else {
+    state.forecast2 = null;
+  }
+}
+
+function computeMaxRangeAtSpeed(v0, g) {
+  var maxR = 0;
+  for (var a = 0; a <= 90; a += 0.5) {
+    var theta = a * Math.PI / 180;
+    var vx0 = v0 * Math.cos(theta);
+    var vy0 = v0 * Math.sin(theta);
+    var disc = Math.max(0, vy0 * vy0 + 2 * g * H_MUZZLE);
+    var tHit = (vy0 + Math.sqrt(disc)) / g;
+    var r = vx0 * tHit;
+    if (r > maxR) maxR = r;
+  }
+  return maxR;
+}
+
+function computeWorldVMax(g) {
+  var lo = V_MIN, hi = 200;
+  for (var i = 0; i < 50; i++) {
+    var mid = (lo + hi) / 2;
+    if (computeMaxRangeAtSpeed(mid, g) < VIEWPORT_W) lo = mid; else hi = mid;
+  }
+  return Math.floor((lo + hi) / 2);
+}
+
+// Active vMax = min of both selected worlds' vMax
+function getActiveVMax() {
+  var v1 = getWorld(state.world1).vMax;
+  if (state.world2 !== 'none') {
+    var v2 = getWorld(state.world2).vMax;
+    return Math.min(v1, v2);
+  }
+  return v1;
+}
+
+function ballPos(t, g) {
+  var theta = state.launchAngle * Math.PI / 180;
+  var v0 = state.launchSpeed;
+  var vx0 = v0 * Math.cos(theta);
+  var vy0 = v0 * Math.sin(theta);
+  return { x: vx0 * t, y: Math.max(0, H_MUZZLE + vy0 * t - 0.5 * g * t * t) };
+}
+
+function ballPosRaw(t, g) {
+  var theta = state.launchAngle * Math.PI / 180;
+  var v0 = state.launchSpeed;
+  var vx0 = v0 * Math.cos(theta);
+  var vy0 = v0 * Math.sin(theta);
+  return { x: vx0 * t, y: H_MUZZLE + vy0 * t - 0.5 * g * t * t };
+}
+
+function tHitFor(g) {
+  var theta = state.launchAngle * Math.PI / 180;
+  var vy0 = state.launchSpeed * Math.sin(theta);
+  var disc = Math.max(0, vy0 * vy0 + 2 * g * H_MUZZLE);
+  return (vy0 + Math.sqrt(disc)) / g;
+}
+
+function solveRange(v0, angleDeg, g) {
+  var theta = angleDeg * Math.PI / 180;
+  var vx0 = v0 * Math.cos(theta);
+  var vy0 = v0 * Math.sin(theta);
+  var disc = Math.max(0, vy0 * vy0 + 2 * g * H_MUZZLE);
+  var tH = (vy0 + Math.sqrt(disc)) / g;
+  return vx0 * tH;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODE & GAME
+   ═══════════════════════════════════════════════════════════ */
+function setMode(m) {
+  state.mode = m;
+  state.gameResult = null;
+  document.getElementById('modeExploreBtn').classList.toggle('active', m === 'explore');
+  document.getElementById('modeTargetBtn').classList.toggle('active', m === 'target');
+  document.getElementById('grpNewTarget').style.display = m === 'target' ? '' : 'none';
+  // In game mode, force world2 off and hide its dropdown
+  document.getElementById('grpWorld2').style.display = m === 'target' ? 'none' : '';
+  if (m === 'target') {
+    state.world2 = 'none';
+    document.getElementById('world2Select').value = 'none';
+    updateSwatches();
+  }
+  if (m === 'target' && !state.gameTarget) generateTarget();
+  syncSpeedSlider();
+  resetSim();
+  updateInfo();
+}
+
+function generateTarget() {
+  var w1 = getWorld(state.world1);
+  var maxR = computeMaxRangeAtSpeed(w1.vMax, w1.g);
+  var minX = maxR * 0.15;
+  var maxX = maxR * 0.85;
+  state.gameTarget = { x: minX + Math.random() * (maxX - minX), y: 0 };
+  state.gameResult = null;
+  state.missHintKey = '';
+}
+
+function newTarget() { generateTarget(); resetSim(); }
+
+function checkHitSegment(t0, t1) {
+  if (!state.gameTarget) return false;
+  var tgt = state.gameTarget.x;
+  var halfW = TARGET_W / 2;
+  var steps = Math.max(4, Math.ceil((t1 - t0) * 120));
+  for (var i = 0; i <= steps; i++) {
+    var t = t0 + (t1 - t0) * (i / steps);
+    var p = ballPosRaw(t, state.launchG1);
+    if (Math.abs(p.x - tgt) < halfW && p.y >= 0 && p.y < TARGET_H) return true;
+  }
+  return false;
+}
+
+function checkHitAtLanding() {
+  if (!state.gameTarget) return false;
+  var tHit = tHitFor(state.launchG1);
+  var landX = ballPosRaw(tHit, state.launchG1).x;
+  return Math.abs(landX - state.gameTarget.x) < TARGET_W / 2;
+}
+
+function evaluateShot() {
+  if (state.mode !== 'target' || !state.gameTarget) return;
+  var tH = tHitFor(state.launchG1);
+  var hit = checkHitAtLanding() || checkHitSegment(Math.max(0, tH - 0.2), tH);
+  if (hit) { state.gameResult = 'hit'; showOverlay('hit'); return; }
+  state.gameResult = 'miss';
+  var tgt = state.gameTarget.x;
+  var g = state.launchG1;
+  var v0 = state.launchSpeed;
+  var a0 = state.launchAngle;
+  var vMax = getWorld(state.world1).vMax;
+  var curR = solveRange(v0, a0, g);
+  var cands = [
+    { key: 'hintAngleUp',   r: solveRange(v0, Math.min(90, a0 + 5), g) },
+    { key: 'hintAngleDown', r: solveRange(v0, Math.max(0, a0 - 5), g) },
+    { key: 'hintMoreSpeed', r: solveRange(Math.min(vMax, v0 + 5), a0, g) },
+    { key: 'hintLessSpeed', r: solveRange(Math.max(V_MIN, v0 - 5), a0, g) },
+  ];
+  var bestKey = 'hintMass', bestDist = Math.abs(curR - tgt);
+  for (var i = 0; i < cands.length; i++) {
+    var d = Math.abs(cands[i].r - tgt);
+    if (d < bestDist) { bestDist = d; bestKey = cands[i].key; }
+  }
+  state.missHintKey = bestKey;
+  showOverlay('miss');
+}
+
+function showOverlay(type) {
+  var existing = document.querySelector('.result-overlay');
+  if (existing) existing.remove();
+  var div = document.createElement('div');
+  div.className = 'result-overlay';
+  div.style.background = type === 'hit' ? 'rgba(42,157,143,0.88)' : 'rgba(239,71,111,0.85)';
+  div.innerHTML = '<div class="overlay-emoji">' + (type === 'hit' ? '\uD83C\uDFAF' : '\uD83D\uDCA8') + '</div>' +
+    '<div class="overlay-msg">' + (type === 'hit' ? T('hitSuccess') : T('missMsg')) + '</div>' +
+    '<div class="overlay-hint">' + (type === 'miss' && state.missHintKey ? T(state.missHintKey) + '<br>' : '') + T('clickToDismiss') + '</div>';
+  div.addEventListener('click', function() { div.remove(); });
+  document.body.appendChild(div);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CANVAS SETUP
+   ═══════════════════════════════════════════════════════════ */
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var W = 100, H = 100;
+
+function resize() {
+  var rect = canvas.parentElement.getBoundingClientRect();
+  var dpr = window.devicePixelRatio || 1;
+  W = rect.width; H = rect.height;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+/* ═══════════════════════════════════════════════════════════
+   SCENE RENDERING (game mode only)
+   ═══════════════════════════════════════════════════════════ */
+function initStars() {
+  state.bgStars = [];
+  for (var i = 0; i < 100; i++) {
+    state.bgStars.push({ x: Math.random(), y: Math.random() * 0.85, r: 0.4 + Math.random() * 1.2, a: 0.3 + Math.random() * 0.7 });
+  }
+}
+
+function drawThemedSky(world, groundY) {
+  var grad = ctx.createLinearGradient(0, 0, 0, groundY);
+  grad.addColorStop(0, world.sky[0]);
+  grad.addColorStop(1, world.sky[1]);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, groundY);
+  if (world.stars) {
+    state.bgStars.forEach(function(s) {
+      ctx.beginPath();
+      ctx.arc(s.x * W, s.y * groundY, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
+      ctx.fill();
+    });
+  }
+  if (world.clouds) {
+    var t = state.animTime * 0.003;
+    ctx.save(); ctx.globalAlpha = 0.18; ctx.fillStyle = '#fff';
+    for (var i = 0; i < 4; i++) {
+      var cx = ((t * (8 + i * 3) + i * 250) % (W + 200)) - 100;
+      var cy = groundY * (0.15 + i * 0.12);
+      var rw = 60 + i * 20, rh = 18 + i * 5;
+      ctx.beginPath(); ctx.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + rw * 0.5, cy - rh * 0.3, rw * 0.7, rh * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+  if (world.haze) { ctx.save(); ctx.globalAlpha = 0.08; ctx.fillStyle = '#e8c060'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+}
+
+function drawThemedGround(world, groundY) {
+  var grad = ctx.createLinearGradient(0, groundY, 0, H);
+  grad.addColorStop(0, world.ground[0]);
+  grad.addColorStop(1, world.ground[1]);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, groundY, W, H - groundY);
+  ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY);
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1; ctx.stroke();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GRID RENDERING (explore mode)
+   ═══════════════════════════════════════════════════════════ */
+function drawGrid(sc, groundY) {
+  // Background
+  ctx.fillStyle = '#f8f6f1';
+  ctx.fillRect(0, 0, W, H);
+
+  // Pick grid spacing
+  var candidates = [5, 10, 20, 50, 100, 200];
+  var gridM = 50;
+  for (var i = 0; i < candidates.length; i++) {
+    if (candidates[i] * sc >= 25 && candidates[i] * sc <= 120) { gridM = candidates[i]; break; }
+  }
+  var gridPx = gridM * sc;
+
+  // Vertical lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+  ctx.lineWidth = 1;
+  for (var x = CANNON_MARGIN_X; x < W; x += gridPx) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, groundY); ctx.stroke();
+  }
+  // Horizontal lines
+  for (var y = groundY; y > 0; y -= gridPx) {
+    ctx.beginPath(); ctx.moveTo(CANNON_MARGIN_X, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Labels
+  ctx.font = '9px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.textAlign = 'center';
+  var labelIdx = 0;
+  for (var x2 = CANNON_MARGIN_X + gridPx; x2 < W - 20; x2 += gridPx) {
+    labelIdx++;
+    ctx.fillText((labelIdx * gridM) + 'm', x2, groundY + 12);
+  }
+  ctx.textAlign = 'right';
+  labelIdx = 0;
+  for (var y2 = groundY - gridPx; y2 > 10; y2 -= gridPx) {
+    labelIdx++;
+    ctx.fillText((labelIdx * gridM) + 'm', CANNON_MARGIN_X - 6, y2 + 3);
+  }
+
+  // Ground line
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
+
+  // Ground fill
+  ctx.fillStyle = '#eee8dd';
+  ctx.fillRect(0, groundY, W, H - groundY);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CANNON RENDERING
+   ═══════════════════════════════════════════════════════════ */
+var BARREL_LEN = 40, BARREL_W = 10, CARRIAGE_W = 28, CARRIAGE_H = 20;
+
+function getCannonPivot(groundY) {
+  return { x: CANNON_MARGIN_X, y: groundY - CARRIAGE_H };
+}
+
+function getMuzzleTip(groundY, angleDeg) {
+  var p = getCannonPivot(groundY);
+  var ang = angleDeg * Math.PI / 180;
+  var len = BARREL_LEN - state.recoilT * 6;
+  return { x: p.x + Math.cos(ang) * len, y: p.y - Math.sin(ang) * len };
+}
+
+function drawCannon(groundY, angleDeg) {
+  var ang = angleDeg * Math.PI / 180;
+  var recoil = state.recoilT * 6;
+  var pivot = getCannonPivot(groundY);
+  var topHalf = CARRIAGE_W * 0.35, botHalf = CARRIAGE_W * 0.55;
+  ctx.fillStyle = '#3a5a6a';
+  ctx.beginPath();
+  ctx.moveTo(pivot.x - botHalf, groundY);
+  ctx.lineTo(pivot.x - topHalf, pivot.y);
+  ctx.lineTo(pivot.x + topHalf, pivot.y);
+  ctx.lineTo(pivot.x + botHalf, groundY);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.07)';
+  ctx.beginPath();
+  ctx.moveTo(pivot.x - botHalf + 3, groundY - 2);
+  ctx.lineTo(pivot.x - topHalf + 2, pivot.y + 2);
+  ctx.lineTo(pivot.x + topHalf - 2, pivot.y + 2);
+  ctx.lineTo(pivot.x + botHalf - 3, groundY - 2);
+  ctx.closePath(); ctx.fill();
+  var barrelLen = BARREL_LEN - recoil;
+  ctx.save();
+  ctx.translate(pivot.x, pivot.y);
+  ctx.rotate(-ang);
+  ctx.fillStyle = '#264653';
+  ctx.beginPath();
+  ctx.moveTo(-6, -BARREL_W / 2);
+  ctx.lineTo(barrelLen, -BARREL_W / 2 - 1);
+  ctx.lineTo(barrelLen + 2, 0);
+  ctx.lineTo(barrelLen, BARREL_W / 2 + 1);
+  ctx.lineTo(-6, BARREL_W / 2);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(0, -BARREL_W / 2, barrelLen - 2, BARREL_W * 0.3);
+  ctx.strokeStyle = '#1a3640'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(barrelLen - 2, -BARREL_W / 2 - 2); ctx.lineTo(barrelLen - 2, BARREL_W / 2 + 2); ctx.stroke();
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 3, 0, Math.PI * 2); ctx.fillStyle = '#1a3640'; ctx.fill();
+  if (state.flashT > 0) {
+    var tip = getMuzzleTip(groundY, angleDeg);
+    var flashR = state.flashT * 22;
+    var grad = ctx.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, flashR);
+    grad.addColorStop(0, 'rgba(255,200,50,' + (state.flashT * 0.8) + ')');
+    grad.addColorStop(0.5, 'rgba(255,120,30,' + (state.flashT * 0.4) + ')');
+    grad.addColorStop(1, 'rgba(255,80,20,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(tip.x, tip.y, flashR, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAWING - MAIN
+   ═══════════════════════════════════════════════════════════ */
+function drawScene() {
+  ctx.clearRect(0, 0, W, H);
+
+  var w1 = getWorld(state.world1);
+  if (!w1 || !state.forecast1) return;
+
+  // Camera: fixed viewport
+  var availW = W - CANNON_MARGIN_X - 20;
+  var availH = H - CANNON_MARGIN_Y - 20;
+  if (availW > 0 && availH > 0) {
+    state.camScale = Math.min(availW / VIEWPORT_W, availH / VIEWPORT_H);
+  }
+  var sc = state.camScale;
+  function tx(x) { return CANNON_MARGIN_X + x * sc; }
+  function ty(y) { return H - CANNON_MARGIN_Y - y * sc; }
+  var groundY = ty(0);
+
+  // Background
+  if (state.mode === 'target') {
+    drawThemedSky(w1, groundY);
+    drawThemedGround(w1, groundY);
+  } else {
+    drawGrid(sc, groundY);
+  }
+
+  var cannonAngle = state.phase === 'idle' ? state.angle : state.launchAngle;
+
+  // Forecast arcs (explore idle only)
+  if ((state.phase === 'idle' || state.phase === 'resolved') && state.mode !== 'target') {
+    drawArc(state.forecast1.arcPoints, w1.color, 2.5, false, tx, ty);
+    if (state.forecast2) {
+      var w2 = getWorld(state.world2);
+      drawArc(state.forecast2.arcPoints, w2.color, 2.5, false, tx, ty);
+      // World labels at arc ends
+      drawArcLabel(state.forecast1, w1, tx, ty);
+      drawArcLabel(state.forecast2, w2, tx, ty);
+    }
+  }
+  // Forecast arc in game mode (not shown - too easy)
+  // Single world explore without comparison: show dashed arc
+  if ((state.phase === 'idle' || state.phase === 'resolved') && state.mode !== 'target' && !state.forecast2) {
+    // Already drawn above as solid; let's make it dashed for single world
+  }
+
+  // Target (game mode)
+  if (state.mode === 'target' && state.gameTarget) {
+    drawTarget(tx, ty, groundY, sc);
+  }
+
+  // Cannon
+  drawCannon(groundY, cannonAngle);
+
+  // Velocity arrow (idle)
+  if (state.phase === 'idle') {
+    var muzzle = getMuzzleTip(groundY, state.angle);
+    drawVelocityArrow(muzzle.x, muzzle.y);
+  }
+
+  // Flying balls
+  if (state.phase === 'flying' || state.phase === 'paused') {
+    var tH1 = tHitFor(state.launchG1);
+    var t1 = Math.min(state.simTime, tH1);
+    drawFlyingBall(t1, state.launchG1, w1.color, w1.ballFill, tx, ty, groundY);
+
+    if (state.launchWorld2 !== 'none') {
+      var w2g = getWorld(state.launchWorld2);
+      var tH2 = tHitFor(state.launchG2);
+      var t2 = Math.min(state.simTime, tH2);
+      drawFlyingBall(t2, state.launchG2, w2g.color, w2g.ballFill, tx, ty, groundY);
+    }
+  }
+
+  // Resolved balls at landing
+  if (state.phase === 'resolved') {
+    var tH1r = tHitFor(state.launchG1);
+    drawLandedBall(tH1r, state.launchG1, w1.ballFill, tx, ty, groundY);
+    if (state.launchWorld2 !== 'none') {
+      var w2r = getWorld(state.launchWorld2);
+      var tH2r = tHitFor(state.launchG2);
+      drawLandedBall(tH2r, state.launchG2, w2r.ballFill, tx, ty, groundY);
+    }
+  }
+
+  // Particles
+  state.particles.forEach(function(p) {
+    ctx.beginPath();
+    ctx.arc(tx(p.x), ty(p.y), p.r * (p.life / p.maxLife), 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(' + p.color + ',' + (0.6 * p.life / p.maxLife) + ')';
+    ctx.fill();
+  });
+
+  // Scale bar
+  drawScaleBar(groundY, sc);
+}
+
+function drawArc(pts, color, lw, dashed, tx, ty) {
+  ctx.save();
+  if (dashed) ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  pts.forEach(function(p, i) {
+    if (i === 0) ctx.moveTo(tx(p.x), ty(p.y));
+    else ctx.lineTo(tx(p.x), ty(p.y));
+  });
+  ctx.stroke();
+  if (dashed) ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawArcLabel(forecast, world, tx, ty) {
+  var endPt = forecast.arcPoints[forecast.arcPoints.length - 1];
+  var lx = tx(endPt.x) + 4;
+  var ly = ty(endPt.y) - 8;
+  ctx.font = '700 11px "Share Tech Mono", monospace';
+  ctx.fillStyle = world.color;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(T(world.key), lx, ly);
+  ctx.font = '9px "Share Tech Mono", monospace';
+  ctx.fillText(fmt(forecast.range) + 'm', lx, ly + 11);
+}
+
+function drawFlyingBall(t, g, strokeCol, fillCol, tx, ty, groundY) {
+  var pos = ballPos(t, g);
+  var bsx = tx(pos.x), bsy = ty(pos.y);
+
+  // Trail
+  for (var i = 15; i >= 1; i--) {
+    var tt = t - i * 0.04;
+    if (tt < 0) continue;
+    var tp = ballPos(tt, g);
+    ctx.beginPath();
+    ctx.arc(tx(tp.x), ty(tp.y), 2.5 * (1 - i / 15), 0, Math.PI * 2);
+    ctx.fillStyle = strokeCol.replace(')', ',' + (0.3 * (1 - i / 15)) + ')').replace('rgb', 'rgba');
+    // Fallback for hex colors
+    ctx.globalAlpha = 0.3 * (1 - i / 15);
+    ctx.fillStyle = fillCol;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Shadow
+  var maxH = H_MUZZLE + (state.launchSpeed * Math.sin(state.launchAngle * Math.PI / 180))**2 / (2 * g);
+  var hRatio = clamp(pos.y / Math.max(1, maxH), 0, 1);
+  ctx.save();
+  ctx.globalAlpha = 0.2 * (1 - hRatio * 0.6);
+  ctx.fillStyle = 'rgba(32,40,52,0.7)';
+  ctx.beginPath();
+  ctx.ellipse(tx(pos.x), groundY, 8 + hRatio * 6, 2.5 + hRatio * 1.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Ball
+  var ballR = 5 + Math.sqrt(clamp(state.launchMass, MASS_MIN, MASS_MAX)) * 1.2;
+  ctx.beginPath();
+  ctx.arc(bsx, bsy, ballR, 0, Math.PI * 2);
+  ctx.fillStyle = fillCol;
+  ctx.fill();
+  ctx.strokeStyle = strokeCol;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function drawLandedBall(tHit, g, fillCol, tx, ty, groundY) {
+  var pos = ballPos(tHit, g);
+  var ballR = 5 + Math.sqrt(clamp(state.launchMass, MASS_MIN, MASS_MAX)) * 1.2;
+  ctx.beginPath();
+  ctx.arc(tx(pos.x), groundY - ballR, ballR, 0, Math.PI * 2);
+  ctx.fillStyle = fillCol;
+  ctx.fill();
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawTarget(tx, ty, groundY, sc) {
+  var tgtSX = tx(state.gameTarget.x);
+  var halfW = TARGET_W / 2 * sc;
+  var tgtH = TARGET_H * sc;
+  var minR = 4, minPole = 16;
+  var r3 = Math.max(minR * 3, halfW * 0.9);
+  var r2 = Math.max(minR * 2, halfW * 0.6);
+  var r1 = Math.max(minR, halfW * 0.3);
+  var poleH = Math.max(minPole, tgtH * 0.7);
+  var flagW = Math.max(8, halfW * 0.7);
+  var flagH = Math.max(4, poleH * 0.2);
+  ctx.globalAlpha = 0.3; ctx.fillStyle = '#ef476f';
+  ctx.beginPath(); ctx.arc(tgtSX, groundY - r3 * 0.3, r3, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 0.6; ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(tgtSX, groundY - r3 * 0.3, r2, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1; ctx.fillStyle = '#ef476f';
+  ctx.beginPath(); ctx.arc(tgtSX, groundY - r3 * 0.3, r1, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(tgtSX, groundY); ctx.lineTo(tgtSX, groundY - poleH);
+  ctx.strokeStyle = '#ef476f'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tgtSX, groundY - poleH); ctx.lineTo(tgtSX + flagW, groundY - poleH + flagH * 0.5);
+  ctx.lineTo(tgtSX, groundY - poleH + flagH); ctx.closePath(); ctx.fillStyle = '#ef476f'; ctx.fill();
+}
+
+function drawScaleBar(groundY, sc) {
+  var candidates = [1, 2, 5, 10, 20, 50, 100, 200, 500];
+  var scaleDist = 100;
+  for (var i = 0; i < candidates.length; i++) {
+    if (candidates[i] * sc >= 30 && candidates[i] * sc <= 150) { scaleDist = candidates[i]; break; }
+  }
+  var barPx = scaleDist * sc;
+  var bx = W - 20 - barPx, by = groundY + 16;
+  ctx.beginPath();
+  ctx.moveTo(bx, by); ctx.lineTo(bx + barPx, by);
+  ctx.moveTo(bx, by - 3); ctx.lineTo(bx, by + 3);
+  ctx.moveTo(bx + barPx, by - 3); ctx.lineTo(bx + barPx, by + 3);
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.font = '10px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.textAlign = 'center';
+  ctx.fillText(scaleDist + ' m', bx + barPx / 2, by + 13);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VELOCITY ARROW
+   ═══════════════════════════════════════════════════════════ */
+function recomputeFineDrag() { state.fineDrag = state.precisionMode || state.shiftHeld; }
+function updatePrecisionUI() { document.getElementById('precisionBtn').classList.toggle('active', state.fineDrag); }
+function togglePrecision() { state.precisionMode = !state.precisionMode; recomputeFineDrag(); updatePrecisionUI(); }
+
+function drawVelocityArrow(mx, my) {
+  var ang = state.angle * Math.PI / 180;
+  var vMax = getActiveVMax();
+  var arrowLen = MIN_ARROW_PX + (state.speed - V_MIN) * (MAX_ARROW_PX - MIN_ARROW_PX) / (vMax - V_MIN);
+  var tipX = mx + Math.cos(ang) * arrowLen;
+  var tipY = my - Math.sin(ang) * arrowLen;
+  var headAngle = Math.atan2(tipY - my, tipX - mx);
+  var HEAD_SIZE = 16;
+  var shaftColor = state.fineDrag ? '#2a9d8f' : (state.dragMode === 'arrow' ? '#5a9eff' : '#3a86ff');
+
+  if (state.dragMode === 'arrow') {
+    var pivot = getCannonPivot(H - CANNON_MARGIN_Y);
+    ctx.save(); ctx.setLineDash([3, 5]);
+    ctx.strokeStyle = 'rgba(58,134,255,0.18)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(pivot.x, pivot.y, BARREL_LEN + arrowLen, -Math.PI / 2, 0, false); ctx.stroke();
+    ctx.setLineDash([]); ctx.restore();
+  }
+
+  var shaftEndX = tipX - (HEAD_SIZE - 1) * Math.cos(headAngle);
+  var shaftEndY = tipY - (HEAD_SIZE - 1) * Math.sin(headAngle);
+  ctx.strokeStyle = shaftColor; ctx.lineWidth = 3; ctx.lineCap = 'butt';
+  ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(shaftEndX, shaftEndY); ctx.stroke();
+  ctx.beginPath(); ctx.arc(mx, my, 4, 0, Math.PI * 2); ctx.fillStyle = shaftColor; ctx.fill();
+  ctx.fillStyle = shaftColor; ctx.beginPath(); ctx.moveTo(tipX, tipY);
+  ctx.lineTo(tipX - HEAD_SIZE * Math.cos(headAngle - 0.4), tipY - HEAD_SIZE * Math.sin(headAngle - 0.4));
+  ctx.lineTo(tipX - HEAD_SIZE * Math.cos(headAngle + 0.4), tipY - HEAD_SIZE * Math.sin(headAngle + 0.4));
+  ctx.closePath(); ctx.fill();
+
+  // Labels
+  var nx = -(tipY - my), ny = tipX - mx;
+  var nLen = Math.sqrt(nx * nx + ny * ny) || 1;
+  var offX = -nx / nLen * 28, offY = -ny / nLen * 28;
+  var s1 = 0.35, s2 = 0.60;
+  var spX = mx + (tipX - mx) * s1 + offX, spY = my + (tipY - my) * s1 + offY;
+  var anX = mx + (tipX - mx) * s2 + offX, anY = my + (tipY - my) * s2 + offY;
+  ctx.font = '700 13px "Share Tech Mono", monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  var speedTxt = fmtInt(state.speed) + ' m/s';
+  var angleTxt = fmtInt(state.angle) + '\u00B0';
+  var pillColor = 'rgba(255,255,255,0.6)';
+  var labelColor = '#3a86ff';
+  function drawPill(cx, cy, text) {
+    var tw = ctx.measureText(text).width, hw = tw / 2 + 5, hh = 9;
+    ctx.fillStyle = pillColor; ctx.beginPath();
+    ctx.moveTo(cx - hw + 3, cy - hh);
+    ctx.arcTo(cx + hw, cy - hh, cx + hw, cy + hh, 3);
+    ctx.arcTo(cx + hw, cy + hh, cx - hw, cy + hh, 3);
+    ctx.arcTo(cx - hw, cy + hh, cx - hw, cy - hh, 3);
+    ctx.arcTo(cx - hw, cy - hh, cx + hw, cy - hh, 3);
+    ctx.closePath(); ctx.fill();
+  }
+  drawPill(spX, spY, speedTxt);
+  drawPill(anX, anY, angleTxt);
+  ctx.fillStyle = labelColor;
+  ctx.fillText(speedTxt, spX, spY);
+  ctx.fillText(angleTxt, anX, anY);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATION
+   ═══════════════════════════════════════════════════════════ */
+var lastTime = 0;
+
+function animate(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  var dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+  state.animTime = timestamp;
+
+  if (state.phase === 'flying') {
+    var tH1 = tHitFor(state.launchG1);
+    var maxTHit = tH1;
+    if (state.launchWorld2 !== 'none') {
+      var tH2 = tHitFor(state.launchG2);
+      maxTHit = Math.max(tH1, tH2);
+    }
+
+    var prevT = state.simTime;
+    state.simTime = Math.min(state.simTime + dt, maxTHit);
+
+    // Game mode hit check (world1 only)
+    if (state.mode === 'target' && state.gameTarget && !state.gameResult) {
+      if (checkHitSegment(prevT, Math.min(state.simTime, tH1))) {
+        state.simTime = maxTHit;
+        state.phase = 'resolved';
+        onLanding();
+        evaluateShot();
+      }
+    }
+
+    if (state.simTime >= maxTHit) {
+      state.simTime = maxTHit;
+      state.phase = 'resolved';
+      onLanding();
+      if (state.mode === 'target' && !state.gameResult) evaluateShot();
+    }
+  }
+
+  if (state.recoilT > 0.005) state.recoilT *= 0.85; else state.recoilT = 0;
+  if (state.flashT > 0.005) state.flashT -= dt * 8; else state.flashT = 0;
+
+  state.particles = state.particles.filter(function(p) {
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy -= 3 * dt; p.life -= dt;
+    return p.life > 0;
+  });
+
+  drawScene();
+  updateButtons();
+  requestAnimationFrame(animate);
+}
+
+function launch() {
+  if (state.phase === 'flying' || state.phase === 'paused') return;
+  state.launchSpeed = state.speed;
+  state.launchAngle = state.angle;
+  state.launchMass = state.mass;
+  state.launchG1 = getWorld(state.world1).g;
+  state.launchWorld2 = state.world2;
+  state.launchG2 = state.world2 !== 'none' ? getWorld(state.world2).g : 0;
+  state.simTime = 0;
+  state.phase = 'flying';
+  state.gameResult = null;
+  state.recoilT = 1;
+  state.flashT = 1;
+  state.particles = [];
+  var tH1 = tHitFor(state.launchG1);
+  if (!isFinite(tH1) || tH1 <= 0) { state.phase = 'idle'; return; }
+}
+
+function togglePause() {
+  if (state.phase === 'flying') { state.phase = 'paused'; }
+  else if (state.phase === 'paused') { state.phase = 'flying'; lastTime = 0; }
+}
+
+function resetSim() {
+  state.phase = 'idle'; state.simTime = 0; state.gameResult = null;
+  state.particles = []; state.recoilT = 0; state.flashT = 0;
+  computeForecasts(); updateReadouts();
+}
+
+function onLanding() {
+  var pos = ballPos(tHitFor(state.launchG1), state.launchG1);
+  var w1 = getWorld(state.world1);
+  var gc = w1.ground[0];
+  var r = parseInt(gc.slice(1, 3), 16), g = parseInt(gc.slice(3, 5), 16), b = parseInt(gc.slice(5, 7), 16);
+  for (var i = 0; i < 8; i++) {
+    state.particles.push({
+      x: pos.x + (Math.random() - 0.5) * 4, y: 0.5 + Math.random() * 2,
+      vx: (Math.random() - 0.5) * 12, vy: 2 + Math.random() * 6,
+      r: 2 + Math.random() * 2.5, life: 0.25 + Math.random() * 0.3, maxLife: 0.55,
+      color: r + ',' + g + ',' + b,
+    });
+  }
+}
+
+function updateButtons() {
+  var flying = state.phase === 'flying';
+  var paused = state.phase === 'paused';
+  var dc = flying || paused;
+  document.getElementById('launchBtn').disabled = dc;
+  document.getElementById('launchBtn').textContent = T('launch');
+  document.getElementById('pauseBtn').style.display = dc ? '' : 'none';
+  document.getElementById('pauseBtn').textContent = paused ? T('resume') : T('pause');
+  document.getElementById('speedSlider').disabled = dc;
+  document.getElementById('angleSlider').disabled = dc;
+  document.getElementById('massSlider').disabled = dc;
+  document.getElementById('stepSpeedDown').disabled = dc;
+  document.getElementById('stepSpeedUp').disabled = dc;
+  document.getElementById('stepAngleDown').disabled = dc;
+  document.getElementById('stepAngleUp').disabled = dc;
+  document.getElementById('stepMassDown').disabled = dc;
+  document.getElementById('stepMassUp').disabled = dc;
+  document.getElementById('world1Select').disabled = dc;
+  document.getElementById('world2Select').disabled = dc;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAG INTERACTION
+   ═══════════════════════════════════════════════════════════ */
+function getCanvasPos(e) {
+  var rect = canvas.getBoundingClientRect();
+  var src = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+}
+
+function getMuzzleScreen() {
+  return getMuzzleTip(H - CANNON_MARGIN_Y, state.angle);
+}
+
+function getArrowTip() {
+  var m = getMuzzleScreen();
+  var ang = state.angle * Math.PI / 180;
+  var vMax = getActiveVMax();
+  var arrowLen = MIN_ARROW_PX + (state.speed - V_MIN) * (MAX_ARROW_PX - MIN_ARROW_PX) / (vMax - V_MIN);
+  return { x: m.x + Math.cos(ang) * arrowLen, y: m.y - Math.sin(ang) * arrowLen };
+}
+
+function isNearArrowTip(pos) {
+  var tip = getArrowTip();
+  var dx = pos.x - tip.x, dy = pos.y - tip.y;
+  return dx * dx + dy * dy < 25 * 25;
+}
+
+function isNearArrowShaft(pos) {
+  var m = getMuzzleScreen(), tip = getArrowTip();
+  var ax = tip.x - m.x, ay = tip.y - m.y;
+  var bx = pos.x - m.x, by = pos.y - m.y;
+  var lenSq = ax * ax + ay * ay;
+  if (lenSq === 0) return false;
+  var t = clamp((ax * bx + ay * by) / lenSq, 0, 1);
+  var px = m.x + ax * t, py = m.y + ay * t;
+  var dx = pos.x - px, dy = pos.y - py;
+  return dx * dx + dy * dy < 20 * 20;
+}
+
+function startDrag(pos) {
+  if (state.phase !== 'idle') return;
+  if (isNearArrowTip(pos) || isNearArrowShaft(pos)) {
+    state.dragMode = 'arrow';
+    var tip = getArrowTip();
+    state.dragAccumX = tip.x; state.dragAccumY = tip.y;
+    canvas.classList.add('dragging');
+  }
+}
+
+function handleDrag(pos, prevPos) {
+  if (state.dragMode !== 'arrow') return;
+  var scale = (state.precisionMode || state.shiftHeld) ? 0.125 : 1.0;
+  state.dragAccumX += (pos.x - prevPos.x) * scale;
+  state.dragAccumY += (pos.y - prevPos.y) * scale;
+  var pivot = getCannonPivot(H - CANNON_MARGIN_Y);
+  var dx = state.dragAccumX - pivot.x;
+  var dy = -(state.dragAccumY - pivot.y);
+  var totalDist = Math.sqrt(dx * dx + dy * dy);
+  if (totalDist < 10) return;
+  var rawAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+  rawAngle = clamp(Math.round(rawAngle), 0, 90);
+  var vMax = getActiveVMax();
+  var arrowDist = totalDist - BARREL_LEN;
+  var speed = V_MIN + arrowDist * (vMax - V_MIN) / (MAX_ARROW_PX - MIN_ARROW_PX);
+  speed = clamp(Math.round(speed), V_MIN, vMax);
+  state.speed = speed; state.angle = rawAngle;
+  document.getElementById('speedSlider').value = speed;
+  document.getElementById('speedVal').textContent = speed;
+  document.getElementById('angleSlider').value = rawAngle;
+  document.getElementById('angleVal').textContent = rawAngle + '\u00B0';
+  computeForecasts(); updateReadouts();
+}
+
+function endDrag() { state.dragMode = null; canvas.classList.remove('dragging'); }
+
+var lastPointerPos = null;
+canvas.addEventListener('mousedown', function(e) { var p = getCanvasPos(e); lastPointerPos = p; startDrag(p); });
+canvas.addEventListener('mousemove', function(e) {
+  var p = getCanvasPos(e);
+  if (state.dragMode) { handleDrag(p, lastPointerPos || p); }
+  else if (state.phase === 'idle') {
+    if (isNearArrowTip(p) || isNearArrowShaft(p)) canvas.classList.add('hover-arrow');
+    else canvas.classList.remove('hover-arrow');
+  }
+  lastPointerPos = p;
+});
+canvas.addEventListener('mouseup', function() { endDrag(); lastPointerPos = null; });
+canvas.addEventListener('mouseleave', function() { endDrag(); lastPointerPos = null; canvas.classList.remove('hover-arrow'); });
+canvas.addEventListener('touchstart', function(e) { e.preventDefault(); var p = getCanvasPos(e); lastPointerPos = p; startDrag(p); }, { passive: false });
+canvas.addEventListener('touchmove', function(e) { e.preventDefault(); var p = getCanvasPos(e); if (state.dragMode) handleDrag(p, lastPointerPos || p); lastPointerPos = p; }, { passive: false });
+canvas.addEventListener('touchend', function(e) { e.preventDefault(); endDrag(); lastPointerPos = null; }, { passive: false });
+canvas.addEventListener('touchcancel', function() { endDrag(); lastPointerPos = null; });
+window.addEventListener('keydown', function(e) { if (e.key === 'Shift') { state.shiftHeld = true; recomputeFineDrag(); updatePrecisionUI(); } });
+window.addEventListener('keyup', function(e) { if (e.key === 'Shift') { state.shiftHeld = false; recomputeFineDrag(); updatePrecisionUI(); } });
+
+/* ═══════════════════════════════════════════════════════════
+   CONTROLS
+   ═══════════════════════════════════════════════════════════ */
+function stepSlider(sliderId, delta) {
+  var slider = document.getElementById(sliderId);
+  var min = +slider.min, max = +slider.max, step = +slider.step;
+  var val = +slider.value + delta;
+  val = Math.round(val / step) * step;
+  val = Math.max(min, Math.min(max, val));
+  val = Math.round(val * 1000) / 1000;
+  slider.value = val;
+  slider.dispatchEvent(new Event('input'));
+}
+
+document.getElementById('speedSlider').addEventListener('input', function(e) {
+  state.speed = +e.target.value;
+  document.getElementById('speedVal').textContent = fmtInt(state.speed);
+  computeForecasts(); updateReadouts();
+});
+
+document.getElementById('angleSlider').addEventListener('input', function(e) {
+  state.angle = +e.target.value;
+  document.getElementById('angleVal').textContent = fmtInt(state.angle) + '\u00B0';
+  computeForecasts(); updateReadouts();
+});
+
+document.getElementById('massSlider').addEventListener('input', function(e) {
+  state.mass = +e.target.value;
+  document.getElementById('massVal').textContent = fmt(state.mass) + ' kg';
+  computeForecasts(); updateReadouts();
+  document.getElementById('massNote').textContent = T('massNote');
+});
+
+function syncSpeedSlider() {
+  var vMax = getActiveVMax();
+  var slider = document.getElementById('speedSlider');
+  slider.max = vMax;
+  state.speed = Math.min(state.speed, vMax);
+  slider.value = state.speed;
+  document.getElementById('speedVal').textContent = fmtInt(state.speed);
+}
+
+function populateWorldSelects() {
+  var sel1 = document.getElementById('world1Select');
+  var sel2 = document.getElementById('world2Select');
+  sel1.innerHTML = '';
+  sel2.innerHTML = '<option value="none">' + T('none') + '</option>';
+  WORLDS.forEach(function(w) {
+    var o1 = document.createElement('option');
+    o1.value = w.key; o1.textContent = T(w.key);
+    if (w.key === state.world1) o1.selected = true;
+    sel1.appendChild(o1);
+    var o2 = document.createElement('option');
+    o2.value = w.key; o2.textContent = T(w.key);
+    if (w.key === state.world2) o2.selected = true;
+    sel2.appendChild(o2);
+  });
+}
+
+function updateSwatches() {
+  var w1 = getWorld(state.world1);
+  document.getElementById('swatch1').style.background = w1 ? w1.color : '#ccc';
+  if (state.world2 !== 'none') {
+    var w2 = getWorld(state.world2);
+    document.getElementById('swatch2').style.background = w2 ? w2.color : '#ccc';
+  } else {
+    document.getElementById('swatch2').style.background = '#ddd';
+  }
+}
+
+document.getElementById('world1Select').addEventListener('change', function(e) {
+  state.world1 = e.target.value;
+  updateSwatches(); syncSpeedSlider();
+  if (state.mode === 'target') generateTarget();
+  resetSim(); updateInfo();
+});
+
+document.getElementById('world2Select').addEventListener('change', function(e) {
+  state.world2 = e.target.value;
+  updateSwatches(); syncSpeedSlider();
+  resetSim(); updateInfo();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   READOUTS
+   ═══════════════════════════════════════════════════════════ */
+function updateReadouts() {
+  var f1 = state.forecast1;
+  if (!f1) return;
+  var w1 = getWorld(state.world1);
+
+  // Gravity: show both if comparing
+  var gText = fmt(w1.g, 2) + ' m/s\u00B2';
+  if (state.forecast2) {
+    var w2 = getWorld(state.world2);
+    gText += '  /  ' + fmt(w2.g, 2);
+  }
+  document.getElementById('valGravity').textContent = gText;
+
+  document.getElementById('valLaunchSpeed').textContent = fmt(state.speed) + ' m/s';
+  document.getElementById('valLaunchAngle').textContent = fmtInt(state.angle) + '\u00B0';
+
+  // Flight: show comparison if world2 active
+  var f2 = state.forecast2;
+  document.getElementById('valTFlight').textContent = fmt(f1.tHit, 2) + ' s' + (f2 ? '  /  ' + fmt(f2.tHit, 2) : '');
+  document.getElementById('valMaxH').textContent = fmt(f1.maxHeight) + ' m' + (f2 ? '  /  ' + fmt(f2.maxHeight) : '');
+  document.getElementById('valRange').textContent = fmt(f1.range) + ' m' + (f2 ? '  /  ' + fmt(f2.range) : '');
+
+  document.getElementById('valMass').textContent = fmt(state.mass) + ' kg';
+  document.getElementById('valWeight').textContent = fmt(f1.weight) + ' N' + (f2 ? '  /  ' + fmt(f2.weight) : '');
+  document.getElementById('valMomentum').textContent = fmt(f1.momentum) + ' kg\u00B7m/s';
+  var ke = f1.kineticEnergy;
+  document.getElementById('valKE').textContent = (ke >= 1000 ? fmt(ke / 1000) + ' kJ' : fmt(ke) + ' J');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INFO TEXT
+   ═══════════════════════════════════════════════════════════ */
+function updateInfo() {
+  var text = state.mode === 'explore' ? T('infoExplore') : T('infoTarget');
+  text += '<br><br><em style="font-size:11px;color:var(--text-dim)">' + T('simplified') + '</em>';
+  document.getElementById('infoText').innerHTML = text;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   I18N FUNCTIONS
+   ═══════════════════════════════════════════════════════════ */
+function applyTranslations() {
+  document.getElementById('titleText').textContent = T('title');
+  document.getElementById('subtitleText').textContent = T('subtitle');
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+  document.getElementById('lblMode').textContent = T('mode');
+  document.getElementById('modeExploreBtn').textContent = T('explore');
+  document.getElementById('modeTargetBtn').textContent = T('hitTarget');
+  document.getElementById('lblWorld1').textContent = T('world1');
+  document.getElementById('lblWorld2').textContent = T('world2');
+  document.getElementById('lblSpeed').textContent = T('speed');
+  document.getElementById('lblAngle').textContent = T('angle');
+  document.getElementById('lblMass').textContent = T('mass');
+  document.getElementById('launchBtn').textContent = T('launch');
+  document.getElementById('resetBtn').textContent = T('reset');
+  document.getElementById('newTargetBtn').textContent = T('newTarget');
+  document.getElementById('precisionBtn').textContent = T('precision');
+  document.getElementById('lblSectTrajectory').textContent = T('sectTrajectory');
+  document.getElementById('lblSectFlight').textContent = T('sectFlight');
+  document.getElementById('lblSectMass').textContent = T('sectMass');
+  document.getElementById('lblGravity').textContent = T('gravity');
+  document.getElementById('lblLaunchSpeed').textContent = T('launchSpeed');
+  document.getElementById('lblLaunchAngle').textContent = T('launchAngle');
+  document.getElementById('lblTFlight').textContent = T('tFlight');
+  document.getElementById('lblMaxH').textContent = T('maxH');
+  document.getElementById('lblRange').textContent = T('range');
+  document.getElementById('lblMassVal').textContent = T('massVal');
+  document.getElementById('lblWeight').textContent = T('weight');
+  document.getElementById('lblMomentum').textContent = T('momentum');
+  document.getElementById('lblKE').textContent = T('kineticEnergy');
+  populateWorldSelects();
+  updateSwatches();
+  updateReadouts();
+  updateInfo();
+}
+
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'pl' : 'en';
+  applyTranslations();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════ */
+WORLDS.forEach(function(w) { w.vMax = computeWorldVMax(w.g); });
+initStars();
+resize();
+syncSpeedSlider();
+computeForecasts();
+applyTranslations();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

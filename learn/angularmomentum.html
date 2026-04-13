@@ -314,7 +314,7 @@ const I18N = {
     challengeClose: 'So close! Try again',
     challengeMiss: 'Not quite! Try again',
     clickToDismiss: 'Click to continue',
-    infoExplore: '<strong>Angular momentum = moment of inertia \u00d7 angular velocity</strong> (L = I \u00d7 \u03c9).<br><br>Drag the weights closer to the center and watch the platform spin faster! Move them outward and it slows down.<br><br>The green <strong>L bar</strong> stays constant \u2014 that\u2019s conservation of angular momentum!',
+    infoExplore: 'Drag the weights closer to the center and watch the platform spin faster! Move them outward and it slows down.<br><br>The green <strong>L bar</strong> stays constant \u2014 that\u2019s conservation of angular momentum!',
     infoGame: 'Drag the weights to make the platform spin at the target angular velocity. When you think you\'re close, hit <strong>Check</strong>!',
   },
   pl: {
@@ -336,7 +336,7 @@ const I18N = {
     challengeClose: 'Prawie! Spr\u00f3buj ponownie',
     challengeMiss: 'Daleko! Spr\u00f3buj ponownie',
     clickToDismiss: 'Kliknij, aby kontynuowa\u0107',
-    infoExplore: '<strong>Moment p\u0119du = moment bezw\u0142adno\u015bci \u00d7 pr\u0119dko\u015b\u0107 k\u0105towa</strong> (L = I \u00d7 \u03c9).<br><br>Przeci\u0105gnij ci\u0119\u017carki bli\u017cej \u015brodka i zobacz, jak platforma przyspiesza! Przesu\u0144 je na zewn\u0105trz, a zwolni.<br><br>Zielony pasek <strong>L</strong> nie zmienia si\u0119 \u2014 to zasada zachowania momentu p\u0119du!',
+    infoExplore: 'Przeci\u0105gnij ci\u0119\u017carki bli\u017cej \u015brodka i zobacz, jak platforma przyspiesza! Przesu\u0144 je na zewn\u0105trz, a zwolni.<br><br>Zielony pasek <strong>L</strong> nie zmienia si\u0119 \u2014 to zasada zachowania momentu p\u0119du!',
     infoGame: 'Przeci\u0105gnij ci\u0119\u017carki, aby platforma obr\u00f3ci\u0142a si\u0119 z docelow\u0105 pr\u0119dko\u015bci\u0105 k\u0105tow\u0105. Gdy b\u0119dziesz blisko, naci\u015bnij <strong>Sprawd\u017a</strong>!',
   },
 };
@@ -383,6 +383,7 @@ const state = {
   selectedTimeout: null,
   challengeTarget: 0,
   refAngle: 0,
+  gameSnapshot: null,
   weightTargets: null,
   animating: false,
   animProgress: 0,
@@ -480,6 +481,21 @@ function lerpAngle(a, b, t) {
 }
 
 /* ───────── DRAWING HELPERS ───────── */
+function drawArrowhead(tipX, tipY, angle, color) {
+  var hs = ts(8);
+  ctx.save();
+  ctx.translate(tipX, tipY);
+  ctx.rotate(angle);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(hs, 0);
+  ctx.lineTo(-hs * 0.4, -hs * 0.5);
+  ctx.lineTo(-hs * 0.4, hs * 0.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
 function roundRect(x, y, w, h, r) {
   if (w < 0) { x += w; w = -w; }
   r = Math.min(r, w / 2, h / 2);
@@ -664,18 +680,7 @@ function drawRotationArrow() {
   const tipX = cx + r * Math.cos(tipA);
   const tipY = cy + r * Math.sin(tipA);
 
-  ctx.save();
-  ctx.translate(tipX, tipY);
-  ctx.rotate(state.omega > 0 ? tipA + Math.PI / 2 : tipA - Math.PI / 2);
-  const hs = ts(8);
-  ctx.fillStyle = '#90A4AE';
-  ctx.beginPath();
-  ctx.moveTo(hs, 0);
-  ctx.lineTo(-hs * 0.4, -hs * 0.5);
-  ctx.lineTo(-hs * 0.4, hs * 0.5);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
+  drawArrowhead(tipX, tipY, state.omega > 0 ? tipA + Math.PI / 2 : tipA - Math.PI / 2, '#90A4AE');
 
   // Omega value (hidden in game mode)
   if (state.mode !== 'game') {
@@ -754,7 +759,35 @@ function drawBars() {
 
 /* ───────── DRAW: GHOSTS (target positions) ───────── */
 function drawGhosts() {
-  if (!state.weightTargets || state.animating) return;
+  if (!state.weightTargets) return;
+
+  // During animation: draw grey vector from current pos to target
+  if (state.animating) {
+    for (var i = 0; i < state.weights.length; i++) {
+      var t = state.weightTargets[i];
+      if (!t) continue;
+      var cur = getWeightWorldPos(i);
+      var ta = state.platformAngle + t.angle;
+      var gx = PLATFORM_CX + t.r * Math.cos(ta);
+      var gy = PLATFORM_CY + t.r * Math.sin(ta);
+      var dist = Math.hypot(gx - cur.x, gy - cur.y);
+      if (dist < 1) continue;
+      var color = getWeightColor(i);
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.4;
+      ctx.lineWidth = ts(1.5);
+      ctx.setLineDash([ts(4), ts(4)]);
+      ctx.beginPath();
+      ctx.moveTo(tx(cur.x), ty(cur.y));
+      ctx.lineTo(tx(gx), ty(gy));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      var angle = Math.atan2(ty(gy) - ty(cur.y), tx(gx) - tx(cur.x));
+      drawArrowhead(tx(gx), ty(gy), angle, color);
+      ctx.globalAlpha = 1;
+    }
+    return;
+  }
   for (var i = 0; i < state.weights.length; i++) {
     var t = state.weightTargets[i];
     if (!t) continue;
@@ -930,10 +963,10 @@ var BTN_R = 13;
 var BTN_GAP = 15;
 
 function adjustWeightMass(idx, delta) {
-  if (state.playing || state.animating) return;
+  if (state.playing || state.animating || state.mode === 'game') return;
   var w = state.weights[idx];
   w.mass = Math.max(1, Math.min(20, w.mass + delta));
-  conserveL();
+  initPhysics();
   updateReadouts();
   // Reset dismiss timer
   clearTimeout(state.selectedTimeout);
@@ -1225,13 +1258,22 @@ function resetSim() {
   state.animating = false;
   state.animProgress = 0;
   state.animStartPos = null;
-  var n = state.weights.length;
-  var step = (2 * Math.PI) / n;
-  var defaultR = PLATFORM_R * 0.7;
-  state.weights = [];
-  for (var i = 0; i < n; i++) {
-    state.weights.push({ mass: state.weightMass, r: defaultR, angle: i * step });
+
+  if (state.mode === 'game' && state.gameSnapshot) {
+    state.weights = state.gameSnapshot.weights.map(function(w) {
+      return { mass: w.mass, r: w.r, angle: w.angle, fixed: w.fixed };
+    });
+    state.initialOmega = state.gameSnapshot.initialOmega;
+  } else {
+    var n = state.weights.length;
+    var step = (2 * Math.PI) / n;
+    var defaultR = PLATFORM_R * 0.7;
+    state.weights = [];
+    for (var i = 0; i < n; i++) {
+      state.weights.push({ mass: state.weightMass, r: defaultR, angle: i * step });
+    }
   }
+
   initPhysics();
   updatePlayButton();
   updateReadouts();
@@ -1249,6 +1291,7 @@ function setMode(mode) {
   if (mode === 'game') {
     generateTarget();
   } else {
+    state.gameSnapshot = null;
     resetSim();
   }
   updateInfoText();
@@ -1259,57 +1302,75 @@ function generateTarget() {
   state.weightTargets = null;
   state.animating = false;
   state.animStartPos = null;
-  var numWeights = 1 + Math.floor(Math.random() * 4);
-  var numFixed = Math.floor(Math.random() * numWeights); // 0 to numWeights-1
-  var numFree = numWeights - numFixed;
-  var startRPM = 20 + Math.floor(Math.random() * 6) * 5;
-  state.initialOmega = fromRPM(startRPM);
 
-  var step = (2 * Math.PI) / numWeights;
-  state.weights = [];
-
-  // Fixed weights first
-  for (var i = 0; i < numFixed; i++) {
-    state.weights.push({
-      mass: 1 + Math.floor(Math.random() * 20),
-      r: 50 + Math.floor(Math.random() * 150),
-      angle: i * step,
-      fixed: true,
-    });
-  }
-  // Free weights
-  for (var j = 0; j < numFree; j++) {
-    state.weights.push({
-      mass: 1 + Math.floor(Math.random() * 20),
-      r: 50 + Math.floor(Math.random() * 150),
-      angle: (numFixed + j) * step,
-      fixed: false,
-    });
-  }
-
-  initPhysics();
-
-  // Compute achievable omega range
   var rMin = MIN_WEIGHT_R * R_TO_M;
   var rMax = (PLATFORM_R - 5) * R_TO_M;
-  var Ifixed = 0;
-  for (var k = 0; k < state.weights.length; k++) {
-    if (state.weights[k].fixed) {
-      var rm = state.weights[k].r * R_TO_M;
-      Ifixed += state.weights[k].mass * rm * rm;
+  var RPM_LO = 5, RPM_HI = 200;
+  var attempts = 0;
+
+  // Retry until achievable range overlaps [5, 200] RPM
+  do {
+    var numWeights = 1 + Math.floor(Math.random() * 4);
+    var numFixed = Math.floor(Math.random() * numWeights);
+    var numFree = numWeights - numFixed;
+    var startRPM = 20 + Math.floor(Math.random() * 6) * 5;
+    state.initialOmega = fromRPM(startRPM);
+
+    var step = (2 * Math.PI) / numWeights;
+    state.weights = [];
+
+    for (var i = 0; i < numFixed; i++) {
+      state.weights.push({
+        mass: 1 + Math.floor(Math.random() * 20),
+        r: 50 + Math.floor(Math.random() * 150),
+        angle: i * step,
+        fixed: true,
+      });
     }
-  }
-  var IfreeMin = numFree * 1 * rMin * rMin;
-  var IfreeMax = numFree * 20 * rMax * rMax;
-  var omegaMin = state.L / (Ifixed + IfreeMax);
-  var omegaMax = state.L / (Ifixed + IfreeMin);
+    for (var j = 0; j < numFree; j++) {
+      state.weights.push({
+        mass: 1 + Math.floor(Math.random() * 20),
+        r: 50 + Math.floor(Math.random() * 150),
+        angle: (numFixed + j) * step,
+        fixed: false,
+      });
+    }
 
-  // Pick target within achievable range (with margin)
-  var lo = omegaMin + (omegaMax - omegaMin) * 0.08;
-  var hi = omegaMax - (omegaMax - omegaMin) * 0.08;
-  var targetOmega = lo + Math.random() * (hi - lo);
+    initPhysics();
 
-  state.challengeTarget = Math.round(toRPM(targetOmega));
+    var Ifixed = 0;
+    for (var k = 0; k < state.weights.length; k++) {
+      if (state.weights[k].fixed) {
+        var rm = state.weights[k].r * R_TO_M;
+        Ifixed += state.weights[k].mass * rm * rm;
+      }
+    }
+    var IfreeMin = 0, IfreeMax = 0;
+    for (var f = 0; f < state.weights.length; f++) {
+      if (!state.weights[f].fixed) {
+        IfreeMin += state.weights[f].mass * rMin * rMin;
+        IfreeMax += state.weights[f].mass * rMax * rMax;
+      }
+    }
+    var rpmMin = toRPM(state.L / (Ifixed + IfreeMax));
+    var rpmMax = toRPM(state.L / (Ifixed + IfreeMin));
+    attempts++;
+  } while ((rpmMax < RPM_LO || rpmMin > RPM_HI) && attempts < 50);
+
+  // Clamp achievable range to [5, 200] then pick target within overlap
+  var lo = Math.max(rpmMin, RPM_LO);
+  var hi = Math.min(rpmMax, RPM_HI);
+  var margin = (hi - lo) * 0.08;
+  var target = (lo + margin) + Math.random() * (hi - lo - margin * 2);
+  state.challengeTarget = Math.max(RPM_LO, Math.min(RPM_HI, Math.round(target)));
+
+  state.gameSnapshot = {
+    weights: state.weights.map(function(w) {
+      return { mass: w.mass, r: w.r, angle: w.angle, fixed: w.fixed };
+    }),
+    initialOmega: state.initialOmega,
+  };
+
   state.refAngle = 0;
   state.playing = true;
   updatePlayButton();
