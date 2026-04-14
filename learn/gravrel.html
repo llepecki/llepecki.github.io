@@ -1282,7 +1282,11 @@ function findNearestSampleOnRoute(route, px, py) {
   return { dist: Math.sqrt(bestDist), idx: bestIdx };
 }
 
+var MAX_INTERIOR_CPS = 5;
+
 function insertControlPointOnRoute(route, sampleIdx) {
+  // Interior points = total minus 2 endpoints
+  if (route.controlPoints.length - 2 >= MAX_INTERIOR_CPS) return -1;
   var sample = route.samples[sampleIdx];
   var cpIdx = sample.segIdx + 1;
   route.controlPoints.splice(cpIdx, 0, { x: sample.x, y: sample.y });
@@ -1327,6 +1331,7 @@ function handlePointerDown(px, py) {
   }
   if (bestDist < ROUTE_HIT_RADIUS && bestRoute) {
     var cpIdx = insertControlPointOnRoute(bestRoute, bestIdx);
+    if (cpIdx < 0) return false; // limit reached
     state.dragMode = bestKey;
     state.dragIndex = cpIdx;
     return true;

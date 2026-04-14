@@ -539,6 +539,10 @@ const SIM_DT      = 0.25;
 // MAX_STEPS bumped from 15000 to handle Jupiter-class encounters where the
 // integration starts at r ≈ 70k–80k and traverses ~160k of trajectory.
 const MAX_STEPS   = 80000;
+// Captured-orbit limiter: stop integration after this many full revolutions
+// around the planet (counted after closest approach). Prevents endlessly
+// looping trajectories when the spacecraft enters a bound orbit.
+const MAX_REVOLUTIONS = 5;
 
 // Real-world unit conversions for the readouts. LENGTH is exact for all
 // planets because radiusRatio values come from real planetary data. VELOCITY
@@ -931,11 +935,30 @@ function computeTrajectory() {
   let closestIdx = 0;
   let crashed = false;
 
+  // Revolution counter: track cumulative angle swept around the planet.
+  // Counting starts after closest approach (+50 samples settling margin).
+  let prevAngle = Math.atan2(y, x);
+  let totalAngle = 0;
+  let revCounting = false;
+
   for (let i = 0; i < MAX_STEPS; i++) {
     const r = Math.sqrt(x * x + y * y);
     points.push({ x: x, y: y, vx: vx, vy: vy });
 
     if (r < minDist) { minDist = r; closestIdx = i; }
+
+    // Track revolutions to cap captured (bound) orbits
+    const curAngle = Math.atan2(y, x);
+    if (revCounting) {
+      let dAngle = curAngle - prevAngle;
+      if (dAngle > Math.PI) dAngle -= 2 * Math.PI;
+      if (dAngle < -Math.PI) dAngle += 2 * Math.PI;
+      totalAngle += dAngle;
+      if (Math.abs(totalAngle) >= MAX_REVOLUTIONS * 2 * Math.PI) break;
+    } else if (i > closestIdx + 50) {
+      revCounting = true;
+    }
+    prevAngle = curAngle;
 
     const rScale = collisionR;
     const substeps = r < rScale * 1.7 ? 32 : r < rScale * 3.3 ? 16 : r < rScale * 6.7 ? 8 : r < rScale * 13 ? 4 : 1;

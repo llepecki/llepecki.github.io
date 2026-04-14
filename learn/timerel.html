@@ -188,6 +188,30 @@
   }
   @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+  .star-facts {
+    position: absolute; z-index: 5;
+    background: rgba(19,24,37,0.95); border: 1px solid var(--panel-border);
+    border-radius: 8px; padding: 14px 16px;
+    max-width: 340px; pointer-events: none;
+    font-family: 'Share Tech Mono', monospace; font-size: 13px;
+    color: var(--text); line-height: 1.5;
+    opacity: 0; transition: opacity 0.15s ease;
+  }
+  .star-facts.visible { opacity: 1; }
+  .sf-header {
+    font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .sf-meta { color: var(--text-dim); font-size: 13px; margin-bottom: 8px; }
+  .sf-stats { margin-bottom: 10px; }
+  .sf-stat { display: flex; justify-content: space-between; padding: 2px 0; }
+  .sf-stat-label { color: var(--text-dim); }
+  .sf-wow {
+    border-top: 1px solid var(--panel-border); padding-top: 8px;
+    margin-bottom: 8px; color: var(--star-glow); font-size: 13px; line-height: 1.5;
+  }
+  .sf-find { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+
   .name-panel {
     position: absolute; top: 10px; left: 10px; z-index: 10;
     background: rgba(19,24,37,0.92); border: 1px solid var(--panel-border);
@@ -231,6 +255,7 @@
 <div class="main">
   <div class="canvas-wrap">
     <canvas id="canvas"></canvas>
+    <div id="starFactsOverlay" class="star-facts"></div>
     <div class="name-panel">
       <div class="name-row">
         <span class="ship-dot" style="background:var(--earth-color)"></span>
@@ -331,13 +356,107 @@ var CLOCK_RADIUS = 28;
 // ====================== STAR DATA ======================
 
 var STARS = [
-  { nameEn: 'Proxima Centauri', namePl: 'Proxima Centauri', dist: 4.24,   approx: false, color: '#ff9988', glowRgb: '255,153,136', radius: 5,  noteEn: 'Nearest star to the Sun', notePl: 'Najbli\u017Csza gwiazda do S\u0142o\u0144ca' },
-  { nameEn: 'Sirius',           namePl: 'Syriusz',          dist: 8.6,    approx: false, color: '#ccddff', glowRgb: '204,221,255', radius: 7,  noteEn: 'Brightest star in the night sky', notePl: 'Najja\u015Bniejsza gwiazda na niebie' },
-  { nameEn: 'Vega',             namePl: 'Wega',             dist: 25,     approx: false, color: '#ffffff', glowRgb: '255,255,255', radius: 6,  noteEn: 'One of the brightest northern stars', notePl: 'Jedna z najja\u015Bniejszych gwiazd p\u00F3\u0142nocnych' },
-  { nameEn: 'Polaris',          namePl: 'Gwiazda Polarna',  dist: 430,    approx: true,  color: '#fff5d0', glowRgb: '255,245,208', radius: 6,  noteEn: 'The North Star', notePl: 'Gwiazda P\u00F3\u0142nocna' },
-  { nameEn: 'Betelgeuse',       namePl: 'Betelgeza',        dist: 500,    approx: true,  color: '#ff8844', glowRgb: '255,136,68',  radius: 10, noteEn: 'Red supergiant in Orion', notePl: 'Czerwony nadolbrzym w Orionie' },
-  { nameEn: 'Deneb',            namePl: 'Deneb',            dist: 1410,   approx: true,  color: '#aaccff', glowRgb: '170,204,255', radius: 8,  noteEn: 'Distant bright star in Cygnus', notePl: 'Odleg\u0142a jasna gwiazda w \u0141ab\u0119dziu' },
-  { nameEn: 'My Star',          namePl: 'Moja Gwiazda',     dist: 50,     approx: false, color: '#ffe9a0', glowRgb: '255,233,160', radius: 7,  noteEn: '', notePl: '', custom: true },
+  { nameEn: 'Proxima Centauri', namePl: 'Proxima Centauri', dist: 4.24, approx: false, color: '#ff9988', glowRgb: '255,153,136', radius: 5,
+    noteEn: 'Nearest star to the Sun', notePl: 'Najbli\u017Csza gwiazda do S\u0142o\u0144ca',
+    facts: {
+      en: { type: 'Red dwarf', mass: '0.12\u00D7 Sun', size: '0.15\u00D7 Sun', temp: '~3,040 K', bright: '0.0017\u00D7 Sun', constellation: 'Centaurus',
+        wow: 'Our closest stellar neighbor \u2014 but so dim you need a telescope to see it, even though it\u2019s only 4.24 light-years away!',
+        find: 'Visible only from the Southern Hemisphere, near the bright pair Alpha Centauri A and B.' },
+      pl: { type: 'Czerwony karze\u0142', mass: '0,12\u00D7 S\u0142o\u0144ca', size: '0,15\u00D7 S\u0142o\u0144ca', temp: '~3 040 K', bright: '0,0017\u00D7 S\u0142o\u0144ca', constellation: 'Centaur',
+        wow: 'Najbli\u017Csza s\u0105siadka S\u0142o\u0144ca \u2014 ale tak s\u0142aba, \u017Ce potrzebujesz teleskopu, by j\u0105 zobaczy\u0107!',
+        find: 'Widoczna tylko z p\u00F3\u0142kuli po\u0142udniowej, blisko jasnej pary Alfa Centauri A i B.' }
+    }
+  },
+  { nameEn: 'Sirius', namePl: 'Syriusz', dist: 8.6, approx: false, color: '#ccddff', glowRgb: '204,221,255', radius: 7,
+    noteEn: 'Brightest star in the night sky', notePl: 'Najja\u015Bniejsza gwiazda na niebie',
+    facts: {
+      en: { type: 'Blue-white main sequence + white dwarf', mass: '2.06\u00D7 Sun', size: '1.71\u00D7 Sun', temp: '~9,940 K', bright: '25\u00D7 Sun', constellation: 'Canis Major',
+        wow: 'The brightest star in our night sky! Ancient Egyptians based their calendar on it \u2014 when Sirius rose at dawn, the Nile would soon flood.',
+        find: 'Follow Orion\u2019s belt downward and to the left \u2014 the dazzling blue-white star you hit is Sirius.' },
+      pl: { type: 'Bia\u0142o-niebieska + bia\u0142y karze\u0142', mass: '2,06\u00D7 S\u0142o\u0144ca', size: '1,71\u00D7 S\u0142o\u0144ca', temp: '~9 940 K', bright: '25\u00D7 S\u0142o\u0144ca', constellation: 'Wielki Pies',
+        wow: 'Najja\u015Bniejsza gwiazda na nocnym niebie! Staro\u017Cytni Egipcjanie oparli na niej sw\u00F3j kalendarz \u2014 gdy Syriusz wschodzi\u0142 o \u015Bwicie, Nil wkr\u00F3tce wylewa\u0142.',
+        find: 'Pod\u0105\u017Caj wzd\u0142u\u017C Pasa Oriona w d\u00F3\u0142 i w lewo \u2014 ol\u015Bniewaj\u0105ca bia\u0142o-niebieska gwiazda to Syriusz.' }
+    }
+  },
+  { nameEn: 'Vega', namePl: 'Wega', dist: 25, approx: false, color: '#ffffff', glowRgb: '255,255,255', radius: 6,
+    noteEn: 'One of the brightest northern stars', notePl: 'Jedna z najja\u015Bniejszych gwiazd p\u00F3\u0142nocnych',
+    facts: {
+      en: { type: 'Blue-white main sequence', mass: '2.1\u00D7 Sun', size: '2.36\u00D7 Sun', temp: '~9,600 K', bright: '40\u00D7 Sun', constellation: 'Lyra',
+        wow: 'Vega spins so fast \u2014 once every 12.5 hours \u2014 that it bulges at its equator like a squished ball! It was also the first star ever photographed (1850).',
+        find: 'In summer, look almost straight overhead for a brilliant blue-white star \u2014 the brightest point of the Summer Triangle.' },
+      pl: { type: 'Bia\u0142o-niebieska ci\u0105gu g\u0142\u00F3wnego', mass: '2,1\u00D7 S\u0142o\u0144ca', size: '2,36\u00D7 S\u0142o\u0144ca', temp: '~9 600 K', bright: '40\u00D7 S\u0142o\u0144ca', constellation: 'Lutnia',
+        wow: 'Wega wiruje tak szybko \u2014 raz na 12,5 godziny \u2014 \u017Ce wybrzusza si\u0119 na r\u00F3wniku jak sp\u0142aszczona pi\u0142ka! By\u0142a te\u017C pierwsz\u0105 sfotografowan\u0105 gwiazd\u0105 (1850).',
+        find: 'Latem sp\u00F3jrz prawie prosto nad siebie \u2014 ol\u015Bniewaj\u0105ca bia\u0142o-niebieska gwiazda to najja\u015Bniejszy wierzcho\u0142ek Tr\u00F3jk\u0105ta Letniego.' }
+    }
+  },
+  { nameEn: 'Capella', namePl: 'Kapella', dist: 43, approx: false, color: '#ffdd44', glowRgb: '255,221,68', radius: 7,
+    noteEn: '6th brightest star; a quadruple system', notePl: '6. najja\u015Bniejsza gwiazda; pocz\u00F3rny uk\u0142ad',
+    facts: {
+      en: { type: 'Quadruple system (2 yellow giants + 2 red dwarfs)', mass: '2.6 + 2.5\u00D7 Sun', size: '12 + 9\u00D7 Sun', temp: '~4,940 / 5,700 K', bright: '~160\u00D7 Sun combined', constellation: 'Auriga',
+        wow: 'What looks like one star is actually four! Two giant stars orbit each other so closely that no telescope on Earth can split them apart.',
+        find: 'Look north of Orion for a bright golden-yellow star high in the winter sky \u2014 the 6th brightest star overall.' },
+      pl: { type: 'Uk\u0142ad pocz\u00F3rny (2 \u017C\u00F3\u0142te olbrzymy + 2 czerwone kar\u0142y)', mass: '2,6 + 2,5\u00D7 S\u0142o\u0144ca', size: '12 + 9\u00D7 S\u0142o\u0144ca', temp: '~4 940 / 5 700 K', bright: '~160\u00D7 S\u0142o\u0144ca \u0142\u0105cznie', constellation: 'Wo\u017Anica',
+        wow: 'To, co wygl\u0105da jak jedna gwiazda, to w rzeczywisto\u015Bci cztery! Dwa olbrzymy kr\u0105\u017C\u0105 wok\u00F3\u0142 siebie tak blisko, \u017Ce \u017Caden teleskop nie rozdzieli ich wizualnie.',
+        find: 'Sp\u00F3jrz na p\u00F3\u0142noc od Oriona \u2014 jasna z\u0142oto\u017C\u00F3\u0142ta gwiazda wysoko na zimowym niebie.' }
+    }
+  },
+  { nameEn: 'Algol', namePl: 'Algol', dist: 94, approx: false, color: '#bbccff', glowRgb: '187,204,255', radius: 6,
+    noteEn: 'The "Demon Star" \u2014 blinks every 2.9 days', notePl: '"Gwiazda Demona" \u2014 mruga co 2,9 dnia',
+    facts: {
+      en: { type: 'Eclipsing binary (blue-white + orange subgiant)', mass: '3.2\u00D7 Sun', size: '2.7\u00D7 Sun', temp: '~13,000 K', bright: '182\u00D7 Sun', constellation: 'Perseus',
+        wow: 'Every 2 days and 20 hours, the dimmer star passes in front of the bright one and Algol "winks"! Ancient Arabs called it the "Demon Star" because its blinking spooked them.',
+        find: 'Find the W of Cassiopeia, then look below it \u2014 Algol is in Perseus and you can watch it dim with your own eyes every ~3 days.' },
+      pl: { type: 'Za\u0107mieniowa podw\u00F3jna (bia\u0142o-niebieska + pomara\u0144czowy podolbrzym)', mass: '3,2\u00D7 S\u0142o\u0144ca', size: '2,7\u00D7 S\u0142o\u0144ca', temp: '~13 000 K', bright: '182\u00D7 S\u0142o\u0144ca', constellation: 'Perseusz',
+        wow: 'Co 2 dni i 20 godzin ciemniejsza gwiazda przechodzi przed jasn\u0105 i Algol \u201Emruga\u201D! Staro\u017Cytni Arabowie nazywali j\u0105 \u201EGwiazd\u0105 Demona\u201D, bo jej migotanie ich przera\u017Ca\u0142o.',
+        find: 'Znajd\u017A liter\u0119 W Kasjopei, a potem sp\u00F3jrz poni\u017Cej \u2014 Algol jest w Perseuszu, a jego przyciemnienia mo\u017Cna obserwowa\u0107 go\u0142ym okiem co ~3 dni.' }
+    }
+  },
+  { nameEn: 'Schedar', namePl: 'Szedar', dist: 228, approx: false, color: '#ffaa44', glowRgb: '255,170,68', radius: 7,
+    noteEn: 'Brightest star in Cassiopeia\'s "W"', notePl: 'Najja\u015Bniejsza gwiazda w "W" Kasjopei',
+    facts: {
+      en: { type: 'Orange giant', mass: '3\u20135\u00D7 Sun', size: '45\u00D7 Sun', temp: '~4,530 K', bright: '680\u00D7 Sun', constellation: 'Cassiopeia',
+        wow: 'Schedar is the heart of the big W! Cassiopeia\u2019s W-shape is one of the easiest patterns to spot, and Schedar has swelled to 45 times the Sun\u2019s size as it ages.',
+        find: 'Find the W (or M) shape in the northern sky \u2014 Schedar is its bottom-right star, glowing with an orange tint.' },
+      pl: { type: 'Pomara\u0144czowy olbrzym', mass: '3\u20135\u00D7 S\u0142o\u0144ca', size: '45\u00D7 S\u0142o\u0144ca', temp: '~4 530 K', bright: '680\u00D7 S\u0142o\u0144ca', constellation: 'Kasjopeja',
+        wow: 'Szedar to serce wielkiego W! Kszta\u0142t W Kasjopei jest jednym z naj\u0142atwiejszych wzor\u00F3w na niebie, a Szedar rozr\u00F3s\u0142 si\u0119 do 45-krotno\u015Bci rozmiaru S\u0142o\u0144ca.',
+        find: 'Znajd\u017A kszta\u0142t W (lub M) na p\u00F3\u0142nocnym niebie \u2014 Szedar to gwiazda w prawym dolnym rogu, \u015Bwiec\u0105ca pomara\u0144czowo.' }
+    }
+  },
+  { nameEn: 'Polaris', namePl: 'Gwiazda Polarna', dist: 430, approx: true, color: '#fff5d0', glowRgb: '255,245,208', radius: 6,
+    noteEn: 'The North Star', notePl: 'Gwiazda P\u00F3\u0142nocna',
+    facts: {
+      en: { type: 'Yellow supergiant + 2 companions', mass: '5.4\u00D7 Sun', size: '46\u00D7 Sun', temp: '~6,000 K', bright: '2,500\u00D7 Sun', constellation: 'Ursa Minor',
+        wow: 'Polaris barely moves all night \u2014 every other star appears to spin around it! That\u2019s because Earth\u2019s North Pole points almost exactly at it. It also gently pulses in brightness (a Cepheid variable).',
+        find: 'Find the Big Dipper, then draw a line through the two stars at the end of its bowl \u2014 that line points straight to Polaris.' },
+      pl: { type: '\u017B\u00F3\u0142ty nadolbrzym + 2 towarzysze', mass: '5,4\u00D7 S\u0142o\u0144ca', size: '46\u00D7 S\u0142o\u0144ca', temp: '~6 000 K', bright: '2 500\u00D7 S\u0142o\u0144ca', constellation: 'Ma\u0142a Nied\u017Awied\u017Aica',
+        wow: 'Polaris prawie nie porusza si\u0119 na niebie ca\u0142\u0105 noc \u2014 wszystkie inne gwiazdy kr\u0119c\u0105 si\u0119 wok\u00F3\u0142 niej! To dlatego, \u017Ce biegun p\u00F3\u0142nocny Ziemi wskazuje na ni\u0105. Delikatnie pulsuje jasno\u015Bci\u0105 (cefeida).',
+        find: 'Znajd\u017A Wielki W\u00F3z i poprowad\u017A lini\u0119 przez dwie gwiazdy na ko\u0144cu czerpaka \u2014 ta linia wskazuje prosto na Polaris.' }
+    }
+  },
+  { nameEn: 'Betelgeuse', namePl: 'Betelgeza', dist: 500, approx: true, color: '#ff8844', glowRgb: '255,136,68', radius: 10,
+    noteEn: 'Red supergiant in Orion', notePl: 'Czerwony nadolbrzym w Orionie',
+    facts: {
+      en: { type: 'Red supergiant', mass: '16\u201319\u00D7 Sun', size: '~760\u00D7 Sun', temp: '~3,500 K', bright: '~100,000\u00D7 Sun', constellation: 'Orion',
+        wow: 'If you placed Betelgeuse where the Sun is, it would swallow Mercury, Venus, Earth, Mars, and nearly reach Jupiter! One day it will explode as a supernova bright enough to see in daylight.',
+        find: 'Look at Orion \u2014 Betelgeuse is the reddish-orange star at his upper-left shoulder, easy to spot on winter evenings.' },
+      pl: { type: 'Czerwony nadolbrzym', mass: '16\u201319\u00D7 S\u0142o\u0144ca', size: '~760\u00D7 S\u0142o\u0144ca', temp: '~3 500 K', bright: '~100 000\u00D7 S\u0142o\u0144ca', constellation: 'Orion',
+        wow: 'Gdyby\u015B umie\u015Bci\u0142 Betelgez\u0119 w miejscu S\u0142o\u0144ca, poch\u0142on\u0119\u0142aby Merkurego, Wenus, Ziemi\u0119, Marsa i prawie si\u0119gn\u0119\u0142aby Jowisza! Pewnego dnia wybuchnie jako supernowa widoczna w bia\u0142y dzie\u0144.',
+        find: 'Sp\u00F3jrz na Oriona \u2014 Betelgeza to czerwono-pomara\u0144czowa gwiazda w jego lewym g\u00F3rnym ramieniu.' }
+    }
+  },
+  { nameEn: 'Deneb', namePl: 'Deneb', dist: 1410, approx: true, color: '#aaccff', glowRgb: '170,204,255', radius: 8,
+    noteEn: 'Distant bright star in Cygnus', notePl: 'Odleg\u0142a jasna gwiazda w \u0141ab\u0119dziu',
+    facts: {
+      en: { type: 'Blue-white supergiant', mass: '19\u00D7 Sun', size: '203\u00D7 Sun', temp: '~8,500 K', bright: '~196,000\u00D7 Sun', constellation: 'Cygnus',
+        wow: 'Deneb is so far away (1,410 ly!) that the light you see tonight left the star around 600 AD \u2014 yet it\u2019s STILL one of the brightest stars in the sky. One of the most luminous stars in our galaxy!',
+        find: 'Deneb marks the tail of the Swan (Cygnus) and is one of the three stars forming the Summer Triangle \u2014 look near the Milky Way band on summer nights.' },
+      pl: { type: 'Bia\u0142o-niebieski nadolbrzym', mass: '19\u00D7 S\u0142o\u0144ca', size: '203\u00D7 S\u0142o\u0144ca', temp: '~8 500 K', bright: '~196 000\u00D7 S\u0142o\u0144ca', constellation: '\u0141ab\u0119d\u017A',
+        wow: 'Deneb jest tak daleko (1 410 ly!), \u017Ce \u015Bwiat\u0142o, kt\u00F3re widzisz dzi\u015B, opu\u015Bci\u0142o t\u0119 gwiazd\u0119 oko\u0142o 600 roku naszej ery \u2014 a WCI\u0104\u017B jest jedn\u0105 z najja\u015Bniejszych gwiazd na niebie!',
+        find: 'Deneb wyznacza ogon \u0141ab\u0119dzia i jest jedn\u0105 z trzech gwiazd Tr\u00F3jk\u0105ta Letniego \u2014 szukaj blisko Drogi Mlecznej w letnie noce.' }
+    }
+  },
+  { nameEn: 'My Star', namePl: 'Moja Gwiazda', dist: 50, approx: false, color: '#ffe9a0', glowRgb: '255,233,160', radius: 7,
+    noteEn: '', notePl: '', custom: true },
 ];
 
 // ====================== I18N ======================
@@ -378,6 +497,7 @@ var I18N = {
     customStar: 'My Star',
     lblCustomName: 'Star Name',
     lblCustomDist: 'Distance (ly)',
+    sfMass: 'Mass', sfSize: 'Size', sfTemp: 'Temp', sfBright: 'Luminosity', sfFind: 'Find it',
     overlayTitle: 'Journey Complete!',
     overlayConclusion: 'On the rocket, {diff} less time passed than on Earth!',
     clickToDismiss: 'Click to dismiss',
@@ -422,6 +542,7 @@ var I18N = {
     customStar: 'Moja Gwiazda',
     lblCustomName: 'Nazwa gwiazdy',
     lblCustomDist: 'Odleg\u0142o\u015B\u0107 (ly)',
+    sfMass: 'Masa', sfSize: 'Rozmiar', sfTemp: 'Temp.', sfBright: 'Jasno\u015B\u0107', sfFind: 'Znajd\u017A j\u0105',
     overlayTitle: 'Podr\u00F3\u017C zako\u0144czona!',
     overlayConclusion: 'W rakiecie up\u0142yn\u0119\u0142o o {diff} mniej czasu ni\u017C na Ziemi!',
     clickToDismiss: 'Kliknij, aby zamkn\u0105\u0107',
@@ -1545,6 +1666,64 @@ function toggleLang() {
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
   applyTranslations();
 }
+
+// ====================== STAR FACTS OVERLAY ======================
+
+var sfOverlay = document.getElementById('starFactsOverlay');
+var sfVisible = false;
+
+function showStarFacts(star, x, y) {
+  var f = star.facts[state.lang];
+  var name = state.lang === 'en' ? star.nameEn : star.namePl;
+  sfOverlay.innerHTML =
+    '<div class="sf-header" style="color:' + star.color + '">' + name + '</div>' +
+    '<div class="sf-meta">' + f.type + ' \u00B7 ' + f.constellation + '</div>' +
+    '<div class="sf-stats">' +
+      '<div class="sf-stat"><span class="sf-stat-label">' + T('sfMass') + '</span><span>' + f.mass + '</span></div>' +
+      '<div class="sf-stat"><span class="sf-stat-label">' + T('sfSize') + '</span><span>' + f.size + '</span></div>' +
+      '<div class="sf-stat"><span class="sf-stat-label">' + T('sfTemp') + '</span><span>' + f.temp + '</span></div>' +
+      '<div class="sf-stat"><span class="sf-stat-label">' + T('sfBright') + '</span><span>' + f.bright + '</span></div>' +
+    '</div>' +
+    '<div class="sf-wow">' + f.wow + '</div>' +
+    '<div class="sf-find"><b>' + T('sfFind') + ':</b> ' + f.find + '</div>';
+
+  // Position: prefer left of star, fall back to right
+  var ow = 340;
+  var left = x - ow - 20;
+  if (left < 10) left = x + 20;
+  var top = Math.max(10, y - 80);
+  sfOverlay.style.left = left + 'px';
+  sfOverlay.style.top = top + 'px';
+  sfOverlay.style.display = 'block';
+  setTimeout(function() { sfOverlay.classList.add('visible'); }, 10);
+  sfVisible = true;
+}
+
+function hideStarFacts() {
+  if (!sfVisible) return;
+  sfOverlay.classList.remove('visible');
+  setTimeout(function() { if (!sfVisible) sfOverlay.style.display = 'none'; }, 150);
+  sfVisible = false;
+}
+
+canvas.addEventListener('mousemove', function(e) {
+  if (state.phase !== 'idle' && state.phase !== 'landed') { hideStarFacts(); return; }
+  var star = STARS[state.starIndex];
+  if (star.custom) { hideStarFacts(); return; }
+  var rect = canvas.getBoundingClientRect();
+  var mx = e.clientX - rect.left;
+  var my = e.clientY - rect.top;
+  var sx = getStarScreenX();
+  var sy = getStarY();
+  var dist = Math.sqrt((mx - sx) * (mx - sx) + (my - sy) * (my - sy));
+  if (dist < 40) {
+    if (!sfVisible) showStarFacts(star, sx, sy);
+  } else {
+    hideStarFacts();
+  }
+});
+
+canvas.addEventListener('mouseleave', function() { hideStarFacts(); });
 
 // ====================== INIT ======================
 

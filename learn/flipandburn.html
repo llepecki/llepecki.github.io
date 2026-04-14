@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="description" content="Hohmann Transfer Game — time your launch and burns to transfer between neighboring planets on a minimum-energy orbit.">
+<meta name="description" content="Flip and Burn Transfer Game — time your launch and flip to transfer between neighboring planets on a straight-line Epstein drive trajectory.">
 <meta name="author" content="Łukasz Łepecki">
-<link rel="canonical" href="https://lepecki.com/learn/hohmann.html">
-<meta property="og:title" content="Hohmann Transfer Game">
-<meta property="og:description" content="Hohmann Transfer Game — time your launch and burns to transfer between neighboring planets on a minimum-energy orbit.">
+<link rel="canonical" href="https://lepecki.com/learn/flipandburn.html">
+<meta property="og:title" content="Flip and Burn Transfer Game">
+<meta property="og:description" content="Flip and Burn Transfer Game — time your launch and flip to transfer between neighboring planets on a straight-line Epstein drive trajectory.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://lepecki.com/learn/hohmann.html">
+<meta property="og:url" content="https://lepecki.com/learn/flipandburn.html">
 <meta property="og:site_name" content="Łukasz Łepecki">
 <meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hohmann Transfer Game">
-<meta name="twitter:description" content="Hohmann Transfer Game — time your launch and burns to transfer between neighboring planets on a minimum-energy orbit.">
-<title>Hohmann Transfer Game</title>
+<meta name="twitter:title" content="Flip and Burn Transfer Game">
+<meta name="twitter:description" content="Flip and Burn Transfer Game — time your launch and flip to transfer between neighboring planets on a straight-line Epstein drive trajectory.">
+<title>Flip and Burn Transfer Game</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -196,6 +196,7 @@
   }
   .burn-fill.over { background: var(--loss); }
   .burn-fill.good { background: var(--gain); }
+  .burn-fill.fatal { background: #8b0000; }
   .burn-target {
     position: absolute; top: 0; height: 100%;
     border-left: 3px solid #1a7f37;
@@ -247,21 +248,36 @@
     50% { box-shadow: 0 0 14px 3px rgba(63,185,80,0.3); }
   }
 
-  /* MET clock */
-  .met-clock {
+  /* HUD group (top-left overlay) */
+  .hud-group {
     position: absolute;
     top: 16px; left: 16px;
-    padding: 6px 14px; border-radius: 6px;
-    background: rgba(11,15,24,0.85);
-    border: 1px solid var(--panel-border);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 14px; letter-spacing: 1px;
-    color: var(--accent);
     pointer-events: none; z-index: 10;
-    text-shadow: 0 0 8px rgba(88,166,255,0.3);
-    transition: opacity 0.3s;
+    display: flex; flex-direction: column; gap: 0;
   }
-  .met-clock.paused { opacity: 0.7; }
+  .met-clock {
+    padding: 10px 22px 6px; border-radius: 8px 8px 0 0;
+    background: rgba(11,15,24,0.88);
+    border: 1px solid var(--panel-border);
+    border-bottom: none;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 22px; font-weight: 700; letter-spacing: 2px;
+    color: var(--gain);
+    text-shadow: 0 0 10px rgba(63,185,80,0.4);
+    transition: color 0.3s, text-shadow 0.3s;
+    min-width: 120px; text-align: center;
+  }
+  .transfer-time {
+    padding: 4px 22px 8px; border-radius: 0 0 8px 8px;
+    background: rgba(11,15,24,0.88);
+    border: 1px solid var(--panel-border);
+    border-top: none;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; letter-spacing: 1px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+  .hud-group.paused { opacity: 0.7; }
 
   /* Step indicator */
   .step-indicator {
@@ -330,7 +346,9 @@
       padding: 12px 16px; gap: 12px;
     }
     .ctrl-group { min-width: 140px; flex: 1; }
-    .met-clock { font-size: 12px; padding: 4px 10px; top: 10px; left: 10px; }
+    .hud-group { top: 10px; left: 10px; }
+    .met-clock { font-size: 16px; padding: 6px 14px 4px; min-width: 90px; }
+    .transfer-time { font-size: 11px; padding: 2px 14px 6px; }
   }
 </style>
 </head>
@@ -338,8 +356,8 @@
 
 <header>
   <div class="header-text">
-    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Hohmann Transfer Game</span></h1>
-    <p id="subtitleText">Time your launch and burns to transfer between planets on a minimum-energy Hohmann transfer.</p>
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Flip and Burn</span></h1>
+    <p id="subtitleText">Time your launch and flip to transfer between planets on a straight-line Epstein drive trajectory.</p>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
 </header>
@@ -347,12 +365,15 @@
 <div class="main">
   <div class="canvas-wrap">
     <canvas id="canvas"></canvas>
-    <div class="met-clock" id="metClock">T+ 0d 00h</div>
+    <div class="hud-group">
+      <div class="met-clock" id="accelDisplay">0 g</div>
+      <div class="transfer-time" id="transferTimeDisplay"></div>
+    </div>
     <div class="canvas-prompt" id="canvasPrompt"></div>
     <div class="step-indicator" id="stepIndicator">
       <span class="step-label current" id="stepLbl1">1 Launch</span>
       <div class="step-dot current" id="stepDot1"></div>
-      <span class="step-label" id="stepLbl2">2 Coast</span>
+      <span class="step-label" id="stepLbl2">2 Flip</span>
       <div class="step-dot" id="stepDot2"></div>
       <span class="step-label" id="stepLbl3">3 Arrive</span>
       <div class="step-dot" id="stepDot3"></div>
@@ -376,18 +397,18 @@
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblDifficulty">Difficulty</span>
       <div class="type-toggle">
-        <button class="type-btn active" id="diffEasyBtn" onclick="setDifficulty('easy')">★</button>
-        <button class="type-btn" id="diffMediumBtn" onclick="setDifficulty('medium')">★★</button>
-        <button class="type-btn" id="diffHardBtn" onclick="setDifficulty('hard')">★★★</button>
+        <button class="type-btn active" id="diffEasyBtn" onclick="setDifficulty('easy')">&#x2605;</button>
+        <button class="type-btn" id="diffMediumBtn" onclick="setDifficulty('medium')">&#x2605;&#x2605;</button>
+        <button class="type-btn" id="diffHardBtn" onclick="setDifficulty('hard')">&#x2605;&#x2605;&#x2605;</button>
       </div>
     </div>
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
       <div class="type-toggle">
-        <button class="type-btn active" id="warpNormalBtn" onclick="setWarp('normal')">▶</button>
-        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">▶▶</button>
-        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">▶▶▶</button>
+        <button class="type-btn active" id="warpNormalBtn" onclick="setWarp('normal')">&#x25b6;</button>
+        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">&#x25b6;&#x25b6;&#x25b6;</button>
       </div>
     </div>
 
@@ -396,7 +417,7 @@
     </div>
 
     <div class="ctrl-group" id="grpBurnMeter">
-      <span class="ctrl-label" id="lblBurn">Burn 1</span>
+      <span class="ctrl-label" id="lblBurn">Burn</span>
       <div class="burn-meter-wrap">
         <div class="burn-meter">
           <div class="burn-target" id="burnTarget"></div>
@@ -421,8 +442,8 @@
         <span class="readout-val" id="missionVal">&mdash;</span>
       </div>
       <div class="readout-row">
-        <span class="readout-label" id="lblTransferTime">Transfer time</span>
-        <span class="readout-val" id="transferTimeVal">&mdash;</span>
+        <span class="readout-label" id="lblBraking">Braking</span>
+        <span class="readout-val" id="brakingVal">&mdash;</span>
       </div>
       <div class="readout-row">
         <span class="readout-label" id="lblDv1">Departure &Delta;v</span>
@@ -457,13 +478,24 @@
 
 var TWO_PI = 2 * Math.PI;
 var DEG2RAD = Math.PI / 180;
-var MU_SUN = 4 * Math.PI * Math.PI; // AU^3/yr^2
-var SIM_RATE = 1 / 15; // years per real-second at x1
-var APPROACH_DUR = 3.0; // seconds — arrival timing window
-var BURN_SHRINK_DUR_MED = 5.0; // seconds — green zone vanishes after burn start (medium)
-var BURN_SHRINK_DUR_HARD = 3.0; // seconds — green zone vanishes after burn start (hard)
-var MAX_DT = 0.05; // cap real dt at 50 ms
-var AU_TO_KMS = 4.7405; // 1 AU/yr in km/s (approx)
+var SIM_RATE = 1 / 15;      // years per real-second at x1
+var MAX_DT = 0.05;           // cap real dt at 50 ms
+var AU_TO_KMS = 4.7405;      // 1 AU/yr in km/s (approx)
+
+var G_TO_AUYR2 = 65283.465095;
+var A_REF = (1 / 3) * G_TO_AUYR2;      // 1/3 g — comfortable Epstein cruise
+var CREW_SAFE_G = 1.0;                  // below this: 0% death
+var CREW_DEAD_G = 20.0;                 // above this: 100% death
+var A_CREW_DEAD = CREW_DEAD_G * G_TO_AUYR2;
+var SOLAR_KILL_RADIUS = 0.18;           // AU
+var SOLAR_SAFE_RADIUS = 0.22;           // AU
+var FLIP_ANIM_MS = 400;                 // ms
+
+var DIFFICULTY = {
+  easy:   { ACCEL_TOL: 0.50, BURN_SHRINK_SEC: Infinity },
+  medium: { ACCEL_TOL: 0.25, BURN_SHRINK_SEC: 5 },
+  hard:   { ACCEL_TOL: 0.10, BURN_SHRINK_SEC: 3 }
+};
 
 /* ══════════════════════════════════════════════ */
 /* Orbital Data                                   */
@@ -511,8 +543,8 @@ function getNeighbors(homeKey) {
 
 var I18N = {
   en: {
-    title: 'Hohmann Transfer Game',
-    subtitle: 'Time your launch and burns to transfer between planets on a minimum-energy Hohmann transfer.',
+    title: 'Flip and Burn',
+    subtitle: 'Time your launch and flip to transfer between planets on a straight-line Epstein drive trajectory.',
     home: 'Home',
     destination: 'Destination',
     difficulty: 'Difficulty',
@@ -521,9 +553,8 @@ var I18N = {
     warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
     engine: 'ENGINE',
     burn: 'Burn',
-    burn1: 'Burn 1', burn2: 'Burn 2',
     mission: 'Mission',
-    transferTime: 'Transfer time',
+    braking: 'Braking',
     dv1: 'Departure \u0394v',
     dv2: 'Arrival \u0394v',
     phase: 'Phase angle',
@@ -534,43 +565,40 @@ var I18N = {
     waiting: 'Waiting for window',
     goodWindow: 'Window open \u2014 fire!',
     burning: 'Burning...',
-    cruising: 'Cruising',
-    readyCapture: 'Approaching target!',
-    captured: 'Orbit matched!',
+    flipping: 'Flipping...',
+    brakingStatus: 'Braking',
+    coastingStatus: 'Coasting',
     missed: 'Missed',
     tooEarly: 'Too early',
     tooLate: 'Too late',
-    promptWait: 'Use time warp and wait for the launch window',
-    promptWindow: 'LAUNCH WINDOW! Hold ENGINE now!',
-    promptBurn1: 'Hold ENGINE \u2014 release in the green zone',
-    promptCruise: 'Coasting to destination...',
-    promptApproach: 'Hold ENGINE for arrival burn!',
-    promptBurn2: 'Hold ENGINE \u2014 release in the green zone',
+    promptReady: 'Hold ENGINE to launch!',
+    promptFlip: 'Hold ENGINE \u2014 release in the green zone to flip',
+    promptBrake: 'Braking to destination...',
+    promptCoast: 'Coasting \u2014 engines off...',
     engineWait: 'WAIT...',
     engineLaunch: 'HOLD TO LAUNCH',
-    engineCapture: 'HOLD: BRAKE',
     engineHold: 'HOLDING...',
     launchZone: 'Launch zone',
-    promptCaptured: 'Orbit matched!',
+    stepLaunch: 'Launch',
+    stepFlip: 'Flip',
+    stepArrive: 'Arrive',
     resultSuccess: 'Perfect Transfer!',
     resultClose: 'Almost There!',
     resultMiss: 'Missed',
-    hintEarly: 'You launched too early \u2014 wait for the planets to align.',
-    hintLate: 'You launched too late \u2014 the window passed.',
-    hintBurn1Long: 'Departure burn too long \u2014 release sooner.',
-    hintBurn1Short: 'Departure burn too short \u2014 hold longer.',
-    hintBurn2Long: 'Arrival burn too long.',
-    hintBurn2Short: 'Arrival burn too short.',
-    hintNoCapture: 'Reached the planet but did not match orbit.',
-    hintEscape: 'Burn too long \u2014 spacecraft escaping the Solar System!',
+    resultFatal: 'Crew Lost',
+    hintEarlyLaunch: 'You launched too early \u2014 wait for the planets to align.',
+    hintLateLaunch: 'You launched too late \u2014 the window passed.',
+    hintHighG: 'Acceleration too high \u2014 crew couldn\u2019t survive the g-forces.',
+    hintSlowTransfer: 'Transfer completed but acceleration was far from optimal.',
+    hintSolarFatal: 'Too close to the Sun \u2014 crew cooked.',
     clickDismiss: 'Click to try again',
-    info: 'This is a simplified 2D teaching model. Planets follow approximate eccentric Keplerian orbits, but the reference \u0394v and phase values use circular-orbit Hohmann formulas based on semi-major axes. The parking-orbit inset is symbolic.<br><br>A <b>Hohmann transfer</b> is the minimum-\u0394v two-impulse manoeuvre between two coplanar circular orbits around the same body. The first burn enters the transfer ellipse; the second matches the spacecraft\u2019s velocity to the destination orbit (heliocentric circularization). Wait for the right alignment, then hold ENGINE twice.',
+    info: 'This is a simplified 2D teaching model. Planets follow approximate eccentric Keplerian orbits. The spacecraft follows a straight-line constant-acceleration "flip and burn" profile between departure and predicted intercept positions.<br><br>An <b>Epstein drive flip-and-burn</b> accelerates halfway, rotates 180\u00b0, then decelerates the rest of the way. Hold ENGINE to choose your acceleration. Higher acceleration means a faster transfer but more g-force on the crew. Too high and they don\u2019t survive.',
     years: 'yr', days: 'd', hours: 'h',
     promptStart: 'Press \u25b6 Play to begin'
   },
   pl: {
-    title: 'Transfer Hohmanna',
-    subtitle: 'Wybierz moment startu i czas spalania silnika, aby przej\u015b\u0107 na orbit\u0119 s\u0105siedniej planety po orbicie Hohmanna.',
+    title: 'Flip and Burn',
+    subtitle: 'Wybierz moment startu i flipu, aby przelecie\u0107 mi\u0119dzy planetami na nap\u0119dzie Epsteina.',
     home: 'Start',
     destination: 'Cel',
     difficulty: 'Trudno\u015b\u0107',
@@ -579,9 +607,8 @@ var I18N = {
     warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
     engine: 'SILNIK',
     burn: 'Burn',
-    burn1: 'Burn 1', burn2: 'Burn 2',
     mission: 'Misja',
-    transferTime: 'Czas transferu',
+    braking: 'Hamowanie',
     dv1: '\u0394v startowe',
     dv2: '\u0394v hamuj\u0105ce',
     phase: 'K\u0105t fazowy',
@@ -592,37 +619,34 @@ var I18N = {
     waiting: 'Czekanie na okno',
     goodWindow: 'Okno otwarte \u2014 odpal!',
     burning: 'Spalanie...',
-    cruising: 'Lot transferowy',
-    readyCapture: 'Zbli\u017canie do celu!',
-    captured: 'Orbita wyr\u00f3wnana!',
+    flipping: 'Flip...',
+    brakingStatus: 'Hamowanie',
+    coastingStatus: 'Dryf',
     missed: 'Nietrafiony',
     tooEarly: 'Za wcze\u015bnie',
     tooLate: 'Za p\u00f3\u017ano',
-    promptWait: 'U\u017cyj przyspieszenia i czekaj na okno startowe',
-    promptWindow: 'OKNO STARTOWE! Przytrzymaj SILNIK!',
-    promptBurn1: 'Trzymaj SILNIK \u2014 pu\u015b\u0107 w zielonej strefie',
-    promptCruise: 'Lot do celu...',
-    promptApproach: 'Przytrzymaj SILNIK \u2014 hamowanie!',
-    promptBurn2: 'Trzymaj SILNIK \u2014 pu\u015b\u0107 w zielonej strefie',
+    promptReady: 'Przytrzymaj SILNIK aby wystartowa\u0107!',
+    promptFlip: 'Trzymaj SILNIK \u2014 pu\u015b\u0107 w zielonej strefie by flipowa\u0107',
+    promptBrake: 'Hamowanie do celu...',
+    promptCoast: 'Dryf \u2014 silniki wy\u0142\u0105czone...',
     engineWait: 'CZEKAJ...',
     engineLaunch: 'TRZYMAJ: START',
-    engineCapture: 'TRZYMAJ: HAMUJ',
     engineHold: 'TRZYMAM...',
     launchZone: 'Strefa startu',
-    promptCaptured: 'Orbita wyr\u00f3wnana!',
+    stepLaunch: 'Start',
+    stepFlip: 'Flip',
+    stepArrive: 'Cel',
     resultSuccess: 'Idealny transfer!',
     resultClose: 'Prawie!',
     resultMiss: 'Nietrafiony',
-    hintEarly: 'Start za wcze\u015bnie \u2014 poczekaj na ustawienie planet.',
-    hintLate: 'Start za p\u00f3\u017ano \u2014 okno min\u0119\u0142o.',
-    hintBurn1Long: 'Burn startowy za d\u0142ugi \u2014 pu\u015b\u0107 szybciej.',
-    hintBurn1Short: 'Burn startowy za kr\u00f3tki \u2014 trzymaj d\u0142u\u017cej.',
-    hintBurn2Long: 'Burn hamuj\u0105cy za d\u0142ugi.',
-    hintBurn2Short: 'Burn hamuj\u0105cy za kr\u00f3tki.',
-    hintNoCapture: 'Dotar\u0142e\u015b do planety, ale nie wyr\u00f3wnano orbity.',
-    hintEscape: 'Burn za d\u0142ugi \u2014 statek ucieka z Uk\u0142adu S\u0142onecznego!',
+    resultFatal: 'Za\u0142oga stracona',
+    hintEarlyLaunch: 'Start za wcze\u015bnie \u2014 poczekaj na ustawienie planet.',
+    hintLateLaunch: 'Start za p\u00f3\u017ano \u2014 okno min\u0119\u0142o.',
+    hintHighG: 'Przyspieszenie za wysokie \u2014 za\u0142oga nie prze\u017cy\u0142a przeci\u0105\u017ce\u0144.',
+    hintSlowTransfer: 'Transfer uko\u0144czony, ale przyspieszenie dalekie od optymalnego.',
+    hintSolarFatal: 'Za blisko S\u0142o\u0144ca \u2014 za\u0142oga si\u0119 usma\u017cy\u0142a.',
     clickDismiss: 'Kliknij, aby spr\u00f3bowa\u0107 ponownie',
-    info: 'To uproszczony dwuwymiarowy model dydaktyczny. Planety poruszaj\u0105 si\u0119 po przybli\u017conych elipsach Keplerowskich, ale referencyjne \u0394v i k\u0105ty fazowe opieraj\u0105 si\u0119 na wzorach Hohmanna dla orbit ko\u0142owych (p\u00f3\u0142o\u015b wielkie). Widok orbity lokalnej jest symboliczny.<br><br><b>Transfer Hohmanna</b> to manewr o minimalnym \u0394v mi\u0119dzy dwiema wsp\u00f3\u0142p\u0142aszczyznowymi orbitami ko\u0142owymi wok\u00f3\u0142 tego samego cia\u0142a. Pierwszy burn wchodzi na elips\u0119 transferow\u0105, drugi wyr\u00f3wnuje pr\u0119dko\u015b\u0107 do orbity docelowej (heliocentryczna cyrkularyzacja). Poczekaj na odpowiedni moment, potem przytrzymaj SILNIK dwa razy.',
+    info: 'To uproszczony dwuwymiarowy model dydaktyczny. Planety poruszaj\u0105 si\u0119 po przybli\u017conych elipsach Keplerowskich. Statek leci po linii prostej ze sta\u0142ym przyspieszeniem nap\u0119du Epsteina.<br><br><b>Flip-and-burn</b> to manewr, w kt\u00f3rym statek przyspiesza do po\u0142owy drogi, obraca si\u0119 o 180\u00b0 i hamuje reszt\u0119 drogi. Przytrzymaj SILNIK, aby wybra\u0107 przyspieszenie. Wy\u017csze przyspieszenie = szybszy transfer, ale wi\u0119ksze przeci\u0105\u017cenie. Za du\u017co \u2014 za\u0142oga ginie.',
     years: 'lat', days: 'dni', hours: 'h',
     promptStart: 'Naci\u015bnij \u25b6 aby rozpocz\u0105\u0107'
   }
@@ -652,38 +676,67 @@ var state = {
   homeKey: 'earth',
   destKey: 'mars',
   difficulty: 'easy',
-  phase: 'prelaunch',
+  phase: 'prelaunch',          // prelaunch | burn | flipping | braking | coasting | result
   simTime: 0,
   timeWarp: 1,
   warpLevel: 'normal',
   warpLevels: { normal: 1, fast: 10, fastest: 50, decel: 1 },
   playing: false,
   missionStarted: false,
-  ref: null,
-  tol: { phaseDeg: 10, burnPct: 0.15 },
-  burn1: { holding: false, holdStart: 0, holdDuration: 0, dvApplied: 0, committed: false },
-  burn2: { holding: false, holdStart: 0, holdDuration: 0, dvApplied: 0, committed: false },
-  sc: { x: 0, y: 0, vx: 0, vy: 0, orbit: null, trail: [], launched: false },
-  resultType: null,
-  resultData: { phaseAtLaunch: 0, dv1Error: 0, dv2Error: 0 },
-  launchAngle: 0,
-  arrivalTime: 0,
-  camera: { cx: 0, cy: 0, scale: 100, targetScale: 100 },
-  insetBody: 'home',
-  insetScAngle: 0,
+  ref: null,                   // preview reference for readouts
+
+  // Burn interaction — player sets acceleration
+  burn: { holding: false, holdStart: 0, holdDuration: 0, accel: 0, committed: false },
+
+  // Spacecraft
+  sc: { x: 0, y: 0, launched: false, trail: [] },
+
+  // Transfer line (locked at launch)
+  transfer: null,
+
+  // Burn meter zones
+  burnZones: null,
+  burnLockedGreenFrac: -1,
+
+  // Flip timing
+  tauFlip: 0,
+  tauSim: 0,
+  launchSimTime: 0,
+  flipTrailIdx: 0,
+
+  // Transfer physics
+  accelFinal: 0,
+  tActual: 0,
+
+  // Flip animation
+  flipStartWall: 0,
+  flipAngle: 0,
+  flipDurMs: 0,
+
+  // Capture animation
+  captureStart: 0,
   captureAlpha: 1,
-  captureApproachX: 0,
-  captureApproachY: 0,
-  burn1Good: false,
-  transferArc: null,
-  approachStart: 0,
+
+  // Results
+  resultType: null,
+  resultSubtype: null,
+  solarClearance: Infinity,
+  solarDeathStart: 0,
+
+  // Camera
+  camera: { cx: 0, cy: 0, scale: 100, targetScale: 100 },
+
+  // Inset
+  insetScAngle: 0,
+
+  // UI
   overlayDismissed: false,
   postResultStart: 0,
   windowOpenSimTime: 0,
   windowWasOpen: false,
-  burn1LockedGreenFrac: -1,
-  burn2LockedGreenFrac: -1,
-  warpLocked: false
+  warpLocked: false,
+  phaseAtLaunch: 0,
+  coastStart: 0
 };
 
 /* ══════════════════════════════════════════════ */
@@ -745,44 +798,82 @@ function helioVelocity(body, t) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Hohmann Reference Solver                       */
+/* Flip-and-Burn Reference Solver                 */
 /* ══════════════════════════════════════════════ */
 
-function computeHohmannRef(homeKey, destKey) {
+function computeFlipBurnRef(homeKey, destKey, t0) {
   var home = bodyByKey[homeKey];
   var dest = bodyByKey[destKey];
-  var r1 = home.a;
-  var r2 = dest.a;
-  var aT = (r1 + r2) / 2;
-  var tT = 0.5 * Math.pow(aT, 1.5);
+  var r0 = helioPosition(home, t0);
 
-  var vCirc1 = Math.sqrt(MU_SUN / r1);
-  var vCirc2 = Math.sqrt(MU_SUN / r2);
-  var vDep = Math.sqrt(MU_SUN * (2 / r1 - 1 / aT));
-  var vArr = Math.sqrt(MU_SUN * (2 / r2 - 1 / aT));
-  var dv1 = Math.abs(vDep - vCirc1);
-  var dv2 = Math.abs(vCirc2 - vArr);
+  var rd0 = helioPosition(dest, t0);
+  var dx0 = rd0.x - r0.x, dy0 = rd0.y - r0.y;
+  var dist0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
 
-  var n2 = TWO_PI / dest.T;
-  var phi = wrapAngle(Math.PI - n2 * tT);
+  // Bisection root-finder: f(T) = L(T) - A_REF * T^2 / 4 = 0
+  var T_guess = 2 * Math.sqrt(dist0 / A_REF);
+  var T_lo = 0;
+  var T_hi = Math.max(2 * T_guess, 1 / 365.25);
 
-  var maxDv = Math.max(dv1, dv2);
-  var burnRate = maxDv / 2.0;
+  function f(T) {
+    var rd = helioPosition(dest, t0 + T);
+    var dx = rd.x - r0.x, dy = rd.y - r0.y;
+    var L = Math.sqrt(dx * dx + dy * dy);
+    return L - A_REF * T * T / 4;
+  }
+
+  while (f(T_hi) > 0) { T_hi *= 2; if (T_hi > 1000) break; }
+
+  var T_ref = T_guess;
+  for (var i = 0; i < 40; i++) {
+    T_ref = (T_lo + T_hi) / 2;
+    var fVal = f(T_ref);
+    if (Math.abs(fVal) < 1e-6) break;
+    if (fVal > 0) T_lo = T_ref;
+    else T_hi = T_ref;
+  }
+
+  var rdRef = helioPosition(dest, t0 + T_ref);
+  var lineX = rdRef.x - r0.x, lineY = rdRef.y - r0.y;
+  var L = Math.sqrt(lineX * lineX + lineY * lineY);
+  if (L < 1e-10) L = 1e-10;
+  var ux = lineX / L, uy = lineY / L;
+
+  var tFlipRef = T_ref / 2;
+  var vPeakRef = A_REF * tFlipRef;
+
+  // Solar clearance (spec 16.7)
+  var dotR0Seg = r0.x * lineX + r0.y * lineY;
+  var dotSegSeg = lineX * lineX + lineY * lineY;
+  var q = Math.max(0, Math.min(1, -dotR0Seg / dotSegSeg));
+  var closestX = r0.x + q * lineX;
+  var closestY = r0.y + q * lineY;
+  var solarClearance = Math.sqrt(closestX * closestX + closestY * closestY);
+
+  // Phase angle data
+  var thetaHome = Math.atan2(r0.y, r0.x);
+  var thetaDest = Math.atan2(rd0.y, rd0.x);
+  var thetaDestHit = Math.atan2(rdRef.y, rdRef.x);
+  var phaseCurrent = wrapAngle(thetaDest - thetaHome);
+  var phaseRequired = wrapAngle(thetaDestHit - thetaHome);
+  var phaseError = wrapAngle(phaseCurrent - phaseRequired);
 
   return {
-    aTransfer: aT,
-    tTransfer: tT,
-    dv1: dv1,
-    dv2: dv2,
-    vCircHome: vCirc1,
-    vCircDest: vCirc2,
-    vDep: vDep,
-    vArr: vArr,
-    phaseAngle: phi,
-    burnRate: burnRate,
-    holdTime1: dv1 / burnRate,
-    holdTime2: dv2 / burnRate,
-    outward: dest.a > home.a
+    T_ref: T_ref,
+    r0: r0,
+    rdRef: rdRef,
+    line: { x: lineX, y: lineY },
+    u: { x: ux, y: uy },
+    L: L,
+    tFlipRef: tFlipRef,
+    vPeakRef: vPeakRef,
+    dvDepart: vPeakRef,
+    dvArrive: vPeakRef,
+    solarClearance: solarClearance,
+    outward: dest.a > home.a,
+    phaseCurrent: phaseCurrent,
+    phaseRequired: phaseRequired,
+    phaseError: phaseError
   };
 }
 
@@ -791,7 +882,8 @@ function computeWarpLevels(homeKey, destKey) {
   var dest = bodyByKey[destKey];
   var synodicRate = Math.abs(home.n - dest.n);
   var synodic = TWO_PI / synodicRate;
-  var windowDur = 2 * state.tol.phaseDeg * DEG2RAD / synodicRate;
+  var phaseTolDeg = DIFFICULTY[state.difficulty].PHASE_TOL_DEG;
+  var windowDur = 2 * phaseTolDeg * DEG2RAD / synodicRate;
 
   var MAX_WINDOW_SEC = 8;
   var baseDecel = (state.difficulty === 'easy') ? 0.5 : 1;
@@ -801,211 +893,141 @@ function computeWarpLevels(homeKey, destKey) {
     : baseDecel;
 
   return {
-    normal: Math.max(1, Math.round(synodic * 1.5)),
-    fast: Math.max(2, Math.round(synodic * 5)),
-    fastest: Math.max(5, Math.round(synodic * 15)),
+    normal: Math.max(1, Math.round(synodic * 0.75)),
+    fast: Math.max(2, Math.round(synodic * 2.5)),
+    fastest: Math.max(5, Math.round(synodic * 7.5)),
     decel: decel,
     windowDur: windowDur
   };
 }
 
-function computeGreenFrac() {
-  if (state.phase === 'prelaunch') {
-    if (!isLaunchWindowOpen(state.simTime)) return 0;
-    var elapsed = state.simTime - state.windowOpenSimTime;
-    var dur = state.warpLevels ? state.warpLevels.windowDur : 0;
-    if (dur <= 0) return 0;
-    return Math.max(0, Math.min(1, 1 - elapsed / dur));
-  }
-  if (state.phase === 'approach') {
-    var approachElapsed = (performance.now() - state.approachStart) / 1000;
-    return Math.max(0, Math.min(1, 1 - approachElapsed / APPROACH_DUR));
-  }
-  return 0;
+var METER_MAX_G = 3.0;  // burn meter visual cap in g
+
+function computeBurnMeterZones() {
+  var diff = DIFFICULTY[state.difficulty];
+  var aLow = A_REF * (1 - diff.ACCEL_TOL);
+  var aHigh = A_REF * (1 + diff.ACCEL_TOL);
+  var aFatal = CREW_DEAD_G * G_TO_AUYR2;
+  var aMeterMax = METER_MAX_G * G_TO_AUYR2;
+  return { aRef: A_REF, aLow: aLow, aHigh: aHigh, aFatal: aFatal, aMeterMax: aMeterMax };
+}
+
+function crewSurvivalChance(aReq) {
+  var a_g = aReq / G_TO_AUYR2;
+  if (a_g <= CREW_SAFE_G) return 1.0;
+  if (a_g >= CREW_DEAD_G) return 0.0;
+  var x = (a_g - CREW_SAFE_G) / (CREW_DEAD_G - CREW_SAFE_G);
+  return 1 - x * x * x;
 }
 
 /* ══════════════════════════════════════════════ */
-/* Phase Angle                                    */
+/* Launch Ready Check                             */
 /* ══════════════════════════════════════════════ */
 
-function currentPhaseAngle(t) {
-  var hp = helioPosition(bodyByKey[state.homeKey], t);
-  var dp = helioPosition(bodyByKey[state.destKey], t);
-  var ha = Math.atan2(hp.y, hp.x);
-  var da = Math.atan2(dp.y, dp.x);
-  return wrapAngle(da - ha);
-}
-
-function phaseError(t) {
-  var current = currentPhaseAngle(t);
-  var ideal = state.ref.phaseAngle;
-  return wrapAngle(current - ideal);
-}
-
-function isLaunchWindowOpen(t) {
-  var err = Math.abs(phaseError(t));
-  return err <= state.tol.phaseDeg * DEG2RAD;
+function isLaunchReady() {
+  return state.ref != null && state.missionStarted;
 }
 
 /* ══════════════════════════════════════════════ */
-/* Spacecraft Orbit from State Vector             */
+/* Transfer Line Geometry                         */
 /* ══════════════════════════════════════════════ */
 
-function stateToOrbit(x, y, vx, vy, tEpoch) {
-  var r = Math.sqrt(x * x + y * y);
-  var v2 = vx * vx + vy * vy;
-  var h = x * vy - y * vx;
-  var a = 1 / (2 / r - v2 / MU_SUN);
+function getTransferLinePosition(tau) {
+  var ref = state.transfer;
+  if (!ref) return { x: 0, y: 0, s: 0 };
 
-  // Detect unbound (hyperbolic/parabolic) trajectories
-  if (a <= 0 || isNaN(a) || !isFinite(a)) {
-    return { conicType: 'escape', a: a, e: 2, h: h, tEpoch: tEpoch };
+  var accel = state.burn.committed ? state.accelFinal : A_REF;
+  var T = state.burn.committed ? state.tActual : ref.T_ref;
+  var tFlip = T / 2;
+
+  var s;
+  if (tau <= tFlip) {
+    s = 0.5 * accel * tau * tau;
+  } else {
+    var dt = T - tau;
+    s = ref.L - 0.5 * accel * dt * dt;
+  }
+  s = Math.max(0, Math.min(ref.L, s));
+
+  return {
+    x: ref.r0.x + ref.u.x * s,
+    y: ref.r0.y + ref.u.y * s,
+    s: s
+  };
+}
+
+/* ══════════════════════════════════════════════ */
+/* Result Evaluation                              */
+/* ══════════════════════════════════════════════ */
+
+function evaluateAccelResult(accel) {
+  var zones = state.burnZones;
+  var a_g = accel / G_TO_AUYR2;
+
+  // Within green zone → success
+  if (accel >= zones.aLow && accel <= zones.aHigh) {
+    return { type: 'success' };
   }
 
-  var rdot = (x * vx + y * vy) / r;
-  var ex = (v2 / MU_SUN - 1 / r) * x - rdot / MU_SUN * r * vx;
-  var ey = (v2 / MU_SUN - 1 / r) * y - rdot / MU_SUN * r * vy;
-  var e = Math.sqrt(ex * ex + ey * ey);
-
-  if (e >= 1) {
-    return { conicType: 'escape', a: a, e: e, h: h, tEpoch: tEpoch };
+  // Above 20g → certain death
+  if (a_g >= CREW_DEAD_G) {
+    return { type: 'fatal' };
   }
 
-  var pomegaRad = Math.atan2(ey, ex);
-  var bSemi = a * Math.sqrt(1 - e * e);
-
-  var cosNu = (ex * x + ey * y) / (e * r + 1e-30);
-  var sinNu = (ex * y - ey * x) / (e * r + 1e-30);
-  var nu = Math.atan2(sinNu, cosNu);
-
-  var sinNu2 = Math.sin(nu);
-  var cosNu2 = Math.cos(nu);
-  var E = Math.atan2(Math.sqrt(1 - e * e) * sinNu2, e + cosNu2);
-  var M0 = E - e * Math.sin(E);
-  var n = Math.sqrt(MU_SUN / (a * a * a));
-
-  return {
-    conicType: 'elliptic',
-    a: a, e: e, pomegaRad: pomegaRad, bSemi: bSemi,
-    cosPom: Math.cos(pomegaRad), sinPom: Math.sin(pomegaRad),
-    n: n, M0: M0, tEpoch: tEpoch, h: h
-  };
-}
-
-function orbitPositionAt(orb, t) {
-  var dt = t - orb.tEpoch;
-  var M = orb.M0 + orb.n * dt;
-  var E = solveKepler(M, orb.e);
-  var xp = orb.a * (Math.cos(E) - orb.e);
-  var yp = orb.bSemi * Math.sin(E);
-  return {
-    x: xp * orb.cosPom - yp * orb.sinPom,
-    y: xp * orb.sinPom + yp * orb.cosPom
-  };
-}
-
-function orbitVelocityAt(orb, t) {
-  var dt = t - orb.tEpoch;
-  var M = orb.M0 + orb.n * dt;
-  var E = solveKepler(M, orb.e);
-  var sinE = Math.sin(E);
-  var cosE = Math.cos(E);
-  var denom = 1 - orb.e * cosE;
-  var factor = orb.n * orb.a / denom;
-  var vxp = -factor * sinE;
-  var vyp = factor * (orb.bSemi / orb.a) * cosE;
-  return {
-    vx: vxp * orb.cosPom - vyp * orb.sinPom,
-    vy: vxp * orb.sinPom + vyp * orb.cosPom
-  };
-}
-
-function smoothStep01(t) {
-  return t * t * (3 - 2 * t);
-}
-
-function buildTransferArc(tStart) {
-  var home = bodyByKey[state.homeKey];
-  var dest = bodyByKey[state.destKey];
-  var launchPos = helioPosition(home, tStart);
-  var tArrival = tStart + state.ref.tTransfer;
-  var arrivalPos = helioPosition(dest, tArrival);
-  var alpha1 = Math.atan2(launchPos.y, launchPos.x);
-  var alpha2 = Math.atan2(arrivalPos.y, arrivalPos.x);
-  var dAlpha = alpha2 - alpha1;
-  var points = [];
-  var samples = 360;
-  var i, u, alpha, rArc;
-
-  while (dAlpha <= 0) dAlpha += TWO_PI;
-
-  // Hohmann transfer ellipse from actual launch/arrival radii
-  var r1 = Math.sqrt(launchPos.x * launchPos.x + launchPos.y * launchPos.y);
-  var r2 = Math.sqrt(arrivalPos.x * arrivalPos.x + arrivalPos.y * arrivalPos.y);
-  var aT = (r1 + r2) / 2;
-  var eT = Math.abs(r2 - r1) / (r1 + r2);
-  var pT = aT * (1 - eT * eT);
-  var outward = r2 >= r1;
-
-  for (i = 0; i <= samples; i++) {
-    u = i / samples;
-    alpha = alpha1 + dAlpha * u;
-    // True anomaly on the transfer ellipse: 0 (periapsis) to π (apoapsis)
-    var nu = outward ? Math.PI * u : Math.PI * (1 - u);
-    rArc = pT / (1 + eT * Math.cos(nu));
-    points.push({
-      x: rArc * Math.cos(alpha),
-      y: rArc * Math.sin(alpha)
-    });
+  // Between 1g and 20g → roll dice
+  if (a_g >= CREW_SAFE_G) {
+    var survival = crewSurvivalChance(accel);
+    if (Math.random() < survival) {
+      return { type: 'close' };
+    } else {
+      return { type: 'fatal' };
+    }
   }
 
-  points[0] = { x: launchPos.x, y: launchPos.y };
-  points[points.length - 1] = { x: arrivalPos.x, y: arrivalPos.y };
-
-  return {
-    tStart: tStart,
-    tTransfer: state.ref.tTransfer,
-    tArrival: tArrival,
-    points: points,
-    eT: eT,
-    outward: outward
-  };
+  // Below 1g but outside green zone → close (safe but imprecise)
+  return { type: 'close' };
 }
 
-function getTransferArcState(arc, t) {
-  var progress = (t - arc.tStart) / arc.tTransfer;
+function getResultHint() {
+  if (state.resultSubtype === 'solar') return T('hintSolarFatal');
+  if (state.resultType === 'fatal') return T('hintHighG');
+  if (state.resultType === 'close' && state.accelFinal < A_REF * 0.5) return T('hintSlowTransfer');
+  return '';
+}
 
-  if (progress < 0) progress = 0;
-  if (progress > 1) progress = 1;
+function showResultOverlay() {
+  var existing = document.querySelector('.result-overlay');
+  if (existing) existing.remove();
 
-  // Kepler timing: time → mean anomaly → eccentric anomaly → true anomaly
-  // Outward: periapsis at launch (M: 0→π). Inward: apoapsis at launch (M: π→0).
-  var M = arc.outward ? Math.PI * progress : Math.PI * (1 - progress);
-  var E = solveKepler(M, arc.eT);
-  var nu = 2 * Math.atan2(
-    Math.sqrt(1 + arc.eT) * Math.sin(E / 2),
-    Math.sqrt(1 - arc.eT) * Math.cos(E / 2)
-  );
-  // Map true anomaly to arc parameter u (arc points indexed by ν/π)
-  var u = arc.outward ? nu / Math.PI : 1 - nu / Math.PI;
-  u = Math.max(0, Math.min(1, u));
+  var overlay = document.createElement('div');
+  overlay.className = 'result-overlay';
 
-  var scaled = u * (arc.points.length - 1);
-  var idx = Math.floor(scaled);
-  var frac = scaled - idx;
-  var p0 = arc.points[idx];
-  var p1 = arc.points[Math.min(idx + 1, arc.points.length - 1)];
-  var prev = arc.points[Math.max(idx - 1, 0)];
-  var next = arc.points[Math.min(idx + 1, arc.points.length - 1)];
+  var emoji, msg, bg;
+  var result = state.resultType;
+  if (result === 'success') {
+    emoji = '\uD83C\uDF89'; msg = T('resultSuccess'); bg = 'rgba(63,185,80,0.88)';
+  } else if (result === 'close') {
+    emoji = '\uD83D\uDC4D\uD83C\uDFFB'; msg = T('resultClose'); bg = 'rgba(88,166,255,0.88)';
+  } else if (result === 'fatal') {
+    emoji = '\u2620\uFE0F'; msg = T('resultFatal'); bg = 'rgba(120,10,10,0.95)';
+  } else {
+    emoji = '\uD83D\uDC4E\uD83C\uDFFB'; msg = T('resultMiss'); bg = 'rgba(240,180,60,0.92)';
+  }
 
-  return {
-    x: p0.x + (p1.x - p0.x) * frac,
-    y: p0.y + (p1.y - p0.y) * frac,
-    dx: next.x - prev.x,
-    dy: next.y - prev.y,
-    progress: progress,
-    done: progress >= 1
-  };
+  var hint = getResultHint();
+  overlay.style.background = bg;
+  overlay.innerHTML =
+    '<div class="overlay-emoji">' + emoji + '</div>' +
+    '<div class="overlay-msg">' + msg + '</div>' +
+    (hint ? '<div class="overlay-sub">' + hint + '</div>' : '') +
+    '<div class="overlay-hint">' + T('clickDismiss') + '</div>';
+
+  overlay.addEventListener('click', function() {
+    overlay.remove();
+    state.overlayDismissed = true;
+    state.postResultStart = performance.now();
+  });
+  document.body.appendChild(overlay);
 }
 
 /* ══════════════════════════════════════════════ */
@@ -1116,6 +1138,16 @@ function drawBody(body, t) {
     ctx.arc(cc.cx, cc.cy, r * 2.5, 0, TWO_PI);
     ctx.fillStyle = grad;
     ctx.fill();
+
+    // Solar danger zone ring (easy mode)
+    if (state.difficulty === 'easy' && state.ref) {
+      var killR = SOLAR_KILL_RADIUS * state.camera.scale;
+      ctx.beginPath();
+      ctx.arc(cc.cx, cc.cy, killR, 0, TWO_PI);
+      ctx.strokeStyle = 'rgba(255,60,30,0.25)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
   }
   ctx.beginPath();
   ctx.arc(cc.cx, cc.cy, r, 0, TWO_PI);
@@ -1131,101 +1163,84 @@ function drawBody(body, t) {
   }
 }
 
-function drawLaunchWindowGuide() {
-  if (state.phase !== 'prelaunch') return;
-  if (!state.ref) return;
+function drawTransferLine() {
+  if (!state.transfer) return;
+  if (state.phase === 'prelaunch') return;
 
-  var hp = helioPosition(bodyByKey[state.homeKey], state.simTime);
-  var dp = helioPosition(bodyByKey[state.destKey], state.simTime);
-  var homeAngle = Math.atan2(hp.y, hp.x);
-  var idealDestAngle = homeAngle + state.ref.phaseAngle;
-  var tolRad = state.tol.phaseDeg * DEG2RAD;
-  var dest = bodyByKey[state.destKey];
-  var windowOpen = isLaunchWindowOpen(state.simTime);
+  var ref = state.transfer;
+  var p0 = toCanvas(ref.r0.x, ref.r0.y);
+  var p1 = toCanvas(ref.rdRef.x, ref.rdRef.y);
 
-  var hcc = toCanvas(hp.x, hp.y);
-  var alpha = windowOpen ? 0.35 : 0.10;
-
-  // Cone edges: find exact orbit radius at each edge angle, extend 5% past
-  var edgeAngle1 = idealDestAngle + tolRad;
-  var edgeAngle2 = idealDestAngle - tolRad;
-
-  var r1 = orbitRadiusAtAngle(dest, edgeAngle1);
-  var orb1x = r1 * Math.cos(edgeAngle1);
-  var orb1y = r1 * Math.sin(edgeAngle1);
-  var d1x = orb1x - hp.x, d1y = orb1y - hp.y;
-  var ep1 = toCanvas(orb1x + 0.05 * d1x, orb1y + 0.05 * d1y);
-  var e1x = ep1.cx, e1y = ep1.cy;
-
-  var r2 = orbitRadiusAtAngle(dest, edgeAngle2);
-  var orb2x = r2 * Math.cos(edgeAngle2);
-  var orb2y = r2 * Math.sin(edgeAngle2);
-  var d2x = orb2x - hp.x, d2y = orb2y - hp.y;
-  var ep2 = toCanvas(orb2x + 0.05 * d2x, orb2y + 0.05 * d2y);
-  var e2x = ep2.cx, e2y = ep2.cy;
-
-  // Filled triangle
   ctx.beginPath();
-  ctx.moveTo(hcc.cx, hcc.cy);
-  ctx.lineTo(e1x, e1y);
-  ctx.lineTo(e2x, e2y);
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(63,185,80,' + alpha + ')';
-  ctx.fill();
-
-  // Triangle border — uniform thickness
-  ctx.beginPath();
-  ctx.moveTo(hcc.cx, hcc.cy);
-  ctx.lineTo(e1x, e1y);
-  ctx.lineTo(e2x, e2y);
-  ctx.closePath();
-  ctx.strokeStyle = 'rgba(63,185,80,' + (windowOpen ? 0.5 : 0.2) + ')';
+  ctx.setLineDash([4, 4]);
+  ctx.moveTo(p0.cx, p0.cy);
+  ctx.lineTo(p1.cx, p1.cy);
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
   ctx.lineWidth = 1;
   ctx.stroke();
-
-  // Pulsing highlight on destination when window is open
-  if (windowOpen) {
-    var dcc = toCanvas(dp.x, dp.y);
-    var pulse = 12 + 4 * Math.sin(Date.now() / 200);
-    ctx.beginPath();
-    ctx.arc(dcc.cx, dcc.cy, pulse, 0, TWO_PI);
-    ctx.strokeStyle = 'rgba(63,185,80,0.5)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
+  ctx.setLineDash([]);
 }
 
-
 function getScAngle() {
-  // Compute spacecraft heading from velocity or orbit
-  if (state.phase === 'captured') {
-    var dv = helioVelocity(bodyByKey[state.destKey], state.simTime);
-    return Math.atan2(-dv.vy, dv.vx);
+  var ref = state.transfer;
+  if (!ref) {
+    var hv = helioVelocity(bodyByKey[state.homeKey], state.simTime);
+    return Math.atan2(-hv.vy, hv.vx);
   }
-  if ((state.phase === 'cruise' || state.phase === 'approach' || state.phase === 'burn2') && state.transferArc) {
-    var arcT = state.phase === 'cruise' ? state.simTime : state.transferArc.tArrival;
-    var arcState = getTransferArcState(state.transferArc, arcT);
-    return Math.atan2(-arcState.dy, arcState.dx);
+
+  var baseAngle = Math.atan2(-ref.u.y, ref.u.x);
+
+  if (state.phase === 'transit' || state.phase === 'captured' || (state.phase === 'result' && state.burn.committed)) {
+    if (state.flipStartWall === 0) {
+      return baseAngle;  // before flip: pointing forward
+    }
+    var flipProgress = Math.min(1, (performance.now() - state.flipStartWall) / (state.flipDurMs || FLIP_ANIM_MS));
+    if (flipProgress < 1) {
+      return baseAngle + Math.PI * flipProgress;  // during flip: rotating
+    }
+    return baseAngle + Math.PI;  // after flip: pointing backward
   }
-  if (state.sc.orbit && state.sc.orbit.conicType === 'elliptic') {
-    var vel = orbitVelocityAt(state.sc.orbit, state.simTime);
-    return Math.atan2(-vel.vy, vel.vx); // canvas Y is inverted
+  if (state.phase === 'coasting') {
+    return baseAngle + Math.PI;
   }
-  // Fallback: use home planet velocity direction
-  var hv = helioVelocity(bodyByKey[state.homeKey], state.simTime);
-  return Math.atan2(-hv.vy, hv.vx);
+
+  return baseAngle;  // burn phase: pointing forward
 }
 
 function drawSpacecraft() {
   if (!state.sc.launched) return;
-  if ((state.phase === 'captured' || state.phase === 'result') && state.captureAlpha <= 0) return;
+
+  // Solar dissolve — ship burning up
+  var dissolveProgress = 0;
+  if (state.solarDeathStart > 0) {
+    dissolveProgress = Math.min(1, (performance.now() - state.solarDeathStart) / 1600);
+    if (dissolveProgress >= 1) return; // fully dissolved
+  }
+
   var cc = toCanvas(state.sc.x, state.sc.y);
   var angle = getScAngle();
 
   ctx.save();
   ctx.translate(cc.cx, cc.cy);
   ctx.rotate(angle);
-  if (state.phase === 'captured') {
+
+  if (dissolveProgress > 0) {
+    ctx.globalAlpha = 1 - dissolveProgress;
+    // Expanding fire glow
+    var fireR = 20 + 35 * dissolveProgress;
+    var fireGlow = ctx.createRadialGradient(0, 0, 2, 0, 0, fireR);
+    fireGlow.addColorStop(0, 'rgba(255,100,30,' + (0.7 * dissolveProgress) + ')');
+    fireGlow.addColorStop(0.5, 'rgba(255,60,10,' + (0.4 * dissolveProgress) + ')');
+    fireGlow.addColorStop(1, 'rgba(255,30,0,0)');
+    ctx.fillStyle = fireGlow;
+    ctx.beginPath();
+    ctx.arc(0, 0, fireR, 0, TWO_PI);
+    ctx.fill();
+  }
+
+  // Capture dissolve — stay hidden through result phase
+  if (state.phase === 'captured' || (state.phase === 'result' && state.captureAlpha <= 0)) {
+    if (state.captureAlpha <= 0) { ctx.restore(); return; }
     ctx.globalAlpha = state.captureAlpha;
   }
 
@@ -1247,8 +1262,17 @@ function drawSpacecraft() {
   ctx.closePath();
   ctx.fill();
 
-  // Engine flame during burns
-  if (state.phase === 'burn1' || state.phase === 'burn2') {
+  // Determine flip state for engine/RCS logic
+  var isFlipping = false;
+  var flipDone = false;
+  if (state.phase === 'transit' && state.flipStartWall > 0) {
+    var fProg = Math.min(1, (performance.now() - state.flipStartWall) / (state.flipDurMs || FLIP_ANIM_MS));
+    isFlipping = fProg < 1;
+    flipDone = fProg >= 1;
+  }
+
+  // Engine flame: during burn, or during transit when NOT mid-flip
+  if (state.phase === 'burn' || (state.phase === 'transit' && !isFlipping && state.solarDeathStart === 0)) {
     var fl = 6 + 4 * Math.sin(Date.now() / 60);
     ctx.fillStyle = 'rgba(255,140,30,0.6)';
     ctx.beginPath();
@@ -1259,23 +1283,71 @@ function drawSpacecraft() {
     ctx.fill();
   }
 
+  // RCS thrusters during flip rotation
+  if (state.phase === 'transit' && isFlipping) {
+    var rcsLen = 3 + 2 * Math.sin(Date.now() / 40);
+    ctx.fillStyle = 'rgba(100,180,255,0.5)';
+    ctx.beginPath();
+    ctx.moveTo(5, -6.5);
+    ctx.lineTo(5, -6.5 - rcsLen);
+    ctx.lineTo(2, -6.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-5, 6.5);
+    ctx.lineTo(-5, 6.5 + rcsLen);
+    ctx.lineTo(-2, 6.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Flash at flip completion
+  if (state.phase === 'transit' && flipDone && state.flipStartWall > 0) {
+    var flashAge = performance.now() - (state.flipStartWall + (state.flipDurMs || FLIP_ANIM_MS));
+    if (flashAge >= 0 && flashAge < 300) {
+      var flashAlpha = 0.6 * (1 - flashAge / 300);
+      ctx.beginPath();
+      ctx.arc(0, 0, 25, 0, TWO_PI);
+      ctx.fillStyle = 'rgba(255,255,255,' + flashAlpha + ')';
+      ctx.fill();
+    }
+  }
+
   ctx.restore();
 }
 
 function drawTrail() {
   var trail = state.sc.trail;
   if (trail.length < 2) return;
+
+  var flipIdx = state.flipTrailIdx || trail.length;
+  var step = Math.max(1, Math.floor(trail.length / 2000));
+
+  // Warm segment (acceleration)
   ctx.beginPath();
   var p0 = toCanvas(trail[0].x, trail[0].y);
   ctx.moveTo(p0.cx, p0.cy);
-  var step = Math.max(1, Math.floor(trail.length / 2000));
-  for (var i = step; i < trail.length; i += step) {
+  for (var i = step; i < Math.min(flipIdx, trail.length); i += step) {
     var p = toCanvas(trail[i].x, trail[i].y);
     ctx.lineTo(p.cx, p.cy);
   }
-  ctx.strokeStyle = 'rgba(255,224,102,0.55)';
+  ctx.strokeStyle = 'rgba(255,180,80,0.55)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
+
+  // Cool segment (braking)
+  if (flipIdx < trail.length) {
+    ctx.beginPath();
+    var pf = toCanvas(trail[flipIdx].x, trail[flipIdx].y);
+    ctx.moveTo(pf.cx, pf.cy);
+    for (var j = flipIdx + step; j < trail.length; j += step) {
+      var pc = toCanvas(trail[j].x, trail[j].y);
+      ctx.lineTo(pc.cx, pc.cy);
+    }
+    ctx.strokeStyle = 'rgba(100,180,255,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
 }
 
 function drawScene() {
@@ -1291,7 +1363,7 @@ function drawScene() {
   drawOrbitEllipse(home, 0.25);
   drawOrbitEllipse(dest, 0.25);
 
-  drawLaunchWindowGuide();
+  drawTransferLine();
   drawTrail();
 
   drawBody(bodyByKey['sun'], state.simTime);
@@ -1311,7 +1383,7 @@ function drawInset() {
   ictx.fillRect(0, 0, iW, iH);
 
   var cx = iW / 2, cy = iH / 2;
-  var bodyKey = (state.phase === 'approach' || state.phase === 'burn2' || state.phase === 'captured' || (state.phase === 'result' && state.burn2.committed)) ? state.destKey : state.homeKey;
+  var bodyKey = (state.phase === 'transit' || state.phase === 'captured' || state.phase === 'coasting' || (state.phase === 'result' && state.burn.committed)) ? state.destKey : state.homeKey;
   var body = bodyByKey[bodyKey];
 
   ictx.beginPath();
@@ -1328,47 +1400,18 @@ function drawInset() {
   ictx.fill();
 
   var orbitR = 40;
-
-  if (state.phase === 'result' && state.burn2.committed && state.sc.orbit) {
-    if (state.sc.orbit.conicType === 'escape') {
-      // Hyperbolic arc — not captured
-      ictx.beginPath();
-      ictx.moveTo(cx + orbitR * 1.3, cy - orbitR * 0.5);
-      ictx.quadraticCurveTo(cx - orbitR * 0.3, cy, cx + orbitR * 1.3, cy + orbitR * 0.5);
-      ictx.strokeStyle = 'rgba(249,117,131,0.5)';
-      ictx.lineWidth = 1.5;
-      ictx.stroke();
-    } else if (state.sc.orbit.e > 0.3) {
-      // Eccentric capture orbit — use actual eccentricity
-      var eFinal = Math.min(state.sc.orbit.e, 0.9);
-      var eccA = orbitR * (1 + eFinal * 0.5);
-      var eccB = orbitR * (1 - eFinal * 0.4);
-      ictx.beginPath();
-      ictx.ellipse(cx + orbitR * eFinal * 0.3, cy, eccA, eccB, 0, 0, TWO_PI);
-      ictx.strokeStyle = 'rgba(249,117,131,0.5)';
-      ictx.lineWidth = 1.5;
-      ictx.stroke();
-    } else {
-      // Near-circular capture — success
-      ictx.beginPath();
-      ictx.arc(cx, cy, orbitR, 0, TWO_PI);
-      ictx.strokeStyle = 'rgba(63,185,80,0.4)';
-      ictx.lineWidth = 1;
-      ictx.stroke();
-    }
-  } else {
-    ictx.beginPath();
-    ictx.arc(cx, cy, orbitR, 0, TWO_PI);
-    ictx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ictx.lineWidth = 1;
-    ictx.stroke();
-  }
+  ictx.beginPath();
+  ictx.arc(cx, cy, orbitR, 0, TWO_PI);
+  ictx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ictx.lineWidth = 1;
+  ictx.stroke();
 
   var scAngle = state.insetScAngle;
   var scX = cx + orbitR * Math.cos(scAngle);
   var scY = cy - orbitR * Math.sin(scAngle);
 
-  if (state.phase === 'burn1' || state.phase === 'burn2') {
+  // Engine glow during burn/transit
+  if (state.phase === 'burn' || state.phase === 'transit') {
     var flR = 5 + 2 * Math.sin(Date.now() / 80);
     ictx.beginPath();
     ictx.arc(scX, scY, flR, 0, TWO_PI);
@@ -1376,9 +1419,26 @@ function drawInset() {
     ictx.fill();
   }
 
+  // RCS glow during mid-transit flip
+  if (state.phase === 'transit' && state.flipStartWall > 0 && (performance.now() - state.flipStartWall) < (state.flipDurMs || FLIP_ANIM_MS)) {
+    var rcsR = 4 + 2 * Math.sin(Date.now() / 40);
+    ictx.beginPath();
+    ictx.arc(scX, scY, rcsR, 0, TWO_PI);
+    ictx.fillStyle = 'rgba(100,180,255,0.4)';
+    ictx.fill();
+  }
+
+  // Spacecraft wedge on inset
+  var insetAngle = -(scAngle + Math.PI / 2);
+  if (state.phase === 'transit' && state.flipStartWall > 0 && (performance.now() - state.flipStartWall) < (state.flipDurMs || FLIP_ANIM_MS)) {
+    insetAngle += state.flipAngle;
+  } else if ((state.phase === 'transit' && state.flipStartWall > 0) || state.phase === 'coasting' || (state.phase === 'result' && state.burn.committed)) {
+    insetAngle += Math.PI;
+  }
+
   ictx.save();
   ictx.translate(scX, scY);
-  ictx.rotate(-(scAngle + Math.PI / 2));
+  ictx.rotate(insetAngle);
   ictx.fillStyle = '#ffe066';
   ictx.beginPath();
   ictx.moveTo(10, 0);
@@ -1391,8 +1451,7 @@ function drawInset() {
   ictx.font = '12px "Share Tech Mono", monospace';
   ictx.fillStyle = 'rgba(255,255,255,0.5)';
   ictx.textAlign = 'center';
-  var label = T(bodyKey);
-  ictx.fillText(label, cx, iH - 6);
+  ictx.fillText(T(bodyKey), cx, iH - 6);
 }
 
 /* ══════════════════════════════════════════════ */
@@ -1400,148 +1459,72 @@ function drawInset() {
 /* ══════════════════════════════════════════════ */
 
 function startBurn() {
-  if (state.phase === 'prelaunch') {
-    state.burn1LockedGreenFrac = computeGreenFrac();
-    state.resultData.phaseAtLaunch = currentPhaseAngle(state.simTime);
-    state.phase = 'burn1';
-    state.burn1.holding = true;
-    state.burn1.holdStart = performance.now();
-    state.burn1.holdDuration = 0;
-    state.burn1.dvApplied = 0;
+  if (state.phase !== 'prelaunch') return;
+  if (!isLaunchReady()) return;
 
-    var hp = helioPosition(bodyByKey[state.homeKey], state.simTime);
-    state.launchAngle = Math.atan2(hp.y, hp.x);
-    state.sc.x = hp.x;
-    state.sc.y = hp.y;
-    state.sc.launched = true;
-    state.sc.trail = [{ x: hp.x, y: hp.y }];
+  // Lock reference at launch time
+  var ref = computeFlipBurnRef(state.homeKey, state.destKey, state.simTime);
+  state.transfer = ref;
+  state.ref = ref;
+  state.solarClearance = ref.solarClearance;
+  state.launchSimTime = state.simTime;
+  state.tauSim = 0;
 
-    updateEngineBtn();
-    updateBurnMeter();
-  } else if (state.phase === 'approach') {
-    // Start burn2 — same hold-and-release as burn1
-    state.burn2LockedGreenFrac = computeGreenFrac();
-    state.phase = 'burn2';
-    state.burn2.holding = true;
-    state.burn2.holdStart = performance.now();
-    state.burn2.holdDuration = 0;
-    state.burn2.dvApplied = 0;
-    updateEngineBtn();
-    updateBurnMeter();
-  }
+  // Compute burn meter zones
+  state.burnZones = computeBurnMeterZones();
+  state.burnLockedGreenFrac = 1.0;
+
+  // Place spacecraft at home planet position
+  var hp = helioPosition(bodyByKey[state.homeKey], state.simTime);
+  state.sc.x = hp.x;
+  state.sc.y = hp.y;
+  state.sc.launched = true;
+  state.sc.trail = [{ x: hp.x, y: hp.y }];
+
+  // Start burn phase
+  state.phase = 'burn';
+  state.burn.holding = true;
+  state.burn.holdStart = performance.now();
+  state.burn.holdDuration = 0;
+  state.burn.accel = 0;
+
+  updateEngineBtn();
+  updateBurnMeter();
 }
 
 function endBurn() {
-  if (state.phase === 'burn1' && state.burn1.holding) {
-    state.burn1.holding = false;
-    state.burn1.committed = true;
-    var gf1 = Math.max(0, state.burn1LockedGreenFrac);
-    if (state.difficulty !== 'easy' && state.burn1LockedGreenFrac >= 0) {
-      var sd1 = (state.difficulty === 'medium') ? BURN_SHRINK_DUR_MED : BURN_SHRINK_DUR_HARD;
-      var elapsed = (performance.now() - state.burn1.holdStart) / 1000;
-      gf1 = state.burn1LockedGreenFrac * Math.max(0, 1 - elapsed / sd1);
-    }
-    var ghw1 = 0.75 * state.ref.dv1 * gf1;
-    state.burn1Good = state.burn1.dvApplied >= (state.ref.dv1 - ghw1) && state.burn1.dvApplied <= (state.ref.dv1 + ghw1);
-    state.transferArc = null;
+  if (state.phase !== 'burn' || !state.burn.holding) return;
 
-    if (state.burn1Good) {
-      state.burn1.dvApplied = state.ref.dv1;
-      state.sc.orbit = null;
-      state.transferArc = buildTransferArc(state.simTime);
-      state.sc.x = state.transferArc.points[0].x;
-      state.sc.y = state.transferArc.points[0].y;
-    } else {
-      var hv = helioVelocity(bodyByKey[state.homeKey], state.simTime);
-      var speed = Math.sqrt(hv.vx * hv.vx + hv.vy * hv.vy);
-      var px = hv.vx / speed;
-      var py = hv.vy / speed;
-      var dir = state.ref.outward ? 1 : -1;
-      var dvActual = state.burn1.dvApplied;
+  state.burn.holding = false;
+  state.burn.committed = true;
 
-      state.sc.vx = hv.vx + dir * dvActual * px;
-      state.sc.vy = hv.vy + dir * dvActual * py;
-      state.sc.orbit = stateToOrbit(state.sc.x, state.sc.y, state.sc.vx, state.sc.vy, state.simTime);
+  var ref = state.transfer;
+  var accel = state.burn.accel;
+  if (accel < 1) accel = 1; // floor to prevent division by zero
+  state.accelFinal = accel;
 
-      if (state.sc.orbit.conicType === 'escape') {
-        state.phase = 'result';
-        computeMissErrors();
-        state.resultType = 'miss';
-        showResultOverlay();
-        return;
-      }
-    }
+  // Symmetric transfer: T = 2 * sqrt(L / accel), flip at midpoint
+  var L = ref.L;
+  var T_actual = 2 * Math.sqrt(L / accel);
+  state.tauFlip = T_actual / 2;
+  state.tActual = T_actual;
 
-    state.phase = 'cruise';
-    // Easy mode: unlock warp and restore 1x after transfer burn
-    if (state.warpLocked) {
-      state.warpLocked = false;
-      state.timeWarp = 1;
-      state.warpLevel = 'normal';
-      updateWarpBtns();
-    }
-    updateEngineBtn();
-    updateBurnLabel();
-  } else if (state.phase === 'burn2' && state.burn2.holding) {
-    state.burn2.holding = false;
-    state.burn2.committed = true;
-    var dv2Err = Math.abs(state.burn2.dvApplied - state.ref.dv2) / state.ref.dv2;
-    state.resultData.dv2Error = dv2Err;
-    var gf2 = Math.max(0, state.burn2LockedGreenFrac);
-    if (state.difficulty !== 'easy' && state.burn2LockedGreenFrac >= 0) {
-      var sd2 = (state.difficulty === 'medium') ? BURN_SHRINK_DUR_MED : BURN_SHRINK_DUR_HARD;
-      var elapsed = (performance.now() - state.burn2.holdStart) / 1000;
-      gf2 = state.burn2LockedGreenFrac * Math.max(0, 1 - elapsed / sd2);
-    }
-    var ghw2 = 0.75 * state.ref.dv2 * gf2;
-    var dv2Good = state.burn2.dvApplied >= (state.ref.dv2 - ghw2) && state.burn2.dvApplied <= (state.ref.dv2 + ghw2);
+  // Evaluate result based on acceleration
+  var result = evaluateAccelResult(accel);
+  state.resultType = result.type;
+  state.resultSubtype = null;
 
-    if (dv2Good) {
-      // Good burn — capture
-      var destVel = helioVelocity(bodyByKey[state.destKey], state.simTime);
-      state.sc.vx = destVel.vx;
-      state.sc.vy = destVel.vy;
-      state.sc.orbit = stateToOrbit(state.sc.x, state.sc.y, state.sc.vx, state.sc.vy, state.simTime);
-      state.captureStart = performance.now();
-      state.captureOrbitAngle = 0;
-      state.captureAlpha = 1;
-      state.captureApproachX = state.sc.x;
-      state.captureApproachY = state.sc.y;
-      state.overlayDismissed = false;
-      state.phase = 'captured';
-      evaluateResult();
-    } else {
-      // Bad burn — flyby with actual dv2 applied
-      var dir2 = state.ref.outward ? 1 : -1;
-      if (state.transferArc && !state.sc.orbit) {
-        // Good burn1 path: compute velocity from arc tangent + apply actual dv2
-        var arcState = getTransferArcState(state.transferArc, state.transferArc.tArrival);
-        var len = Math.sqrt(arcState.dx * arcState.dx + arcState.dy * arcState.dy);
-        var ux = arcState.dx / len, uy = arcState.dy / len;
-        var postSpeed = state.ref.vArr + dir2 * state.burn2.dvApplied;
-        state.sc.vx = ux * postSpeed;
-        state.sc.vy = uy * postSpeed;
-        state.sc.orbit = stateToOrbit(state.sc.x, state.sc.y, state.sc.vx, state.sc.vy, state.simTime);
-      } else if (state.sc.orbit) {
-        // Bad burn1 path: apply dv2 to existing orbit velocity
-        var vel2 = orbitVelocityAt(state.sc.orbit, state.simTime);
-        var spd2 = Math.sqrt(vel2.vx * vel2.vx + vel2.vy * vel2.vy);
-        state.sc.vx = vel2.vx + dir2 * state.burn2.dvApplied * (vel2.vx / spd2);
-        state.sc.vy = vel2.vy + dir2 * state.burn2.dvApplied * (vel2.vy / spd2);
-        state.sc.orbit = stateToOrbit(state.sc.x, state.sc.y, state.sc.vx, state.sc.vy, state.simTime);
-      }
-      state.transferArc = null;
-      if (!state.sc.orbit || state.sc.orbit.conicType === 'escape') {
-        state.phase = 'result';
-        computeMissErrors();
-        state.resultType = 'miss';
-        showResultOverlay();
-      } else {
-        state.phase = 'cruise';
-        updateEngineBtn();
-      }
-    }
+  // Transition to transit — flip happens mid-flight
+  state.phase = 'transit';
+  state.flipStartWall = 0;  // flip not started yet
+  state.flipAngle = 0;
+  state.flipTrailIdx = 0;
+
+  if (state.warpLocked) {
+    state.warpLocked = false;
   }
+
+  updateEngineBtn();
 }
 
 var engineBtn = document.getElementById('engineBtn');
@@ -1555,7 +1538,7 @@ engineBtn.addEventListener('mouseup', function(e) {
   endBurn();
 });
 engineBtn.addEventListener('mouseleave', function() {
-  if (state.burn1.holding || state.burn2.holding) endBurn();
+  if (state.burn.holding) endBurn();
 });
 engineBtn.addEventListener('touchstart', function(e) {
   e.preventDefault();
@@ -1566,217 +1549,11 @@ engineBtn.addEventListener('touchend', function(e) {
   endBurn();
 }, { passive: false });
 engineBtn.addEventListener('touchcancel', function() {
-  if (state.burn1.holding || state.burn2.holding) endBurn();
+  if (state.burn.holding) endBurn();
 });
 window.addEventListener('blur', function() {
-  if (state.burn1.holding || state.burn2.holding) endBurn();
+  if (state.burn.holding) endBurn();
 });
-
-/* ══════════════════════════════════════════════ */
-/* State Transitions                              */
-/* ══════════════════════════════════════════════ */
-
-function getEncounterRadius(destKey) {
-  // Encounter radius must compensate for the hybrid model mismatch:
-  // planets orbit on eccentric ellipses but the Hohmann reference uses circular orbits.
-  // The eccentricity term (dest.a * dest.e * 2) covers the maximum positional error
-  // from the equation of center over the transfer time.
-  var dest = bodyByKey[destKey];
-  return Math.max(0.15, Math.min(0.5, dest.a * 0.08 + dest.a * dest.e * 2));
-}
-
-function checkArrival() {
-  if (state.phase !== 'cruise') return;
-  // After a capture attempt, only check miss timeout
-  if (state.burn2.committed) {
-    if (state.sc.orbit) {
-      var elapsed = state.simTime - state.sc.orbit.tEpoch;
-      var halfPeriod = Math.PI / state.sc.orbit.n;
-      if (elapsed > halfPeriod * 1.3) {
-        state.phase = 'result';
-        computeMissErrors();
-        state.resultType = 'miss';
-        showResultOverlay();
-      }
-    }
-    return;
-  }
-  if (state.transferArc) {
-    var arcState = getTransferArcState(state.transferArc, state.simTime);
-    var arcEnd = state.transferArc.points[state.transferArc.points.length - 1];
-    var trailLast = state.sc.trail[state.sc.trail.length - 1];
-    if (!arcState.done) return;
-    state.simTime = state.transferArc.tArrival;
-    state.sc.x = arcEnd.x;
-    state.sc.y = arcEnd.y;
-    if (!trailLast || trailLast.x !== arcEnd.x || trailLast.y !== arcEnd.y) {
-      state.sc.trail.push({ x: arcEnd.x, y: arcEnd.y });
-      if (state.sc.trail.length > 5000) state.sc.trail.splice(0, 1);
-    }
-    state.phase = 'approach';
-    state.arrivalTime = state.simTime;
-    state.approachStart = performance.now();
-    state.insetBody = 'dest';
-    updateEngineBtn();
-    updateBurnLabel();
-    updateBurnMeter();
-    return;
-  }
-
-  var dest = bodyByKey[state.destKey];
-  var dp = helioPosition(dest, state.simTime);
-  var dx = state.sc.x - dp.x;
-  var dy = state.sc.y - dp.y;
-  var dist = Math.sqrt(dx * dx + dy * dy);
-  var threshold = getEncounterRadius(state.destKey);
-
-  if (dist < threshold) {
-    state.phase = 'approach';
-    state.arrivalTime = state.simTime;
-    state.approachStart = performance.now();
-    state.insetBody = 'dest';
-    updateEngineBtn();
-    updateBurnLabel();
-    updateBurnMeter();
-    return;
-  }
-
-  if (state.sc.orbit) {
-    var elapsed = state.simTime - state.sc.orbit.tEpoch;
-    var halfPeriod = Math.PI / state.sc.orbit.n;
-    if (elapsed > halfPeriod * 1.3) {
-      state.phase = 'result';
-      computeMissErrors();
-      state.resultType = 'miss';
-      showResultOverlay();
-    }
-  }
-}
-
-function checkArrivalTimeout() {
-  if (state.phase !== 'arrival') return;
-  var elapsed = state.simTime - state.arrivalTime;
-  var encR = getEncounterRadius(state.destKey);
-  var timeout = Math.max(0.05, encR * 0.8);
-  if (elapsed > timeout) {
-    state.phase = 'result';
-    computeMissErrors();
-    state.resultType = 'miss';
-    showResultOverlay();
-  }
-}
-
-function computeMissErrors() {
-  var ref = state.ref;
-  var pErr = Math.abs(wrapAngle(state.resultData.phaseAtLaunch - ref.phaseAngle));
-  state.resultData.phaseErrDeg = pErr / DEG2RAD;
-  state.resultData.dv1Error = Math.abs(state.burn1.dvApplied - ref.dv1) / ref.dv1;
-  state.resultData.dv2Error = state.burn2.committed
-    ? Math.abs(state.burn2.dvApplied - ref.dv2) / ref.dv2 : 1;
-}
-
-/* ══════════════════════════════════════════════ */
-/* Result Evaluation                              */
-/* ══════════════════════════════════════════════ */
-
-function evaluateResult() {
-  var ref = state.ref;
-
-  // Physical guard: no burn2 → always miss
-  if (!state.burn2.committed) {
-    computeMissErrors();
-    state.resultType = 'miss';
-    return;
-  }
-
-  // Physical guard: post-burn orbit is escape → always miss
-  if (state.sc.orbit && state.sc.orbit.conicType === 'escape') {
-    computeMissErrors();
-    state.resultType = 'miss';
-    return;
-  }
-
-  var pErr = Math.abs(wrapAngle(state.resultData.phaseAtLaunch - ref.phaseAngle));
-  var pErrDeg = pErr / DEG2RAD;
-  var dv1Err = Math.abs(state.burn1.dvApplied - ref.dv1) / ref.dv1;
-  var dv2Err = Math.abs(state.burn2.dvApplied - ref.dv2) / ref.dv2;
-
-  state.resultData.dv1Error = dv1Err;
-  state.resultData.dv2Error = dv2Err;
-  state.resultData.phaseErrDeg = pErrDeg;
-
-  var pTol = state.tol.phaseDeg;
-  var bTol1 = state.burn1LockedGreenFrac >= 0 ? 0.75 * state.burn1LockedGreenFrac : state.tol.burnPct;
-  var bTol2 = state.burn2LockedGreenFrac >= 0 ? 0.75 * state.burn2LockedGreenFrac : state.tol.burnPct;
-
-  if (pErrDeg <= pTol && dv1Err <= bTol1 && dv2Err <= bTol2) {
-    state.resultType = 'success';
-  } else if (pErrDeg <= pTol * 2.5 && dv1Err <= bTol1 * 2.5 && dv2Err <= bTol2 * 2.5) {
-    state.resultType = 'close';
-  } else {
-    state.resultType = 'miss';
-  }
-}
-
-function getResultHint() {
-  if (state.sc.orbit && state.sc.orbit.conicType === 'escape') {
-    return T('hintEscape');
-  }
-
-  var d = state.resultData;
-  var ref = state.ref;
-  var pTol = state.tol.phaseDeg;
-  var bTol1 = state.burn1LockedGreenFrac >= 0 ? 0.75 * state.burn1LockedGreenFrac : state.tol.burnPct;
-  var bTol2 = state.burn2LockedGreenFrac >= 0 ? 0.75 * state.burn2LockedGreenFrac : state.tol.burnPct;
-
-  if (d.phaseErrDeg > pTol) {
-    var pe = wrapAngle(d.phaseAtLaunch - ref.phaseAngle);
-    return T(pe > 0 ? 'hintLate' : 'hintEarly');
-  }
-  if (d.dv1Error > bTol1) {
-    return T(state.burn1.dvApplied > ref.dv1 ? 'hintBurn1Long' : 'hintBurn1Short');
-  }
-  if (!state.burn2.committed) {
-    return T('hintNoCapture');
-  }
-  if (d.dv2Error > bTol2) {
-    return T(state.burn2.dvApplied > ref.dv2 ? 'hintBurn2Long' : 'hintBurn2Short');
-  }
-  return '';
-}
-
-function showResultOverlay() {
-  var existing = document.querySelector('.result-overlay');
-  if (existing) existing.remove();
-
-  var overlay = document.createElement('div');
-  overlay.className = 'result-overlay';
-
-  var emoji, msg, bg;
-  var result = state.resultType;
-  if (result === 'success') {
-    emoji = '\uD83C\uDF89'; msg = T('resultSuccess'); bg = 'rgba(63,185,80,0.88)';
-  } else if (result === 'close') {
-    emoji = '\uD83D\uDC4D\uD83C\uDFFB'; msg = T('resultClose'); bg = 'rgba(88,166,255,0.88)';
-  } else {
-    emoji = '\uD83D\uDC4E\uD83C\uDFFB'; msg = T('resultMiss'); bg = 'rgba(240,180,60,0.92)';
-  }
-
-  var hint = getResultHint();
-  overlay.style.background = bg;
-  overlay.innerHTML =
-    '<div class="overlay-emoji">' + emoji + '</div>' +
-    '<div class="overlay-msg">' + msg + '</div>' +
-    (hint ? '<div class="overlay-sub">' + hint + '</div>' : '') +
-    '<div class="overlay-hint">' + T('clickDismiss') + '</div>';
-
-  overlay.addEventListener('click', function() {
-    overlay.remove();
-    state.overlayDismissed = true;
-    state.postResultStart = performance.now();
-  });
-  document.body.appendChild(overlay);
-}
 
 /* ══════════════════════════════════════════════ */
 /* UI Updates                                     */
@@ -1788,19 +1565,14 @@ function updateEngineBtn() {
   btn.disabled = false;
 
   if (state.phase === 'prelaunch') {
-    if (isLaunchWindowOpen(state.simTime)) {
+    if (isLaunchReady()) {
       btn.classList.add('armed');
     }
-  } else if (state.phase === 'burn1') {
-    btn.classList.add('firing');
-  } else if (state.phase === 'approach') {
-    btn.classList.add('armed');
-  } else if (state.phase === 'burn2') {
+  } else if (state.phase === 'burn') {
     btn.classList.add('firing');
   } else {
     btn.disabled = true;
   }
-
 }
 
 function updatePrompt() {
@@ -1812,32 +1584,33 @@ function updatePrompt() {
     case 'prelaunch':
       if (!state.missionStarted) {
         text = T('promptStart');
-      } else if (isLaunchWindowOpen(state.simTime)) {
-        text = T('promptWindow');
-        el.classList.add('highlight');
       } else {
-        text = T('promptWait');
+        text = T('promptReady');
+        el.classList.add('highlight');
       }
       break;
-    case 'burn1':
-      text = T('promptBurn1');
+    case 'burn':
+      text = T('promptFlip');
       el.classList.add('active');
       break;
-    case 'cruise':
-      text = T('promptCruise');
-      el.classList.add('cruise');
-      break;
-    case 'approach':
-      text = T('promptApproach');
-      el.classList.add('highlight');
-      break;
-    case 'burn2':
-      text = T('promptBurn2');
-      el.classList.add('active');
+    case 'transit':
+      if (state.flipStartWall === 0) {
+        text = T('burning');
+        el.classList.add('active');
+      } else if ((performance.now() - state.flipStartWall) < (state.flipDurMs || FLIP_ANIM_MS)) {
+        text = T('flipping');
+        el.classList.add('active');
+      } else {
+        text = T('promptBrake');
+        el.classList.add('cruise');
+      }
       break;
     case 'captured':
-      text = T('promptCaptured');
-      el.classList.add('highlight');
+      text = '';
+      break;
+    case 'coasting':
+      text = T('promptCoast');
+      el.classList.add('cruise');
       break;
     case 'result':
       if (state.overlayDismissed) text = T('clickDismiss');
@@ -1861,18 +1634,21 @@ function updateStepIndicator() {
   ];
 
   var step = 0;
-  if (state.phase === 'prelaunch' || state.phase === 'burn1') step = 0;
-  else if (state.phase === 'cruise') step = 1;
-  else if (state.phase === 'captured') step = 3; // all done
+  if (state.phase === 'prelaunch' || state.phase === 'burn') step = 0;
+  else if (state.phase === 'transit' || state.phase === 'coasting') step = 1;
+  else if (state.phase === 'captured') step = 3;
+  else if (state.phase === 'result' && state.resultType === 'success') step = 3;
   else step = 2;
 
   for (var i = 0; i < 3; i++) {
     dots[i].classList.remove('done', 'current');
     labels[i].classList.remove('current');
     if (i < step) dots[i].classList.add('done');
-    else if (i === step) {
+    else if (i === step && step < 3) {
       dots[i].classList.add('current');
       labels[i].classList.add('current');
+    } else if (step === 3) {
+      dots[i].classList.add('done');
     }
   }
 
@@ -1880,71 +1656,51 @@ function updateStepIndicator() {
     state.phase === 'result' ? 'none' : 'flex';
 }
 
-function updateBurnLabel() {
-  var lbl = document.getElementById('lblBurn');
-  if (state.phase === 'approach' || state.phase === 'burn2') {
-    lbl.textContent = T('burn2');
-  } else {
-    lbl.textContent = T('burn1');
-  }
-}
-
 function updateBurnMeter() {
   var fillEl = document.getElementById('burnFill');
   var targetEl = document.getElementById('burnTarget');
-  var ref = state.ref;
-  if (!ref) return;
 
-  var isBurn2Side = (state.phase === 'burn2' || state.phase === 'approach');
-  var currentBurn = isBurn2Side ? state.burn2 : state.burn1;
-  var idealDv = isBurn2Side ? ref.dv2 : ref.dv1;
-  var maxDv = idealDv * 2;
+  if (!state.burnZones) {
+    targetEl.style.display = 'none';
+    fillEl.style.width = '0%';
+    return;
+  }
 
-  var pct = Math.min(100, (currentBurn.dvApplied / maxDv) * 100);
+  var zones = state.burnZones;
+  var maxAccel = zones.aMeterMax;
+  var accel = state.burn.accel;
+
+  var pct = Math.min(100, (accel / maxAccel) * 100);
   fillEl.style.width = pct + '%';
 
-  // Determine greenFrac: frozen on easy, shrinks on medium/hard during burns
-  var greenFrac;
-  var burnShrinkDur = (state.difficulty === 'medium') ? BURN_SHRINK_DUR_MED : BURN_SHRINK_DUR_HARD;
-  if (state.phase === 'burn1') {
-    if (state.difficulty !== 'easy' && state.burn1LockedGreenFrac >= 0) {
-      var elapsed = (performance.now() - state.burn1.holdStart) / 1000;
-      greenFrac = state.burn1LockedGreenFrac * Math.max(0, 1 - elapsed / burnShrinkDur);
-    } else {
-      greenFrac = state.burn1LockedGreenFrac >= 0 ? state.burn1LockedGreenFrac : 0;
-    }
-  } else if (state.phase === 'burn2') {
-    if (state.difficulty !== 'easy' && state.burn2LockedGreenFrac >= 0) {
-      var elapsed = (performance.now() - state.burn2.holdStart) / 1000;
-      greenFrac = state.burn2LockedGreenFrac * Math.max(0, 1 - elapsed / burnShrinkDur);
-    } else {
-      greenFrac = state.burn2LockedGreenFrac >= 0 ? state.burn2LockedGreenFrac : 0;
-    }
-  } else {
-    greenFrac = computeGreenFrac();
+  // Coloring
+  fillEl.classList.remove('good', 'over', 'fatal');
+  if (accel >= zones.aLow && accel <= zones.aHigh) {
+    fillEl.classList.add('good');
+  } else if (accel > zones.aHigh && accel <= zones.aFatal) {
+    fillEl.classList.add('over');
+  } else if (accel > zones.aFatal) {
+    fillEl.classList.add('fatal');
   }
 
-  // Dynamic green zone half-width in dv units (75% of bar at frac=1)
-  var greenHalfWidth = 0.375 * maxDv * greenFrac;
-  var dvLow = Math.max(0, idealDv - greenHalfWidth);
-  var dvHigh = Math.min(maxDv, idealDv + greenHalfWidth);
-
-  // Fill coloring
-  fillEl.classList.remove('good', 'over');
-  if (currentBurn.dvApplied > 0 && greenFrac > 0) {
-    if (currentBurn.dvApplied >= dvLow && currentBurn.dvApplied <= dvHigh) fillEl.classList.add('good');
-    else if (currentBurn.dvApplied > dvHigh) fillEl.classList.add('over');
-  } else if (currentBurn.dvApplied > 0 && greenFrac <= 0) {
-    if (currentBurn.dvApplied > idealDv) fillEl.classList.add('over');
+  // Green zone with shrinking
+  var greenFrac = 1;
+  if (state.phase === 'burn' && state.burn.holding) {
+    var shrinkSec = DIFFICULTY[state.difficulty].BURN_SHRINK_SEC;
+    if (shrinkSec !== Infinity) {
+      var elapsed = (performance.now() - state.burn.holdStart) / 1000;
+      greenFrac = Math.max(0, 1 - elapsed / shrinkSec);
+    }
   }
 
-  // Green zone display
   if (greenFrac <= 0) {
     targetEl.style.display = 'none';
   } else {
     targetEl.style.display = '';
-    var left = (dvLow / maxDv) * 100;
-    var width = ((dvHigh - dvLow) / maxDv) * 100;
+    var aLowDisplay = zones.aRef - (zones.aRef - zones.aLow) * greenFrac;
+    var aHighDisplay = zones.aRef + (zones.aHigh - zones.aRef) * greenFrac;
+    var left = (aLowDisplay / maxAccel) * 100;
+    var width = ((aHighDisplay - aLowDisplay) / maxAccel) * 100;
     targetEl.style.left = left + '%';
     targetEl.style.width = width + '%';
   }
@@ -1956,20 +1712,26 @@ function updateReadouts() {
 
   document.getElementById('missionVal').textContent = T(state.homeKey) + ' \u2192 ' + T(state.destKey);
 
-  var days = ref.tTransfer * 365.25;
-  if (days < 365) {
-    document.getElementById('transferTimeVal').textContent = Math.round(days) + ' ' + T('days');
+  // Acceleration readout
+  var brakingEl = document.getElementById('brakingVal');
+  var a_g;
+  if (state.phase === 'burn' && state.burn.holding) {
+    a_g = state.burn.accel / G_TO_AUYR2;
+  } else if (state.burn.committed) {
+    a_g = state.accelFinal / G_TO_AUYR2;
   } else {
-    document.getElementById('transferTimeVal').textContent = ref.tTransfer.toFixed(2) + ' ' + T('years');
+    a_g = A_REF / G_TO_AUYR2;
   }
+  brakingEl.textContent = a_g.toFixed(2) + ' g';
+  var bc = accelColor(a_g);
+  brakingEl.style.color = 'rgb(' + bc.r + ',' + bc.g + ',' + bc.b + ')';
 
-  document.getElementById('dv1Val').textContent = (ref.dv1 * AU_TO_KMS).toFixed(2) + ' km/s';
-  document.getElementById('dv2Val').textContent = (ref.dv2 * AU_TO_KMS).toFixed(2) + ' km/s';
+  document.getElementById('dv1Val').textContent = (ref.dvDepart * AU_TO_KMS).toFixed(2) + ' km/s';
+  document.getElementById('dv2Val').textContent = (ref.dvArrive * AU_TO_KMS).toFixed(2) + ' km/s';
 
-  var pAngle = currentPhaseAngle(state.simTime);
-  var pDeg = (pAngle / DEG2RAD).toFixed(1);
-  var idealDeg = (ref.phaseAngle / DEG2RAD).toFixed(1);
   if (state.difficulty !== 'hard') {
+    var pDeg = (ref.phaseCurrent / DEG2RAD).toFixed(1);
+    var idealDeg = (ref.phaseRequired / DEG2RAD).toFixed(1);
     document.getElementById('phaseVal').textContent = pDeg + '\u00b0 / ' + idealDeg + '\u00b0';
   } else {
     document.getElementById('phaseVal').textContent = '\u2014';
@@ -1978,15 +1740,20 @@ function updateReadouts() {
   var statusText;
   switch (state.phase) {
     case 'prelaunch':
-      statusText = isLaunchWindowOpen(state.simTime) ? T('goodWindow') : T('waiting');
+      statusText = state.missionStarted ? T('goodWindow') : T('waiting');
       break;
-    case 'burn1': statusText = T('burning'); break;
-    case 'cruise': statusText = T('cruising'); break;
-    case 'approach': statusText = T('readyCapture'); break;
-    case 'burn2': statusText = T('burning'); break;
-    case 'captured': statusText = T('captured'); break;
+    case 'burn': statusText = T('burning'); break;
+    case 'transit':
+      if (state.flipStartWall > 0 && (performance.now() - state.flipStartWall) >= (state.flipDurMs || FLIP_ANIM_MS)) {
+        statusText = T('brakingStatus');
+      } else {
+        statusText = T('burning');
+      }
+      break;
+    case 'coasting': statusText = T('coastingStatus'); break;
     case 'result':
-      if (state.resultType === 'success') statusText = T('captured');
+      if (state.resultType === 'success') statusText = T('resultSuccess');
+      else if (state.resultType === 'fatal') statusText = T('resultFatal');
       else statusText = T('missed');
       break;
     default: statusText = '';
@@ -2000,10 +1767,86 @@ function updatePlayBtn() {
   btn.title = state.playing ? T('pause') : T('play');
 }
 
-function updateMETClock() {
-  var el = document.getElementById('metClock');
-  el.textContent = state.missionStarted ? formatMET(state.simTime) : 'T+ 0' + T('days') + ' 00' + T('hours');
-  el.classList.toggle('paused', !state.playing);
+function accelColor(a_g) {
+  // Smooth gradient: green (0g) → yellow (5g) → orange (10g) → red (20g)
+  var t = Math.min(1, Math.max(0, a_g / CREW_DEAD_G));
+  var r, g, b, u;
+  if (t < 0.25) {
+    u = t / 0.25;
+    r = Math.round(63 + (200 - 63) * u);
+    g = Math.round(185 + (200 - 185) * u);
+    b = Math.round(80 * (1 - u));
+  } else if (t < 0.5) {
+    u = (t - 0.25) / 0.25;
+    r = Math.round(200 + (255 - 200) * u);
+    g = Math.round(200 - (200 - 140) * u);
+    b = 0;
+  } else {
+    u = (t - 0.5) / 0.5;
+    r = 255;
+    g = Math.round(140 * (1 - u));
+    b = 0;
+  }
+  return { r: r, g: g, b: b };
+}
+
+function formatTransferTime(simYears) {
+  var totalDays = simYears * 365.25;
+  var days = Math.floor(totalDays);
+  var hours = Math.floor((totalDays - days) * 24);
+  var hStr = (hours < 10 ? '0' : '') + hours;
+  if (days >= 365) {
+    var yrs = (totalDays / 365.25).toFixed(1);
+    return yrs + 'yr';
+  }
+  return days + 'd ' + hStr + 'h';
+}
+
+function updateAccelDisplay() {
+  var accelEl = document.getElementById('accelDisplay');
+  var timeEl = document.getElementById('transferTimeDisplay');
+  var hudGroup = accelEl.parentElement;
+  var a_g, accelText, timeText;
+
+  if (state.phase === 'burn' && state.burn.holding && state.transfer) {
+    // Live: player is choosing acceleration
+    a_g = state.burn.accel / G_TO_AUYR2;
+    accelText = a_g.toFixed(2) + ' g';
+    // Projected transfer time decreases as accel increases
+    if (state.burn.accel > 0) {
+      var projT = 2 * Math.sqrt(state.transfer.L / state.burn.accel);
+      timeText = formatTransferTime(projT);
+    } else {
+      timeText = state.ref ? formatTransferTime(state.ref.T_ref) : '';
+    }
+  } else if (state.phase === 'transit') {
+    // Constant acceleration throughout (symmetric)
+    a_g = state.accelFinal / G_TO_AUYR2;
+    accelText = a_g.toFixed(2) + ' g';
+    timeText = formatTransferTime(state.tauSim) + ' / ' + formatTransferTime(state.tActual);
+  } else if (state.phase === 'captured') {
+    a_g = 0;
+    accelText = '0 g';
+    timeText = formatTransferTime(state.tActual);
+  } else if (state.phase === 'result' && state.burn.committed) {
+    a_g = state.accelFinal / G_TO_AUYR2;
+    accelText = a_g.toFixed(2) + ' g';
+    timeText = formatTransferTime(state.tActual);
+  } else {
+    // Prelaunch
+    a_g = 0;
+    accelText = '0 g';
+    timeText = state.ref ? formatTransferTime(state.ref.T_ref) : '';
+  }
+
+  accelEl.textContent = accelText;
+  timeEl.textContent = timeText;
+
+  var c = accelColor(a_g);
+  accelEl.style.color = 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')';
+  accelEl.style.textShadow = '0 0 10px rgba(' + c.r + ',' + c.g + ',' + c.b + ',0.4)';
+
+  hudGroup.classList.toggle('paused', !state.playing);
 }
 
 function updateWarpBtns() {
@@ -2068,13 +1911,6 @@ function setDifficulty(d) {
   document.getElementById('diffMediumBtn').classList.toggle('active', d === 'medium');
   document.getElementById('diffHardBtn').classList.toggle('active', d === 'hard');
 
-  if (d === 'easy') {
-    state.tol = { phaseDeg: 10, burnPct: 0.15 };
-  } else if (d === 'medium') {
-    state.tol = { phaseDeg: 6, burnPct: 0.09 };
-  } else {
-    state.tol = { phaseDeg: 3, burnPct: 0.05 };
-  }
   state.warpLevels = computeWarpLevels(state.homeKey, state.destKey);
   state.timeWarp = state.warpLevels[state.warpLevel] || state.warpLevels.normal;
   updateBurnMeter();
@@ -2088,41 +1924,46 @@ function setWarp(level) {
   updateWarpBtns();
 }
 
-
 function togglePlay() {
   state.playing = !state.playing;
   if (state.playing && !state.missionStarted) {
     state.missionStarted = true;
   }
   updatePlayBtn();
-  updateMETClock();
+  updateAccelDisplay();
 }
 
 function resetMission() {
   state.simTime = 0;
   state.phase = 'prelaunch';
-  state.burn1 = { holding: false, holdStart: 0, holdDuration: 0, dvApplied: 0, committed: false };
-  state.burn2 = { holding: false, holdStart: 0, holdDuration: 0, dvApplied: 0, committed: false };
-  state.sc = { x: 0, y: 0, vx: 0, vy: 0, orbit: null, trail: [], launched: false };
-  state.resultType = null;
-  state.resultData = { phaseAtLaunch: 0, dv1Error: 0, dv2Error: 0, phaseErrDeg: 0 };
-  state.launchAngle = 0;
-  state.arrivalTime = 0;
-  state.insetBody = 'home';
-  state.insetScAngle = 0;
+  state.burn = { holding: false, holdStart: 0, holdDuration: 0, accel: 0, committed: false };
+  state.sc = { x: 0, y: 0, launched: false, trail: [] };
+  state.transfer = null;
+  state.burnZones = null;
+  state.burnLockedGreenFrac = -1;
+  state.tauFlip = 0;
+  state.tauSim = 0;
+  state.launchSimTime = 0;
+  state.flipTrailIdx = 0;
+  state.accelFinal = 0;
+  state.tActual = 0;
+  state.flipStartWall = 0;
+  state.flipAngle = 0;
+  state.flipDurMs = 0;
+  state.captureStart = 0;
   state.captureAlpha = 1;
-  state.captureApproachX = 0;
-  state.captureApproachY = 0;
-  state.burn1Good = false;
-  state.transferArc = null;
-  state.approachStart = 0;
+  state.resultType = null;
+  state.resultSubtype = null;
+  state.solarClearance = Infinity;
+  state.solarDeathStart = 0;
+  state.insetScAngle = 0;
   state.overlayDismissed = false;
   state.postResultStart = 0;
   state.windowOpenSimTime = 0;
   state.windowWasOpen = false;
-  state.burn1LockedGreenFrac = -1;
-  state.burn2LockedGreenFrac = -1;
   state.warpLocked = false;
+  state.phaseAtLaunch = 0;
+  state.coastStart = 0;
   state.playing = false;
   state.missionStarted = false;
   state.warpLevel = 'normal';
@@ -2133,20 +1974,19 @@ function resetMission() {
   if (existing) existing.remove();
 
   updateEngineBtn();
-  updateBurnLabel();
   updateBurnMeter();
   updateWarpBtns();
   updatePlayBtn();
   updateReadouts();
-  updateMETClock();
+  updateAccelDisplay();
 
   document.getElementById('burnFill').style.width = '0%';
-  document.getElementById('burnFill').classList.remove('good', 'over');
+  document.getElementById('burnFill').classList.remove('good', 'over', 'fatal');
   document.getElementById('burnTarget').style.display = 'none';
 }
 
 function recalcMission() {
-  state.ref = computeHohmannRef(state.homeKey, state.destKey);
+  state.ref = computeFlipBurnRef(state.homeKey, state.destKey, state.simTime);
   state.warpLevels = computeWarpLevels(state.homeKey, state.destKey);
   state.timeWarp = state.warpLevels.normal;
   state.warpLevel = 'normal';
@@ -2179,9 +2019,10 @@ function applyTranslations() {
   document.getElementById('warpNormalBtn').textContent = T('warpNormal');
   document.getElementById('warpFastBtn').textContent = T('warpFast');
   document.getElementById('warpFastestBtn').textContent = T('warpFastest');
+  document.getElementById('lblBurn').textContent = T('burn');
   updateEngineBtn();
   document.getElementById('lblMission').textContent = T('mission');
-  document.getElementById('lblTransferTime').textContent = T('transferTime');
+  document.getElementById('lblBraking').textContent = T('braking');
   document.getElementById('lblDv1').textContent = T('dv1');
   document.getElementById('lblDv2').textContent = T('dv2');
   document.getElementById('lblPhase').textContent = T('phase');
@@ -2190,11 +2031,14 @@ function applyTranslations() {
   document.getElementById('infoText').innerHTML = T('info');
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
 
+  document.getElementById('stepLbl1').textContent = '1 ' + T('stepLaunch');
+  document.getElementById('stepLbl2').textContent = '2 ' + T('stepFlip');
+  document.getElementById('stepLbl3').textContent = '3 ' + T('stepArrive');
+
   populateHomeSelect();
   populateDestSelect();
-  updateBurnLabel();
   updateReadouts();
-  updateMETClock();
+  updateAccelDisplay();
 }
 
 function toggleLang() {
@@ -2219,126 +2063,97 @@ function animate(timestamp) {
 
     switch (state.phase) {
       case 'prelaunch':
-        // Auto-decel to 1x (medium/hard) or 0.5x (easy) ~2 sec before window
-        var decelTarget = state.warpLevels.decel;
-        if (state.timeWarp > 1 && state.timeWarp > decelTarget) {
-          var shouldDecel = isLaunchWindowOpen(state.simTime);
-          if (!shouldDecel) {
-            var currentErr = Math.abs(phaseError(state.simTime));
-            var threshold = state.tol.phaseDeg * DEG2RAD;
-            if (currentErr > threshold) {
-              var synodicRate = Math.abs(bodyByKey[state.homeKey].n - bodyByKey[state.destKey].n);
-              var timeToWindow = (currentErr - threshold) / synodicRate;
-              var warpFrame = state.timeWarp * SIM_RATE * MAX_DT;
-              var realTimeAtDecel = timeToWindow / (decelTarget * SIM_RATE);
-              if (timeToWindow <= warpFrame * 2) {
-                shouldDecel = true;
-              } else if (state.timeWarp > state.warpLevels.normal && timeToWindow <= state.warpLevels.normal * SIM_RATE * MAX_DT * 3) {
-                state.timeWarp = state.warpLevels.normal;
-                state.warpLevel = 'normal';
-                updateWarpBtns();
-              } else if (realTimeAtDecel <= 2.5) {
-                shouldDecel = true;
-              }
-            } else {
-              shouldDecel = true;
-            }
-          }
-          if (shouldDecel) {
-            state.timeWarp = decelTarget;
-            state.warpLevel = 'normal';
-            updateWarpBtns();
-            if (state.difficulty === 'easy') {
-              state.warpLocked = true;
-              updateWarpBtns();
-            }
-          }
-        }
-        // Easy mode: auto-re-warp if window passed without launch
-        if (state.difficulty === 'easy' && state.warpLocked && !isLaunchWindowOpen(state.simTime) && state.windowWasOpen) {
-          state.warpLocked = false;
-          state.timeWarp = state.warpLevels.fastest;
-          state.warpLevel = 'fastest';
-          updateWarpBtns();
-        }
         dtSim = dtReal * state.timeWarp * SIM_RATE;
         state.simTime += dtSim;
         state.insetScAngle += dtReal * 2.0;
+
+        // Continuously update reference for readouts
+        state.ref = computeFlipBurnRef(state.homeKey, state.destKey, state.simTime);
+
         updateEngineBtn();
-        // Track window open/close transitions for shrinking green zone
-        var windowNowOpen = isLaunchWindowOpen(state.simTime);
-        if (windowNowOpen && !state.windowWasOpen) {
-          state.windowOpenSimTime = state.simTime;
-        }
-        state.windowWasOpen = windowNowOpen;
-        updateBurnMeter();
         break;
 
-      case 'burn1':
-        // simTime frozen during impulsive burn — hold time is wall-clock only
-        if (state.burn1.holding) {
-          state.burn1.holdDuration = (performance.now() - state.burn1.holdStart) / 1000;
-          state.burn1.dvApplied = state.ref.burnRate * state.burn1.holdDuration;
+      case 'burn':
+        // simTime frozen. Accumulate acceleration from wall-clock.
+        if (state.burn.holding) {
+          state.burn.holdDuration = (performance.now() - state.burn.holdStart) / 1000;
+          var burnRate = A_REF / 2.0;  // reach green zone center at ~2 seconds
+          state.burn.accel = burnRate * state.burn.holdDuration;
           updateBurnMeter();
         }
         break;
 
-      case 'cruise':
-        var cruiseWarp = Math.max(1, state.ref.tTransfer / 8 / SIM_RATE);
+      case 'transit':
+        // Solar death freeze — ship frozen, dissolving
+        if (state.solarDeathStart > 0) {
+          var deathElapsed = (performance.now() - state.solarDeathStart) / 1000;
+          if (deathElapsed >= 2.0) {
+            state.phase = 'result';
+            showResultOverlay();
+          }
+          break;
+        }
+
+        // Advance simulation time — always animate over ~8 real seconds
+        var TRANSIT_ANIM_SEC = 8;
+        var cruiseWarp = state.tActual / (TRANSIT_ANIM_SEC * SIM_RATE);
         dtSim = dtReal * cruiseWarp * SIM_RATE;
+        state.tauSim += dtSim;
         state.simTime += dtSim;
-        if (state.transferArc) {
-          var arc = getTransferArcState(state.transferArc, state.simTime);
-          state.sc.x = arc.x;
-          state.sc.y = arc.y;
-          trailAccum += dtSim;
-          var guidedTrailInterval = state.ref.tTransfer / 500;
-          if (guidedTrailInterval < 0.0001) guidedTrailInterval = 0.0001;
-          while (trailAccum >= guidedTrailInterval) {
-            trailAccum -= guidedTrailInterval;
-            state.sc.trail.push({ x: arc.x, y: arc.y });
-            if (state.sc.trail.length > 5000) state.sc.trail.splice(0, 1);
-          }
-        } else if (state.sc.orbit) {
-          var pos = orbitPositionAt(state.sc.orbit, state.simTime);
-          state.sc.x = pos.x;
-          state.sc.y = pos.y;
-          trailAccum += dtSim;
-          var trailInterval = state.ref.tTransfer / 500;
-          if (trailInterval < 0.0001) trailInterval = 0.0001;
-          while (trailAccum >= trailInterval) {
-            trailAccum -= trailInterval;
-            state.sc.trail.push({ x: pos.x, y: pos.y });
-            if (state.sc.trail.length > 5000) state.sc.trail.splice(0, 1);
-          }
-        }
-        checkArrival();
-        break;
 
-      case 'approach':
-        // simTime frozen — approach is a timing challenge, not physics
+        var pos = getTransferLinePosition(state.tauSim);
+        state.sc.x = pos.x;
+        state.sc.y = pos.y;
+
+        // Trail
+        trailAccum += dtSim;
+        var trailInterval = state.tActual / 500;
+        if (trailInterval < 0.0001) trailInterval = 0.0001;
+        while (trailAccum >= trailInterval) {
+          trailAccum -= trailInterval;
+          state.sc.trail.push({ x: pos.x, y: pos.y });
+          if (state.sc.trail.length > 5000) state.sc.trail.splice(0, 1);
+        }
+
         state.insetScAngle -= dtReal * 1.5;
-        // Update timing cursor
-        updateBurnMeter();
-        // Check timeout
-        var approachElapsed = (performance.now() - state.approachStart) / 1000;
-        if (approachElapsed >= APPROACH_DUR) {
-          // No engine fired — mission failed
-          state.resultData.dv2Error = 1;
-          state.transferArc = null;
-          state.phase = 'result';
-          computeMissErrors();
-          state.resultType = 'miss';
-          showResultOverlay();
-        }
-        break;
 
-      case 'burn2':
-        // simTime frozen during impulsive burn — hold time is wall-clock only
-        if (state.burn2.holding) {
-          state.burn2.holdDuration = (performance.now() - state.burn2.holdStart) / 1000;
-          state.burn2.dvApplied = state.ref.burnRate * state.burn2.holdDuration;
-          updateBurnMeter();
+        // Trigger flip animation when reaching the flip point
+        if (state.tauSim >= state.tauFlip && state.flipStartWall === 0) {
+          state.flipStartWall = performance.now();
+          state.flipTrailIdx = state.sc.trail.length;
+          // Flip must finish well before arrival — cap at 1/6 of remaining wall-clock time
+          var remainingWallMs = (state.tActual - state.tauFlip) / (cruiseWarp * SIM_RATE) * 1000;
+          state.flipDurMs = Math.min(FLIP_ANIM_MS, remainingWallMs / 6);
+          state.flipDurMs = Math.max(state.flipDurMs, 100); // floor at 100ms
+        }
+
+        // Update flip angle (wall-clock driven within transit)
+        if (state.flipStartWall > 0) {
+          var flipElapsed = performance.now() - state.flipStartWall;
+          var flipDur = state.flipDurMs || FLIP_ANIM_MS;
+          state.flipAngle = Math.PI * Math.min(1, flipElapsed / flipDur);
+        }
+
+        // Solar proximity check — freeze and dissolve
+        var sunDist = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
+        if (sunDist < SOLAR_KILL_RADIUS && state.solarDeathStart === 0) {
+          state.solarDeathStart = performance.now();
+          state.resultType = 'fatal';
+          state.resultSubtype = 'solar';
+          break;
+        }
+
+        // Check completion — ship always reaches destination (symmetric transfer)
+        if (state.tauSim >= state.tActual) {
+          if (state.resultType === 'success' || state.resultType === 'close') {
+            state.phase = 'captured';
+            state.captureStart = performance.now();
+            state.captureAlpha = 1;
+          } else {
+            // Fatal from g-force — ship arrives but crew is dead
+            state.phase = 'result';
+            showResultOverlay();
+          }
         }
         break;
 
@@ -2347,23 +2162,29 @@ function animate(timestamp) {
         var DISSOLVE_DUR = 0.5;
         var POST_CAPTURE_DUR = 2.0;
 
-        // Phase 1: dissolve spacecraft into planet (0–1.5s)
         if (captureElapsed < DISSOLVE_DUR) {
-          var t = captureElapsed / DISSOLVE_DUR;
-          if (t > 0.4) {
-            state.captureAlpha = 1 - (t - 0.4) / 0.6;
+          var ct = captureElapsed / DISSOLVE_DUR;
+          if (ct > 0.4) {
+            state.captureAlpha = 1 - (ct - 0.4) / 0.6;
           }
         } else {
-          // Phase 2: spacecraft gone, let system animate (1.5–3.5s)
           state.captureAlpha = 0;
           state.simTime += dtReal * SIM_RATE;
         }
 
-        // Keep inset orbit going
-        state.captureOrbitAngle += dtReal * 2.0;
-        state.insetScAngle = state.captureOrbitAngle;
+        state.insetScAngle -= dtReal * 2.0;
 
         if (captureElapsed >= DISSOLVE_DUR + POST_CAPTURE_DUR) {
+          state.phase = 'result';
+          showResultOverlay();
+        }
+        break;
+
+      case 'coasting':
+        // Ship stopped, destination moves away
+        state.simTime += dtReal * SIM_RATE;
+        state.insetScAngle -= dtReal * 0.5;
+        if ((performance.now() - state.coastStart) / 1000 > 4.0) {
           state.phase = 'result';
           showResultOverlay();
         }
@@ -2371,15 +2192,12 @@ function animate(timestamp) {
     }
   }
 
-  // Keep simulation running during result phase
+  // Keep sim running during result
   if (state.phase === 'result') {
     state.simTime += dtReal * SIM_RATE;
-    if (state.burn2.committed) {
-      state.insetScAngle += dtReal * 2.0;
-    }
   }
 
-  // Auto-reset after overlay dismissal
+  // Auto-reset
   if (state.phase === 'result' && state.overlayDismissed) {
     if ((performance.now() - state.postResultStart) / 1000 > 3.0) {
       resetMission();
@@ -2396,7 +2214,7 @@ function animate(timestamp) {
   updateReadouts();
   updatePrompt();
   updateStepIndicator();
-  updateMETClock();
+  updateAccelDisplay();
 
   requestAnimationFrame(animate);
 }
@@ -2419,10 +2237,9 @@ function init() {
   updatePlayBtn();
   updateWarpBtns();
   updateEngineBtn();
-  updateBurnLabel();
   updatePrompt();
   updateStepIndicator();
-  updateMETClock();
+  updateAccelDisplay();
   requestAnimationFrame(animate);
 }
 

@@ -33,6 +33,10 @@ See how spacecraft use a planet's gravity and motion to speed up or slow down wi
 
 Time your launch and burns to transfer between neighboring planets on a minimum-energy Hohmann orbit. Wait for the right planetary alignment, hold the engine for departure, coast through space, then burn again to capture orbit at the destination.
 
+### [Flip and Burn Transfer Game](flipandburn.html) `Astrophysics`
+
+Command an Epstein drive ship on a straight-line transfer between planets. Accelerate, then choose the perfect moment to flip 180° and brake. Flip too early and you stop short; flip too late and the crew doesn't survive the deceleration.
+
 ### [Time Dilation Simulator](timerel.html) `Astrophysics`
 
 A twin on Earth, a twin in a rocket — who ages less? Pick a real star, set the speed as a fraction of light, and watch two clocks tick at different rates as the Lorentz factor stretches time.
