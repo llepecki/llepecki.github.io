@@ -2101,7 +2101,7 @@ function setDifficulty(d) {
     state.tol = { phaseDeg: 3, burnPct: 0.05 };
   }
   state.warpLevels = computeWarpLevels(state.homeKey, state.destKey);
-  state.timeWarp = state.warpLevels[state.warpLevel] || state.warpLevels.normal;
+  state.timeWarp = state.warpLevel ? (state.warpLevels[state.warpLevel] || 1) : 1;
   updateBurnMeter();
   updateReadouts();
 }
@@ -2109,7 +2109,7 @@ function setDifficulty(d) {
 function setWarp(level) {
   if (state.warpLocked) return;
   state.warpLevel = level;
-  state.timeWarp = state.warpLevels[level] || state.warpLevels.normal;
+  state.timeWarp = state.warpLevels[level] || 1;
   updateWarpBtns();
 }
 
@@ -2150,8 +2150,8 @@ function resetMission() {
   state.warpLocked = false;
   state.playing = false;
   state.missionStarted = false;
-  state.warpLevel = 'normal';
-  state.timeWarp = state.warpLevels.normal;
+  state.warpLevel = '';
+  state.timeWarp = 1;
   trailAccum = 0;
 
   var existing = document.querySelector('.result-overlay');
@@ -2173,8 +2173,8 @@ function resetMission() {
 function recalcMission() {
   state.ref = computeHohmannRef(state.homeKey, state.destKey);
   state.warpLevels = computeWarpLevels(state.homeKey, state.destKey);
-  state.timeWarp = state.warpLevels.normal;
-  state.warpLevel = 'normal';
+  state.timeWarp = 1;
+  state.warpLevel = '';
   var auto = computeAutoCamera();
   state.camera.targetScale = auto.scale;
   state.camera.cx = auto.cx;

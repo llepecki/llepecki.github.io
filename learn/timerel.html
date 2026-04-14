@@ -230,6 +230,15 @@
   }
   .name-input:focus { border-color: var(--accent); }
   .name-input::placeholder { color: var(--text-dim); }
+  .age-input {
+    width: 45px; padding: 7px 6px; border-radius: 6px; text-align: center;
+    border: 1px solid var(--panel-border); background: rgba(11,15,24,0.7);
+    color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 14px;
+    outline: none; -moz-appearance: textfield;
+  }
+  .age-input::-webkit-inner-spin-button,
+  .age-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .age-input:focus { border-color: var(--accent); }
 
   @media (max-width: 700px) {
     .main { flex-direction: column; height: auto; min-height: 100vh; }
@@ -260,10 +269,12 @@
       <div class="name-row">
         <span class="ship-dot" style="background:var(--earth-color)"></span>
         <input id="earthTwinName" class="name-input" maxlength="14">
+        <input id="earthTwinAge" class="age-input" type="number" min="1" max="99">
       </div>
       <div class="name-row">
         <span class="ship-dot" style="background:var(--rocket-color)"></span>
         <input id="rocketTwinName" class="name-input" maxlength="14">
+        <input id="rocketTwinAge" class="age-input" type="number" min="1" max="99">
       </div>
     </div>
   </div>
@@ -290,9 +301,9 @@
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblSpeed">Travel Speed</span>
       <div class="slider-row">
-        <button class="step-btn" id="speedMinus" onclick="stepSlider('speedSlider',-0.01)">&minus;</button>
-        <input type="range" id="speedSlider" min="0.10" max="0.99" value="0.50" step="0.01" oninput="handleSpeedChange()">
-        <button class="step-btn" id="speedPlus" onclick="stepSlider('speedSlider',0.01)">+</button>
+        <button class="step-btn" id="speedMinus" onclick="stepSpeedSlider(-1)">&minus;</button>
+        <input type="range" id="speedSlider" min="0" max="1000" value="376" step="1" oninput="handleSpeedChange()">
+        <button class="step-btn" id="speedPlus" onclick="stepSpeedSlider(1)">+</button>
         <span class="slider-val" id="speedVal">0.50c</span>
       </div>
     </div>
@@ -343,7 +354,7 @@
 
 var EPS_BETA = 1e-10;
 var BETA_MIN = 0.10;
-var BETA_MAX = 0.99;
+var BETA_MAX = 0.9999;
 var ALPHA = 1.032;  // 1g proper acceleration in ly/yr² (natural units, c=1)
 var DT_CAP = 0.05;
 var NUM_BG_STARS = 200;
@@ -581,6 +592,7 @@ var state = {
   betaActual: 0,    // actual max speed reached (= beta if cruise, < beta if no cruise)
   gammaActual: 0,
   currentBeta: 0,   // instantaneous velocity during animation
+  defaultAge: Math.floor(Math.random() * 16) + 10,  // random 10-25, initial default for both
 };
 
 // ====================== UTILITIES ======================
@@ -589,6 +601,36 @@ function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 function lerp(a, b, t) { return a + (b - a) * t; }
 function T(key) { return I18N[state.lang][key] || key; }
 function arctanh(x) { return 0.5 * Math.log((1 + x) / (1 - x)); }
+
+function fmtBeta(b) {
+  if (b >= 0.999) return b.toFixed(4) + 'c';
+  if (b >= 0.99) return b.toFixed(3) + 'c';
+  return b.toFixed(2) + 'c';
+}
+
+// Non-linear speed slider: slider 0-1000 → beta 0.10-0.9999
+// Linear 0.10-0.95 for slider 0-800, then exponential 0.95-0.9999 for slider 800-1000
+function sliderToBeta(s) {
+  s = clamp(s, 0, 1000);
+  if (s <= 800) {
+    return BETA_MIN + (0.95 - BETA_MIN) * (s / 800);
+  }
+  // Exponential zone: map 800-1000 → 0.95-0.9999
+  // Use 1 - (1-0.95) * exp(-k * t) where t goes 0→1
+  var t = (s - 800) / 200;
+  return 1 - 0.05 * Math.exp(-t * Math.log(0.05 / 0.0001));
+  // at t=0: 1 - 0.05 = 0.95, at t=1: 1 - 0.05*(0.0001/0.05) = 1 - 0.0001 = 0.9999
+}
+
+function betaToSlider(beta) {
+  beta = clamp(beta, BETA_MIN, BETA_MAX);
+  if (beta <= 0.95) {
+    return Math.round((beta - BETA_MIN) / (0.95 - BETA_MIN) * 800);
+  }
+  var k = Math.log(0.05 / 0.0001);
+  var t = -Math.log((1 - beta) / 0.05) / k;
+  return Math.round(800 + t * 200);
+}
 
 function formatYears(years) {
   var y = Math.floor(years);
@@ -785,6 +827,16 @@ function getRocketTwinName() {
   return v || getDefaultName(1);
 }
 
+function getEarthStartAge() {
+  var v = parseInt(document.getElementById('earthTwinAge').value);
+  return (v >= 1 && v <= 99) ? v : state.defaultAge;
+}
+
+function getRocketStartAge() {
+  var v = parseInt(document.getElementById('rocketTwinAge').value);
+  return (v >= 1 && v <= 99) ? v : state.defaultAge;
+}
+
 // ====================== CANVAS SETUP ======================
 
 var canvas = document.getElementById('canvas');
@@ -820,7 +872,7 @@ function resize() {
 function recalcPhysics() {
   var star = STARS[state.starIndex];
   var d = star.dist;
-  state.beta = clamp(parseFloat(document.getElementById('speedSlider').value), BETA_MIN, BETA_MAX);
+  state.beta = sliderToBeta(parseInt(document.getElementById('speedSlider').value));
   state.gamma = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - state.beta * state.beta));
 
   // Acceleration model: accel → cruise → decel per leg, at 1g proper acceleration
@@ -1278,14 +1330,14 @@ function drawScene() {
   drawStickFigure(earthClockX - 16, topY + 8, '#4db8ff', false);
   drawAnalogClock(earthClockX + 28, topY, CLOCK_RADIUS,
     state.earthElapsed, '#4db8ff', getEarthTwinName(),
-    state.earthElapsed.toFixed(2) + ' ' + yr);
+    (getEarthStartAge() + state.earthElapsed).toFixed(2) + ' ' + yr);
 
   // ── Bottom zone: Spacecraft Clock (X follows spacecraft) ──
   var shipClockX = rPos.x;
   drawStickFigure(shipClockX - 16, bottomY + 8, '#ffb347', false);
   drawAnalogClock(shipClockX + 28, bottomY, CLOCK_RADIUS,
     state.rocketElapsed, '#ffb347', getRocketTwinName(),
-    state.rocketElapsed.toFixed(2) + ' ' + yr);
+    (getRocketStartAge() + state.rocketElapsed).toFixed(2) + ' ' + yr);
 }
 
 // ====================== READOUTS ======================
@@ -1302,24 +1354,24 @@ function updateReadouts() {
     // Live speed and γ during animation
     var liveBeta = state.currentBeta;
     var liveGamma = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - liveBeta * liveBeta));
-    document.getElementById('readBeta').textContent = liveBeta.toFixed(2) + 'c';
+    document.getElementById('readBeta').textContent = fmtBeta(liveBeta);
     document.getElementById('readGamma').textContent = liveGamma.toFixed(3);
   } else if (!state.hasCruise && state.phase === 'idle') {
-    document.getElementById('readBeta').textContent = state.betaActual.toFixed(2) + 'c (max)';
+    document.getElementById('readBeta').textContent = fmtBeta(state.betaActual) + ' (max)';
     document.getElementById('readGamma').textContent = state.gammaActual.toFixed(3);
   } else {
-    document.getElementById('readBeta').textContent = state.beta.toFixed(2) + 'c';
+    document.getElementById('readBeta').textContent = fmtBeta(state.beta);
     document.getElementById('readGamma').textContent = state.gamma.toFixed(3);
   }
 
   if (state.phase === 'idle') {
-    document.getElementById('readEarthTime').textContent = state.earthTotalYears.toFixed(2) + ' ' + yr;
-    document.getElementById('readRocketTime').textContent = state.rocketTotalYears.toFixed(2) + ' ' + yr;
+    document.getElementById('readEarthTime').textContent = (getEarthStartAge() + state.earthTotalYears).toFixed(2) + ' ' + yr;
+    document.getElementById('readRocketTime').textContent = (getRocketStartAge() + state.rocketTotalYears).toFixed(2) + ' ' + yr;
     document.getElementById('readTimeDiff').textContent = (state.earthTotalYears - state.rocketTotalYears).toFixed(2) + ' ' + yr;
     document.getElementById('readPhase').textContent = T('phaseIdle');
   } else {
-    document.getElementById('readEarthTime').textContent = state.earthElapsed.toFixed(2) + ' ' + yr;
-    document.getElementById('readRocketTime').textContent = state.rocketElapsed.toFixed(2) + ' ' + yr;
+    document.getElementById('readEarthTime').textContent = (getEarthStartAge() + state.earthElapsed).toFixed(2) + ' ' + yr;
+    document.getElementById('readRocketTime').textContent = (getRocketStartAge() + state.rocketElapsed).toFixed(2) + ' ' + yr;
     document.getElementById('readTimeDiff').textContent = (state.earthElapsed - state.rocketElapsed).toFixed(2) + ' ' + yr;
     var phaseLabel;
     if (state.phase === 'turnaround') {
@@ -1433,12 +1485,25 @@ function handleCustomDistChange() {
 }
 
 function handleSpeedChange() {
-  state.beta = clamp(parseFloat(document.getElementById('speedSlider').value), BETA_MIN, BETA_MAX);
-  document.getElementById('speedVal').textContent = state.beta.toFixed(2) + 'c';
+  var s = parseInt(document.getElementById('speedSlider').value);
+  state.beta = sliderToBeta(s);
+  // Display with enough precision for extreme values
+  var betaStr = state.beta >= 0.999 ? state.beta.toFixed(4) + 'c'
+              : state.beta >= 0.99  ? state.beta.toFixed(3) + 'c'
+              : state.beta.toFixed(2) + 'c';
+  document.getElementById('speedVal').textContent = betaStr;
   if (state.phase !== 'idle') handleReset();
   recalcPhysics();
   updateReadouts();
   updateInfo();
+}
+
+function stepSpeedSlider(delta) {
+  var slider = document.getElementById('speedSlider');
+  var val = parseInt(slider.value) + delta;
+  val = clamp(val, 0, 1000);
+  slider.value = val;
+  slider.dispatchEvent(new Event('input'));
 }
 
 function handleAnimSpeedChange() {
@@ -1504,6 +1569,8 @@ function setControlsLocked(locked) {
   document.getElementById('speedPlus').disabled = locked;
   document.getElementById('customNameInput').disabled = locked;
   document.getElementById('customDistSlider').disabled = locked;
+  document.getElementById('earthTwinAge').disabled = locked;
+  document.getElementById('rocketTwinAge').disabled = locked;
 }
 
 function updateLaunchButton() {
@@ -1732,6 +1799,8 @@ document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'E
 // Personalization inputs
 document.getElementById('earthTwinName').placeholder = getDefaultName(0);
 document.getElementById('rocketTwinName').placeholder = getDefaultName(1);
+document.getElementById('earthTwinAge').value = state.defaultAge;
+document.getElementById('rocketTwinAge').value = state.defaultAge;
 
 resize();
 initBgStars(NUM_BG_STARS);
