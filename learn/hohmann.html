@@ -92,8 +92,9 @@
     cursor: pointer; transition: all 0.2s; text-align: center;
     flex: 1;
   }
-  .type-btn:hover { border-color: var(--accent); }
+  .type-btn:hover:not(:disabled) { border-color: var(--accent); }
   .type-btn.active { border-color: var(--accent); color: var(--accent); }
+  .type-btn:disabled { opacity: 0.3; pointer-events: none; }
   .type-btn.full-width { flex: none; width: 100%; }
 
   .planet-select {
@@ -131,7 +132,7 @@
       0 0 0 14px #9e9e9e,
       0 0 0 16px #757575,
       0 6px 20px rgba(0,0,0,0.5);
-    margin: 8px auto;
+    margin: 28px auto 8px;
     display: block;
   }
   .engine-btn.armed {
@@ -375,18 +376,18 @@
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblDifficulty">Difficulty</span>
       <div class="type-toggle">
-        <button class="type-btn active" id="diffEasyBtn" onclick="setDifficulty('easy')">Easy</button>
-        <button class="type-btn" id="diffMediumBtn" onclick="setDifficulty('medium')">Medium</button>
-        <button class="type-btn" id="diffHardBtn" onclick="setDifficulty('hard')">Hard</button>
+        <button class="type-btn active" id="diffEasyBtn" onclick="setDifficulty('easy')">★</button>
+        <button class="type-btn" id="diffMediumBtn" onclick="setDifficulty('medium')">★★</button>
+        <button class="type-btn" id="diffHardBtn" onclick="setDifficulty('hard')">★★★</button>
       </div>
     </div>
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
       <div class="type-toggle">
-        <button class="type-btn active" id="warpNormalBtn" onclick="setWarp('normal')" id-i18n="warpNormal">Normal</button>
-        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')" id-i18n="warpFast">Fast</button>
-        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')" id-i18n="warpFastest">Fastest</button>
+        <button class="type-btn active" id="warpNormalBtn" onclick="setWarp('normal')">▶</button>
+        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">▶▶</button>
+        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">▶▶▶</button>
       </div>
     </div>
 
@@ -459,6 +460,8 @@ var DEG2RAD = Math.PI / 180;
 var MU_SUN = 4 * Math.PI * Math.PI; // AU^3/yr^2
 var SIM_RATE = 1 / 15; // years per real-second at x1
 var APPROACH_DUR = 3.0; // seconds — arrival timing window
+var BURN_SHRINK_DUR_MED = 5.0; // seconds — green zone vanishes after burn start (medium)
+var BURN_SHRINK_DUR_HARD = 3.0; // seconds — green zone vanishes after burn start (hard)
 var MAX_DT = 0.05; // cap real dt at 50 ms
 var AU_TO_KMS = 4.7405; // 1 AU/yr in km/s (approx)
 
@@ -513,9 +516,9 @@ var I18N = {
     home: 'Home',
     destination: 'Destination',
     difficulty: 'Difficulty',
-    easy: 'Easy', medium: 'Medium', hard: 'Hard',
+    easy: '\u2605', medium: '\u2605\u2605', hard: '\u2605\u2605\u2605',
     timeWarp: 'Time Warp',
-    warpNormal: 'Normal', warpFast: 'Fast', warpFastest: 'Fastest',
+    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
     engine: 'ENGINE',
     burn: 'Burn',
     burn1: 'Burn 1', burn2: 'Burn 2',
@@ -571,9 +574,9 @@ var I18N = {
     home: 'Start',
     destination: 'Cel',
     difficulty: 'Trudno\u015b\u0107',
-    easy: '\u0141atwy', medium: '\u015aredni', hard: 'Trudny',
+    easy: '\u2605', medium: '\u2605\u2605', hard: '\u2605\u2605\u2605',
     timeWarp: 'Przyspieszenie',
-    warpNormal: 'Normalny', warpFast: 'Szybki', warpFastest: 'Najszybszy',
+    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
     engine: 'SILNIK',
     burn: 'Burn',
     burn1: 'Burn 1', burn2: 'Burn 2',
@@ -679,7 +682,8 @@ var state = {
   windowOpenSimTime: 0,
   windowWasOpen: false,
   burn1LockedGreenFrac: -1,
-  burn2LockedGreenFrac: -1
+  burn2LockedGreenFrac: -1,
+  warpLocked: false
 };
 
 /* ══════════════════════════════════════════════ */
@@ -788,11 +792,19 @@ function computeWarpLevels(homeKey, destKey) {
   var synodicRate = Math.abs(home.n - dest.n);
   var synodic = TWO_PI / synodicRate;
   var windowDur = 2 * state.tol.phaseDeg * DEG2RAD / synodicRate;
+
+  var MAX_WINDOW_SEC = 8;
+  var baseDecel = (state.difficulty === 'easy') ? 0.5 : 1;
+  var windowRealSec = windowDur / (baseDecel * SIM_RATE);
+  var decel = (windowRealSec > MAX_WINDOW_SEC)
+    ? Math.ceil(windowDur / (MAX_WINDOW_SEC * SIM_RATE))
+    : baseDecel;
+
   return {
     normal: Math.max(1, Math.round(synodic * 1.5)),
     fast: Math.max(2, Math.round(synodic * 5)),
     fastest: Math.max(5, Math.round(synodic * 15)),
-    decel: Math.max(1, Math.round(windowDur * 5)),
+    decel: decel,
     windowDur: windowDur
   };
 }
@@ -1131,47 +1143,45 @@ function drawLaunchWindowGuide() {
   var dest = bodyByKey[state.destKey];
   var windowOpen = isLaunchWindowOpen(state.simTime);
 
-  if (state.difficulty !== 'hard') {
-    var hcc = toCanvas(hp.x, hp.y);
-    var alpha = windowOpen ? 0.35 : 0.10;
+  var hcc = toCanvas(hp.x, hp.y);
+  var alpha = windowOpen ? 0.35 : 0.10;
 
-    // Cone edges: find exact orbit radius at each edge angle, extend 5% past
-    var edgeAngle1 = idealDestAngle + tolRad;
-    var edgeAngle2 = idealDestAngle - tolRad;
+  // Cone edges: find exact orbit radius at each edge angle, extend 5% past
+  var edgeAngle1 = idealDestAngle + tolRad;
+  var edgeAngle2 = idealDestAngle - tolRad;
 
-    var r1 = orbitRadiusAtAngle(dest, edgeAngle1);
-    var orb1x = r1 * Math.cos(edgeAngle1);
-    var orb1y = r1 * Math.sin(edgeAngle1);
-    var d1x = orb1x - hp.x, d1y = orb1y - hp.y;
-    var ep1 = toCanvas(orb1x + 0.05 * d1x, orb1y + 0.05 * d1y);
-    var e1x = ep1.cx, e1y = ep1.cy;
+  var r1 = orbitRadiusAtAngle(dest, edgeAngle1);
+  var orb1x = r1 * Math.cos(edgeAngle1);
+  var orb1y = r1 * Math.sin(edgeAngle1);
+  var d1x = orb1x - hp.x, d1y = orb1y - hp.y;
+  var ep1 = toCanvas(orb1x + 0.05 * d1x, orb1y + 0.05 * d1y);
+  var e1x = ep1.cx, e1y = ep1.cy;
 
-    var r2 = orbitRadiusAtAngle(dest, edgeAngle2);
-    var orb2x = r2 * Math.cos(edgeAngle2);
-    var orb2y = r2 * Math.sin(edgeAngle2);
-    var d2x = orb2x - hp.x, d2y = orb2y - hp.y;
-    var ep2 = toCanvas(orb2x + 0.05 * d2x, orb2y + 0.05 * d2y);
-    var e2x = ep2.cx, e2y = ep2.cy;
+  var r2 = orbitRadiusAtAngle(dest, edgeAngle2);
+  var orb2x = r2 * Math.cos(edgeAngle2);
+  var orb2y = r2 * Math.sin(edgeAngle2);
+  var d2x = orb2x - hp.x, d2y = orb2y - hp.y;
+  var ep2 = toCanvas(orb2x + 0.05 * d2x, orb2y + 0.05 * d2y);
+  var e2x = ep2.cx, e2y = ep2.cy;
 
-    // Filled triangle
-    ctx.beginPath();
-    ctx.moveTo(hcc.cx, hcc.cy);
-    ctx.lineTo(e1x, e1y);
-    ctx.lineTo(e2x, e2y);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(63,185,80,' + alpha + ')';
-    ctx.fill();
+  // Filled triangle
+  ctx.beginPath();
+  ctx.moveTo(hcc.cx, hcc.cy);
+  ctx.lineTo(e1x, e1y);
+  ctx.lineTo(e2x, e2y);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(63,185,80,' + alpha + ')';
+  ctx.fill();
 
-    // Triangle border — uniform thickness
-    ctx.beginPath();
-    ctx.moveTo(hcc.cx, hcc.cy);
-    ctx.lineTo(e1x, e1y);
-    ctx.lineTo(e2x, e2y);
-    ctx.closePath();
-    ctx.strokeStyle = 'rgba(63,185,80,' + (windowOpen ? 0.5 : 0.2) + ')';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
+  // Triangle border — uniform thickness
+  ctx.beginPath();
+  ctx.moveTo(hcc.cx, hcc.cy);
+  ctx.lineTo(e1x, e1y);
+  ctx.lineTo(e2x, e2y);
+  ctx.closePath();
+  ctx.strokeStyle = 'rgba(63,185,80,' + (windowOpen ? 0.5 : 0.2) + ')';
+  ctx.lineWidth = 1;
+  ctx.stroke();
 
   // Pulsing highlight on destination when window is open
   if (windowOpen) {
@@ -1378,8 +1388,8 @@ function drawInset() {
   ictx.fill();
   ictx.restore();
 
-  ictx.font = '9px "Share Tech Mono", monospace';
-  ictx.fillStyle = 'rgba(255,255,255,0.4)';
+  ictx.font = '12px "Share Tech Mono", monospace';
+  ictx.fillStyle = 'rgba(255,255,255,0.5)';
   ictx.textAlign = 'center';
   var label = T(bodyKey);
   ictx.fillText(label, cx, iH - 6);
@@ -1425,7 +1435,13 @@ function endBurn() {
   if (state.phase === 'burn1' && state.burn1.holding) {
     state.burn1.holding = false;
     state.burn1.committed = true;
-    var ghw1 = 0.75 * state.ref.dv1 * Math.max(0, state.burn1LockedGreenFrac);
+    var gf1 = Math.max(0, state.burn1LockedGreenFrac);
+    if (state.difficulty !== 'easy' && state.burn1LockedGreenFrac >= 0) {
+      var sd1 = (state.difficulty === 'medium') ? BURN_SHRINK_DUR_MED : BURN_SHRINK_DUR_HARD;
+      var elapsed = (performance.now() - state.burn1.holdStart) / 1000;
+      gf1 = state.burn1LockedGreenFrac * Math.max(0, 1 - elapsed / sd1);
+    }
+    var ghw1 = 0.75 * state.ref.dv1 * gf1;
     state.burn1Good = state.burn1.dvApplied >= (state.ref.dv1 - ghw1) && state.burn1.dvApplied <= (state.ref.dv1 + ghw1);
     state.transferArc = null;
 
@@ -1457,6 +1473,13 @@ function endBurn() {
     }
 
     state.phase = 'cruise';
+    // Easy mode: unlock warp and restore 1x after transfer burn
+    if (state.warpLocked) {
+      state.warpLocked = false;
+      state.timeWarp = 1;
+      state.warpLevel = 'normal';
+      updateWarpBtns();
+    }
     updateEngineBtn();
     updateBurnLabel();
   } else if (state.phase === 'burn2' && state.burn2.holding) {
@@ -1464,7 +1487,13 @@ function endBurn() {
     state.burn2.committed = true;
     var dv2Err = Math.abs(state.burn2.dvApplied - state.ref.dv2) / state.ref.dv2;
     state.resultData.dv2Error = dv2Err;
-    var ghw2 = 0.75 * state.ref.dv2 * Math.max(0, state.burn2LockedGreenFrac);
+    var gf2 = Math.max(0, state.burn2LockedGreenFrac);
+    if (state.difficulty !== 'easy' && state.burn2LockedGreenFrac >= 0) {
+      var sd2 = (state.difficulty === 'medium') ? BURN_SHRINK_DUR_MED : BURN_SHRINK_DUR_HARD;
+      var elapsed = (performance.now() - state.burn2.holdStart) / 1000;
+      gf2 = state.burn2LockedGreenFrac * Math.max(0, 1 - elapsed / sd2);
+    }
+    var ghw2 = 0.75 * state.ref.dv2 * gf2;
     var dv2Good = state.burn2.dvApplied >= (state.ref.dv2 - ghw2) && state.burn2.dvApplied <= (state.ref.dv2 + ghw2);
 
     if (dv2Good) {
@@ -1874,12 +1903,23 @@ function updateBurnMeter() {
   var pct = Math.min(100, (currentBurn.dvApplied / maxDv) * 100);
   fillEl.style.width = pct + '%';
 
-  // Determine greenFrac: locked during burns, live during prelaunch/approach
+  // Determine greenFrac: frozen on easy, shrinks on medium/hard during burns
   var greenFrac;
+  var burnShrinkDur = (state.difficulty === 'medium') ? BURN_SHRINK_DUR_MED : BURN_SHRINK_DUR_HARD;
   if (state.phase === 'burn1') {
-    greenFrac = state.burn1LockedGreenFrac >= 0 ? state.burn1LockedGreenFrac : 0;
+    if (state.difficulty !== 'easy' && state.burn1LockedGreenFrac >= 0) {
+      var elapsed = (performance.now() - state.burn1.holdStart) / 1000;
+      greenFrac = state.burn1LockedGreenFrac * Math.max(0, 1 - elapsed / burnShrinkDur);
+    } else {
+      greenFrac = state.burn1LockedGreenFrac >= 0 ? state.burn1LockedGreenFrac : 0;
+    }
   } else if (state.phase === 'burn2') {
-    greenFrac = state.burn2LockedGreenFrac >= 0 ? state.burn2LockedGreenFrac : 0;
+    if (state.difficulty !== 'easy' && state.burn2LockedGreenFrac >= 0) {
+      var elapsed = (performance.now() - state.burn2.holdStart) / 1000;
+      greenFrac = state.burn2LockedGreenFrac * Math.max(0, 1 - elapsed / burnShrinkDur);
+    } else {
+      greenFrac = state.burn2LockedGreenFrac >= 0 ? state.burn2LockedGreenFrac : 0;
+    }
   } else {
     greenFrac = computeGreenFrac();
   }
@@ -1899,7 +1939,7 @@ function updateBurnMeter() {
   }
 
   // Green zone display
-  if (state.difficulty === 'hard' || greenFrac <= 0) {
+  if (greenFrac <= 0) {
     targetEl.style.display = 'none';
   } else {
     targetEl.style.display = '';
@@ -1967,9 +2007,13 @@ function updateMETClock() {
 }
 
 function updateWarpBtns() {
-  document.getElementById('warpNormalBtn').classList.toggle('active', state.warpLevel === 'normal');
-  document.getElementById('warpFastBtn').classList.toggle('active', state.warpLevel === 'fast');
-  document.getElementById('warpFastestBtn').classList.toggle('active', state.warpLevel === 'fastest');
+  var locked = state.warpLocked;
+  document.getElementById('warpNormalBtn').classList.toggle('active', !locked && state.warpLevel === 'normal');
+  document.getElementById('warpFastBtn').classList.toggle('active', !locked && state.warpLevel === 'fast');
+  document.getElementById('warpFastestBtn').classList.toggle('active', !locked && state.warpLevel === 'fastest');
+  document.getElementById('warpNormalBtn').disabled = locked;
+  document.getElementById('warpFastBtn').disabled = locked;
+  document.getElementById('warpFastestBtn').disabled = locked;
 }
 
 /* ══════════════════════════════════════════════ */
@@ -2038,6 +2082,7 @@ function setDifficulty(d) {
 }
 
 function setWarp(level) {
+  if (state.warpLocked) return;
   state.warpLevel = level;
   state.timeWarp = state.warpLevels[level] || state.warpLevels.normal;
   updateWarpBtns();
@@ -2054,6 +2099,7 @@ function togglePlay() {
 }
 
 function resetMission() {
+  state.simTime = 0;
   state.phase = 'prelaunch';
   state.burn1 = { holding: false, holdStart: 0, holdDuration: 0, dvApplied: 0, committed: false };
   state.burn2 = { holding: false, holdStart: 0, holdDuration: 0, dvApplied: 0, committed: false };
@@ -2076,6 +2122,7 @@ function resetMission() {
   state.windowWasOpen = false;
   state.burn1LockedGreenFrac = -1;
   state.burn2LockedGreenFrac = -1;
+  state.warpLocked = false;
   state.playing = false;
   state.missionStarted = false;
   state.warpLevel = 'normal';
@@ -2172,26 +2219,47 @@ function animate(timestamp) {
 
     switch (state.phase) {
       case 'prelaunch':
-        // Auto-decelerate: if a window is open now or approaching, drop to decel speed.
+        // Auto-decel to 1x (medium/hard) or 0.5x (easy) ~2 sec before window
         var decelTarget = state.warpLevels.decel;
-        if (state.timeWarp > decelTarget) {
-          var shouldSlow = isLaunchWindowOpen(state.simTime);
-          if (!shouldSlow) {
-            var warpFrame = state.timeWarp * SIM_RATE * MAX_DT;
-            var lookRange = Math.max(2 * SIM_RATE, warpFrame * 3);
-            var scanStep = Math.min(0.01, lookRange / 15);
-            for (var la = scanStep; la <= lookRange; la += scanStep) {
-              if (isLaunchWindowOpen(state.simTime + la)) {
-                shouldSlow = true;
-                break;
+        if (state.timeWarp > 1 && state.timeWarp > decelTarget) {
+          var shouldDecel = isLaunchWindowOpen(state.simTime);
+          if (!shouldDecel) {
+            var currentErr = Math.abs(phaseError(state.simTime));
+            var threshold = state.tol.phaseDeg * DEG2RAD;
+            if (currentErr > threshold) {
+              var synodicRate = Math.abs(bodyByKey[state.homeKey].n - bodyByKey[state.destKey].n);
+              var timeToWindow = (currentErr - threshold) / synodicRate;
+              var warpFrame = state.timeWarp * SIM_RATE * MAX_DT;
+              var realTimeAtDecel = timeToWindow / (decelTarget * SIM_RATE);
+              if (timeToWindow <= warpFrame * 2) {
+                shouldDecel = true;
+              } else if (state.timeWarp > state.warpLevels.normal && timeToWindow <= state.warpLevels.normal * SIM_RATE * MAX_DT * 3) {
+                state.timeWarp = state.warpLevels.normal;
+                state.warpLevel = 'normal';
+                updateWarpBtns();
+              } else if (realTimeAtDecel <= 2.5) {
+                shouldDecel = true;
               }
+            } else {
+              shouldDecel = true;
             }
           }
-          if (shouldSlow) {
-            state.warpLevel = 'normal';
+          if (shouldDecel) {
             state.timeWarp = decelTarget;
+            state.warpLevel = 'normal';
             updateWarpBtns();
+            if (state.difficulty === 'easy') {
+              state.warpLocked = true;
+              updateWarpBtns();
+            }
           }
+        }
+        // Easy mode: auto-re-warp if window passed without launch
+        if (state.difficulty === 'easy' && state.warpLocked && !isLaunchWindowOpen(state.simTime) && state.windowWasOpen) {
+          state.warpLocked = false;
+          state.timeWarp = state.warpLevels.fastest;
+          state.warpLevel = 'fastest';
+          updateWarpBtns();
         }
         dtSim = dtReal * state.timeWarp * SIM_RATE;
         state.simTime += dtSim;
@@ -2275,22 +2343,27 @@ function animate(timestamp) {
         break;
 
       case 'captured':
-        // Fade-out: simTime frozen so trail stays connected to planet
         var captureElapsed = (performance.now() - state.captureStart) / 1000;
-        var t = Math.min(captureElapsed / 1.5, 1);
+        var DISSOLVE_DUR = 0.5;
+        var POST_CAPTURE_DUR = 2.0;
 
-        // Fade in last 60%
-        if (t > 0.4) {
-          var fadeT = (t - 0.4) / 0.6;
-          state.captureAlpha = 1 - fadeT;
+        // Phase 1: dissolve spacecraft into planet (0–1.5s)
+        if (captureElapsed < DISSOLVE_DUR) {
+          var t = captureElapsed / DISSOLVE_DUR;
+          if (t > 0.4) {
+            state.captureAlpha = 1 - (t - 0.4) / 0.6;
+          }
+        } else {
+          // Phase 2: spacecraft gone, let system animate (1.5–3.5s)
+          state.captureAlpha = 0;
+          state.simTime += dtReal * SIM_RATE;
         }
 
         // Keep inset orbit going
         state.captureOrbitAngle += dtReal * 2.0;
         state.insetScAngle = state.captureOrbitAngle;
 
-        if (t >= 1) {
-          state.captureAlpha = 0;
+        if (captureElapsed >= DISSOLVE_DUR + POST_CAPTURE_DUR) {
           state.phase = 'result';
           showResultOverlay();
         }
