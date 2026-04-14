@@ -164,28 +164,35 @@
     background: rgba(11,15,24,0.94);
     cursor: pointer;
     animation: overlayFadeIn 0.3s ease;
+    overflow-y: auto; padding: 20px;
   }
-  .overlay-title { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 20px; }
+  .overlay-title { font-size: 36px; font-weight: 700; color: #fff; margin-bottom: 20px; }
   .overlay-detail {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 14px; color: var(--text); line-height: 2.2; text-align: left;
+    font-size: 18px; color: var(--text); line-height: 2.2; text-align: left;
   }
   .overlay-conclusion {
-    font-size: 18px; font-weight: 600; color: #fff;
+    font-size: 22px; font-weight: 600; color: #fff;
     margin-top: 24px; text-align: center; max-width: 500px; line-height: 1.5;
+  }
+  .overlay-meeting {
+    font-size: 18px;
+    margin-top: 20px; text-align: center;
+    max-width: 90vw; line-height: 1.6;
+    color: var(--text);
+    word-break: break-all;
   }
   .overlay-hint {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; margin-top: 16px; color: rgba(255,255,255,0.4);
+    font-size: 14px; margin-top: 16px; color: rgba(255,255,255,0.4);
   }
   @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
   .name-panel {
     position: absolute; top: 10px; left: 10px; z-index: 10;
-    background: rgba(19,24,37,0.85); border: 1px solid var(--panel-border);
+    background: rgba(19,24,37,0.92); border: 1px solid var(--panel-border);
     border-radius: 8px; padding: 10px 14px;
     display: flex; flex-direction: column; gap: 8px;
-    backdrop-filter: blur(4px);
   }
   .name-row { display: flex; align-items: center; gap: 8px; }
   .ship-dot {
@@ -241,6 +248,18 @@
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblStar">Destination Star</span>
       <select class="star-select" id="starSelect" onchange="handleStarChange()"></select>
+    </div>
+
+    <div id="customStarControls" class="ctrl-group" style="display:none">
+      <span class="ctrl-label" id="lblCustomName">Star Name</span>
+      <input id="customNameInput" class="name-input" style="width:100%" maxlength="14" oninput="handleCustomNameChange()">
+      <span class="ctrl-label" id="lblCustomDist" style="margin-top:6px">Distance (ly)</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('customDistSlider',-1)">&minus;</button>
+        <input type="range" id="customDistSlider" min="1" max="2000" value="50" step="1" oninput="handleCustomDistChange()">
+        <button class="step-btn" onclick="stepSlider('customDistSlider',1)">+</button>
+        <span class="slider-val" id="customDistVal">50 ly</span>
+      </div>
     </div>
 
     <div class="ctrl-group">
@@ -318,6 +337,7 @@ var STARS = [
   { nameEn: 'Polaris',          namePl: 'Gwiazda Polarna',  dist: 430,    approx: true,  color: '#fff5d0', glowRgb: '255,245,208', radius: 6,  noteEn: 'The North Star', notePl: 'Gwiazda P\u00F3\u0142nocna' },
   { nameEn: 'Betelgeuse',       namePl: 'Betelgeza',        dist: 500,    approx: true,  color: '#ff8844', glowRgb: '255,136,68',  radius: 10, noteEn: 'Red supergiant in Orion', notePl: 'Czerwony nadolbrzym w Orionie' },
   { nameEn: 'Deneb',            namePl: 'Deneb',            dist: 1410,   approx: true,  color: '#aaccff', glowRgb: '170,204,255', radius: 8,  noteEn: 'Distant bright star in Cygnus', notePl: 'Odleg\u0142a jasna gwiazda w \u0141ab\u0119dziu' },
+  { nameEn: 'My Star',          namePl: 'Moja Gwiazda',     dist: 50,     approx: false, color: '#ffe9a0', glowRgb: '255,233,160', radius: 7,  noteEn: '', notePl: '', custom: true },
 ];
 
 // ====================== I18N ======================
@@ -355,8 +375,11 @@ var I18N = {
     rocketPerson: 'Rocket twin',
     phEarthTwin: 'Earth twin name',
     phRocketTwin: 'Rocket twin name',
+    customStar: 'My Star',
+    lblCustomName: 'Star Name',
+    lblCustomDist: 'Distance (ly)',
     overlayTitle: 'Journey Complete!',
-    overlayConclusion: '{rocketName} aged {diff} years less than {earthName}!',
+    overlayConclusion: '{rocketName} aged {diff} less than {earthName}!',
     clickToDismiss: 'Click to dismiss',
     infoIdle: 'What is time dilation?\n\nWhen something moves very fast \u2014 close to the speed of light \u2014 time passes more slowly for it. This is Einstein\'s special relativity.\n\nIn this simulator, one twin stays on Earth and the other flies to a star and back. The rocket accelerates at 1g (comfortable Earth gravity) up to the selected cruise speed, cruises, then decelerates to stop at the star \u2014 and repeats for the return trip.\n\nThe faster the rocket goes, the bigger the Lorentz factor \u03B3, and the greater the difference in aging. During each cruise segment, for every year on the rocket, \u03B3 years pass on Earth.\n\nIs this real? Yes! Time dilation has been confirmed by atomic clocks flown on aircraft. Relativistic corrections \u2014 both from special and general relativity \u2014 are essential for GPS satellites to work correctly.\n\nNote: this display shows elapsed times in the Earth frame alongside the traveler\'s proper time. It is not a simulation of what each twin would literally see through a telescope.\n\nFormula: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
     infoCruise: 'Watch the clocks! During cruise, the Earth clock (blue) ticks faster than the rocket clock (amber). The ratio of their rates equals the Lorentz factor \u03B3 = {gamma}.\n\nDuring acceleration and deceleration, the difference is smaller because the ship hasn\'t yet reached full speed.',
@@ -396,8 +419,11 @@ var I18N = {
     rocketPerson: 'Bli\u017Aniak w rakiecie',
     phEarthTwin: 'Imi\u0119 bli\u017Aniaka ziemskiego',
     phRocketTwin: 'Imi\u0119 bli\u017Aniaka w rakiecie',
+    customStar: 'Moja Gwiazda',
+    lblCustomName: 'Nazwa gwiazdy',
+    lblCustomDist: 'Odleg\u0142o\u015B\u0107 (ly)',
     overlayTitle: 'Podr\u00F3\u017C zako\u0144czona!',
-    overlayConclusion: '{rocketName} zestarza\u0142(a) si\u0119 o {diff} lat mniej ni\u017C {earthName}!',
+    overlayConclusion: '{rocketName} zestarza\u0142(a) si\u0119 o {diff} mniej ni\u017C {earthName}!',
     clickToDismiss: 'Kliknij, aby zamkn\u0105\u0107',
     infoIdle: 'Czym jest dylatacja czasu?\n\nGdy co\u015B porusza si\u0119 bardzo szybko \u2014 blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a \u2014 czas p\u0142ynie dla niego wolniej. To szczeg\u00F3lna teoria wzgl\u0119dno\u015Bci Einsteina.\n\nW tym symulatorze jeden bli\u017Aniak zostaje na Ziemi, a drugi leci do gwiazdy i wraca. Rakieta przyspiesza z 1g (komfortowa grawitacja ziemska) do wybranej pr\u0119dko\u015Bci przelotowej, leci z t\u0105 pr\u0119dko\u015Bci\u0105, a potem hamuje, by zatrzyma\u0107 si\u0119 przy gwi\u017Adzie \u2014 i powtarza to na drodze powrotnej.\n\nIm szybciej leci rakieta, tym wi\u0119kszy wsp\u00F3\u0142czynnik Lorentza \u03B3 i tym wi\u0119ksza r\u00F3\u017Cnica w starzeniu si\u0119. Podczas lotu swobodnego, na ka\u017Cdy rok w rakiecie, na Ziemi mija \u03B3 lat.\n\nCzy to prawda? Tak! Dylatacja czasu zosta\u0142a potwierdzona zegarami atomowymi na samolotach. Korekty relatywistyczne \u2014 zar\u00F3wno ze szczeg\u00F3lnej, jak i og\u00F3lnej teorii wzgl\u0119dno\u015Bci \u2014 s\u0105 niezb\u0119dne do dzia\u0142ania satelit\u00F3w GPS.\n\nUwaga: ten widok por\u00F3wnuje czas up\u0142ywaj\u0105cy w uk\u0142adzie Ziemi z czasem w\u0142asnym podr\u00F3\u017Cnika. Nie jest to symulacja tego, co ka\u017Cdy bli\u017Aniak zobaczy\u0142by przez teleskop.\n\nWz\u00F3r: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
     infoCruise: 'Obserwuj zegary! Podczas lotu swobodnego zegar Ziemi (niebieski) tyka szybciej ni\u017C zegar rakiety (pomara\u0144czowy). Stosunek ich pr\u0119dko\u015Bci to wsp\u00F3\u0142czynnik Lorentza \u03B3 = {gamma}.\n\nPodczas przyspieszania i hamowania r\u00F3\u017Cnica jest mniejsza, bo rakieta nie osi\u0105gn\u0119\u0142a jeszcze pe\u0142nej pr\u0119dko\u015Bci.',
@@ -443,16 +469,199 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 function T(key) { return I18N[state.lang][key] || key; }
 function arctanh(x) { return 0.5 * Math.log((1 + x) / (1 - x)); }
 
+function formatYears(years) {
+  var y = Math.floor(years);
+  var m = Math.floor((years - y) * 12);
+  if (state.lang === 'pl') {
+    var parts = [];
+    if (y > 0) parts.push(y + (y === 1 ? ' rok' : (y >= 2 && y <= 4) ? ' lata' : ' lat'));
+    if (m > 0) parts.push(m + (m === 1 ? ' miesi\u0105c' : (m >= 2 && m <= 4) ? ' miesi\u0105ce' : ' miesi\u0119cy'));
+    return parts.length ? parts.join(' ') : 'poni\u017Cej miesi\u0105ca';
+  }
+  var parts = [];
+  if (y > 0) parts.push(y + (y === 1 ? ' year' : ' years'));
+  if (m > 0) parts.push(m + (m === 1 ? ' month' : ' months'));
+  return parts.length ? parts.join(' ') : 'less than a month';
+}
+
+// ====================== GENERATIONS ======================
+
+function getGeneration(elapsedYears) {
+  // Gen 0: starts age 25, dies at T=75
+  // Gen 1: starts age 5, dies at T=95
+  // Gen n (n>=2): born at T=20n-25, dies at T=20n+75
+  if (elapsedYears <= 75) return 0;
+  if (elapsedYears <= 95) return 1;
+  return Math.floor((elapsedYears - 95) / 20) + 2;
+}
+
+function getGenerationAge(elapsedYears, gen) {
+  if (gen === 0) return 25 + elapsedYears;
+  if (gen === 1) return 5 + elapsedYears;
+  return elapsedYears - (20 * gen - 25);
+}
+
+function getDescendantLabel(name, gen, gender, lang, color) {
+  var cName = '<span style="color:' + color + '">' + name + '</span>';
+  if (gen === 0) return cName;
+
+  // Two alternating shades: full color and dimmed
+  var bright = color;
+  var dim = color === '#4db8ff' ? '#2a7abf' : '#b87a20';
+
+  if (lang === 'pl') {
+    var nameGen = getGenitive(name);
+    var cNameGen = '<span style="color:' + color + '">' + nameGen + '</span>';
+    var suffix = gender === 'm' ? 'syn' : 'c\u00F3rka';
+    if (gen === 1) return '<span style="color:' + bright + '">' + suffix + '</span> ' + cNameGen;
+    // gen >= 2: wnuk/wnuczka with (gen-2) "pra" prefixes
+    var pra = '';
+    for (var i = 0; i < gen - 2; i++) {
+      var shade = (i % 2 === 0) ? bright : dim;
+      pra += '<span style="color:' + shade + '">pra</span>';
+    }
+    var base = gender === 'm' ? 'wnuk' : 'wnuczka';
+    return pra + '<span style="color:' + bright + '">' + base + '</span> ' + cNameGen;
+  }
+
+  // English
+  if (gen === 1) return cName + "'s " + '<span style="color:' + bright + '">' + (gender === 'm' ? 'son' : 'daughter') + '</span>';
+  // gen >= 2: grandson/granddaughter with (gen-2) "great-" prefixes
+  var greats = '';
+  for (var i = 0; i < gen - 2; i++) {
+    var shade = (i % 2 === 0) ? bright : dim;
+    greats += '<span style="color:' + shade + '">great-</span>';
+  }
+  var base = gender === 'm' ? 'grandson' : 'granddaughter';
+  return cName + "'s " + greats + '<span style="color:' + bright + '">' + base + '</span>';
+}
+
+var DEFAULT_NAMES_EN = [
+  'Alex', 'Sam', 'Max', 'Emma', 'Zoe', 'Mia', 'Leo', 'Ivy',
+  'Kai', 'Luna', 'Noah', 'Ella', 'Lily', 'Jack', 'Ruby', 'Finn',
+];
+
+var DEFAULT_NAMES_PL = [
+  // Female
+  { name: 'Zofia', gen: 'Zofii' },
+  { name: 'Zuzanna', gen: 'Zuzanny' },
+  { name: 'Maja', gen: 'Mai' },
+  { name: 'Laura', gen: 'Laury' },
+  { name: 'Hanna', gen: 'Hanny' },
+  { name: 'Julia', gen: 'Julii' },
+  { name: 'Oliwia', gen: 'Oliwii' },
+  { name: 'Pola', gen: 'Poli' },
+  { name: 'Alicja', gen: 'Alicji' },
+  { name: 'Emilia', gen: 'Emilii' },
+  { name: 'Maria', gen: 'Marii' },
+  { name: 'Amelia', gen: 'Amelii' },
+  { name: 'Antonina', gen: 'Antoniny' },
+  { name: 'Helena', gen: 'Heleny' },
+  { name: 'Liliana', gen: 'Liliany' },
+  { name: 'Michalina', gen: 'Michaliny' },
+  { name: 'Klara', gen: 'Klary' },
+  { name: 'Marcelina', gen: 'Marceliny' },
+  { name: 'Wiktoria', gen: 'Wiktorii' },
+  { name: '\u0141ucja', gen: '\u0141ucji' },
+  { name: 'Iga', gen: 'Igi' },
+  { name: 'Lena', gen: 'Leny' },
+  { name: 'Rozalia', gen: 'Rozalii' },
+  { name: 'Gabriela', gen: 'Gabrieli' },
+  { name: 'Nela', gen: 'Neli' },
+  { name: 'Kornelia', gen: 'Kornelii' },
+  { name: 'Aleksandra', gen: 'Aleksandry' },
+  { name: 'Aurelia', gen: 'Aurelii' },
+  { name: 'Blanka', gen: 'Blanki' },
+  { name: 'Anna', gen: 'Anny' },
+  { name: 'Nadia', gen: 'Nadii' },
+  { name: 'Natalia', gen: 'Natalii' },
+  { name: 'Sara', gen: 'Sary' },
+  { name: 'Nina', gen: 'Niny' },
+  { name: 'Weronika', gen: 'Weroniki' },
+  { name: 'Barbara', gen: 'Barbary' },
+  { name: 'Nikola', gen: 'Nikoli' },
+  { name: 'Idalia', gen: 'Idalii' },
+  { name: 'Iza', gen: 'Izy' },
+  { name: 'Teresa', gen: 'Teresy' },
+  { name: 'Izabela', gen: 'Izabeli' },
+  // Male
+  { name: 'Nikodem', gen: 'Nikodema' },
+  { name: 'Antoni', gen: 'Antoniego' },
+  { name: 'Leon', gen: 'Leona' },
+  { name: 'Jan', gen: 'Jana' },
+  { name: 'Aleksander', gen: 'Aleksandra' },
+  { name: 'Franciszek', gen: 'Franciszka' },
+  { name: 'Ignacy', gen: 'Ignacego' },
+  { name: 'Stanis\u0142aw', gen: 'Stanis\u0142awa' },
+  { name: 'Jakub', gen: 'Jakuba' },
+  { name: 'Miko\u0142aj', gen: 'Miko\u0142aja' },
+  { name: 'Maksymilian', gen: 'Maksymiliana' },
+  { name: 'Filip', gen: 'Filipa' },
+  { name: 'Oliwier', gen: 'Oliwiera' },
+  { name: 'Wojciech', gen: 'Wojciecha' },
+  { name: 'Adam', gen: 'Adama' },
+  { name: 'Marcel', gen: 'Marcela' },
+  { name: 'Szymon', gen: 'Szymona' },
+  { name: 'Tymon', gen: 'Tymona' },
+  { name: 'Gabriel', gen: 'Gabriela' },
+  { name: 'Julian', gen: 'Juliana' },
+  { name: 'Wiktor', gen: 'Wiktora' },
+  { name: 'Kacper', gen: 'Kacpra' },
+  { name: 'Oskar', gen: 'Oskara' },
+  { name: 'Micha\u0142', gen: 'Micha\u0142a' },
+  { name: 'Mi\u0142osz', gen: 'Mi\u0142osza' },
+  { name: 'Igor', gen: 'Igora' },
+  { name: 'Tymoteusz', gen: 'Tymoteusza' },
+  { name: 'Teodor', gen: 'Teodora' },
+  { name: 'Piotr', gen: 'Piotra' },
+  { name: 'Bruno', gen: 'Brunona' },
+  { name: 'Tadeusz', gen: 'Tadeusza' },
+  { name: 'Henryk', gen: 'Henryka' },
+  { name: 'Dawid', gen: 'Dawida' },
+  { name: 'Hubert', gen: 'Huberta' },
+  { name: 'Krzysztof', gen: 'Krzysztofa' },
+  { name: 'Dominik', gen: 'Dominika' },
+  { name: 'Karol', gen: 'Karola' },
+  { name: '\u0141ukasz', gen: '\u0141ukasza' },
+];
+
+// Build genitive lookup from Polish names
+var PL_GENITIVE = {};
+for (var i = 0; i < DEFAULT_NAMES_PL.length; i++) {
+  PL_GENITIVE[DEFAULT_NAMES_PL[i].name] = DEFAULT_NAMES_PL[i].gen;
+}
+
+function pickTwoNames(pool) {
+  var a = Math.floor(Math.random() * pool.length);
+  var b;
+  do { b = Math.floor(Math.random() * pool.length); } while (b === a);
+  return [pool[a], pool[b]];
+}
+
+var defaultNamesPl = pickTwoNames(DEFAULT_NAMES_PL);
+var defaultNamesEn = pickTwoNames(DEFAULT_NAMES_EN);
+
+function getDefaultName(index) {
+  if (state.lang === 'pl') return defaultNamesPl[index].name;
+  return defaultNamesEn[index];
+}
+
+function getGenitive(name) {
+  if (PL_GENITIVE[name]) return PL_GENITIVE[name];
+  // Fallback heuristic for user-typed names not in dictionary
+  return name;
+}
+
 function getEarthTwinName() {
   var el = document.getElementById('earthTwinName');
   var v = el ? el.value.trim() : '';
-  return v || T('earthPerson');
+  return v || getDefaultName(0);
 }
 
 function getRocketTwinName() {
   var el = document.getElementById('rocketTwinName');
   var v = el ? el.value.trim() : '';
-  return v || T('rocketPerson');
+  return v || getDefaultName(1);
 }
 
 // ====================== CANVAS SETUP ======================
@@ -574,11 +783,11 @@ function getEarthY() { return H * 0.55; }
 
 function getStarScreenX() {
   var d = STARS[state.starIndex].dist;
-  var dMin = STARS[0].dist;
-  var dMax = STARS[STARS.length - 1].dist;
+  var dMin = 1;
+  var dMax = 2000;
   var frac = Math.log(d / dMin) / Math.log(dMax / dMin);
   var earthX = getEarthX();
-  return earthX + (W * STAR_X_MAX_FRAC - earthX) * Math.max(0.08, frac);
+  return earthX + (W * STAR_X_MAX_FRAC - earthX) * clamp(frac, 0.05, 1);
 }
 
 function getStarY() { return H * 0.55; }
@@ -1050,8 +1259,13 @@ function populateStarSelect() {
     var s = STARS[i];
     var opt = document.createElement('option');
     opt.value = i;
-    var name = state.lang === 'en' ? s.nameEn : s.namePl;
-    opt.textContent = name + ' (' + (s.approx ? '~' : '') + s.dist + ' ly)';
+    if (s.custom) {
+      var customName = document.getElementById('customNameInput').value.trim() || T('customStar');
+      opt.textContent = '\u2728 ' + customName + ' (' + s.dist + ' ly)';
+    } else {
+      var name = state.lang === 'en' ? s.nameEn : s.namePl;
+      opt.textContent = name + ' (' + (s.approx ? '~' : '') + s.dist + ' ly)';
+    }
     sel.appendChild(opt);
   }
   sel.value = cur;
@@ -1059,6 +1273,38 @@ function populateStarSelect() {
 
 function handleStarChange() {
   state.starIndex = parseInt(document.getElementById('starSelect').value) || 0;
+  if (state.phase !== 'idle') handleReset();
+  toggleCustomControls();
+  recalcPhysics();
+  updateReadouts();
+  updateInfo();
+}
+
+function toggleCustomControls() {
+  var show = STARS[state.starIndex].custom;
+  document.getElementById('customStarControls').style.display = show ? 'flex' : 'none';
+}
+
+function handleCustomNameChange() {
+  var name = document.getElementById('customNameInput').value.trim();
+  var star = STARS[STARS.length - 1];
+  star.nameEn = name || T('customStar');
+  star.namePl = star.nameEn;
+  // Update dropdown text
+  var sel = document.getElementById('starSelect');
+  var opt = sel.options[sel.selectedIndex];
+  if (opt) opt.textContent = '\u2728 ' + star.nameEn + ' (' + star.dist + ' ly)';
+}
+
+function handleCustomDistChange() {
+  var dist = parseInt(document.getElementById('customDistSlider').value) || 50;
+  var star = STARS[STARS.length - 1];
+  star.dist = dist;
+  document.getElementById('customDistVal').textContent = dist + ' ly';
+  // Update dropdown text
+  var sel = document.getElementById('starSelect');
+  var opt = sel.options[sel.selectedIndex];
+  if (opt) opt.textContent = '\u2728 ' + star.nameEn + ' (' + dist + ' ly)';
   if (state.phase !== 'idle') handleReset();
   recalcPhysics();
   updateReadouts();
@@ -1135,6 +1381,8 @@ function setControlsLocked(locked) {
   document.getElementById('speedSlider').disabled = locked;
   document.getElementById('speedMinus').disabled = locked;
   document.getElementById('speedPlus').disabled = locked;
+  document.getElementById('customNameInput').disabled = locked;
+  document.getElementById('customDistSlider').disabled = locked;
 }
 
 function updateLaunchButton() {
@@ -1168,23 +1416,41 @@ function showSummaryOverlay() {
   var overlay = document.createElement('div');
   overlay.className = 'result-overlay';
 
-  var yr = T('yr');
-  var diff = (state.earthTotalYears - state.rocketTotalYears).toFixed(2);
+  var earthFmt = formatYears(state.earthTotalYears);
+  var rocketFmt = formatYears(state.rocketTotalYears);
+  var diffFmt = formatYears(state.earthTotalYears - state.rocketTotalYears);
   var conclusion = T('overlayConclusion')
     .replace('{rocketName}', getRocketTwinName())
     .replace('{earthName}', getEarthTwinName())
-    .replace('{diff}', diff);
+    .replace('{diff}', diffFmt);
+
+  // Generational meeting
+  var earthGen = getGeneration(state.earthTotalYears);
+  var rocketGen = getGeneration(state.rocketTotalYears);
+  var earthGenAge = Math.floor(getGenerationAge(state.earthTotalYears, earthGen));
+  var rocketGenAge = Math.floor(getGenerationAge(state.rocketTotalYears, rocketGen));
+  var earthGender = Math.random() < 0.5 ? 'm' : 'f';
+  var rocketGender = Math.random() < 0.5 ? 'm' : 'f';
+  var earthDesc = getDescendantLabel(getEarthTwinName(), earthGen, earthGender, state.lang, '#4db8ff');
+  var rocketDesc = getDescendantLabel(getRocketTwinName(), rocketGen, rocketGender, state.lang, '#ffb347');
+  var meetingText;
+  if (state.lang === 'pl') {
+    meetingText = 'Spotkanie po powrocie statku: ' + earthDesc + ' (' + earthGenAge + ' lat) i ' + rocketDesc + ' (' + rocketGenAge + ' lat).';
+  } else {
+    meetingText = 'When the ship returns: ' + earthDesc + ' (age ' + earthGenAge + ') meets ' + rocketDesc + ' (age ' + rocketGenAge + ').';
+  }
 
   overlay.innerHTML =
     '<div class="overlay-title">' + T('overlayTitle') + '</div>' +
     '<div class="overlay-detail">' +
       '<span style="color:var(--earth-color)">' + getEarthTwinName() + '</span>: ' +
-      state.earthTotalYears.toFixed(2) + ' ' + yr + '<br>' +
+      earthFmt + '<br>' +
       '<span style="color:var(--rocket-color)">' + getRocketTwinName() + '</span>: ' +
-      state.rocketTotalYears.toFixed(2) + ' ' + yr + '<br><br>' +
-      '<b>' + T('lblTimeDiff') + ': ' + diff + ' ' + yr + '</b>' +
+      rocketFmt + '<br><br>' +
+      '<b>' + T('lblTimeDiff') + ': ' + diffFmt + '</b>' +
     '</div>' +
     '<div class="overlay-conclusion">' + conclusion + '</div>' +
+    '<div class="overlay-meeting">' + meetingText + '</div>' +
     '<div class="overlay-hint">' + T('clickToDismiss') + '</div>';
 
   overlay.addEventListener('click', function() { overlay.remove(); });
@@ -1265,8 +1531,11 @@ function applyTranslations() {
   document.getElementById('lblTimeDiff').textContent = T('lblTimeDiff');
   document.getElementById('lblPhase').textContent = T('lblPhase');
   document.getElementById('resetLabel').textContent = T('reset');
-  document.getElementById('earthTwinName').placeholder = T('phEarthTwin');
-  document.getElementById('rocketTwinName').placeholder = T('phRocketTwin');
+  document.getElementById('earthTwinName').placeholder = getDefaultName(0);
+  document.getElementById('rocketTwinName').placeholder = getDefaultName(1);
+  document.getElementById('lblCustomName').textContent = T('lblCustomName');
+  document.getElementById('lblCustomDist').textContent = T('lblCustomDist');
+  document.getElementById('customNameInput').placeholder = T('customStar');
   populateStarSelect();
   updateLaunchButton();
   updateReadouts();
@@ -1284,8 +1553,8 @@ function toggleLang() {
 document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
 
 // Personalization inputs
-document.getElementById('earthTwinName').placeholder = T('phEarthTwin');
-document.getElementById('rocketTwinName').placeholder = T('phRocketTwin');
+document.getElementById('earthTwinName').placeholder = getDefaultName(0);
+document.getElementById('rocketTwinName').placeholder = getDefaultName(1);
 
 resize();
 initBgStars(NUM_BG_STARS);

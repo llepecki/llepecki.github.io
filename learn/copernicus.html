@@ -173,7 +173,7 @@
     background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
   }
   .slider-val {
-    min-width: 36px; text-align: right;
+    min-width: 28px; text-align: right;
     font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text);
   }
 
@@ -612,7 +612,7 @@ function drawPlanets() {
     ctx.fill();
 
     /* Label */
-    ctx.font = '13px "Share Tech Mono", monospace';
+    ctx.font = '15px "Share Tech Mono", monospace';
     ctx.fillStyle = body.color;
     ctx.textAlign = 'center';
     ctx.fillText(T(body.key), c.cx, c.cy - body.radius - 6);
