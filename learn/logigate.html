@@ -190,40 +190,15 @@
   .btn.randomize { border-color: var(--or-color); color: var(--or-color); }
   .btn.randomize:hover { background: var(--or-color); color: var(--bg); }
 
-  .speed-control {
-    display: flex; align-items: center; gap: 6px;
-  }
-
-  .speed-label {
-    font-size: 20px; line-height: 1;
-    color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-weight: 700;
-  }
-
-  .speed-value {
+  .speed-toggle { display: flex; gap: 6px; }
+  .speed-btn {
+    padding: 8px 6px; border-radius: 6px; border: 1.5px solid var(--panel-border);
+    background: var(--panel); color: var(--text-dim);
     font-family: 'Share Tech Mono', monospace; font-size: 12px;
-    color: var(--accent); min-width: 28px; text-align: center;
+    cursor: pointer; transition: all 0.2s; text-align: center;
   }
-
-  #speedSlider {
-    -webkit-appearance: none; appearance: none;
-    width: 90px; height: 6px; border-radius: 3px;
-    background: var(--panel-border); outline: none; cursor: pointer;
-  }
-
-  #speedSlider::-webkit-slider-thumb {
-    -webkit-appearance: none; appearance: none;
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent); cursor: pointer;
-    border: 2px solid var(--bg);
-  }
-
-  #speedSlider::-moz-range-thumb {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent); cursor: pointer;
-    border: 2px solid var(--bg);
-  }
+  .speed-btn:hover { border-color: var(--accent); }
+  .speed-btn.active { border-color: var(--accent); color: var(--accent); }
 
   .circuit-container {
     position: relative; z-index: 1; flex: 1;
@@ -408,11 +383,10 @@
   <button class="btn reveal" id="revealBtn" onclick="handleRevealReset()">Check</button>
   <div class="config-group" id="speedGroup" style="">
     <label id="lblSpeed">Speed:</label>
-    <div class="speed-control">
-      <span class="speed-label">›</span>
-      <input type="range" id="speedSlider" min="0" max="4" step="1" value="2" oninput="updateSpeedLabel()">
-      <span class="speed-label">›››</span>
-      <span class="speed-value" id="speedValue">1×</span>
+    <div class="speed-toggle">
+      <button class="speed-btn" data-speed="0" onclick="setSpeed(0)">▶</button>
+      <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">▶▶</button>
+      <button class="speed-btn" data-speed="2" onclick="setSpeed(2)">▶▶▶</button>
     </div>
   </div>
   <button class="btn wire-toggle" id="wireLabelsBtn" onclick="toggleWireLabels()" data-i18n="wireLabels">Wire #</button>
@@ -940,16 +914,19 @@ function renderCircuit(c, L) {
 // ══════════════════════════════════════════════
 // INTERACTION
 // ══════════════════════════════════════════════
-const SPEED_STEPS = [1200, 840, 630, 375, 180]; // slider 0-4 → ms per level
-const SPEED_LABELS = ['0.5×', '0.75×', '1×', '1.5×', '3×'];
+const SPEED_STEPS = [840, 630, 250]; // button 0-2 → ms per level
+let currentSpeed = 1;
 
 function getStepDelay() {
-  return SPEED_STEPS[+document.getElementById('speedSlider').value];
+  return SPEED_STEPS[currentSpeed];
 }
 
 // eslint-disable-next-line no-unused-vars
-function updateSpeedLabel() {
-  document.getElementById('speedValue').textContent = SPEED_LABELS[+document.getElementById('speedSlider').value];
+function setSpeed(idx) {
+  currentSpeed = idx;
+  document.querySelectorAll('.speed-btn').forEach(function(b) {
+    b.classList.toggle('active', +b.dataset.speed === idx);
+  });
 }
 
 // eslint-disable-next-line no-unused-vars

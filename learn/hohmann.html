@@ -117,7 +117,7 @@
 
   /* Engine button */
   .engine-btn {
-    width: 100px; height: 100px; border-radius: 50%;
+    width: 100px; height: 100px; border-radius: 20px;
     border: none; outline: none;
     background:
       radial-gradient(circle at 38% 32%, rgba(255,255,255,0.25), transparent 45%),
@@ -183,9 +183,9 @@
   }
 
   /* Burn meter */
-  .burn-meter-wrap { position: relative; width: 100%; height: 20px; }
+  .burn-meter-wrap { position: relative; width: 100%; height: 40px; }
   .burn-meter {
-    width: 100%; height: 16px; margin-top: 0;
+    width: 100%; height: 36px; margin-top: 0;
     background: var(--panel-border); border-radius: 4px; overflow: hidden;
     position: relative;
   }
@@ -462,6 +462,8 @@ var SIM_RATE = 1 / 15; // years per real-second at x1
 var APPROACH_DUR = 3.0; // seconds — arrival timing window
 var BURN_SHRINK_DUR_MED = 5.0; // seconds — green zone vanishes after burn start (medium)
 var BURN_SHRINK_DUR_HARD = 3.0; // seconds — green zone vanishes after burn start (hard)
+var BOUNCE_AMP_HARD = 0.15;    // green zone center oscillation amplitude (hard, burn2 only)
+var BOUNCE_FREQ_HARD = 0.8;    // green zone bounce frequency in Hz (hard, burn2 only)
 var MAX_DT = 0.05; // cap real dt at 50 ms
 var AU_TO_KMS = 4.7405; // 1 AU/yr in km/s (approx)
 
@@ -1494,7 +1496,15 @@ function endBurn() {
       gf2 = state.burn2LockedGreenFrac * Math.max(0, 1 - elapsed / sd2);
     }
     var ghw2 = 0.75 * state.ref.dv2 * gf2;
-    var dv2Good = state.burn2.dvApplied >= (state.ref.dv2 - ghw2) && state.burn2.dvApplied <= (state.ref.dv2 + ghw2);
+    var dvCenter2 = state.ref.dv2;
+    // Match the bounced green zone center (hard mode burn2)
+    if (state.difficulty === 'hard' && gf2 > 0) {
+      var maxDv2 = state.ref.dv2 * 2;
+      var bounceT2 = performance.now() / 1000;
+      dvCenter2 += BOUNCE_AMP_HARD * maxDv2 * Math.sin(TWO_PI * BOUNCE_FREQ_HARD * bounceT2);
+      dvCenter2 = Math.max(ghw2, Math.min(maxDv2 - ghw2, dvCenter2));
+    }
+    var dv2Good = state.burn2.dvApplied >= (dvCenter2 - ghw2) && state.burn2.dvApplied <= (dvCenter2 + ghw2);
 
     if (dv2Good) {
       // Good burn — capture
@@ -1570,6 +1580,12 @@ engineBtn.addEventListener('touchcancel', function() {
 });
 window.addEventListener('blur', function() {
   if (state.burn1.holding || state.burn2.holding) endBurn();
+});
+window.addEventListener('keydown', function(e) {
+  if (e.code === 'Space' && !e.repeat) { e.preventDefault(); startBurn(); }
+});
+window.addEventListener('keyup', function(e) {
+  if (e.code === 'Space') { e.preventDefault(); endBurn(); }
 });
 
 /* ══════════════════════════════════════════════ */
@@ -1926,8 +1942,17 @@ function updateBurnMeter() {
 
   // Dynamic green zone half-width in dv units (75% of bar at frac=1)
   var greenHalfWidth = 0.375 * maxDv * greenFrac;
-  var dvLow = Math.max(0, idealDv - greenHalfWidth);
-  var dvHigh = Math.min(maxDv, idealDv + greenHalfWidth);
+  var dvCenter = idealDv;
+
+  // Bounce on burn2/approach hard mode
+  if ((state.phase === 'burn2' || state.phase === 'approach') && state.difficulty === 'hard' && greenFrac > 0) {
+    var bounceT = performance.now() / 1000;
+    dvCenter += BOUNCE_AMP_HARD * maxDv * Math.sin(TWO_PI * BOUNCE_FREQ_HARD * bounceT);
+    dvCenter = Math.max(greenHalfWidth, Math.min(maxDv - greenHalfWidth, dvCenter));
+  }
+
+  var dvLow = Math.max(0, dvCenter - greenHalfWidth);
+  var dvHigh = Math.min(maxDv, dvCenter + greenHalfWidth);
 
   // Fill coloring
   fillEl.classList.remove('good', 'over');
