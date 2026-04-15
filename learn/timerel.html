@@ -30,6 +30,8 @@
     --earth-color: #4db8ff;
     --rocket-color: #ffb347;
     --star-glow: #fff8e1;
+    --ship-a-color: #ff6b8a;
+    --ship-b-color: #7ce88f;
   }
 
   body {
@@ -67,13 +69,15 @@
     flex: 1; position: relative;
     background: #080c14; min-width: 0;
   }
-  .canvas-wrap canvas { width: 100%; height: 100%; display: block; }
+  .canvas-wrap canvas { width: 100%; height: 100%; display: block; cursor: default; }
+  .canvas-wrap canvas.cursor-grab { cursor: grab; }
+  .canvas-wrap canvas.cursor-grabbing { cursor: grabbing; }
 
   .controls {
     width: 300px; flex-shrink: 0;
     padding: 20px;
     border-left: 1px solid var(--panel-border);
-    display: flex; flex-direction: column; gap: 16px;
+    display: flex; flex-direction: column; gap: 22px;
     overflow-y: auto;
   }
 
@@ -84,37 +88,44 @@
     color: var(--text-dim);
   }
 
-  .slider-row { display: flex; align-items: center; gap: 6px; }
-  .slider-row input[type=range] {
-    flex: 1; -webkit-appearance: none; appearance: none;
-    height: 6px; background: var(--panel-border); border-radius: 3px; outline: none;
+  /* ---- Speed Bar Widget ---- */
+  .speed-bar {
+    display: flex; align-items: stretch; height: 37px;
+    border-radius: 6px; border: 1.5px solid var(--panel-border);
+    overflow: hidden; background: var(--panel);
+    user-select: none; -webkit-user-select: none; touch-action: none;
   }
-  .slider-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
-  }
-  .slider-row input[type=range]::-moz-range-thumb {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
-  }
-  .slider-row input[type=range]:disabled { opacity: 0.4; }
-  .slider-val {
-    min-width: 40px; text-align: right;
-    font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text);
-  }
-
-  .step-btn {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 1.5px solid var(--panel-border);
+  .speed-bar-btn {
+    width: 34px; flex-shrink: 0; border: none;
     background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 16px; line-height: 1;
-    cursor: pointer; transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; touch-action: manipulation;
+    font-family: 'Share Tech Mono', monospace; font-size: 18px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s; touch-action: manipulation;
   }
-  .step-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .step-btn:active { background: var(--accent); color: var(--bg); }
-  .step-btn:disabled { opacity: 0.4; pointer-events: none; }
+  .speed-bar-btn:hover { background: rgba(88,166,255,0.12); color: var(--accent); }
+  .speed-bar-btn:active { background: var(--accent); color: var(--bg); }
+  .speed-bar-minus { border-right: 1px solid var(--panel-border); }
+  .speed-bar-plus  { border-left: 1px solid var(--panel-border); }
+  .speed-bar-track {
+    flex: 1; position: relative; cursor: pointer; overflow: hidden; min-width: 0;
+  }
+  .speed-bar-fill {
+    position: absolute; top: 0; left: 0; bottom: 0; width: 0%;
+    transition: width 0.05s ease-out; background: var(--accent); pointer-events: none;
+  }
+  .speed-bar-val {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Share Tech Mono', monospace; font-size: 14px;
+    color: #fff;
+    pointer-events: none; letter-spacing: 0.5px; z-index: 1;
+  }
+  .speed-bar.disabled { opacity: 0.4; pointer-events: none; }
+  @keyframes speedGlow {
+    0%, 100% { box-shadow: inset 0 0 8px rgba(255,23,68,0.3); }
+    50%      { box-shadow: inset 0 0 16px rgba(255,23,68,0.6); }
+  }
+  .speed-bar-track.extreme .speed-bar-fill { animation: speedGlow 1.2s ease-in-out infinite; }
 
   .star-select {
     width: 100%; padding: 8px 10px; border-radius: 6px;
@@ -132,16 +143,12 @@
     flex: 1; padding: 10px 4px; border-radius: 6px;
     border: 1.5px solid var(--panel-border);
     background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    font-family: 'Share Tech Mono', monospace; font-size: 14px;
     cursor: pointer; transition: all 0.2s; text-align: center;
     display: flex; align-items: center; justify-content: center;
   }
   .type-btn:hover { border-color: var(--accent); color: var(--accent); }
   .type-btn:disabled { opacity: 0.4; pointer-events: none; }
-
-  #launchBtn .pause-icon { display: none; }
-  #launchBtn.playing .play-icon { display: none; }
-  #launchBtn.playing .pause-icon { display: block; }
 
   .readouts { gap: 6px; }
   .readout-row {
@@ -193,24 +200,24 @@
     background: rgba(19,24,37,0.95); border: 1px solid var(--panel-border);
     border-radius: 8px; padding: 14px 16px;
     max-width: 340px; pointer-events: none;
-    font-family: 'Share Tech Mono', monospace; font-size: 13px;
+    font-family: 'Share Tech Mono', monospace; font-size: 15px;
     color: var(--text); line-height: 1.5;
     opacity: 0; transition: opacity 0.15s ease;
   }
   .star-facts.visible { opacity: 1; }
   .sf-header {
-    font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 700;
+    font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 700;
     margin-bottom: 4px;
   }
-  .sf-meta { color: var(--text-dim); font-size: 13px; margin-bottom: 8px; }
+  .sf-meta { color: var(--text-dim); font-size: 15px; margin-bottom: 8px; }
   .sf-stats { margin-bottom: 10px; }
   .sf-stat { display: flex; justify-content: space-between; padding: 2px 0; }
   .sf-stat-label { color: var(--text-dim); }
   .sf-wow {
     border-top: 1px solid var(--panel-border); padding-top: 8px;
-    margin-bottom: 8px; color: var(--star-glow); font-size: 13px; line-height: 1.5;
+    margin-bottom: 8px; color: var(--star-glow); font-size: 15px; line-height: 1.5;
   }
-  .sf-find { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+  .sf-find { color: var(--text-dim); font-size: 15px; line-height: 1.5; }
 
   .name-panel {
     position: absolute; top: 10px; left: 10px; z-index: 10;
@@ -239,6 +246,35 @@
   .age-input::-webkit-inner-spin-button,
   .age-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   .age-input:focus { border-color: var(--accent); }
+  .age-input[readonly] { opacity: 0.55; cursor: default; }
+
+
+  #grpGame {
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .game-goal {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; text-align: center; color: var(--text);
+    padding: 2px 0;
+  }
+  .game-goal b { color: #fff; }
+
+  .ship-bar { border-left: 3px solid var(--panel-border); }
+
+  .game-overlay-detail {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 16px; color: var(--text); line-height: 2; text-align: left;
+    max-width: 90vw;
+  }
+  .game-overlay-result {
+    font-size: 48px; margin-bottom: 8px;
+  }
+  .game-overlay-msg {
+    font-size: 28px; font-weight: 700; margin-bottom: 20px;
+  }
+  .game-overlay-diff {
+    font-size: 20px; font-weight: 600; margin-top: 16px; text-align: center;
+  }
 
   @media (max-width: 700px) {
     .main { flex-direction: column; height: auto; min-height: 100vh; }
@@ -265,7 +301,7 @@
   <div class="canvas-wrap">
     <canvas id="canvas"></canvas>
     <div id="starFactsOverlay" class="star-facts"></div>
-    <div class="name-panel">
+    <div class="name-panel" id="namePanelExplore">
       <div class="name-row">
         <span class="ship-dot" style="background:var(--earth-color)"></span>
         <input id="earthTwinName" class="name-input" maxlength="14">
@@ -277,62 +313,87 @@
         <input id="rocketTwinAge" class="age-input" type="number" min="1" max="99">
       </div>
     </div>
+    <div class="name-panel" id="namePanelGame" style="display:none">
+      <div class="name-row">
+        <span class="ship-dot" style="background:var(--ship-a-color)"></span>
+        <input id="gameNameA" class="name-input" maxlength="14" oninput="syncGameName('A')">
+        <input id="gameAgeA" class="age-input" type="number" min="1" max="99" readonly>
+      </div>
+      <div class="name-row">
+        <span class="ship-dot" style="background:var(--ship-b-color)"></span>
+        <input id="gameNameB" class="name-input" maxlength="14" oninput="syncGameName('B')">
+        <input id="gameAgeB" class="age-input" type="number" min="1" max="99" readonly>
+      </div>
+    </div>
   </div>
 
   <div class="controls">
 
-    <div class="ctrl-group">
-      <span class="ctrl-label" id="lblStar">Destination Star</span>
-      <select class="star-select" id="starSelect" onchange="handleStarChange()"></select>
-    </div>
-
-    <div id="customStarControls" class="ctrl-group" style="display:none">
-      <span class="ctrl-label" id="lblCustomName">Star Name</span>
-      <input id="customNameInput" class="name-input" style="width:100%" maxlength="14" oninput="handleCustomNameChange()">
-      <span class="ctrl-label" id="lblCustomDist" style="margin-top:6px">Distance (ly)</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('customDistSlider',-1)">&minus;</button>
-        <input type="range" id="customDistSlider" min="1" max="2000" value="50" step="1" oninput="handleCustomDistChange()">
-        <button class="step-btn" onclick="stepSlider('customDistSlider',1)">+</button>
-        <span class="slider-val" id="customDistVal">50 ly</span>
+    <div class="ctrl-group" id="grpMode">
+      <div class="type-toggle">
+        <button class="type-btn active" id="modeExploreBtn" onclick="setMode('explore')">Explore</button>
+        <button class="type-btn" id="modeGameBtn" onclick="setMode('game')">Game</button>
       </div>
     </div>
 
-    <div class="ctrl-group">
-      <span class="ctrl-label" id="lblSpeed">Travel Speed</span>
-      <div class="slider-row">
-        <button class="step-btn" id="speedMinus" onclick="stepSpeedSlider(-1)">&minus;</button>
-        <input type="range" id="speedSlider" min="0" max="1000" value="376" step="1" oninput="handleSpeedChange()">
-        <button class="step-btn" id="speedPlus" onclick="stepSpeedSlider(1)">+</button>
-        <span class="slider-val" id="speedVal">0.50c</span>
+    <div id="grpExplore">
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblSpeed">Travel Speed</span>
+        <div class="speed-bar" id="speedBar">
+          <button class="speed-bar-btn speed-bar-minus" id="speedMinus" type="button">&minus;</button>
+          <div class="speed-bar-track">
+            <div class="speed-bar-fill" id="speedFill"></div>
+            <span class="speed-bar-val" id="speedVal">0.50c</span>
+          </div>
+          <button class="speed-bar-btn speed-bar-plus" id="speedPlus" type="button">+</button>
+          <input type="hidden" id="speedSlider" value="376">
+        </div>
+      </div>
+    </div>
+
+    <div id="grpGame" style="display:none">
+      <div class="game-goal" id="gameGoalText"></div>
+
+      <div class="speed-bar ship-bar" id="speedBarA" data-ship="A" style="border-left-color:var(--ship-a-color)">
+        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
+        <div class="speed-bar-track">
+          <div class="speed-bar-fill" id="speedFillA"></div>
+          <span class="speed-bar-val" id="speedValA">0.5000c</span>
+        </div>
+        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
+        <input type="hidden" id="speedSliderA" value="376">
+        <input type="hidden" id="betaInputA" value="0.5000">
+      </div>
+
+      <div class="speed-bar ship-bar" id="speedBarB" data-ship="B" style="border-left-color:var(--ship-b-color)">
+        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
+        <div class="speed-bar-track">
+          <div class="speed-bar-fill" id="speedFillB"></div>
+          <span class="speed-bar-val" id="speedValB">0.5000c</span>
+        </div>
+        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
+        <input type="hidden" id="speedSliderB" value="376">
+        <input type="hidden" id="betaInputB" value="0.5000">
+      </div>
+
+      <div class="ctrl-group">
+        <button class="type-btn" id="newChallengeBtn" onclick="generateChallenge()" style="width:100%">
+          <span id="newChallengeLabel">New Challenge</span>
+        </button>
       </div>
     </div>
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblAnimSpeed">Playback Speed</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('animSlider',-0.1)">&minus;</button>
-        <input type="range" id="animSlider" min="0.1" max="5" value="1" step="0.1" oninput="handleAnimSpeedChange()">
-        <button class="step-btn" onclick="stepSlider('animSlider',0.1)">+</button>
-        <span class="slider-val" id="animSpeedVal">1.0&times;</span>
-      </div>
-    </div>
-
-    <div class="ctrl-group">
       <div class="type-toggle">
-        <button class="type-btn" id="launchBtn" onclick="handleLaunch()">
-          <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>
-          <svg class="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
-          <span id="launchLabel" style="margin-left:6px">Launch</span>
-        </button>
-        <button class="type-btn" id="resetBtn" onclick="handleReset()">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
-          <span id="resetLabel" style="margin-left:6px">Reset</span>
-        </button>
+        <button class="type-btn active" id="warpNormalBtn" onclick="setWarp('normal')">&#x25b6;</button>
+        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">&#x25b6;&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="resetBtn" onclick="handleReset()" title="Reset">&#x25A0;</button>
       </div>
     </div>
 
-    <div class="ctrl-group readouts">
+    <div class="ctrl-group readouts" id="grpReadouts">
       <div class="readout-row"><span class="readout-label" id="lblDistance">Distance</span><span class="readout-val" id="readDistance">&mdash;</span></div>
       <div class="readout-row"><span class="readout-label" id="lblBeta">Speed</span><span class="readout-val" id="readBeta">&mdash;</span></div>
       <div class="readout-row"><span class="readout-label" id="lblGamma">Lorentz &gamma;</span><span class="readout-val" id="readGamma">&mdash;</span></div>
@@ -517,6 +578,19 @@ var I18N = {
     infoTurnaround: 'The rocket has decelerated to a stop at the star and is preparing to head back. The clocks are paused during the turnaround.',
     infoPaused: 'Simulation paused. Both clocks are frozen. Press play to resume.',
     infoLanded: 'The round trip is over.\n\nThe rocket traveler aged {rocketTime} years, while {earthTime} years passed on Earth \u2014 a difference of {diff} years.\n\nThe faster you go, the bigger the difference. Try 0.99c!',
+    // Game mode
+    explore: 'Explore',
+    game: 'Game',
+    newChallenge: 'New Challenge',
+    gameGoal: 'Match ages! Gap: <b>{diff} years</b>. Max 100.',
+    gameInfoIdle: 'Both captains depart Earth at the same time. The one who returns first waits \u2014 aging normally.\n\nSet speeds so they\u2019re the same age when they meet. The faster you go, the less you age!',
+    gameInfoFlight: 'Both ships are in flight! Watch how time passes differently for each captain.',
+    gameInfoReturn: '{name} has returned to Earth and is aging normally while waiting.',
+    gameInfoLanded: 'Both captains have returned to Earth.',
+    gamePerfect: 'Perfect match!',
+    gameClose: 'Almost! Off by {diff}.',
+    gameMiss: 'Not quite. Off by {diff}.',
+    gameTooOld: '{name} exceeded 100 years!',
   },
   pl: {
     title: 'Symulator Dylatacji Czasu',
@@ -562,6 +636,21 @@ var I18N = {
     infoTurnaround: 'Rakieta wyhamowa\u0142a do zera przy gwi\u017Adzie i przygotowuje si\u0119 do drogi powrotnej. Zegary s\u0105 wstrzymane podczas zawracania.',
     infoPaused: 'Symulacja wstrzymana. Oba zegary s\u0105 zamro\u017Cone. Naci\u015Bnij play, aby wznowi\u0107.',
     infoLanded: 'Podr\u00F3\u017C dobieg\u0142a ko\u0144ca.\n\nPodr\u00F3\u017Cnik zestarza\u0142 si\u0119 o {rocketTime} lat, a na Ziemi min\u0119\u0142o {earthTime} lat \u2014 r\u00F3\u017Cnica {diff} lat.\n\nIm szybciej lecisz, tym wi\u0119ksza r\u00F3\u017Cnica. Spr\u00F3buj 0.99c!',
+    // Game mode
+    explore: 'Odkrywaj',
+    game: 'Gra',
+    newChallenge: 'Nowe wyzwanie',
+    lblSpeedA: 'Pr\u0119dko\u015B\u0107 statku Alpha',
+    lblSpeedB: 'Pr\u0119dko\u015B\u0107 statku Bravo',
+    gameGoal: 'Wyr\u00F3wnaj wiek! R\u00F3\u017Cnica: <b>{diff} lat</b>. Maks. 100.',
+    gameInfoIdle: 'Obaj kapitanowie wyruszaj\u0105 z Ziemi w tym samym czasie. Ten, kt\u00F3ry wraca pierwszy, czeka \u2014 starzej\u0105c si\u0119 normalnie.\n\nDobierz pr\u0119dko\u015Bci, by mieli ten sam wiek, gdy si\u0119 spotkaj\u0105. Im szybciej lecisz, tym mniej si\u0119 starzejesz!',
+    gameInfoFlight: 'Oba statki s\u0105 w locie! Obserwuj, jak czas p\u0142ynie inaczej dla ka\u017Cdego kapitana.',
+    gameInfoReturn: '{name} wr\u00F3ci\u0142 na Ziemi\u0119 i starzeje si\u0119 normalnie, czekaj\u0105c.',
+    gameInfoLanded: 'Obaj kapitanowie wr\u00F3cili na Ziemi\u0119.',
+    gamePerfect: 'Idealne dopasowanie!',
+    gameClose: 'Prawie! R\u00F3\u017Cnica: {diff}.',
+    gameMiss: 'Nie tym razem. R\u00F3\u017Cnica: {diff}.',
+    gameTooOld: '{name} przekroczy\u0142 100 lat!',
   },
 };
 
@@ -574,6 +663,7 @@ var state = {
   beta: 0.50,
   gamma: 1.1547,
   animSpeed: 1.0,
+  warpLevel: 'normal',
   paused: false,
   progress: 0,
   turnaroundTimer: 0,
@@ -593,6 +683,15 @@ var state = {
   gammaActual: 0,
   currentBeta: 0,   // instantaneous velocity during animation
   defaultAge: Math.floor(Math.random() * 16) + 10,  // random 10-25, initial default for both
+  // Game mode
+  mode: 'explore',
+  challenge: null,
+  shipA: null,
+  shipB: null,
+  gameMaxEarthTime: 0,
+  gameMasterProgress: 0,
+  gameResult: null,
+  gameLaunched: false,
 };
 
 // ====================== UTILITIES ======================
@@ -609,27 +708,169 @@ function fmtBeta(b) {
 }
 
 // Non-linear speed slider: slider 0-1000 → beta 0.10-0.9999
-// Linear 0.10-0.95 for slider 0-800, then exponential 0.95-0.9999 for slider 800-1000
+// Linear 0.10-0.90 for slider 0-667, then exponential 0.90-0.9999 for slider 667-1000
+// 0.90c at 2/3 of bar — gives 1/3 of bar to the relativistic zone
 function sliderToBeta(s) {
   s = clamp(s, 0, 1000);
-  if (s <= 800) {
-    return BETA_MIN + (0.95 - BETA_MIN) * (s / 800);
+  if (s <= 667) {
+    return BETA_MIN + (0.90 - BETA_MIN) * (s / 667);
   }
-  // Exponential zone: map 800-1000 → 0.95-0.9999
-  // Use 1 - (1-0.95) * exp(-k * t) where t goes 0→1
-  var t = (s - 800) / 200;
-  return 1 - 0.05 * Math.exp(-t * Math.log(0.05 / 0.0001));
-  // at t=0: 1 - 0.05 = 0.95, at t=1: 1 - 0.05*(0.0001/0.05) = 1 - 0.0001 = 0.9999
+  // Exponential zone: map 667-1000 → 0.90-0.9999
+  // beta = 1 - 0.10 * exp(-k * t), k = ln(0.10/0.0001) = ln(1000)
+  var t = (s - 667) / 333;
+  return 1 - 0.10 * Math.exp(-t * Math.log(0.10 / 0.0001));
+  // at t=0: 1 - 0.10 = 0.90, at t=1: 1 - 0.0001 = 0.9999
 }
 
 function betaToSlider(beta) {
   beta = clamp(beta, BETA_MIN, BETA_MAX);
-  if (beta <= 0.95) {
-    return Math.round((beta - BETA_MIN) / (0.95 - BETA_MIN) * 800);
+  if (beta <= 0.90) {
+    return Math.round((beta - BETA_MIN) / (0.90 - BETA_MIN) * 667);
   }
-  var k = Math.log(0.05 / 0.0001);
-  var t = -Math.log((1 - beta) / 0.05) / k;
-  return Math.round(800 + t * 200);
+  var k = Math.log(0.10 / 0.0001);
+  var t = -Math.log((1 - beta) / 0.10) / k;
+  return Math.round(667 + t * 333);
+}
+
+// ====================== SPEED BAR ======================
+
+// Sci-fi dashboard: cyan → amber → danger red
+var SPEED_COLOR_STOPS = [
+  [0.10, 200, 100, 50],  // bright cyan #00b0ff
+  [0.70,  34, 100, 50],  // vivid amber #ff9100
+  [0.999, 349, 100, 55]  // danger red #ff1744
+];
+
+function speedBarColor(beta) {
+  var stops = SPEED_COLOR_STOPS;
+  if (beta <= stops[0][0]) return 'hsl(' + stops[0][1] + ',' + stops[0][2] + '%,' + stops[0][3] + '%)';
+  if (beta >= stops[stops.length - 1][0]) return 'hsl(' + stops[stops.length - 1][1] + ',' + stops[stops.length - 1][2] + '%,' + stops[stops.length - 1][3] + '%)';
+  for (var i = 0; i < stops.length - 1; i++) {
+    if (beta >= stops[i][0] && beta <= stops[i + 1][0]) {
+      var t = (beta - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      var h0 = stops[i][1], h1 = stops[i + 1][1];
+      var dh = h1 - h0;
+      if (dh > 180) dh -= 360;
+      if (dh < -180) dh += 360;
+      var h = ((h0 + dh * t) % 360 + 360) % 360;
+      var s = stops[i][2] + (stops[i + 1][2] - stops[i][2]) * t;
+      var l = stops[i][3] + (stops[i + 1][3] - stops[i][3]) * t;
+      return 'hsl(' + Math.round(h) + ',' + Math.round(s) + '%,' + Math.round(l) + '%)';
+    }
+  }
+  return 'hsl(212,100%,67%)';
+}
+
+function speedBarLightness(beta) {
+  var stops = SPEED_COLOR_STOPS;
+  if (beta <= stops[0][0]) return stops[0][3];
+  if (beta >= stops[stops.length - 1][0]) return stops[stops.length - 1][3];
+  for (var i = 0; i < stops.length - 1; i++) {
+    if (beta >= stops[i][0] && beta <= stops[i + 1][0]) {
+      var t = (beta - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      return stops[i][3] + (stops[i + 1][3] - stops[i][3]) * t;
+    }
+  }
+  return 50;
+}
+
+function updateSpeedBar(barId, sliderValue, beta) {
+  var bar = document.getElementById(barId);
+  if (!bar) return;
+  var fill = bar.querySelector('.speed-bar-fill');
+  var valEl = bar.querySelector('.speed-bar-val');
+  var track = bar.querySelector('.speed-bar-track');
+  var pct = (sliderValue / 1000) * 100;
+  fill.style.width = pct + '%';
+  fill.style.backgroundColor = speedBarColor(beta);
+  // Contrast: dark text on light fills, white text on dark fills
+  var fillL = speedBarLightness(beta);
+  valEl.style.color = fillL > 60 ? '#1a1a2e' : '#fff';
+  valEl.style.textShadow = fillL > 60
+    ? '0 1px 3px rgba(255,255,255,0.3)'
+    : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.4)';
+  var ship = bar.getAttribute('data-ship');
+  if (ship) {
+    valEl.textContent = beta.toFixed(4) + 'c';
+  } else {
+    valEl.textContent = beta >= 0.999 ? beta.toFixed(4) + 'c'
+                      : beta >= 0.99  ? beta.toFixed(3) + 'c'
+                      : beta.toFixed(2) + 'c';
+  }
+  if (beta >= 0.95) { track.classList.add('extreme'); }
+  else { track.classList.remove('extreme'); }
+}
+
+function initSpeedBar(barEl) {
+  var track = barEl.querySelector('.speed-bar-track');
+  var minusBtn = barEl.querySelector('.speed-bar-minus');
+  var plusBtn = barEl.querySelector('.speed-bar-plus');
+  var ship = barEl.getAttribute('data-ship');
+  var dragging = false;
+
+  function getSliderId() {
+    return ship ? 'speedSlider' + ship : 'speedSlider';
+  }
+
+  function getSliderFromX(clientX) {
+    var rect = track.getBoundingClientRect();
+    var pct = (clientX - rect.left) / rect.width;
+    return Math.round(clamp(pct, 0, 1) * 1000);
+  }
+
+  function applyValue(sliderVal) {
+    sliderVal = clamp(sliderVal, 0, 1000);
+    document.getElementById(getSliderId()).value = sliderVal;
+    if (ship) { handleGameSpeedChange(ship); }
+    else { handleSpeedChange(); }
+  }
+
+  function onPointerDown(e) {
+    if (barEl.classList.contains('disabled')) return;
+    e.preventDefault();
+    dragging = true;
+    var t = e.touches ? e.touches[0] : e;
+    applyValue(getSliderFromX(t.clientX));
+  }
+  function onPointerMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    var t = e.touches ? e.touches[0] : e;
+    applyValue(getSliderFromX(t.clientX));
+  }
+  function onPointerEnd() { dragging = false; }
+
+  track.addEventListener('mousedown', onPointerDown);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('mouseup', onPointerEnd);
+  track.addEventListener('touchstart', onPointerDown, { passive: false });
+  document.addEventListener('touchmove', function(e) { if (dragging) onPointerMove(e); }, { passive: false });
+  document.addEventListener('touchend', onPointerEnd);
+
+  // Hold for continuous stepping
+  var STEP_SIZE = 5;
+  var holdTimer = null, holdInterval = null;
+  function startHold(delta) {
+    if (barEl.classList.contains('disabled')) return;
+    applyValue(parseInt(document.getElementById(getSliderId()).value) + delta * STEP_SIZE);
+    holdTimer = setTimeout(function() {
+      holdInterval = setInterval(function() {
+        applyValue(parseInt(document.getElementById(getSliderId()).value) + delta * STEP_SIZE);
+      }, 30);
+    }, 300);
+  }
+  function stopHold() { clearTimeout(holdTimer); clearInterval(holdInterval); }
+
+  minusBtn.addEventListener('mousedown', function() { startHold(-1); });
+  minusBtn.addEventListener('mouseup', stopHold);
+  minusBtn.addEventListener('mouseleave', stopHold);
+  plusBtn.addEventListener('mousedown', function() { startHold(1); });
+  plusBtn.addEventListener('mouseup', stopHold);
+  plusBtn.addEventListener('mouseleave', stopHold);
+  minusBtn.addEventListener('touchstart', function(e) { e.preventDefault(); startHold(-1); }, { passive: false });
+  minusBtn.addEventListener('touchend', function(e) { e.preventDefault(); stopHold(); });
+  plusBtn.addEventListener('touchstart', function(e) { e.preventDefault(); startHold(1); }, { passive: false });
+  plusBtn.addEventListener('touchend', function(e) { e.preventDefault(); stopHold(); });
 }
 
 function formatYears(years) {
@@ -869,101 +1110,115 @@ function resize() {
 
 // ====================== PHYSICS ======================
 
-function recalcPhysics() {
-  var star = STARS[state.starIndex];
-  var d = star.dist;
-  state.beta = sliderToBeta(parseInt(document.getElementById('speedSlider').value));
-  state.gamma = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - state.beta * state.beta));
+// Pure function: compute round-trip physics for a given distance and target beta
+function computeShipPhysics(dist, beta) {
+  var gamma = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - beta * beta));
+  var d_accel = (gamma - 1) / ALPHA;
+  var r = { beta: beta, gamma: gamma };
 
-  // Acceleration model: accel → cruise → decel per leg, at 1g proper acceleration
-  var d_accel = (state.gamma - 1) / ALPHA;
-
-  if (d >= 2 * d_accel) {
-    // Cruise phase exists
-    state.hasCruise = true;
-    state.betaActual = state.beta;
-    state.gammaActual = state.gamma;
-    state.t_accel = state.beta * state.gamma / ALPHA;
-    state.tau_accel = arctanh(state.beta) / ALPHA;
-    var d_cruise = d - 2 * d_accel;
-    state.t_cruise = d_cruise / state.beta;
-    state.tau_cruise = state.t_cruise / state.gamma;
+  if (dist >= 2 * d_accel) {
+    r.hasCruise = true;
+    r.betaActual = beta;
+    r.gammaActual = gamma;
+    r.t_accel = beta * gamma / ALPHA;
+    r.tau_accel = arctanh(beta) / ALPHA;
+    var d_cruise = dist - 2 * d_accel;
+    r.t_cruise = d_cruise / beta;
+    r.tau_cruise = r.t_cruise / gamma;
   } else {
-    // Can't reach target speed — accel to midpoint then decel
-    state.hasCruise = false;
-    state.gammaActual = ALPHA * d / 2 + 1;
-    state.betaActual = Math.sqrt(Math.max(0, 1 - 1 / (state.gammaActual * state.gammaActual)));
-    state.t_accel = state.betaActual * state.gammaActual / ALPHA;
-    state.tau_accel = arctanh(state.betaActual) / ALPHA;
-    state.t_cruise = 0;
-    state.tau_cruise = 0;
+    r.hasCruise = false;
+    r.gammaActual = ALPHA * dist / 2 + 1;
+    r.betaActual = Math.sqrt(Math.max(0, 1 - 1 / (r.gammaActual * r.gammaActual)));
+    r.t_accel = r.betaActual * r.gammaActual / ALPHA;
+    r.tau_accel = arctanh(r.betaActual) / ALPHA;
+    r.t_cruise = 0;
+    r.tau_cruise = 0;
   }
 
-  state.legEarthTotal = 2 * state.t_accel + state.t_cruise;
-  state.legRocketTotal = 2 * state.tau_accel + state.tau_cruise;
-  state.earthTotalYears = 2 * state.legEarthTotal;
-  state.rocketTotalYears = 2 * state.legRocketTotal;
+  r.legEarthTotal = 2 * r.t_accel + r.t_cruise;
+  r.legRocketTotal = 2 * r.tau_accel + r.tau_cruise;
+  r.earthTotalYears = 2 * r.legEarthTotal;
+  r.rocketTotalYears = 2 * r.legRocketTotal;
+  return r;
 }
 
-function updateElapsedFromProgress() {
-  var p = clamp(state.progress, 0, 1);
-  // Each leg is symmetric, so compute elapsed for one leg then offset
+// Pure function: compute elapsed times from progress (0-1) and physics object
+function computeElapsedForProgress(p, phys) {
+  p = clamp(p, 0, 1);
   var legIndex, legProgress;
-  if (p <= 0.5) {
-    legIndex = 0;
-    legProgress = p / 0.5;
-  } else {
-    legIndex = 1;
-    legProgress = (p - 0.5) / 0.5;
-  }
+  if (p <= 0.5) { legIndex = 0; legProgress = p / 0.5; }
+  else { legIndex = 1; legProgress = (p - 0.5) / 0.5; }
 
-  // Earth time advances linearly within leg
-  var legEarth = legProgress * state.legEarthTotal;
-
-  // Derive rocket time piecewise from Earth time
-  var legRocket;
-  var ta = state.t_accel;
-  var tauA = state.tau_accel;
-  var tc = state.t_cruise;
-  var tauC = state.tau_cruise;
+  var legEarth = legProgress * phys.legEarthTotal;
+  var legRocket, currentBeta;
+  var ta = phys.t_accel, tauA = phys.tau_accel;
+  var tc = phys.t_cruise, tauC = phys.tau_cruise;
 
   if (ta < EPS_BETA) {
-    legRocket = legEarth * state.legRocketTotal / Math.max(EPS_BETA, state.legEarthTotal);
-    state.currentBeta = state.betaActual;
+    legRocket = legEarth * phys.legRocketTotal / Math.max(EPS_BETA, phys.legEarthTotal);
+    currentBeta = phys.betaActual;
   } else if (legEarth <= ta) {
-    // Accelerating: v(t) = αt/√(1+α²t²), τ(t) = arcsinh(αt)/α
     legRocket = Math.asinh(ALPHA * legEarth) / ALPHA;
-    state.currentBeta = ALPHA * legEarth / Math.sqrt(1 + ALPHA * ALPHA * legEarth * legEarth);
+    currentBeta = ALPHA * legEarth / Math.sqrt(1 + ALPHA * ALPHA * legEarth * legEarth);
   } else if (legEarth <= ta + tc) {
-    // Cruising: constant speed
-    legRocket = tauA + (legEarth - ta) / state.gammaActual;
-    state.currentBeta = state.betaActual;
+    legRocket = tauA + (legEarth - ta) / phys.gammaActual;
+    currentBeta = phys.betaActual;
   } else {
-    // Decelerating: mirror of acceleration
-    var tRemaining = state.legEarthTotal - legEarth;
+    var tRemaining = phys.legEarthTotal - legEarth;
     legRocket = tauA + tauC + (tauA - Math.asinh(ALPHA * tRemaining) / ALPHA);
-    state.currentBeta = ALPHA * tRemaining / Math.sqrt(1 + ALPHA * ALPHA * tRemaining * tRemaining);
+    currentBeta = ALPHA * tRemaining / Math.sqrt(1 + ALPHA * ALPHA * tRemaining * tRemaining);
   }
 
-  state.earthElapsed = legIndex * state.legEarthTotal + legEarth;
-  state.rocketElapsed = legIndex * state.legRocketTotal + legRocket;
+  return {
+    earthElapsed: legIndex * phys.legEarthTotal + legEarth,
+    rocketElapsed: legIndex * phys.legRocketTotal + legRocket,
+    currentBeta: currentBeta,
+  };
+}
+
+// Wrapper: compute physics for explore mode (reads from DOM, writes to state)
+function recalcPhysics() {
+  state.beta = sliderToBeta(parseInt(document.getElementById('speedSlider').value));
+  var phys = computeShipPhysics(STARS[state.starIndex].dist, state.beta);
+  state.gamma = phys.gamma;
+  state.hasCruise = phys.hasCruise;
+  state.t_accel = phys.t_accel;
+  state.tau_accel = phys.tau_accel;
+  state.t_cruise = phys.t_cruise;
+  state.tau_cruise = phys.tau_cruise;
+  state.legEarthTotal = phys.legEarthTotal;
+  state.legRocketTotal = phys.legRocketTotal;
+  state.earthTotalYears = phys.earthTotalYears;
+  state.rocketTotalYears = phys.rocketTotalYears;
+  state.betaActual = phys.betaActual;
+  state.gammaActual = phys.gammaActual;
+}
+
+// Wrapper: update elapsed from progress for explore mode
+function updateElapsedFromProgress() {
+  var result = computeElapsedForProgress(state.progress, state);
+  state.earthElapsed = result.earthElapsed;
+  state.rocketElapsed = result.rocketElapsed;
+  state.currentBeta = result.currentBeta;
 }
 
 // ====================== SCENE POSITIONS ======================
 
 function getEarthX() { return W * EARTH_X_FRAC; }
-function getEarthY() { return H * 0.55; }
+function getEarthY() { return state.mode === 'game' ? H * 0.5 : H * 0.55; }
 
-function getStarScreenX() {
-  var d = STARS[state.starIndex].dist;
-  var dMin = 1;
-  var dMax = 2000;
+function getStarScreenXForDist(d) {
+  var dMin = 1, dMax = 2000;
   var frac = Math.log(d / dMin) / Math.log(dMax / dMin);
   var earthX = getEarthX();
   return earthX + (W * STAR_X_MAX_FRAC - earthX) * clamp(frac, 0.05, 1);
 }
 
-function getStarY() { return H * 0.55; }
+function getStarScreenX() {
+  return getStarScreenXForDist(STARS[state.starIndex].dist);
+}
+
+function getStarY() { return state.mode === 'game' ? H * 0.5 : H * 0.55; }
 
 // Ellipse trajectory: Earth at left, star at right.
 // Ellipse trajectory. theta decreases clockwise.
@@ -977,7 +1232,7 @@ function getEllipse() {
   var earthY = getEarthY();
   var starX = getStarScreenX();
   var starR = STARS[state.starIndex].radius;
-  var pad = 8;
+  var pad = 20;
   // Left edge at Earth center, right edge past star
   var leftEdge = earthX;
   var rightEdge = starX + starR + pad;
@@ -985,8 +1240,8 @@ function getEllipse() {
   var cx = leftEdge + a;
   var cy = earthY;
   var b = clamp(a * 0.25, 15, 60);
-  // Compute EARTH_DELTA so ship clears Earth's visual area
-  var clearance = EARTH_RADIUS + pad;
+  // Compute EARTH_DELTA so trajectory starts at Earth's edge
+  var clearance = EARTH_RADIUS + 2;
   var cosVal = 1 - clearance / a;
   var earthDelta = cosVal < -1 ? Math.PI * 0.4 : Math.acos(Math.max(-1, cosVal));
   earthDelta = clamp(earthDelta, Math.PI / 8, Math.PI * 0.4);
@@ -1091,7 +1346,7 @@ function drawEarth() {
   ctx.fillText(T('earthLabel'), cx - r - 8, cy + r + 6);
 }
 
-function drawDestStar() {
+function drawDestStar(hideLabel) {
   var star = STARS[state.starIndex];
   var cx = getStarScreenX();
   var cy = getStarY();
@@ -1114,18 +1369,19 @@ function drawDestStar() {
   ctx.fillStyle = star.color;
   ctx.fill();
 
-  // Label
-  // Label — right side of the ellipse, past the star
-  var name = state.lang === 'en' ? star.nameEn : star.namePl;
-  var e = getEllipse();
-  var labelX = e.cx + e.a + 10;
-  ctx.font = '15px "Share Tech Mono", monospace';
-  ctx.fillStyle = 'rgba(255,248,225,0.7)';
-  ctx.textAlign = 'left';
-  ctx.fillText(name, labelX, cy - 2);
-  ctx.font = '13px "Share Tech Mono", monospace';
-  ctx.fillStyle = 'rgba(255,248,225,0.4)';
-  ctx.fillText((star.approx ? '~' : '') + star.dist + ' ' + T('ly'), labelX, cy + 14);
+  // Label — hidden during drag (shadows have their own labels)
+  if (!hideLabel) {
+    var name = state.lang === 'en' ? star.nameEn : star.namePl;
+    var e = getEllipse();
+    var labelX = e.cx + e.a + 10;
+    ctx.font = '15px "Share Tech Mono", monospace';
+    ctx.fillStyle = 'rgba(255,248,225,0.7)';
+    ctx.textAlign = 'left';
+    ctx.fillText(name, labelX, cy - r - 26);
+    ctx.font = '13px "Share Tech Mono", monospace';
+    ctx.fillStyle = 'rgba(255,248,225,0.4)';
+    ctx.fillText((star.approx ? '~' : '') + star.dist + ' ' + T('ly'), labelX, cy - r - 12);
+  }
 }
 
 function drawSpacecraft(x, y, angle) {
@@ -1211,16 +1467,16 @@ function drawStickFigure(cx, cy, color, seated) {
   }
 }
 
-function computeYearsPerRev() {
-  var total = state.earthTotalYears;
+function computeYearsPerRev(overrideTotal) {
+  var total = overrideTotal || state.earthTotalYears;
   if (total <= 20) return 1;
   if (total <= 100) return 5;
   if (total <= 1000) return 50;
   return 500;
 }
 
-function drawAnalogClock(cx, cy, radius, elapsed, color, label, digitalText) {
-  var yearsPerRev = computeYearsPerRev();
+function drawAnalogClock(cx, cy, radius, elapsed, color, label, digitalText, totalForRev) {
+  var yearsPerRev = computeYearsPerRev(totalForRev);
   var angle = ((elapsed / yearsPerRev) % 1) * Math.PI * 2 - Math.PI / 2;
 
   // Background
@@ -1312,7 +1568,16 @@ function drawScene() {
   }
 
   drawSpacecraft(rPos.x, rPos.y, rPos.angle);
-  drawDestStar();
+
+  // Star shadows during drag, or normal star
+  if (drag.active && !drag.ship) {
+    drawStarShadows(getStarY(), state.starIndex, drag.nearestSlot);
+    ctx.globalAlpha = 0.2;
+    drawDestStar(true);
+    ctx.globalAlpha = 1;
+  } else {
+    drawDestStar();
+  }
 
   // Ship's initial position (for clock alignment)
   var yr = T('yr');
@@ -1396,21 +1661,42 @@ function updateReadouts() {
 function updateInfo() {
   var el = document.getElementById('infoText');
   var text;
-  if (state.phase === 'idle') {
-    text = T('infoIdle');
-  } else if (state.phase === 'landed') {
-    text = T('infoLanded')
-      .replace('{rocketTime}', state.rocketTotalYears.toFixed(2))
-      .replace('{earthTime}', state.earthTotalYears.toFixed(2))
-      .replace('{diff}', (state.earthTotalYears - state.rocketTotalYears).toFixed(2));
-  } else if (state.paused) {
-    text = T('infoPaused');
-  } else if (state.phase === 'turnaround') {
-    text = T('infoTurnaround');
+
+  if (state.mode === 'game') {
+    if (state.phase === 'idle') {
+      text = T('gameInfoIdle');
+    } else if (state.phase === 'landed') {
+      text = T('gameInfoLanded');
+    } else if (state.paused) {
+      text = T('infoPaused');
+    } else {
+      text = T('gameInfoFlight');
+      // Check if either ship has returned
+      if (state.shipA && state.shipA.phase === 'waiting') {
+        text += '\n\n' + T('gameInfoReturn').replace('{name}', state.challenge.nameA);
+      }
+      if (state.shipB && state.shipB.phase === 'waiting') {
+        text += '\n\n' + T('gameInfoReturn').replace('{name}', state.challenge.nameB);
+      }
+    }
   } else {
-    text = T('infoCruise')
-      .replace('{gamma}', state.gamma.toFixed(2));
+    if (state.phase === 'idle') {
+      text = T('infoIdle');
+    } else if (state.phase === 'landed') {
+      text = T('infoLanded')
+        .replace('{rocketTime}', state.rocketTotalYears.toFixed(2))
+        .replace('{earthTime}', state.earthTotalYears.toFixed(2))
+        .replace('{diff}', (state.earthTotalYears - state.rocketTotalYears).toFixed(2));
+    } else if (state.paused) {
+      text = T('infoPaused');
+    } else if (state.phase === 'turnaround') {
+      text = T('infoTurnaround');
+    } else {
+      text = T('infoCruise')
+        .replace('{gamma}', state.gamma.toFixed(2));
+    }
   }
+
   el.textContent = '';
   var paragraphs = text.split('\n\n');
   for (var i = 0; i < paragraphs.length; i++) {
@@ -1424,74 +1710,215 @@ function updateInfo() {
 
 // ====================== CONTROLS ======================
 
-function populateStarSelect() {
-  var sel = document.getElementById('starSelect');
-  var cur = sel.value || '0';
-  sel.innerHTML = '';
-  for (var i = 0; i < STARS.length; i++) {
-    var s = STARS[i];
-    var opt = document.createElement('option');
-    opt.value = i;
-    if (s.custom) {
-      var customName = document.getElementById('customNameInput').value.trim() || T('customStar');
-      opt.textContent = '\u2728 ' + customName + ' (' + s.dist + ' ly)';
-    } else {
-      var name = state.lang === 'en' ? s.nameEn : s.namePl;
-      opt.textContent = name + ' (' + (s.approx ? '~' : '') + s.dist + ' ly)';
-    }
-    sel.appendChild(opt);
+function populateStarSelect() { /* dropdown removed — star selection via canvas drag */ }
+
+function selectStar(index) {
+  state.starIndex = index;
+  if (state.phase !== 'idle') handleReset();
+  recalcPhysics();
+  updateReadouts();
+  updateInfo();
+}
+
+function selectGameStar(ship, index) {
+  if (state.phase !== 'idle') handleReset();
+  if (ship === 'A') {
+    state.challenge.starIndexA = index;
+    state.shipA = makeGameShip(index, state.shipA.beta);
+  } else {
+    state.challenge.starIndexB = index;
+    state.shipB = makeGameShip(index, state.shipB.beta);
   }
-  sel.value = cur;
+  updateChallengeText();
+  updateGameReadouts();
 }
 
-function handleStarChange() {
-  state.starIndex = parseInt(document.getElementById('starSelect').value) || 0;
-  if (state.phase !== 'idle') handleReset();
-  toggleCustomControls();
-  recalcPhysics();
-  updateReadouts();
-  updateInfo();
+// ====================== STAR DRAG ======================
+
+var drag = { active: false, ship: null, origIndex: -1, cursorX: 0, starY: 0, nearestSlot: -1 };
+var REAL_STAR_COUNT = STARS.length - 1; // exclude custom star
+
+function getCanvasCoords(e) {
+  var rect = canvas.getBoundingClientRect();
+  var t = e.touches ? e.touches[0] : e;
+  return { x: t.clientX - rect.left, y: t.clientY - rect.top };
 }
 
-function toggleCustomControls() {
-  var show = STARS[state.starIndex].custom;
-  document.getElementById('customStarControls').style.display = show ? 'flex' : 'none';
+function updateStarCursor(pos) {
+  if (state.phase !== 'idle' && state.phase !== 'landed') { canvas.classList.remove('cursor-grab'); return; }
+  var hit = false;
+  if (state.mode === 'game' && state.challenge) {
+    var c = state.challenge;
+    var targets = [
+      { x: getStarScreenXForDist(STARS[c.starIndexA].dist), y: H * 0.36 },
+      { x: getStarScreenXForDist(STARS[c.starIndexB].dist), y: H * 0.80 },
+    ];
+    for (var i = 0; i < targets.length; i++) {
+      var t = targets[i];
+      if (Math.sqrt((pos.x - t.x) * (pos.x - t.x) + (pos.y - t.y) * (pos.y - t.y)) < 35) { hit = true; break; }
+    }
+  } else if (state.mode === 'explore') {
+    var sx = getStarScreenX(), sy = getStarY();
+    if (Math.sqrt((pos.x - sx) * (pos.x - sx) + (pos.y - sy) * (pos.y - sy)) < 35) hit = true;
+  }
+  canvas.classList.toggle('cursor-grab', hit && !drag.active);
 }
 
-function handleCustomNameChange() {
-  var name = document.getElementById('customNameInput').value.trim();
-  var star = STARS[STARS.length - 1];
-  star.nameEn = name || T('customStar');
-  star.namePl = star.nameEn;
-  // Update dropdown text
-  var sel = document.getElementById('starSelect');
-  var opt = sel.options[sel.selectedIndex];
-  if (opt) opt.textContent = '\u2728 ' + star.nameEn + ' (' + star.dist + ' ly)';
+function handleStarDragStart(e) {
+  if (state.phase !== 'idle' && state.phase !== 'landed') return;
+  var pos = getCanvasCoords(e);
+
+  if (state.mode === 'game' && state.challenge) {
+    var c = state.challenge;
+    var targets = [
+      { ship: 'A', idx: c.starIndexA, x: getStarScreenXForDist(STARS[c.starIndexA].dist), y: H * 0.36 },
+      { ship: 'B', idx: c.starIndexB, x: getStarScreenXForDist(STARS[c.starIndexB].dist), y: H * 0.80 },
+    ];
+    for (var i = 0; i < targets.length; i++) {
+      var t = targets[i];
+      if (Math.sqrt((pos.x - t.x) * (pos.x - t.x) + (pos.y - t.y) * (pos.y - t.y)) < 35) {
+        drag.active = true;
+        drag.ship = t.ship;
+        drag.origIndex = t.idx;
+        drag.cursorX = pos.x;
+        drag.starY = t.y;
+        drag.nearestSlot = -1;
+        canvas.classList.remove('cursor-grab');
+        canvas.classList.add('cursor-grabbing');
+        hideStarFacts();
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
+    }
+  } else if (state.mode === 'explore') {
+    var sx = getStarScreenX();
+    var sy = getStarY();
+    if (Math.sqrt((pos.x - sx) * (pos.x - sx) + (pos.y - sy) * (pos.y - sy)) < 35) {
+      drag.active = true;
+      drag.ship = null;
+      drag.origIndex = state.starIndex;
+      drag.cursorX = pos.x;
+      drag.starY = sy;
+      drag.nearestSlot = -1;
+      canvas.classList.remove('cursor-grab');
+      canvas.classList.add('cursor-grabbing');
+      hideStarFacts();
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+  }
 }
 
-function handleCustomDistChange() {
-  var dist = parseInt(document.getElementById('customDistSlider').value) || 50;
-  var star = STARS[STARS.length - 1];
-  star.dist = dist;
-  document.getElementById('customDistVal').textContent = dist + ' ly';
-  // Update dropdown text
-  var sel = document.getElementById('starSelect');
-  var opt = sel.options[sel.selectedIndex];
-  if (opt) opt.textContent = '\u2728 ' + star.nameEn + ' (' + dist + ' ly)';
-  if (state.phase !== 'idle') handleReset();
-  recalcPhysics();
-  updateReadouts();
-  updateInfo();
+function handleStarDragMove(e) {
+  var pos = getCanvasCoords(e);
+
+  if (!drag.active) {
+    updateStarCursor(pos);
+    // Existing star-facts hover logic
+    if (state.phase !== 'idle' && state.phase !== 'landed') { hideStarFacts(); return; }
+    if (state.mode === 'game' && state.challenge) {
+      var c = state.challenge;
+      var stars = [
+        { star: STARS[c.starIndexA], x: getStarScreenXForDist(STARS[c.starIndexA].dist), y: H * 0.36 },
+        { star: STARS[c.starIndexB], x: getStarScreenXForDist(STARS[c.starIndexB].dist), y: H * 0.80 },
+      ];
+      for (var i = 0; i < stars.length; i++) {
+        var s = stars[i];
+        if (s.star.custom || !s.star.facts) continue;
+        var d = Math.sqrt((pos.x - s.x) * (pos.x - s.x) + (pos.y - s.y) * (pos.y - s.y));
+        if (d < 40) { if (!sfVisible) showStarFacts(s.star, s.x, s.y); return; }
+      }
+      hideStarFacts();
+    } else {
+      var star = STARS[state.starIndex];
+      if (star.custom) { hideStarFacts(); return; }
+      var sx = getStarScreenX();
+      var sy = getStarY();
+      var dist = Math.sqrt((pos.x - sx) * (pos.x - sx) + (pos.y - sy) * (pos.y - sy));
+      if (dist < 40) { if (!sfVisible) showStarFacts(star, sx, sy); }
+      else { hideStarFacts(); }
+    }
+    return;
+  }
+
+  // Dragging — update cursor and find nearest slot
+  if (e.cancelable) e.preventDefault();
+  drag.cursorX = clamp(pos.x, getEarthX() + 30, W - 10);
+  drag.nearestSlot = -1;
+  var bestDist = 30; // snap distance
+  for (var i = 0; i < REAL_STAR_COUNT; i++) {
+    var sx = getStarScreenXForDist(STARS[i].dist);
+    var d = Math.abs(drag.cursorX - sx);
+    if (d < bestDist) {
+      bestDist = d;
+      drag.nearestSlot = i;
+    }
+  }
+}
+
+function handleStarDragEnd(e) {
+  if (!drag.active) return;
+  if (drag.nearestSlot >= 0 && drag.nearestSlot !== drag.origIndex) {
+    if (state.mode === 'game' && drag.ship) {
+      selectGameStar(drag.ship, drag.nearestSlot);
+    } else {
+      selectStar(drag.nearestSlot);
+    }
+  }
+  drag.active = false;
+  drag.nearestSlot = -1;
+  canvas.classList.remove('cursor-grabbing');
+  canvas.classList.remove('cursor-grab');
+}
+
+function drawStarShadows(starY, currentIndex, nearestSlot) {
+  for (var i = 0; i < REAL_STAR_COUNT; i++) {
+    var star = STARS[i];
+    var sx = getStarScreenXForDist(star.dist);
+    var isNearest = (i === nearestSlot);
+    var isCurrent = (i === currentIndex);
+    var alpha = isCurrent ? 0.5 : isNearest ? 0.8 : 0.3;
+    var r = isNearest ? star.radius * 1.4 : star.radius * 0.7;
+
+    // Shadow dot
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(sx, starY, r, 0, Math.PI * 2);
+    ctx.fillStyle = star.color;
+    ctx.fill();
+    if (isNearest) {
+      var glow = ctx.createRadialGradient(sx, starY, r * 0.3, sx, starY, r * 2.5);
+      glow.addColorStop(0, 'rgba(' + star.glowRgb + ',0.3)');
+      glow.addColorStop(1, 'rgba(' + star.glowRgb + ',0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(sx, starY, r * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Label — alternating above/below to avoid overlap
+    var name = state.lang === 'en' ? star.nameEn : star.namePl;
+    ctx.font = '15px "Share Tech Mono", monospace';
+    ctx.fillStyle = 'rgba(255,248,225,' + (isNearest ? 0.9 : isCurrent ? 0.5 : 0.35) + ')';
+    ctx.textAlign = 'center';
+    var labelY = (i % 2 === 0) ? starY - r - 12 : starY + r + 18;
+    ctx.fillText(name, sx, labelY);
+  }
+
+  // Drag indicator line
+  ctx.beginPath();
+  ctx.moveTo(getEarthX() + EARTH_RADIUS + 5, starY);
+  ctx.lineTo(W * STAR_X_MAX_FRAC + 20, starY);
+  ctx.strokeStyle = 'rgba(255,248,225,0.08)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
 }
 
 function handleSpeedChange() {
   var s = parseInt(document.getElementById('speedSlider').value);
   state.beta = sliderToBeta(s);
-  // Display with enough precision for extreme values
-  var betaStr = state.beta >= 0.999 ? state.beta.toFixed(4) + 'c'
-              : state.beta >= 0.99  ? state.beta.toFixed(3) + 'c'
-              : state.beta.toFixed(2) + 'c';
-  document.getElementById('speedVal').textContent = betaStr;
+  updateSpeedBar('speedBar', s, state.beta);
   if (state.phase !== 'idle') handleReset();
   recalcPhysics();
   updateReadouts();
@@ -1503,12 +1930,57 @@ function stepSpeedSlider(delta) {
   var val = parseInt(slider.value) + delta;
   val = clamp(val, 0, 1000);
   slider.value = val;
-  slider.dispatchEvent(new Event('input'));
+  handleSpeedChange();
 }
 
-function handleAnimSpeedChange() {
-  state.animSpeed = parseFloat(document.getElementById('animSlider').value);
-  document.getElementById('animSpeedVal').innerHTML = state.animSpeed.toFixed(1) + '&times;';
+var WARP_LEVELS = { normal: 1, fast: 3, fastest: 5 };
+
+function setWarp(level, skipLaunch) {
+  var justLaunched = false;
+
+  // If idle, launch first
+  if (!skipLaunch && state.phase === 'idle') {
+    launchFlight();
+    justLaunched = true;
+  }
+
+  // If already flying and clicking the active level, toggle pause
+  if (!justLaunched && !skipLaunch && state.warpLevel === level && state.phase !== 'idle' && state.phase !== 'landed') {
+    state.paused = !state.paused;
+    if (state.paused) lastTime = 0;
+    updateWarpButtons();
+    updateInfo();
+    return;
+  }
+
+  // Change speed
+  state.animSpeed = WARP_LEVELS[level] || 1;
+  state.warpLevel = level;
+  if (state.paused && state.phase !== 'idle' && state.phase !== 'landed') {
+    state.paused = false;
+  }
+  updateWarpButtons();
+}
+
+var WARP_PLAY = { normal: '\u25b6', fast: '\u25b6\u25b6', fastest: '\u25b6\u25b6\u25b6' };
+var WARP_PAUSE = '\u25ae\u25ae';
+
+function updateWarpButtons() {
+  var flying = state.phase !== 'idle' && state.phase !== 'landed';
+  var paused = state.paused && flying;
+  var landed = state.phase === 'landed';
+  var btns = {
+    normal: document.getElementById('warpNormalBtn'),
+    fast: document.getElementById('warpFastBtn'),
+    fastest: document.getElementById('warpFastestBtn')
+  };
+  for (var key in btns) {
+    var isActive = state.warpLevel === key;
+    btns[key].classList.toggle('active', isActive && flying && !paused);
+    btns[key].disabled = landed;
+    // Show pause icon on active button while playing
+    btns[key].textContent = (isActive && flying && !paused) ? WARP_PAUSE : WARP_PLAY[key];
+  }
 }
 
 function stepSlider(sliderId, delta) {
@@ -1522,26 +1994,35 @@ function stepSlider(sliderId, delta) {
   slider.dispatchEvent(new Event('input'));
 }
 
-function handleLaunch() {
-  if (state.phase === 'idle') {
+function launchFlight() {
+  if (state.phase !== 'idle') return;
+
+  if (state.mode === 'game') {
+    if (!state.challenge) return;
+    state.phase = 'outbound';
+    state.paused = false;
+    state.gameMasterProgress = 0;
+    state.gameLaunched = true;
+    state.gameResult = null;
+
+    state.shipA = makeGameShip(state.challenge.starIndexA, state.shipA.beta);
+    state.shipB = makeGameShip(state.challenge.starIndexB, state.shipB.beta);
+    state.shipA.phase = 'outbound';
+    state.shipB.phase = 'outbound';
+    state.gameMaxEarthTime = Math.max(state.shipA.phys.earthTotalYears, state.shipB.phys.earthTotalYears);
+  } else {
     state.phase = 'outbound';
     state.progress = 0;
     state.paused = false;
     state.turnaroundTimer = 0;
-  
+
     recalcPhysics();
     updateElapsedFromProgress();
-    setControlsLocked(true);
-    updateLaunchButton();
-    updateInfo();
-  } else if (state.phase === 'landed') {
-    // Do nothing, user should reset
-  } else {
-    state.paused = !state.paused;
-    if (state.paused) lastTime = 0;
-    updateLaunchButton();
-    updateInfo();
   }
+
+  setControlsLocked(true);
+  updateWarpButtons();
+  updateInfo();
 }
 
 function handleReset() {
@@ -1552,46 +2033,55 @@ function handleReset() {
   state.earthElapsed = 0;
   state.rocketElapsed = 0;
 
+  if (state.mode === 'game') {
+    state.gameMasterProgress = 0;
+    state.gameResult = null;
+    state.gameLaunched = false;
+    if (state.shipA) {
+      state.shipA.phase = 'idle';
+      state.shipA.progress = 0;
+      state.shipA.turnaroundTimer = 0;
+      state.shipA.earthElapsed = 0;
+      state.shipA.rocketElapsed = 0;
+      state.shipA.waitingTime = 0;
+      state.shipA.currentBeta = 0;
+    }
+    if (state.shipB) {
+      state.shipB.phase = 'idle';
+      state.shipB.progress = 0;
+      state.shipB.turnaroundTimer = 0;
+      state.shipB.earthElapsed = 0;
+      state.shipB.rocketElapsed = 0;
+      state.shipB.waitingTime = 0;
+      state.shipB.currentBeta = 0;
+    }
+  }
+
   lastTime = 0;
-  recalcPhysics();
+  setWarp('normal', true);
+  if (state.mode === 'explore') recalcPhysics();
   setControlsLocked(false);
-  updateLaunchButton();
-  updateReadouts();
+  updateWarpButtons();
+  if (state.mode === 'explore') updateReadouts();
   updateInfo();
   var overlay = document.querySelector('.result-overlay');
   if (overlay) overlay.remove();
 }
 
 function setControlsLocked(locked) {
-  document.getElementById('starSelect').disabled = locked;
-  document.getElementById('speedSlider').disabled = locked;
-  document.getElementById('speedMinus').disabled = locked;
-  document.getElementById('speedPlus').disabled = locked;
-  document.getElementById('customNameInput').disabled = locked;
-  document.getElementById('customDistSlider').disabled = locked;
-  document.getElementById('earthTwinAge').disabled = locked;
-  document.getElementById('rocketTwinAge').disabled = locked;
-}
-
-function updateLaunchButton() {
-  var btn = document.getElementById('launchBtn');
-  var label = document.getElementById('launchLabel');
-  if (state.phase === 'idle') {
-    btn.classList.remove('playing');
-    label.textContent = T('launch');
-    btn.disabled = false;
-  } else if (state.phase === 'landed') {
-    btn.classList.remove('playing');
-    label.textContent = T('launch');
-    btn.disabled = true;
-  } else if (state.paused) {
-    btn.classList.remove('playing');
-    label.textContent = T('launch');
-    btn.disabled = false;
+  if (state.mode === 'game') {
+    var barA = document.getElementById('speedBarA');
+    var barB = document.getElementById('speedBarB');
+    if (barA) barA.classList.toggle('disabled', locked);
+    if (barB) barB.classList.toggle('disabled', locked);
+    document.getElementById('newChallengeBtn').disabled = locked;
+    document.getElementById('gameNameA').disabled = locked;
+    document.getElementById('gameNameB').disabled = locked;
   } else {
-    btn.classList.add('playing');
-    label.textContent = T('pause');
-    btn.disabled = false;
+    var bar = document.getElementById('speedBar');
+    if (bar) bar.classList.toggle('disabled', locked);
+    document.getElementById('earthTwinAge').disabled = locked;
+    document.getElementById('rocketTwinAge').disabled = locked;
   }
 }
 
@@ -1652,6 +2142,13 @@ function animate(timestamp) {
   var dt = Math.min((timestamp - lastTime) / 1000, DT_CAP);
   lastTime = timestamp;
 
+  if (state.mode === 'game') {
+    animateGame(dt);
+    if (state.mode === 'game') drawGameScene();
+    requestAnimationFrame(animate);
+    return;
+  }
+
   if (!state.paused && (state.phase === 'outbound' || state.phase === 'return')) {
     var progressPerSecond = (1 / (2 * WALL_SECONDS_BASE)) * state.animSpeed;
     state.progress += dt * progressPerSecond;
@@ -1671,7 +2168,7 @@ function animate(timestamp) {
       state.progress = 1.0;
       updateElapsedFromProgress();
       state.phase = 'landed';
-      updateLaunchButton();
+      updateWarpButtons();
       updateInfo();
       setTimeout(showSummaryOverlay, 400);
     }
@@ -1706,7 +2203,6 @@ function applyTranslations() {
   document.documentElement.lang = state.lang;
   document.getElementById('titleText').textContent = T('title');
   document.getElementById('subtitleText').textContent = T('subtitle');
-  document.getElementById('lblStar').textContent = T('lblStar');
   document.getElementById('lblSpeed').textContent = T('lblSpeed');
   document.getElementById('lblAnimSpeed').textContent = T('lblAnimSpeed');
   document.getElementById('lblDistance').textContent = T('lblDistance');
@@ -1716,15 +2212,17 @@ function applyTranslations() {
   document.getElementById('lblRocketTime').textContent = getRocketTwinName();
   document.getElementById('lblTimeDiff').textContent = T('lblTimeDiff');
   document.getElementById('lblPhase').textContent = T('lblPhase');
-  document.getElementById('resetLabel').textContent = T('reset');
+  document.getElementById('resetBtn').title = T('reset');
   document.getElementById('earthTwinName').placeholder = getDefaultName(0);
   document.getElementById('rocketTwinName').placeholder = getDefaultName(1);
-  document.getElementById('lblCustomName').textContent = T('lblCustomName');
-  document.getElementById('lblCustomDist').textContent = T('lblCustomDist');
-  document.getElementById('customNameInput').placeholder = T('customStar');
+  // Game mode labels
+  document.getElementById('modeExploreBtn').textContent = T('explore');
+  document.getElementById('modeGameBtn').textContent = T('game');
+  document.getElementById('newChallengeLabel').textContent = T('newChallenge');
+  if (state.mode === 'game' && state.challenge) updateChallengeText();
   populateStarSelect();
-  updateLaunchButton();
-  updateReadouts();
+  updateWarpButtons();
+  if (state.mode === 'explore') updateReadouts();
   updateInfo();
 }
 
@@ -1773,24 +2271,653 @@ function hideStarFacts() {
   sfVisible = false;
 }
 
-canvas.addEventListener('mousemove', function(e) {
-  if (state.phase !== 'idle' && state.phase !== 'landed') { hideStarFacts(); return; }
-  var star = STARS[state.starIndex];
-  if (star.custom) { hideStarFacts(); return; }
-  var rect = canvas.getBoundingClientRect();
-  var mx = e.clientX - rect.left;
-  var my = e.clientY - rect.top;
-  var sx = getStarScreenX();
-  var sy = getStarY();
-  var dist = Math.sqrt((mx - sx) * (mx - sx) + (my - sy) * (my - sy));
-  if (dist < 40) {
-    if (!sfVisible) showStarFacts(star, sx, sy);
-  } else {
-    hideStarFacts();
-  }
-});
+canvas.addEventListener('mousedown', function(e) { handleStarDragStart(e); });
+canvas.addEventListener('mousemove', function(e) { handleStarDragMove(e); });
+canvas.addEventListener('mouseup', function(e) { handleStarDragEnd(e); });
+canvas.addEventListener('mouseleave', function() { hideStarFacts(); if (drag.active) handleStarDragEnd(); });
+canvas.addEventListener('touchstart', function(e) { handleStarDragStart(e); }, { passive: false });
+canvas.addEventListener('touchmove', function(e) { handleStarDragMove(e); }, { passive: false });
+canvas.addEventListener('touchend', function(e) { handleStarDragEnd(e); });
 
-canvas.addEventListener('mouseleave', function() { hideStarFacts(); });
+// ====================== GAME MODE ======================
+
+function makeGameShip(starIndex, beta) {
+  var star = STARS[starIndex];
+  var phys = computeShipPhysics(star.dist, beta);
+  return {
+    starIndex: starIndex,
+    beta: beta,
+    phys: phys,
+    progress: 0,
+    phase: 'idle',
+    turnaroundTimer: 0,
+    earthElapsed: 0,
+    rocketElapsed: 0,
+    currentBeta: 0,
+    waitingTime: 0,
+  };
+}
+
+function generateChallenge() {
+  try { _generateChallengeInner(); }
+  catch(e) { console.error('generateChallenge failed:', e); }
+}
+
+function _generateChallengeInner() {
+  if (state.phase !== 'idle') handleReset();
+
+  var ageDiffs = [2, 3, 4, 5, 6, 8, 10];
+  var realStarCount = STARS.length - 1; // exclude custom star
+
+  for (var attempt = 0; attempt < 50; attempt++) {
+    // Pick two distinct stars
+    var idxA = Math.floor(Math.random() * realStarCount);
+    var idxB;
+    do { idxB = Math.floor(Math.random() * realStarCount); } while (idxB === idxA);
+
+    // Pick ages
+    var ageA = 15 + Math.floor(Math.random() * 21); // 15-35
+    var ageDiff = ageDiffs[Math.floor(Math.random() * ageDiffs.length)];
+    var ageB = ageA + ageDiff; // B is older
+
+    // Pick a solution speed for ship A
+    var solBetaA = 0.30 + Math.random() * 0.65; // 0.30 - 0.95
+    solBetaA = Math.round(solBetaA * 1000) / 1000;
+    var physA = computeShipPhysics(STARS[idxA].dist, solBetaA);
+    var savingsA = physA.earthTotalYears - physA.rocketTotalYears;
+
+    // Required savings for B: S_B = S_A + ageDiff
+    var requiredSavingsB = savingsA + ageDiff;
+    if (requiredSavingsB < 0.5) continue; // too small to be interesting
+
+    // Binary search for betaB that gives the required savings for star B
+    var distB = STARS[idxB].dist;
+    var lo = BETA_MIN, hi = BETA_MAX, solBetaB = -1;
+    for (var bs = 0; bs < 60; bs++) {
+      var mid = (lo + hi) / 2;
+      var physMid = computeShipPhysics(distB, mid);
+      var savMid = physMid.earthTotalYears - physMid.rocketTotalYears;
+      if (Math.abs(savMid - requiredSavingsB) < 0.01) {
+        solBetaB = mid;
+        break;
+      }
+      if (savMid < requiredSavingsB) lo = mid;
+      else hi = mid;
+    }
+    if (solBetaB < 0) solBetaB = (lo + hi) / 2;
+
+    // Validate range
+    if (solBetaB < BETA_MIN + 0.02 || solBetaB > BETA_MAX - 0.0001) continue;
+
+    // Validate both captains survive
+    var physBSol = computeShipPhysics(distB, solBetaB);
+    var maxEarthTime = Math.max(physA.earthTotalYears, physBSol.earthTotalYears);
+    var finalAgeA = ageA + physA.rocketTotalYears + Math.max(0, physBSol.earthTotalYears - physA.earthTotalYears);
+    var finalAgeB = ageB + physBSol.rocketTotalYears + Math.max(0, physA.earthTotalYears - physBSol.earthTotalYears);
+    if (finalAgeA > 99 || finalAgeB > 99) continue;
+
+    // Read names from inputs (fall back to random defaults)
+    var nameA = document.getElementById('gameNameA').value.trim();
+    var nameB = document.getElementById('gameNameB').value.trim();
+    if (!nameA || !nameB) {
+      var defA, defB;
+      if (state.lang === 'pl') {
+        var pl = pickTwoNames(DEFAULT_NAMES_PL);
+        defA = pl[0].name; defB = pl[1].name;
+      } else {
+        var en = pickTwoNames(DEFAULT_NAMES_EN);
+        defA = en[0]; defB = en[1];
+      }
+      if (!nameA) nameA = defA;
+      if (!nameB) nameB = defB;
+    }
+
+    state.challenge = {
+      starIndexA: idxA, starIndexB: idxB,
+      ageA: ageA, ageB: ageB,
+      nameA: nameA, nameB: nameB,
+    };
+
+    // Initialize ships with default mid-range speeds
+    state.shipA = makeGameShip(idxA, 0.50);
+    state.shipB = makeGameShip(idxB, 0.50);
+
+    // Set sliders to defaults
+    var defSlider = betaToSlider(0.50);
+    document.getElementById('speedSliderA').value = defSlider;
+    document.getElementById('speedSliderB').value = defSlider;
+    document.getElementById('betaInputA').value = '0.5000';
+    document.getElementById('betaInputB').value = '0.5000';
+    updateSpeedBar('speedBarA', defSlider, 0.50);
+    updateSpeedBar('speedBarB', defSlider, 0.50);
+
+    updateChallengeText();
+    updateGameReadouts();
+    updateInfo();
+    return;
+  }
+  // Fallback — use safe defaults (Proxima + Sirius, small age gap)
+  console.warn('Challenge generation exhausted attempts, retrying with safe defaults');
+  var fbNameA = document.getElementById('gameNameA').value.trim();
+  var fbNameB = document.getElementById('gameNameB').value.trim();
+  if (!fbNameA) fbNameA = state.lang === 'pl' ? pickTwoNames(DEFAULT_NAMES_PL)[0].name : pickTwoNames(DEFAULT_NAMES_EN)[0];
+  if (!fbNameB) fbNameB = state.lang === 'pl' ? pickTwoNames(DEFAULT_NAMES_PL)[1].name : pickTwoNames(DEFAULT_NAMES_EN)[1];
+  state.challenge = {
+    starIndexA: 0, starIndexB: 1,
+    ageA: 20, ageB: 25,
+    nameA: fbNameA, nameB: fbNameB,
+  };
+  state.shipA = makeGameShip(0, 0.50);
+  state.shipB = makeGameShip(1, 0.50);
+  var fbSlider = betaToSlider(0.50);
+  document.getElementById('speedSliderA').value = fbSlider;
+  document.getElementById('speedSliderB').value = fbSlider;
+  document.getElementById('betaInputA').value = '0.5000';
+  document.getElementById('betaInputB').value = '0.5000';
+  updateSpeedBar('speedBarA', fbSlider, 0.50);
+  updateSpeedBar('speedBarB', fbSlider, 0.50);
+  updateChallengeText();
+  updateGameReadouts();
+  updateInfo();
+}
+
+function updateChallengeText() {
+  var c = state.challenge;
+  if (!c) return;
+  var starA = STARS[c.starIndexA];
+  var starB = STARS[c.starIndexB];
+  var nameStarA = state.lang === 'en' ? starA.nameEn : starA.namePl;
+  var nameStarB = state.lang === 'en' ? starB.nameEn : starB.namePl;
+
+  // Goal line
+  var diff = c.ageB - c.ageA;
+  var goalText = T('gameGoal').replace('{diff}', diff);
+  document.getElementById('gameGoalText').innerHTML = goalText;
+
+  // Name panel — set placeholder (shown when empty), preserve user-typed names
+  var elA = document.getElementById('gameNameA');
+  var elB = document.getElementById('gameNameB');
+  elA.placeholder = c.nameA;
+  elB.placeholder = c.nameB;
+  if (!elA.value.trim()) elA.value = '';
+  if (!elB.value.trim()) elB.value = '';
+  document.getElementById('gameAgeA').value = c.ageA;
+  document.getElementById('gameAgeB').value = c.ageB;
+
+}
+
+function updateGameReadouts() {
+  // No separate readouts — info is in ship cards
+}
+
+function syncGameName(ship) {
+  if (!state.challenge) return;
+  var v = document.getElementById('gameName' + ship).value.trim();
+  var placeholder = document.getElementById('gameName' + ship).placeholder;
+  state.challenge['name' + ship] = v || placeholder;
+}
+
+function handleGameSpeedChange(ship) {
+  var sliderId = 'speedSlider' + ship;
+  var inputId = 'betaInput' + ship;
+  var s = parseInt(document.getElementById(sliderId).value);
+  var beta = sliderToBeta(s);
+  beta = clamp(beta, BETA_MIN, BETA_MAX);
+  document.getElementById(inputId).value = beta.toFixed(4);
+  updateSpeedBar('speedBar' + ship, s, beta);
+  if (ship === 'A') {
+    state.shipA = makeGameShip(state.challenge.starIndexA, beta);
+  } else {
+    state.shipB = makeGameShip(state.challenge.starIndexB, beta);
+  }
+  if (state.phase !== 'idle') handleReset();
+  updateGameReadouts();
+}
+
+function handleBetaInput(ship) {
+  var inputId = 'betaInput' + ship;
+  var sliderId = 'speedSlider' + ship;
+  var val = parseFloat(document.getElementById(inputId).value);
+  if (isNaN(val)) return;
+  var beta = clamp(val, BETA_MIN, BETA_MAX);
+  document.getElementById(sliderId).value = betaToSlider(beta);
+  if (ship === 'A') {
+    state.shipA = makeGameShip(state.challenge.starIndexA, beta);
+  } else {
+    state.shipB = makeGameShip(state.challenge.starIndexB, beta);
+  }
+  if (state.phase !== 'idle') handleReset();
+  updateGameReadouts();
+}
+
+function stepGameSpeed(ship, delta) {
+  var sliderId = 'speedSlider' + ship;
+  var slider = document.getElementById(sliderId);
+  var val = parseInt(slider.value) + delta;
+  val = clamp(val, 0, 1000);
+  slider.value = val;
+  handleGameSpeedChange(ship);
+}
+
+function setMode(mode) {
+  if (state.mode === mode) return;
+  if (state.phase !== 'idle') handleReset();
+  state.mode = mode;
+
+  document.getElementById('modeExploreBtn').classList.toggle('active', mode === 'explore');
+  document.getElementById('modeGameBtn').classList.toggle('active', mode === 'game');
+  document.getElementById('grpExplore').style.display = mode === 'explore' ? '' : 'none';
+  document.getElementById('grpGame').style.display = mode === 'game' ? '' : 'none';
+  document.getElementById('grpReadouts').style.display = mode === 'explore' ? '' : 'none';
+
+  // Name panels: show the appropriate one per mode
+  document.getElementById('namePanelExplore').style.display = mode === 'explore' ? '' : 'none';
+  document.getElementById('namePanelGame').style.display = mode === 'game' ? '' : 'none';
+
+  if (mode === 'game') {
+    generateChallenge();
+  } else {
+    state.challenge = null;
+    state.shipA = null;
+    state.shipB = null;
+    state.gameResult = null;
+    state.gameLaunched = false;
+    recalcPhysics();
+    updateReadouts();
+  }
+  updateInfo();
+}
+
+// Game-mode ellipse and position helpers
+function getGameEllipse(dist, yCenter) {
+  var earthX = getEarthX();
+  var star = { dist: dist };
+  var starX = getStarScreenXForDist(dist);
+  var starR = 7;
+  var pad = 20;
+  var leftEdge = earthX;
+  var rightEdge = starX + starR + pad;
+  var a = (rightEdge - leftEdge) / 2;
+  var cx = leftEdge + a;
+  var cy = yCenter;
+  var b = clamp(a * 0.18, 10, 40);
+  var clearance = EARTH_RADIUS + 2;
+  var cosVal = 1 - clearance / a;
+  var earthDelta = cosVal < -1 ? Math.PI * 0.4 : Math.acos(Math.max(-1, cosVal));
+  earthDelta = clamp(earthDelta, Math.PI / 8, Math.PI * 0.4);
+  return { cx: cx, cy: cy, a: a, b: b, earthDelta: earthDelta };
+}
+
+function getGameTurnDuration(ell) {
+  var thetaBegin = Math.PI - ell.earthDelta;
+  var legSpan = thetaBegin - TURN_DELTA;
+  return 2 * TURN_DELTA * WALL_SECONDS_BASE / legSpan;
+}
+
+function getGameRocketPos(ship, ell) {
+  var thetaBegin = Math.PI - ell.earthDelta;
+  var legSpan = thetaBegin - TURN_DELTA;
+  var turnDuration = getGameTurnDuration(ell);
+  var theta;
+
+  if (ship.phase === 'turnaround') {
+    var f = clamp(ship.turnaroundTimer / turnDuration, 0, 1);
+    theta = TURN_DELTA - 2 * TURN_DELTA * f;
+  } else {
+    var p = clamp(ship.progress, 0, 1);
+    if (ship.phase === 'outbound' || ship.phase === 'idle') {
+      var legP = p / 0.5;
+      theta = thetaBegin - legSpan * legP;
+    } else {
+      // return, waiting, landed — use return leg position
+      var legP = (p - 0.5) / 0.5;
+      theta = -TURN_DELTA - legSpan * legP;
+    }
+  }
+
+  var pt = ellipsePoint(ell, theta);
+  return { x: pt.x, y: pt.y, angle: ellipseTangentAngle(ell, theta), theta: theta };
+}
+
+function computeGameFinalAges() {
+  if (!state.challenge || !state.shipA || !state.shipB) return null;
+  var c = state.challenge;
+  var pA = state.shipA.phys;
+  var pB = state.shipB.phys;
+  var tA = pA.earthTotalYears;
+  var tB = pB.earthTotalYears;
+  var tauA = pA.rocketTotalYears;
+  var tauB = pB.rocketTotalYears;
+  var finalA = c.ageA + tauA + Math.max(0, tB - tA);
+  var finalB = c.ageB + tauB + Math.max(0, tA - tB);
+  return { finalA: finalA, finalB: finalB, diff: Math.abs(finalA - finalB) };
+}
+
+function evaluateGame() {
+  var ages = computeGameFinalAges();
+  if (!ages) return;
+  var c = state.challenge;
+
+  // Check too-old first
+  if (ages.finalA > 100) {
+    state.gameResult = 'tooOld';
+    showGameOverlay('tooOld', c.nameA, ages);
+    return;
+  }
+  if (ages.finalB > 100) {
+    state.gameResult = 'tooOld';
+    showGameOverlay('tooOld', c.nameB, ages);
+    return;
+  }
+
+  if (ages.diff < 0.5) {
+    state.gameResult = 'perfect';
+  } else if (ages.diff < 2.0) {
+    state.gameResult = 'close';
+  } else {
+    state.gameResult = 'miss';
+  }
+  showGameOverlay(state.gameResult, null, ages);
+}
+
+function showGameOverlay(result, tooOldName, ages) {
+  var existing = document.querySelector('.result-overlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.className = 'result-overlay';
+
+  var emoji, msg, bgColor;
+  if (result === 'perfect') {
+    emoji = '\uD83C\uDF89'; msg = T('gamePerfect'); bgColor = 'rgba(63,185,80,0.15)';
+  } else if (result === 'close') {
+    emoji = '\uD83D\uDC4D'; msg = T('gameClose').replace('{diff}', formatYears(ages.diff)); bgColor = 'rgba(88,166,255,0.15)';
+  } else if (result === 'miss') {
+    emoji = '\uD83D\uDC4E'; msg = T('gameMiss').replace('{diff}', formatYears(ages.diff)); bgColor = 'rgba(240,180,60,0.15)';
+  } else {
+    emoji = '\uD83D\uDC80'; msg = T('gameTooOld').replace('{name}', tooOldName); bgColor = 'rgba(249,117,131,0.15)';
+  }
+
+  var c = state.challenge;
+  var starA = STARS[c.starIndexA];
+  var starB = STARS[c.starIndexB];
+  var nameStarA = state.lang === 'en' ? starA.nameEn : starA.namePl;
+  var nameStarB = state.lang === 'en' ? starB.nameEn : starB.namePl;
+
+  overlay.innerHTML =
+    '<div class="game-overlay-result">' + emoji + '</div>' +
+    '<div class="game-overlay-msg" style="color:' + (result === 'perfect' ? '#7ce88f' : result === 'close' ? '#58a6ff' : result === 'tooOld' ? '#f97583' : '#f0b43c') + '">' + msg + '</div>' +
+    '<div class="game-overlay-detail">' +
+      '<span style="color:var(--ship-a-color)">' + c.nameA + '</span>: ' +
+      (state.lang === 'pl' ? 'wiek' : 'age') + ' ' + c.ageA + ' \u2192 ' + ages.finalA.toFixed(1) +
+      ' (' + nameStarA + ' @ ' + fmtBeta(state.shipA.beta) + ')<br>' +
+      '<span style="color:var(--ship-b-color)">' + c.nameB + '</span>: ' +
+      (state.lang === 'pl' ? 'wiek' : 'age') + ' ' + c.ageB + ' \u2192 ' + ages.finalB.toFixed(1) +
+      ' (' + nameStarB + ' @ ' + fmtBeta(state.shipB.beta) + ')' +
+    '</div>' +
+    '<div class="game-overlay-diff">' + (state.lang === 'pl' ? 'R\u00F3\u017Cnica' : 'Difference') + ': ' + formatYears(ages.diff) + '</div>' +
+    '<div class="overlay-hint">' + T('clickToDismiss') + '</div>';
+
+  overlay.addEventListener('click', function() { overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// Game mode drawing
+function drawGameScene() {
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, W, H);
+  drawStarfield();
+
+  var c = state.challenge;
+  if (!c) return;
+
+  // Divider line between the two halves
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.5);
+  ctx.lineTo(W, H * 0.5);
+  ctx.strokeStyle = 'rgba(30,42,58,0.5)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  var gameMaxT = state.gameMaxEarthTime || Math.max(state.shipA.phys.earthTotalYears, state.shipB.phys.earthTotalYears);
+
+  // Draw top half — Ship A
+  drawGameHalf(state.shipA, c.starIndexA, c.nameA, c.ageA, H * 0.36, '#ff6b8a', 'rgba(255,107,138,', gameMaxT, 'A');
+  // Draw bottom half — Ship B
+  drawGameHalf(state.shipB, c.starIndexB, c.nameB, c.ageB, H * 0.80, '#7ce88f', 'rgba(124,232,143,', gameMaxT, 'B');
+}
+
+function drawGameHalf(ship, starIndex, name, startAge, yCenter, color, rgbaBase, gameMaxT, shipId) {
+  var earthX = getEarthX();
+  var star = STARS[starIndex];
+  var starX = getStarScreenXForDist(star.dist);
+  var r = EARTH_RADIUS;
+
+  // Earth
+  ctx.beginPath();
+  ctx.arc(earthX, yCenter, r * 1.15, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(77,184,255,0.12)';
+  ctx.lineWidth = r * 0.15;
+  ctx.stroke();
+  var glow = ctx.createRadialGradient(earthX, yCenter, r * 0.3, earthX, yCenter, r * 3);
+  glow.addColorStop(0, 'rgba(77,184,255,0.18)');
+  glow.addColorStop(0.5, 'rgba(77,184,255,0.04)');
+  glow.addColorStop(1, 'rgba(77,184,255,0.0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(earthX, yCenter, r * 3, 0, Math.PI * 2);
+  ctx.fill();
+  var bodyGrad = ctx.createRadialGradient(earthX - r * 0.3, yCenter - r * 0.3, r * 0.1, earthX, yCenter, r);
+  bodyGrad.addColorStop(0, '#7ed6f7');
+  bodyGrad.addColorStop(0.7, '#3aa8d8');
+  bodyGrad.addColorStop(1, '#1a6e8e');
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.arc(earthX, yCenter, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(77,184,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Destination star — with shadows during drag
+  var isDraggingThis = drag.active && drag.ship === shipId;
+  if (isDraggingThis) {
+    drawStarShadows(yCenter, starIndex, drag.nearestSlot);
+    ctx.globalAlpha = 0.2;
+    drawGameStar(star, starX, yCenter, true);
+    ctx.globalAlpha = 1;
+  } else {
+    drawGameStar(star, starX, yCenter);
+  }
+
+  // Trajectory
+  var ell = getGameEllipse(star.dist, yCenter);
+  drawGameTrajectory(ship, ell, rgbaBase);
+
+  // Spacecraft
+  var pos = getGameRocketPos(ship, ell);
+  drawGameSpacecraft(pos.x, pos.y, pos.angle, color);
+
+  // Clock — positioned like explore mode relative to this half's Earth
+  var clockOffset = Math.min(H * 0.18, 100);
+  var clockY = yCenter - clockOffset;
+  var initPt = ellipsePoint(ell, Math.PI - ell.earthDelta);
+  var clockX = initPt.x;
+  var yr = T('yr');
+  var age = startAge + ship.rocketElapsed + ship.waitingTime;
+  drawStickFigure(clockX - 16, clockY + 8, color, false);
+  drawAnalogClock(clockX + 28, clockY, CLOCK_RADIUS,
+    ship.rocketElapsed + ship.waitingTime, color, name,
+    age.toFixed(1) + ' ' + yr, gameMaxT);
+}
+
+function drawGameStar(star, cx, cy, hideLabel) {
+  var r = star.radius;
+  var rgb = star.glowRgb;
+  var glow = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r * 4);
+  glow.addColorStop(0, 'rgba(' + rgb + ',0.4)');
+  glow.addColorStop(0.4, 'rgba(' + rgb + ',0.1)');
+  glow.addColorStop(1, 'rgba(' + rgb + ',0.0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = star.color;
+  ctx.fill();
+  if (hideLabel) return;
+  // Label
+  var name = state.lang === 'en' ? star.nameEn : star.namePl;
+  ctx.font = '15px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(255,248,225,0.7)';
+  ctx.textAlign = 'left';
+  ctx.fillText(name, cx + r + 12, cy - r - 26);
+  ctx.font = '13px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(255,248,225,0.4)';
+  ctx.fillText((star.approx ? '~' : '') + star.dist + ' ly', cx + r + 12, cy - r - 12);
+}
+
+function drawGameTrajectory(ship, ell, rgbaBase) {
+  if (ship.phase === 'idle') return;
+  // Faint full ellipse
+  ctx.beginPath();
+  ctx.ellipse(ell.cx, ell.cy, ell.a, ell.b, 0, 0, 2 * Math.PI);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = rgbaBase + '0.06)';
+  ctx.stroke();
+
+  // Bright trail
+  var thetaBegin = Math.PI - ell.earthDelta;
+  var pos = getGameRocketPos(ship, ell);
+  var TRAIL_STEPS = 80;
+  var tFrom = thetaBegin;
+  var tTo = pos.theta;
+  ctx.beginPath();
+  for (var si = 0; si <= TRAIL_STEPS; si++) {
+    var th = tFrom + (tTo - tFrom) * si / TRAIL_STEPS;
+    var pt = ellipsePoint(ell, th);
+    if (si === 0) ctx.moveTo(pt.x, pt.y);
+    else ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = rgbaBase + '0.45)';
+  ctx.stroke();
+}
+
+function drawGameSpacecraft(x, y, angle, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  var glow = ctx.createRadialGradient(0, 0, 1.5, 0, 0, 15);
+  glow.addColorStop(0, 'rgba(255,224,102,0.35)');
+  glow.addColorStop(1, 'rgba(255,224,102,0.0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(10, 0);
+  ctx.lineTo(-5, -5);
+  ctx.lineTo(-5, 5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// Game animation — each ship has independent progress, exactly like explore mode.
+// Progress only advances during outbound/return, freezes during turnaround.
+function animateGame(dt) {
+  if (state.paused || state.phase === 'idle' || state.phase === 'landed') return;
+
+  var shipA = state.shipA;
+  var shipB = state.shipB;
+
+  // Base progress rate: longest trip completes in 2*WALL_SECONDS_BASE wall seconds
+  var baseRate = state.animSpeed / (2 * WALL_SECONDS_BASE);
+
+  advanceGameShip(shipA, dt, baseRate);
+  advanceGameShip(shipB, dt, baseRate);
+
+  // Accumulate waiting time for returned ships
+  var earthRate = baseRate * state.gameMaxEarthTime; // earth-years per wall-second
+  if (shipA.phase === 'waiting') shipA.waitingTime += dt * earthRate;
+  if (shipB.phase === 'waiting') shipB.waitingTime += dt * earthRate;
+
+  // Check if both have returned
+  if (state.phase !== 'landed' &&
+      (shipA.phase === 'waiting') && (shipB.phase === 'waiting')) {
+    state.phase = 'landed';
+    // Set final waiting times from physics (exact values, not accumulated)
+    var T_A = shipA.phys.earthTotalYears;
+    var T_B = shipB.phys.earthTotalYears;
+    shipA.waitingTime = Math.max(0, T_B - T_A);
+    shipB.waitingTime = Math.max(0, T_A - T_B);
+    updateWarpButtons();
+    updateInfo();
+    setTimeout(evaluateGame, 400);
+  }
+}
+
+function advanceGameShip(ship, dt, baseRate) {
+  if (ship.phase === 'waiting') return;
+
+  var T_total = ship.phys.earthTotalYears;
+  // Ship progress rate: scales so this ship's journey fills the right proportion of wall time
+  var shipRate = baseRate * state.gameMaxEarthTime / T_total;
+
+  var ell = (ship === state.shipA) ?
+    getGameEllipse(STARS[state.challenge.starIndexA].dist, H * 0.36) :
+    getGameEllipse(STARS[state.challenge.starIndexB].dist, H * 0.80);
+  var turnDuration = getGameTurnDuration(ell);
+
+  // Turnaround: animate U-turn visually, don't advance progress
+  if (ship.phase === 'turnaround') {
+    ship.turnaroundTimer += dt * state.animSpeed;
+    if (ship.turnaroundTimer >= turnDuration) {
+      ship.phase = 'return';
+    }
+    // Progress stays frozen at 0.5
+    ship.currentBeta = 0;
+    return;
+  }
+
+  // Advance progress (outbound or return)
+  ship.progress += dt * shipRate;
+  ship.progress = clamp(ship.progress, 0, 1);
+
+  // Outbound → turnaround at midpoint
+  if (ship.phase === 'outbound' && ship.progress >= 0.5) {
+    ship.progress = 0.5;
+    ship.phase = 'turnaround';
+    ship.turnaroundTimer = 0;
+    ship.currentBeta = 0;
+    var result = computeElapsedForProgress(0.5, ship.phys);
+    ship.earthElapsed = result.earthElapsed;
+    ship.rocketElapsed = result.rocketElapsed;
+    return;
+  }
+
+  // Return complete
+  if (ship.progress >= 1.0) {
+    ship.progress = 1.0;
+    ship.phase = 'waiting';
+    ship.waitingTime = 0;
+    var result = computeElapsedForProgress(1, ship.phys);
+    ship.earthElapsed = result.earthElapsed;
+    ship.rocketElapsed = result.rocketElapsed;
+    ship.currentBeta = 0;
+    return;
+  }
+
+  // Normal flight — update elapsed times
+  var result = computeElapsedForProgress(ship.progress, ship.phys);
+  ship.earthElapsed = result.earthElapsed;
+  ship.rocketElapsed = result.rocketElapsed;
+  ship.currentBeta = result.currentBeta;
+}
 
 // ====================== INIT ======================
 
@@ -1801,6 +2928,13 @@ document.getElementById('earthTwinName').placeholder = getDefaultName(0);
 document.getElementById('rocketTwinName').placeholder = getDefaultName(1);
 document.getElementById('earthTwinAge').value = state.defaultAge;
 document.getElementById('rocketTwinAge').value = state.defaultAge;
+
+// Initialize speed bar widgets
+var speedBars = document.querySelectorAll('.speed-bar');
+for (var sb = 0; sb < speedBars.length; sb++) { initSpeedBar(speedBars[sb]); }
+updateSpeedBar('speedBar', 376, sliderToBeta(376));
+updateSpeedBar('speedBarA', 376, sliderToBeta(376));
+updateSpeedBar('speedBarB', 376, sliderToBeta(376));
 
 resize();
 initBgStars(NUM_BG_STARS);

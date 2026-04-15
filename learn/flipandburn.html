@@ -88,7 +88,7 @@
     padding: 10px 4px; border-radius: 6px;
     border: 1.5px solid var(--panel-border);
     background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    font-family: 'Share Tech Mono', monospace; font-size: 14px;
     cursor: pointer; transition: all 0.2s; text-align: center;
     flex: 1;
   }
@@ -205,11 +205,6 @@
     pointer-events: none;
   }
 
-  /* Play/Pause icon toggle */
-  #playBtn { display: flex; align-items: center; justify-content: center; }
-  #playBtn .pause-icon { display: none; }
-  #playBtn.playing .play-icon { display: none; }
-  #playBtn.playing .pause-icon { display: block; }
 
   .info-text {
     font-size: 12px; color: var(--text-dim); line-height: 1.6;
@@ -409,6 +404,7 @@
         <button class="type-btn active" id="warpNormalBtn" onclick="setWarp('normal')">&#x25b6;</button>
         <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">&#x25b6;&#x25b6;</button>
         <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">&#x25b6;&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="resetBtn" onclick="resetMission()">&#x25a0;</button>
       </div>
     </div>
 
@@ -423,16 +419,6 @@
           <div class="burn-target" id="burnTarget"></div>
           <div class="burn-fill" id="burnFill"></div>
         </div>
-      </div>
-    </div>
-
-    <div class="ctrl-group">
-      <div class="type-toggle">
-        <button class="type-btn" id="playBtn" onclick="togglePlay()" title="Play">
-          <svg class="play-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>
-          <svg class="pause-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
-        </button>
-        <button class="type-btn" id="resetBtn" onclick="resetMission()">Reset</button>
       </div>
     </div>
 
@@ -555,7 +541,7 @@ var I18N = {
     dv2: 'Arrival \u0394v',
     phase: 'Phase angle',
     status: 'Status',
-    play: 'Play', pause: 'Pause', reset: 'Reset',
+    reset: '\u25a0',
     mercury: 'Mercury', venus: 'Venus', earth: 'Earth', mars: 'Mars',
     jupiter: 'Jupiter', saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune',
     waiting: 'Waiting for window',
@@ -592,7 +578,7 @@ var I18N = {
     clickDismiss: 'Click to try again',
     info: 'This is a simplified 2D teaching model. Planets follow approximate eccentric Keplerian orbits. The spacecraft follows a straight-line constant-acceleration "flip and burn" profile between departure and predicted intercept positions.<br><br>An <b>Epstein drive flip-and-burn</b> accelerates halfway, rotates 180\u00b0, then decelerates the rest of the way. Hold ENGINE to choose your acceleration. Higher acceleration means a faster transfer but more g-force on the crew. Too high and they don\u2019t survive.',
     years: 'yr', days: 'd', hours: 'h',
-    promptStart: 'Press \u25b6 Play to begin'
+    promptStart: 'Press \u25b6 to begin'
   },
   pl: {
     title: 'Flip and Burn',
@@ -604,19 +590,19 @@ var I18N = {
     timeWarp: 'Przyspieszenie',
     warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
     engine: 'SILNIK',
-    burn: 'Burn',
+    burn: 'Ci\u0105g',
     mission: 'Misja',
     braking: 'Hamowanie',
     dv1: '\u0394v startowe',
     dv2: '\u0394v hamuj\u0105ce',
     phase: 'K\u0105t fazowy',
     status: 'Status',
-    play: 'Odtw\u00f3rz', pause: 'Pauza', reset: 'Reset',
+    reset: '\u25a0',
     mercury: 'Merkury', venus: 'Wenus', earth: 'Ziemia', mars: 'Mars',
     jupiter: 'Jowisz', saturn: 'Saturn', uranus: 'Uran', neptune: 'Neptun',
     waiting: 'Czekanie na okno',
     goodWindow: 'Okno otwarte \u2014 odpal!',
-    burning: 'Spalanie...',
+    burning: 'Ci\u0105g...',
     flipping: 'Flip...',
     brakingStatus: 'Hamowanie',
     coastingStatus: 'Dryf',
@@ -638,7 +624,7 @@ var I18N = {
     resultInjured: 'Za\u0142oga ranna!',
     resultSlow: '\u015alimacze tempo!',
     resultMiss: 'Nietrafiony',
-    resultFatal: 'Za\u0142oga stracona',
+    resultFatal: 'Za\u0142oga nie prze\u017cy\u0142a',
     hintEarlyLaunch: 'Start za wcze\u015bnie \u2014 poczekaj na ustawienie planet.',
     hintLateLaunch: 'Start za p\u00f3\u017ano \u2014 okno min\u0119\u0142o.',
     hintHighG: 'Przyspieszenie za wysokie \u2014 za\u0142oga nie prze\u017cy\u0142a przeci\u0105\u017ce\u0144.',
@@ -1845,11 +1831,6 @@ function updateReadouts() {
   document.getElementById('statusVal').textContent = statusText;
 }
 
-function updatePlayBtn() {
-  var btn = document.getElementById('playBtn');
-  btn.classList.toggle('playing', state.playing);
-  btn.title = state.playing ? T('pause') : T('play');
-}
 
 function accelColor(a_g) {
   // Smooth gradient: green (0g) → yellow (5g) → orange (10g) → red (20g)
@@ -1935,12 +1916,19 @@ function updateAccelDisplay() {
 
 function updateWarpBtns() {
   var locked = state.warpLocked;
-  document.getElementById('warpNormalBtn').classList.toggle('active', !locked && state.warpLevel === 'normal');
-  document.getElementById('warpFastBtn').classList.toggle('active', !locked && state.warpLevel === 'fast');
-  document.getElementById('warpFastestBtn').classList.toggle('active', !locked && state.warpLevel === 'fastest');
-  document.getElementById('warpNormalBtn').disabled = locked;
-  document.getElementById('warpFastBtn').disabled = locked;
-  document.getElementById('warpFastestBtn').disabled = locked;
+  var playing = state.playing;
+  var nBtn = document.getElementById('warpNormalBtn');
+  var fBtn = document.getElementById('warpFastBtn');
+  var ffBtn = document.getElementById('warpFastestBtn');
+  nBtn.classList.toggle('active', playing && !locked && state.warpLevel === 'normal');
+  fBtn.classList.toggle('active', playing && !locked && state.warpLevel === 'fast');
+  ffBtn.classList.toggle('active', playing && !locked && state.warpLevel === 'fastest');
+  nBtn.textContent = (playing && state.warpLevel === 'normal') ? '\u25ae\u25ae' : T('warpNormal');
+  fBtn.textContent = (playing && state.warpLevel === 'fast') ? '\u25ae\u25ae' : T('warpFast');
+  ffBtn.textContent = (playing && state.warpLevel === 'fastest') ? '\u25ae\u25ae' : T('warpFastest');
+  nBtn.disabled = locked;
+  fBtn.disabled = locked;
+  ffBtn.disabled = locked;
 }
 
 /* ══════════════════════════════════════════════ */
@@ -2014,17 +2002,17 @@ function setDifficulty(d) {
 
 function setWarp(level) {
   if (state.warpLocked) return;
-  state.warpLevel = level;
-  state.timeWarp = state.warpLevels[level] || state.warpLevels.normal;
-  updateWarpBtns();
-}
-
-function togglePlay() {
-  state.playing = !state.playing;
-  if (state.playing && !state.missionStarted) {
-    state.missionStarted = true;
+  if (state.playing && state.warpLevel === level) {
+    state.playing = false;
+  } else {
+    state.warpLevel = level;
+    state.timeWarp = state.warpLevels[level] || state.warpLevels.normal;
+    if (!state.playing) {
+      state.playing = true;
+      if (!state.missionStarted) state.missionStarted = true;
+    }
   }
-  updatePlayBtn();
+  updateWarpBtns();
   updateAccelDisplay();
 }
 
@@ -2070,7 +2058,6 @@ function resetMission() {
   updateEngineBtn();
   updateBurnMeter();
   updateWarpBtns();
-  updatePlayBtn();
   updateReadouts();
   updateAccelDisplay();
 
@@ -2189,9 +2176,10 @@ function animate(timestamp) {
           break;
         }
 
-        // Advance simulation time — always animate over ~8 real seconds
-        var TRANSIT_ANIM_SEC = 8;
-        var cruiseWarp = state.tActual / (TRANSIT_ANIM_SEC * SIM_RATE);
+        // Animate transit: 10s at 0.3g (snail), 4s at 20g (deadly)
+        var accelG = state.accelFinal / G_TO_AUYR2;
+        var transitSec = 10 - 6 * (accelG - METER_MIN_G) / (METER_MAX_G - METER_MIN_G);
+        var cruiseWarp = state.tActual / (transitSec * SIM_RATE);
         dtSim = dtReal * cruiseWarp * SIM_RATE;
         state.tauSim += dtSim;
         state.simTime += dtSim;
@@ -2329,7 +2317,6 @@ function init() {
   recalcMission();
   applyTranslations();
   setDifficulty('easy');
-  updatePlayBtn();
   updateWarpBtns();
   updateEngineBtn();
   updatePrompt();

@@ -88,7 +88,7 @@
     padding: 10px 4px; border-radius: 6px;
     border: 1.5px solid var(--panel-border);
     background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    font-family: 'Share Tech Mono', monospace; font-size: 14px;
     cursor: pointer; transition: all 0.2s; text-align: center;
     flex: 1;
   }
@@ -204,11 +204,6 @@
     pointer-events: none;
   }
 
-  /* Play/Pause icon toggle */
-  #playBtn { display: flex; align-items: center; justify-content: center; }
-  #playBtn .pause-icon { display: none; }
-  #playBtn.playing .play-icon { display: none; }
-  #playBtn.playing .pause-icon { display: block; }
 
   .info-text {
     font-size: 12px; color: var(--text-dim); line-height: 1.6;
@@ -385,9 +380,10 @@
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
       <div class="type-toggle">
-        <button class="type-btn active" id="warpNormalBtn" onclick="setWarp('normal')">▶</button>
-        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">▶▶</button>
-        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">▶▶▶</button>
+        <button class="type-btn active" id="warpNormalBtn" onclick="setWarp('normal')">&#x25b6;</button>
+        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">&#x25b6;&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="resetBtn" onclick="resetMission()">&#x25a0;</button>
       </div>
     </div>
 
@@ -402,16 +398,6 @@
           <div class="burn-target" id="burnTarget"></div>
           <div class="burn-fill" id="burnFill"></div>
         </div>
-      </div>
-    </div>
-
-    <div class="ctrl-group">
-      <div class="type-toggle">
-        <button class="type-btn" id="playBtn" onclick="togglePlay()" title="Play">
-          <svg class="play-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>
-          <svg class="pause-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
-        </button>
-        <button class="type-btn" id="resetBtn" onclick="resetMission()">Reset</button>
       </div>
     </div>
 
@@ -530,7 +516,7 @@ var I18N = {
     dv2: 'Arrival \u0394v',
     phase: 'Phase angle',
     status: 'Status',
-    play: 'Play', pause: 'Pause', reset: 'Reset',
+    reset: '\u25a0',
     mercury: 'Mercury', venus: 'Venus', earth: 'Earth', mars: 'Mars',
     jupiter: 'Jupiter', saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune',
     waiting: 'Waiting for window',
@@ -568,7 +554,7 @@ var I18N = {
     clickDismiss: 'Click to try again',
     info: 'This is a simplified 2D teaching model. Planets follow approximate eccentric Keplerian orbits, but the reference \u0394v and phase values use circular-orbit Hohmann formulas based on semi-major axes. The parking-orbit inset is symbolic.<br><br>A <b>Hohmann transfer</b> is the minimum-\u0394v two-impulse manoeuvre between two coplanar circular orbits around the same body. The first burn enters the transfer ellipse; the second matches the spacecraft\u2019s velocity to the destination orbit (heliocentric circularization). Wait for the right alignment, then hold ENGINE twice.',
     years: 'yr', days: 'd', hours: 'h',
-    promptStart: 'Press \u25b6 Play to begin'
+    promptStart: 'Press \u25b6 to begin'
   },
   pl: {
     title: 'Transfer Hohmanna',
@@ -588,7 +574,7 @@ var I18N = {
     dv2: '\u0394v hamuj\u0105ce',
     phase: 'K\u0105t fazowy',
     status: 'Status',
-    play: 'Odtw\u00f3rz', pause: 'Pauza', reset: 'Reset',
+    reset: '\u25a0',
     mercury: 'Merkury', venus: 'Wenus', earth: 'Ziemia', mars: 'Mars',
     jupiter: 'Jowisz', saturn: 'Saturn', uranus: 'Uran', neptune: 'Neptun',
     waiting: 'Czekanie na okno',
@@ -2019,12 +2005,6 @@ function updateReadouts() {
   document.getElementById('statusVal').textContent = statusText;
 }
 
-function updatePlayBtn() {
-  var btn = document.getElementById('playBtn');
-  btn.classList.toggle('playing', state.playing);
-  btn.title = state.playing ? T('pause') : T('play');
-}
-
 function updateMETClock() {
   var el = document.getElementById('metClock');
   el.textContent = state.missionStarted ? formatMET(state.simTime) : 'T+ 0' + T('days') + ' 00' + T('hours');
@@ -2033,12 +2013,19 @@ function updateMETClock() {
 
 function updateWarpBtns() {
   var locked = state.warpLocked;
-  document.getElementById('warpNormalBtn').classList.toggle('active', !locked && state.warpLevel === 'normal');
-  document.getElementById('warpFastBtn').classList.toggle('active', !locked && state.warpLevel === 'fast');
-  document.getElementById('warpFastestBtn').classList.toggle('active', !locked && state.warpLevel === 'fastest');
-  document.getElementById('warpNormalBtn').disabled = locked;
-  document.getElementById('warpFastBtn').disabled = locked;
-  document.getElementById('warpFastestBtn').disabled = locked;
+  var playing = state.playing;
+  var nBtn = document.getElementById('warpNormalBtn');
+  var fBtn = document.getElementById('warpFastBtn');
+  var ffBtn = document.getElementById('warpFastestBtn');
+  nBtn.classList.toggle('active', playing && !locked && state.warpLevel === 'normal');
+  fBtn.classList.toggle('active', playing && !locked && state.warpLevel === 'fast');
+  ffBtn.classList.toggle('active', playing && !locked && state.warpLevel === 'fastest');
+  nBtn.textContent = (playing && state.warpLevel === 'normal') ? '\u25ae\u25ae' : T('warpNormal');
+  fBtn.textContent = (playing && state.warpLevel === 'fast') ? '\u25ae\u25ae' : T('warpFast');
+  ffBtn.textContent = (playing && state.warpLevel === 'fastest') ? '\u25ae\u25ae' : T('warpFastest');
+  nBtn.disabled = locked;
+  fBtn.disabled = locked;
+  ffBtn.disabled = locked;
 }
 
 /* ══════════════════════════════════════════════ */
@@ -2108,18 +2095,17 @@ function setDifficulty(d) {
 
 function setWarp(level) {
   if (state.warpLocked) return;
-  state.warpLevel = level;
-  state.timeWarp = state.warpLevels[level] || 1;
-  updateWarpBtns();
-}
-
-
-function togglePlay() {
-  state.playing = !state.playing;
-  if (state.playing && !state.missionStarted) {
-    state.missionStarted = true;
+  if (state.playing && state.warpLevel === level) {
+    state.playing = false;
+  } else {
+    state.warpLevel = level;
+    state.timeWarp = state.warpLevels[level] || 1;
+    if (!state.playing) {
+      state.playing = true;
+      if (!state.missionStarted) state.missionStarted = true;
+    }
   }
-  updatePlayBtn();
+  updateWarpBtns();
   updateMETClock();
 }
 
@@ -2161,7 +2147,6 @@ function resetMission() {
   updateBurnLabel();
   updateBurnMeter();
   updateWarpBtns();
-  updatePlayBtn();
   updateReadouts();
   updateMETClock();
 
@@ -2441,7 +2426,6 @@ function init() {
   recalcMission();
   applyTranslations();
   setDifficulty('easy');
-  updatePlayBtn();
   updateWarpBtns();
   updateEngineBtn();
   updateBurnLabel();
