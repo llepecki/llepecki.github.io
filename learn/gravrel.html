@@ -75,9 +75,9 @@
 
   .controls {
     width: 320px; flex-shrink: 0;
-    padding: 18px;
+    padding: 20px;
     border-left: 1px solid var(--panel-border);
-    display: flex; flex-direction: column; gap: 14px;
+    display: flex; flex-direction: column; gap: 18px;
     overflow-y: auto;
   }
 
@@ -103,7 +103,7 @@
   }
   .slider-val {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; min-width: 56px; text-align: right; color: var(--text);
+    font-size: 12px; min-width: 56px; text-align: right; color: var(--text);
   }
 
   .step-btn {
@@ -116,13 +116,52 @@
   .step-btn:hover { border-color: var(--accent); color: var(--accent); }
   .step-btn:active { background: var(--accent); color: var(--bg); }
 
+  /* ---- Speed Bar Widget ---- */
+  .speed-bar {
+    display: flex; align-items: stretch; height: 37px;
+    border-radius: 6px; border: 1.5px solid var(--panel-border);
+    overflow: hidden; background: var(--panel);
+    user-select: none; -webkit-user-select: none; touch-action: none;
+  }
+  .speed-bar-btn {
+    width: 34px; flex-shrink: 0; border: none;
+    background: var(--panel); color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace; font-size: 18px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s; touch-action: manipulation;
+  }
+  .speed-bar-btn:hover { background: rgba(88,166,255,0.12); color: var(--accent); }
+  .speed-bar-btn:active { background: var(--accent); color: var(--bg); }
+  .speed-bar-minus { border-right: 1px solid var(--panel-border); }
+  .speed-bar-plus  { border-left: 1px solid var(--panel-border); }
+  .speed-bar-track {
+    flex: 1; position: relative; cursor: pointer; overflow: hidden; min-width: 0;
+  }
+  .speed-bar-fill {
+    position: absolute; top: 0; left: 0; bottom: 0; width: 0%;
+    transition: width 0.05s ease-out; background: var(--accent); pointer-events: none;
+  }
+  .speed-bar-val {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Share Tech Mono', monospace; font-size: 14px;
+    color: #fff;
+    pointer-events: none; letter-spacing: 0.5px; z-index: 1;
+  }
+  .speed-bar.disabled { opacity: 0.4; pointer-events: none; }
+  @keyframes speedGlow {
+    0%, 100% { box-shadow: inset 0 0 8px rgba(255,23,68,0.3); }
+    50%      { box-shadow: inset 0 0 16px rgba(255,23,68,0.6); }
+  }
+  .speed-bar-track.extreme .speed-bar-fill { animation: speedGlow 1.2s ease-in-out infinite; }
+
   .type-toggle { display: flex; gap: 6px; }
   .type-btn {
-    flex: 1; padding: 7px 0; border-radius: 6px;
+    flex: 1; padding: 10px 4px; border-radius: 6px;
     border: 1.5px solid var(--panel-border);
     background: var(--panel); color: var(--text-dim);
-    cursor: pointer; font-family: 'Outfit', sans-serif;
-    font-size: 13px; font-weight: 600; transition: all 0.15s; text-align: center;
+    cursor: pointer; font-family: 'Share Tech Mono', monospace;
+    font-size: 14px; transition: all 0.15s; text-align: center;
   }
   .type-btn:hover { border-color: var(--accent); color: var(--accent); }
   .type-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,0.08); }
@@ -130,17 +169,18 @@
   .type-btn.full-width { width: 100%; flex: none; }
 
   .star-select {
-    width: 100%; padding: 7px 10px; border-radius: 6px;
+    width: 100%; padding: 8px 10px; border-radius: 6px;
     border: 1.5px solid var(--panel-border);
     background: var(--panel); color: var(--text);
-    font-family: 'Outfit', sans-serif; font-size: 13px; outline: none; cursor: pointer;
+    font-family: 'Share Tech Mono', monospace; font-size: 12px; outline: none; cursor: pointer;
   }
+  .star-select option { background: var(--panel); color: var(--text); }
   .star-select:focus { border-color: var(--accent); }
   .star-select:disabled { opacity: 0.5; }
 
   .readout-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
   .readout-label { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); }
-  .readout-val { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text); }
+  .readout-val { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text); }
 
   .ship-header { display: flex; align-items: center; gap: 6px; }
   .ship-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -205,7 +245,7 @@
     .controls {
       width: 100%; border-left: none;
       border-top: 1px solid var(--panel-border);
-      padding: 14px 16px; max-height: none;
+      padding: 14px 16px; gap: 14px; max-height: none;
     }
   }
 </style>
@@ -245,11 +285,14 @@
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblSpeed">Cruise Speed</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('speedSlider',-0.01)">&minus;</button>
-        <input type="range" id="speedSlider" min="0.10" max="0.99" value="0.50" step="0.01" oninput="handleSpeedChange()">
-        <button class="step-btn" onclick="stepSlider('speedSlider',0.01)">+</button>
-        <span class="slider-val" id="speedVal">0.50c</span>
+      <div class="speed-bar" id="speedBar">
+        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
+        <div class="speed-bar-track">
+          <div class="speed-bar-fill" id="speedFill"></div>
+          <span class="speed-bar-val" id="speedVal">0.50c</span>
+        </div>
+        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
+        <input type="hidden" id="speedSlider" value="334">
       </div>
     </div>
 
@@ -293,26 +336,19 @@
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblRoutes">Routes</span>
       <div class="type-toggle">
-        <button class="type-btn" id="btnStraightenA" onclick="straightenRoute('A')">Straighten A</button>
-        <button class="type-btn" id="btnStraightenB" onclick="straightenRoute('B')">Straighten B</button>
+        <button class="type-btn" id="btnStraightenA" onclick="straightenRoute('A')">&#x2501; A</button>
+        <button class="type-btn" id="btnStraightenB" onclick="straightenRoute('B')">&#x2501; B</button>
       </div>
-      <button class="type-btn full-width" id="btnClearPoints" onclick="clearAllPoints()">Clear Points</button>
+      <button class="type-btn full-width" id="btnClearPoints" onclick="clearAllPoints()">&#x2715;</button>
     </div>
 
     <div class="ctrl-group">
+      <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
       <div class="type-toggle">
-        <button class="type-btn" id="launchBtn" onclick="handlePlayPause()">Launch</button>
-        <button class="type-btn" id="resetBtn" onclick="handleReset()" disabled>Reset</button>
-      </div>
-    </div>
-
-    <div class="ctrl-group">
-      <span class="ctrl-label" id="lblAnimSpeed">Playback Speed</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('animSpeedSlider',-0.5)">&minus;</button>
-        <input type="range" id="animSpeedSlider" min="0.5" max="5" value="1" step="0.5" oninput="handleAnimSpeedChange()">
-        <button class="step-btn" onclick="stepSlider('animSpeedSlider',0.5)">+</button>
-        <span class="slider-val" id="animSpeedVal">1.0×</span>
+        <button class="type-btn" id="warpNormalBtn" onclick="setWarp('normal')">&#x25b6;</button>
+        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">&#x25b6;&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="resetBtn" onclick="handleReset()">&#x25a0;</button>
       </div>
     </div>
 
@@ -394,6 +430,7 @@ var STAR_X_FRAC  = 0.90;
 var NUM_BG_STARS = 200;
 var SAMPLES_PER_SEG = 50;
 var WALL_SECONDS = 8.0;
+var WARP_LEVELS = { normal: 1, fast: 2, fastest: 4 };
 var HYSTERESIS_ENTER = 1.0;
 var HYSTERESIS_EXIT  = 1.08;
 
@@ -425,8 +462,9 @@ var I18N = {
     lblRoutes: 'Routes',
     btnStraightenA: 'Straighten A', btnStraightenB: 'Straighten B',
     btnClearPoints: 'Clear Points',
-    btnLaunch: 'Launch', btnPause: 'Pause', btnResume: 'Resume', btnReset: 'Reset',
-    lblAnimSpeed: 'Playback Speed',
+    btnReset: 'Reset',
+    lblTimeWarp: 'Time Warp',
+    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
     lblMissionData: 'Mission Data',
     lblDistance: 'Distance', lblCruiseSpeed: 'Speed', lblLorentz: 'Lorentz \u03B3', lblBhCountRead: 'Black holes',
     lblShipA: 'Ship A', lblShipB: 'Ship B',
@@ -461,8 +499,9 @@ var I18N = {
     lblRoutes: 'Trasy',
     btnStraightenA: 'Wyprostuj A', btnStraightenB: 'Wyprostuj B',
     btnClearPoints: 'Wyczy\u015B\u0107 punkty',
-    btnLaunch: 'Start', btnPause: 'Pauza', btnResume: 'Wzn\u00F3w', btnReset: 'Resetuj',
-    lblAnimSpeed: 'Pr\u0119dko\u015B\u0107 odtwarzania',
+    btnReset: 'Resetuj',
+    lblTimeWarp: 'Przyspieszenie',
+    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
     lblMissionData: 'Dane misji',
     lblDistance: 'Odleg\u0142o\u015B\u0107', lblCruiseSpeed: 'Pr\u0119dko\u015B\u0107', lblLorentz: 'Lorentz \u03B3', lblBhCountRead: 'Czarne dziury',
     lblShipA: 'Statek A', lblShipB: 'Statek B',
@@ -497,7 +536,7 @@ var state = {
   starIndex: 0,
   beta: 0.50,
   bhCount: 2,
-  animSpeed: 1.0,
+  warpLevel: 'normal',
   blackHoles: [
     { x: 0, y: 0, massExp: 6, Rh: 0, Rsafe: 0, Rinf: 0 },
     { x: 0, y: 0, massExp: 6, Rh: 0, Rsafe: 0, Rinf: 0 },
@@ -768,6 +807,146 @@ function minDistSegToPoint(ax, ay, bx, by, px, py) {
 function computeGamma(beta) {
   var b = clamp(beta, BETA_MIN, BETA_MAX);
   return 1 / Math.sqrt(Math.max(EPS_BETA, 1 - b * b));
+}
+
+// ====================== SPEED BAR ======================
+
+// Non-linear slider: 0-1000 → beta 0.10-0.99
+// Linear 0.10-0.90 for slider 0-667, exponential 0.90-0.99 for 667-1000
+function sliderToBeta(s) {
+  s = clamp(s, 0, 1000);
+  if (s <= 667) return BETA_MIN + (0.90 - BETA_MIN) * (s / 667);
+  var t = (s - 667) / 333;
+  return 1 - 0.10 * Math.exp(-t * Math.log(10));
+}
+function betaToSlider(beta) {
+  beta = clamp(beta, BETA_MIN, BETA_MAX);
+  if (beta <= 0.90) return Math.round((beta - BETA_MIN) / (0.90 - BETA_MIN) * 667);
+  var t = -Math.log((1 - beta) / 0.10) / Math.log(10);
+  return Math.round(667 + t * 333);
+}
+
+var SPEED_COLOR_STOPS = [
+  [0.10, 200, 100, 50],  // cyan
+  [0.70,  34, 100, 50],  // amber
+  [0.99, 349, 100, 55]   // danger red
+];
+
+function speedBarColor(beta) {
+  var stops = SPEED_COLOR_STOPS;
+  if (beta <= stops[0][0]) return 'hsl(' + stops[0][1] + ',' + stops[0][2] + '%,' + stops[0][3] + '%)';
+  if (beta >= stops[stops.length - 1][0]) return 'hsl(' + stops[stops.length - 1][1] + ',' + stops[stops.length - 1][2] + '%,' + stops[stops.length - 1][3] + '%)';
+  for (var i = 0; i < stops.length - 1; i++) {
+    if (beta >= stops[i][0] && beta <= stops[i + 1][0]) {
+      var t = (beta - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      var h0 = stops[i][1], h1 = stops[i + 1][1];
+      var dh = h1 - h0;
+      if (dh > 180) dh -= 360;
+      if (dh < -180) dh += 360;
+      var h = ((h0 + dh * t) % 360 + 360) % 360;
+      var s = stops[i][2] + (stops[i + 1][2] - stops[i][2]) * t;
+      var l = stops[i][3] + (stops[i + 1][3] - stops[i][3]) * t;
+      return 'hsl(' + Math.round(h) + ',' + Math.round(s) + '%,' + Math.round(l) + '%)';
+    }
+  }
+  return 'hsl(212,100%,67%)';
+}
+
+function speedBarLightness(beta) {
+  var stops = SPEED_COLOR_STOPS;
+  if (beta <= stops[0][0]) return stops[0][3];
+  if (beta >= stops[stops.length - 1][0]) return stops[stops.length - 1][3];
+  for (var i = 0; i < stops.length - 1; i++) {
+    if (beta >= stops[i][0] && beta <= stops[i + 1][0]) {
+      var t = (beta - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      return stops[i][3] + (stops[i + 1][3] - stops[i][3]) * t;
+    }
+  }
+  return 50;
+}
+
+function updateSpeedBar(barId, sliderValue, beta) {
+  var bar = document.getElementById(barId);
+  if (!bar) return;
+  var fill = bar.querySelector('.speed-bar-fill');
+  var valEl = bar.querySelector('.speed-bar-val');
+  var track = bar.querySelector('.speed-bar-track');
+  var pct = (sliderValue / 1000) * 100;
+  fill.style.width = pct + '%';
+  fill.style.backgroundColor = speedBarColor(beta);
+  var fillL = speedBarLightness(beta);
+  valEl.style.color = fillL > 60 ? '#1a1a2e' : '#fff';
+  valEl.style.textShadow = fillL > 60
+    ? '0 1px 3px rgba(255,255,255,0.3)'
+    : '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.4)';
+  valEl.textContent = beta.toFixed(2) + 'c';
+  if (beta >= 0.95) { track.classList.add('extreme'); }
+  else { track.classList.remove('extreme'); }
+}
+
+function initSpeedBar(barEl) {
+  var track = barEl.querySelector('.speed-bar-track');
+  var minusBtn = barEl.querySelector('.speed-bar-minus');
+  var plusBtn = barEl.querySelector('.speed-bar-plus');
+  var dragging = false;
+
+  function getSliderFromX(clientX) {
+    var rect = track.getBoundingClientRect();
+    var pct = (clientX - rect.left) / rect.width;
+    return Math.round(clamp(pct, 0, 1) * 1000);
+  }
+
+  function applyValue(sliderVal) {
+    sliderVal = clamp(sliderVal, 0, 1000);
+    document.getElementById('speedSlider').value = sliderVal;
+    handleSpeedChange();
+  }
+
+  function onPointerDown(e) {
+    if (barEl.classList.contains('disabled')) return;
+    e.preventDefault();
+    dragging = true;
+    var t = e.touches ? e.touches[0] : e;
+    applyValue(getSliderFromX(t.clientX));
+  }
+  function onPointerMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    var t = e.touches ? e.touches[0] : e;
+    applyValue(getSliderFromX(t.clientX));
+  }
+  function onPointerEnd() { dragging = false; }
+
+  track.addEventListener('mousedown', onPointerDown);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('mouseup', onPointerEnd);
+  track.addEventListener('touchstart', onPointerDown, { passive: false });
+  document.addEventListener('touchmove', function(e) { if (dragging) onPointerMove(e); }, { passive: false });
+  document.addEventListener('touchend', onPointerEnd);
+
+  var STEP_SIZE = 5;
+  var holdTimer = null, holdInterval = null;
+  function startHold(delta) {
+    if (barEl.classList.contains('disabled')) return;
+    applyValue(parseInt(document.getElementById('speedSlider').value) + delta * STEP_SIZE);
+    holdTimer = setTimeout(function() {
+      holdInterval = setInterval(function() {
+        applyValue(parseInt(document.getElementById('speedSlider').value) + delta * STEP_SIZE);
+      }, 30);
+    }, 300);
+  }
+  function stopHold() { clearTimeout(holdTimer); clearInterval(holdInterval); }
+
+  minusBtn.addEventListener('mousedown', function() { startHold(-1); });
+  minusBtn.addEventListener('mouseup', stopHold);
+  minusBtn.addEventListener('mouseleave', stopHold);
+  plusBtn.addEventListener('mousedown', function() { startHold(1); });
+  plusBtn.addEventListener('mouseup', stopHold);
+  plusBtn.addEventListener('mouseleave', stopHold);
+  minusBtn.addEventListener('touchstart', function(e) { e.preventDefault(); startHold(-1); }, { passive: false });
+  minusBtn.addEventListener('touchend', function(e) { e.preventDefault(); stopHold(); });
+  plusBtn.addEventListener('touchstart', function(e) { e.preventDefault(); startHold(1); }, { passive: false });
+  plusBtn.addEventListener('touchend', function(e) { e.preventDefault(); stopHold(); });
 }
 
 function computeEffectiveGravity(px, py) {
@@ -1450,8 +1629,9 @@ function handleStarChange() {
 }
 
 function handleSpeedChange() {
-  state.beta = parseFloat(document.getElementById('speedSlider').value);
-  document.getElementById('speedVal').textContent = state.beta.toFixed(2) + 'c';
+  var s = parseInt(document.getElementById('speedSlider').value);
+  state.beta = sliderToBeta(s);
+  updateSpeedBar('speedBar', s, state.beta);
   if (state.routeA) computeRoutePhysics(state.routeA);
   if (state.routeB) computeRoutePhysics(state.routeB);
   updateReadouts();
@@ -1480,9 +1660,46 @@ function handleBhMassChange(bhIndex) {
   updateReadouts();
 }
 
-function handleAnimSpeedChange() {
-  state.animSpeed = parseFloat(document.getElementById('animSpeedSlider').value);
-  document.getElementById('animSpeedVal').textContent = state.animSpeed.toFixed(1) + '\u00D7';
+function setWarp(level) {
+  if (state.phase === 'complete') return;
+  if (state.phase === 'idle') {
+    if (!state.routeA || !state.routeB) return;
+    if (!state.routeA.valid || !state.routeB.valid) return;
+    state.warpLevel = level;
+    state.phase = 'flying';
+    state.missionTime = 0;
+    state.shipA = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
+    state.shipB = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
+    var maxRef = Math.max(state.routeA.refTime, state.routeB.refTime);
+    timeScale = maxRef > 0 ? maxRef / WALL_SECONDS : 1;
+    lastTime = 0;
+  } else if (state.phase === 'flying') {
+    if (state.warpLevel === level) {
+      state.phase = 'paused';
+    } else {
+      state.warpLevel = level;
+    }
+  } else if (state.phase === 'paused') {
+    state.warpLevel = level;
+    state.phase = 'flying';
+    lastTime = 0;
+  }
+  updateWarpBtns();
+  updateControlStates();
+  updateReadouts();
+}
+
+function updateWarpBtns() {
+  var flying = state.phase === 'flying';
+  var nBtn = document.getElementById('warpNormalBtn');
+  var fBtn = document.getElementById('warpFastBtn');
+  var ffBtn = document.getElementById('warpFastestBtn');
+  nBtn.classList.toggle('active', flying && state.warpLevel === 'normal');
+  fBtn.classList.toggle('active', flying && state.warpLevel === 'fast');
+  ffBtn.classList.toggle('active', flying && state.warpLevel === 'fastest');
+  nBtn.textContent = (flying && state.warpLevel === 'normal') ? '\u25ae\u25ae' : T('warpNormal');
+  fBtn.textContent = (flying && state.warpLevel === 'fast') ? '\u25ae\u25ae' : T('warpFast');
+  ffBtn.textContent = (flying && state.warpLevel === 'fastest') ? '\u25ae\u25ae' : T('warpFastest');
 }
 
 function straightenRoute(which) {
@@ -1499,63 +1716,40 @@ function clearAllPoints() {
   updateReadouts();
 }
 
-function handlePlayPause() {
-  if (state.phase === 'idle') {
-    if (!state.routeA || !state.routeB) return;
-    if (!state.routeA.valid || !state.routeB.valid) return;
-    state.phase = 'flying';
-    state.missionTime = 0;
-    state.shipA = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
-    state.shipB = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
-    var maxRef = Math.max(state.routeA.refTime, state.routeB.refTime);
-    timeScale = maxRef > 0 ? maxRef / WALL_SECONDS : 1;
-    lastTime = 0;
-  } else if (state.phase === 'flying') {
-    state.phase = 'paused';
-  } else if (state.phase === 'paused') {
-    state.phase = 'flying';
-    lastTime = 0;
-  }
-  updateControlStates();
-  updateReadouts();
-}
-
 function handleReset() {
   state.phase = 'idle';
+  state.warpLevel = 'normal';
   state.missionTime = 0;
   state.shipA = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
   state.shipB = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
   lastTime = 0;
   var overlay = document.querySelector('.result-overlay');
   if (overlay) overlay.remove();
+  updateWarpBtns();
   updateControlStates();
   updateReadouts();
 }
 
 function updateControlStates() {
   var idle = state.phase === 'idle';
-  var flying = state.phase === 'flying';
-  var paused = state.phase === 'paused';
+  var complete = state.phase === 'complete';
+  var canLaunch = state.routeA && state.routeB && state.routeA.valid && state.routeB.valid;
 
-  var playBtn = document.getElementById('launchBtn');
-  if (idle) {
-    playBtn.textContent = T('btnLaunch');
-    playBtn.disabled = !(state.routeA && state.routeB && state.routeA.valid && state.routeB.valid);
-  } else if (flying) {
-    playBtn.textContent = T('btnPause');
-    playBtn.disabled = false;
-  } else if (paused) {
-    playBtn.textContent = T('btnResume');
-    playBtn.disabled = false;
-  } else {
-    playBtn.textContent = T('btnLaunch');
-    playBtn.disabled = true;
-  }
+  // Warp buttons: disabled when idle+invalid or complete
+  var warpDisabled = (idle && !canLaunch) || complete;
+  document.getElementById('warpNormalBtn').disabled = warpDisabled;
+  document.getElementById('warpFastBtn').disabled = warpDisabled;
+  document.getElementById('warpFastestBtn').disabled = warpDisabled;
 
-  document.getElementById('resetBtn').textContent = T('btnReset');
+  // Reset: disabled only when idle
   document.getElementById('resetBtn').disabled = idle;
+
+  // Speed bar: disabled during flight
+  var speedBar = document.getElementById('speedBar');
+  if (idle) { speedBar.classList.remove('disabled'); }
+  else { speedBar.classList.add('disabled'); }
+
   document.getElementById('starSelect').disabled = !idle;
-  document.getElementById('speedSlider').disabled = !idle;
   document.getElementById('btnStraightenA').disabled = !idle;
   document.getElementById('btnStraightenB').disabled = !idle;
   document.getElementById('btnClearPoints').disabled = !idle;
@@ -1678,8 +1872,7 @@ function applyTranslations() {
     lblBhCount: 'lblBlackHoles',
     lblBh1Mass: 'lblBhMass1', lblBh2Mass: 'lblBhMass2', lblBh3Mass: 'lblBhMass3',
     lblRoutes: 'lblRoutes',
-    btnStraightenA: 'btnStraightenA', btnStraightenB: 'btnStraightenB', btnClearPoints: 'btnClearPoints',
-    lblAnimSpeed: 'lblAnimSpeed',
+    lblTimeWarp: 'lblTimeWarp',
     lblMissionData: 'lblMissionData',
     lblDistLabel: 'lblDistance', lblSpeedLabel: 'lblCruiseSpeed',
     lblGammaLabel: 'lblLorentz', lblBhCountLabel: 'lblBhCountRead',
@@ -1693,6 +1886,15 @@ function applyTranslations() {
   }
 
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+
+  // Icon button tooltips
+  document.getElementById('btnStraightenA').title = T('btnStraightenA');
+  document.getElementById('btnStraightenB').title = T('btnStraightenB');
+  document.getElementById('btnClearPoints').title = T('btnClearPoints');
+  document.getElementById('resetBtn').title = T('btnReset');
+
+  // Warp buttons
+  updateWarpBtns();
 
   // Ship headers use custom names or translated defaults
   document.getElementById('lblShipA').textContent = getShipName('A');
@@ -1750,13 +1952,14 @@ function animate(timestamp) {
   lastTime = timestamp;
 
   if (state.phase === 'flying') {
-    state.missionTime += rawDt * state.animSpeed * timeScale;
+    state.missionTime += rawDt * (WARP_LEVELS[state.warpLevel] || 1) * timeScale;
     updateShipProgress(state.shipA, state.routeA);
     updateShipProgress(state.shipB, state.routeB);
 
     if (state.shipA.arrived && state.shipB.arrived) {
       state.phase = 'complete';
       state.missionTime = Math.max(state.routeA.refTime, state.routeB.refTime);
+      updateWarpBtns();
       updateControlStates();
       setTimeout(showSummaryOverlay, 400);
     }
@@ -1827,6 +2030,8 @@ initBlackHoles();
 initRoutes();
 rebuildAllPhysics();
 populateStarSelect();
+initSpeedBar(document.getElementById('speedBar'));
+updateSpeedBar('speedBar', parseInt(document.getElementById('speedSlider').value), state.beta);
 applyTranslations();
 updateReadouts();
 updateInfo();

@@ -301,6 +301,7 @@
   <div class="canvas-wrap">
     <canvas id="canvas"></canvas>
     <div id="starFactsOverlay" class="star-facts"></div>
+    <div id="dragHint" class="star-facts"></div>
     <div class="name-panel" id="namePanelExplore">
       <div class="name-row">
         <span class="ship-dot" style="background:var(--earth-color)"></span>
@@ -433,19 +434,19 @@ var STARS = [
     facts: {
       en: { type: 'Red dwarf', mass: '0.12\u00D7 Sun', size: '0.15\u00D7 Sun', temp: '~3,040 K', bright: '0.0017\u00D7 Sun', constellation: 'Centaurus',
         wow: 'Our closest stellar neighbor \u2014 but so dim you need a telescope to see it, even though it\u2019s only 4.24 light-years away!',
-        find: 'Visible only from the Southern Hemisphere, near the bright pair Alpha Centauri A and B.' },
+        find: 'Best seen from southern latitudes, near the bright pair Alpha Centauri A and B.' },
       pl: { type: 'Czerwony karze\u0142', mass: '0,12\u00D7 S\u0142o\u0144ca', size: '0,15\u00D7 S\u0142o\u0144ca', temp: '~3 040 K', bright: '0,0017\u00D7 S\u0142o\u0144ca', constellation: 'Centaur',
         wow: 'Najbli\u017Csza s\u0105siadka S\u0142o\u0144ca \u2014 ale tak s\u0142aba, \u017Ce potrzebujesz teleskopu, by j\u0105 zobaczy\u0107!',
-        find: 'Widoczna tylko z p\u00F3\u0142kuli po\u0142udniowej, blisko jasnej pary Alfa Centauri A i B.' }
+        find: 'Najlepiej widoczna z po\u0142udniowych szeroko\u015Bci, blisko jasnej pary Alfa Centauri A i B.' }
     }
   },
   { nameEn: 'Sirius', namePl: 'Syriusz', dist: 8.6, approx: false, color: '#ccddff', glowRgb: '204,221,255', radius: 7,
     noteEn: 'Brightest star in the night sky', notePl: 'Najja\u015Bniejsza gwiazda na niebie',
     facts: {
-      en: { type: 'Blue-white main sequence + white dwarf', mass: '2.06\u00D7 Sun', size: '1.71\u00D7 Sun', temp: '~9,940 K', bright: '25\u00D7 Sun', constellation: 'Canis Major',
+      en: { type: 'Blue-white main sequence + white dwarf (primary star values)', mass: '2.06\u00D7 Sun', size: '1.71\u00D7 Sun', temp: '~9,940 K', bright: '25\u00D7 Sun', constellation: 'Canis Major',
         wow: 'The brightest star in our night sky! Ancient Egyptians based their calendar on it \u2014 when Sirius rose at dawn, the Nile would soon flood.',
         find: 'Follow Orion\u2019s belt downward and to the left \u2014 the dazzling blue-white star you hit is Sirius.' },
-      pl: { type: 'Bia\u0142o-niebieska + bia\u0142y karze\u0142', mass: '2,06\u00D7 S\u0142o\u0144ca', size: '1,71\u00D7 S\u0142o\u0144ca', temp: '~9 940 K', bright: '25\u00D7 S\u0142o\u0144ca', constellation: 'Wielki Pies',
+      pl: { type: 'Bia\u0142o-niebieska + bia\u0142y karze\u0142 (warto\u015Bci g\u0142\u00F3wnej gwiazdy)', mass: '2,06\u00D7 S\u0142o\u0144ca', size: '1,71\u00D7 S\u0142o\u0144ca', temp: '~9 940 K', bright: '25\u00D7 S\u0142o\u0144ca', constellation: 'Wielki Pies',
         wow: 'Najja\u015Bniejsza gwiazda na nocnym niebie! Staro\u017Cytni Egipcjanie oparli na niej sw\u00F3j kalendarz \u2014 gdy Syriusz wschodzi\u0142 o \u015Bwicie, Nil wkr\u00F3tce wylewa\u0142.',
         find: 'Pod\u0105\u017Caj wzd\u0142u\u017C Pasa Oriona w d\u00F3\u0142 i w lewo \u2014 ol\u015Bniewaj\u0105ca bia\u0142o-niebieska gwiazda to Syriusz.' }
     }
@@ -465,20 +466,20 @@ var STARS = [
     noteEn: '6th brightest star; a quadruple system', notePl: '6. najja\u015Bniejsza gwiazda; pocz\u00F3rny uk\u0142ad',
     facts: {
       en: { type: 'Quadruple system (2 yellow giants + 2 red dwarfs)', mass: '2.6 + 2.5\u00D7 Sun', size: '12 + 9\u00D7 Sun', temp: '~4,940 / 5,700 K', bright: '~160\u00D7 Sun combined', constellation: 'Auriga',
-        wow: 'What looks like one star is actually four! Two giant stars orbit each other so closely that no telescope on Earth can split them apart.',
+        wow: 'What looks like one star is actually four! Two giant stars orbit each other so closely that ordinary telescopes show them as a single point \u2014 but special instruments called interferometers have managed to separate them.',
         find: 'Look north of Orion for a bright golden-yellow star high in the winter sky \u2014 the 6th brightest star overall.' },
       pl: { type: 'Uk\u0142ad pocz\u00F3rny (2 \u017C\u00F3\u0142te olbrzymy + 2 czerwone kar\u0142y)', mass: '2,6 + 2,5\u00D7 S\u0142o\u0144ca', size: '12 + 9\u00D7 S\u0142o\u0144ca', temp: '~4 940 / 5 700 K', bright: '~160\u00D7 S\u0142o\u0144ca \u0142\u0105cznie', constellation: 'Wo\u017Anica',
-        wow: 'To, co wygl\u0105da jak jedna gwiazda, to w rzeczywisto\u015Bci cztery! Dwa olbrzymy kr\u0105\u017C\u0105 wok\u00F3\u0142 siebie tak blisko, \u017Ce \u017Caden teleskop nie rozdzieli ich wizualnie.',
+        wow: 'To, co wygl\u0105da jak jedna gwiazda, to w rzeczywisto\u015Bci cztery! Dwa olbrzymy kr\u0105\u017C\u0105 wok\u00F3\u0142 siebie tak blisko, \u017Ce zwyk\u0142e teleskopy pokazuj\u0105 je jako jeden punkt \u2014 ale specjalne instrumenty zwane interferometrami zdo\u0142a\u0142y je rozdzieli\u0107.',
         find: 'Sp\u00F3jrz na p\u00F3\u0142noc od Oriona \u2014 jasna z\u0142oto\u017C\u00F3\u0142ta gwiazda wysoko na zimowym niebie.' }
     }
   },
   { nameEn: 'Algol', namePl: 'Algol', dist: 94, approx: false, color: '#bbccff', glowRgb: '187,204,255', radius: 6,
     noteEn: 'The "Demon Star" \u2014 blinks every 2.9 days', notePl: '"Gwiazda Demona" \u2014 mruga co 2,9 dnia',
     facts: {
-      en: { type: 'Eclipsing binary (blue-white + orange subgiant)', mass: '3.2\u00D7 Sun', size: '2.7\u00D7 Sun', temp: '~13,000 K', bright: '182\u00D7 Sun', constellation: 'Perseus',
+      en: { type: 'Eclipsing binary (blue-white + orange subgiant; primary star values)', mass: '3.2\u00D7 Sun', size: '2.7\u00D7 Sun', temp: '~13,000 K', bright: '182\u00D7 Sun', constellation: 'Perseus',
         wow: 'Every 2 days and 20 hours, the dimmer star passes in front of the bright one and Algol "winks"! Ancient Arabs called it the "Demon Star" because its blinking spooked them.',
         find: 'Find the W of Cassiopeia, then look below it \u2014 Algol is in Perseus and you can watch it dim with your own eyes every ~3 days.' },
-      pl: { type: 'Za\u0107mieniowa podw\u00F3jna (bia\u0142o-niebieska + pomara\u0144czowy podolbrzym)', mass: '3,2\u00D7 S\u0142o\u0144ca', size: '2,7\u00D7 S\u0142o\u0144ca', temp: '~13 000 K', bright: '182\u00D7 S\u0142o\u0144ca', constellation: 'Perseusz',
+      pl: { type: 'Za\u0107mieniowa podw\u00F3jna (bia\u0142o-niebieska + pomara\u0144czowy podolbrzym; warto\u015Bci g\u0142\u00F3wnej gwiazdy)', mass: '3,2\u00D7 S\u0142o\u0144ca', size: '2,7\u00D7 S\u0142o\u0144ca', temp: '~13 000 K', bright: '182\u00D7 S\u0142o\u0144ca', constellation: 'Perseusz',
         wow: 'Co 2 dni i 20 godzin ciemniejsza gwiazda przechodzi przed jasn\u0105 i Algol \u201Emruga\u201D! Staro\u017Cytni Arabowie nazywali j\u0105 \u201EGwiazd\u0105 Demona\u201D, bo jej migotanie ich przera\u017Ca\u0142o.',
         find: 'Znajd\u017A liter\u0119 W Kasjopei, a potem sp\u00F3jrz poni\u017Cej \u2014 Algol jest w Perseuszu, a jego przyciemnienia mo\u017Cna obserwowa\u0107 go\u0142ym okiem co ~3 dni.' }
     }
@@ -497,10 +498,10 @@ var STARS = [
   { nameEn: 'Polaris', namePl: 'Gwiazda Polarna', dist: 430, approx: true, color: '#fff5d0', glowRgb: '255,245,208', radius: 6,
     noteEn: 'The North Star', notePl: 'Gwiazda P\u00F3\u0142nocna',
     facts: {
-      en: { type: 'Yellow supergiant + 2 companions', mass: '5.4\u00D7 Sun', size: '46\u00D7 Sun', temp: '~6,000 K', bright: '2,500\u00D7 Sun', constellation: 'Ursa Minor',
+      en: { type: 'Yellow supergiant + 2 companions (primary star values)', mass: '5.4\u00D7 Sun', size: '46\u00D7 Sun', temp: '~6,000 K', bright: '2,500\u00D7 Sun', constellation: 'Ursa Minor',
         wow: 'Polaris barely moves all night \u2014 every other star appears to spin around it! That\u2019s because Earth\u2019s North Pole points almost exactly at it. It also gently pulses in brightness (a Cepheid variable).',
         find: 'Find the Big Dipper, then draw a line through the two stars at the end of its bowl \u2014 that line points straight to Polaris.' },
-      pl: { type: '\u017B\u00F3\u0142ty nadolbrzym + 2 towarzysze', mass: '5,4\u00D7 S\u0142o\u0144ca', size: '46\u00D7 S\u0142o\u0144ca', temp: '~6 000 K', bright: '2 500\u00D7 S\u0142o\u0144ca', constellation: 'Ma\u0142a Nied\u017Awied\u017Aica',
+      pl: { type: '\u017B\u00F3\u0142ty nadolbrzym + 2 towarzysze (warto\u015Bci g\u0142\u00F3wnej gwiazdy)', mass: '5,4\u00D7 S\u0142o\u0144ca', size: '46\u00D7 S\u0142o\u0144ca', temp: '~6 000 K', bright: '2 500\u00D7 S\u0142o\u0144ca', constellation: 'Ma\u0142a Nied\u017Awied\u017Aica',
         wow: 'Polaris prawie nie porusza si\u0119 na niebie ca\u0142\u0105 noc \u2014 wszystkie inne gwiazdy kr\u0119c\u0105 si\u0119 wok\u00F3\u0142 niej! To dlatego, \u017Ce biegun p\u00F3\u0142nocny Ziemi wskazuje na ni\u0105. Delikatnie pulsuje jasno\u015Bci\u0105 (cefeida).',
         find: 'Znajd\u017A Wielki W\u00F3z i poprowad\u017A lini\u0119 przez dwie gwiazdy na ko\u0144cu czerpaka \u2014 ta linia wskazuje prosto na Polaris.' }
     }
@@ -569,13 +570,16 @@ var I18N = {
     customStar: 'My Star',
     lblCustomName: 'Star Name',
     lblCustomDist: 'Distance (ly)',
-    sfMass: 'Mass', sfSize: 'Size', sfTemp: 'Temp', sfBright: 'Luminosity', sfFind: 'Find it',
+    sfDist: 'Distance', sfMass: 'Mass', sfSize: 'Radius', sfTemp: 'Temp', sfBright: 'Luminosity (energy)', sfFind: 'Find it',
+    dragHint: 'Drag me to another star!',
     overlayTitle: 'Journey Complete!',
     overlayConclusion: 'On the rocket, {diff} less time passed than on Earth!',
     clickToDismiss: 'Click to dismiss',
     infoIdle: 'What is time dilation?\n\nWhen something moves very fast \u2014 close to the speed of light \u2014 time passes more slowly for it. This is Einstein\'s special relativity.\n\nIn this simulator, one twin stays on Earth and the other flies to a star and back. The rocket accelerates at 1g (comfortable Earth gravity) up to the selected cruise speed, cruises, then decelerates to stop at the star \u2014 and repeats for the return trip.\n\nThe faster the rocket goes, the bigger the Lorentz factor \u03B3, and the greater the difference in aging. During each cruise segment, for every year on the rocket, \u03B3 years pass on Earth.\n\nIs this real? Yes! Time dilation has been confirmed by atomic clocks flown on aircraft. Relativistic corrections \u2014 both from special and general relativity \u2014 are essential for GPS satellites to work correctly.\n\nNote: this display shows elapsed times in the Earth frame alongside the traveler\'s proper time. It is not a simulation of what each twin would literally see through a telescope.\n\nFormula: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
     infoCruise: 'Watch the clocks! During cruise, the Earth clock (blue) ticks faster than the rocket clock (amber). The ratio of their rates equals the Lorentz factor \u03B3 = {gamma}.\n\nDuring acceleration and deceleration, the difference is smaller because the ship hasn\'t yet reached full speed.',
-    infoTurnaround: 'The rocket has decelerated to a stop at the star and is preparing to head back. The clocks are paused during the turnaround.',
+    infoIdleShortTrip: '\n\nNote: this star is close enough that the rocket cannot reach the selected cruise speed. It will accelerate to {betaActual} (\u03B3 = {gammaActual}) before needing to decelerate \u2014 there is no cruise phase.',
+    infoCruiseShortTrip: 'Watch the clocks! The ship never reaches the selected cruise speed on this short trip \u2014 the maximum speed is {betaActual} (\u03B3 = {gammaActual}). Time dilation grows during acceleration and shrinks during deceleration.',
+    infoTurnaround: 'The rocket has stopped at the star and is turning around for the return trip. Both clocks are momentarily paused while the ship reverses direction.',
     infoPaused: 'Simulation paused. Both clocks are frozen. Press play to resume.',
     infoLanded: 'The round trip is over.\n\nThe rocket traveler aged {rocketTime} years, while {earthTime} years passed on Earth \u2014 a difference of {diff} years.\n\nThe faster you go, the bigger the difference. Try 0.99c!',
     // Game mode
@@ -627,13 +631,16 @@ var I18N = {
     customStar: 'Moja Gwiazda',
     lblCustomName: 'Nazwa gwiazdy',
     lblCustomDist: 'Odleg\u0142o\u015B\u0107 (ly)',
-    sfMass: 'Masa', sfSize: 'Rozmiar', sfTemp: 'Temp.', sfBright: 'Jasno\u015B\u0107', sfFind: 'Znajd\u017A j\u0105',
+    sfDist: 'Odleg\u0142o\u015B\u0107', sfMass: 'Masa', sfSize: 'Promie\u0144', sfTemp: 'Temp.', sfBright: 'Jasno\u015B\u0107 (moc)', sfFind: 'Znajd\u017A j\u0105',
+    dragHint: 'Przeci\u0105gnij mnie do innej gwiazdy!',
     overlayTitle: 'Podr\u00F3\u017C zako\u0144czona!',
     overlayConclusion: 'W rakiecie up\u0142yn\u0119\u0142o o {diff} mniej czasu ni\u017C na Ziemi!',
     clickToDismiss: 'Kliknij, aby zamkn\u0105\u0107',
     infoIdle: 'Czym jest dylatacja czasu?\n\nGdy co\u015B porusza si\u0119 bardzo szybko \u2014 blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a \u2014 czas p\u0142ynie dla niego wolniej. To szczeg\u00F3lna teoria wzgl\u0119dno\u015Bci Einsteina.\n\nW tym symulatorze jeden bli\u017Aniak zostaje na Ziemi, a drugi leci do gwiazdy i wraca. Rakieta przyspiesza z 1g (komfortowa grawitacja ziemska) do wybranej pr\u0119dko\u015Bci przelotowej, leci z t\u0105 pr\u0119dko\u015Bci\u0105, a potem hamuje, by zatrzyma\u0107 si\u0119 przy gwi\u017Adzie \u2014 i powtarza to na drodze powrotnej.\n\nIm szybciej leci rakieta, tym wi\u0119kszy wsp\u00F3\u0142czynnik Lorentza \u03B3 i tym wi\u0119ksza r\u00F3\u017Cnica w starzeniu si\u0119. Podczas lotu swobodnego, na ka\u017Cdy rok w rakiecie, na Ziemi mija \u03B3 lat.\n\nCzy to prawda? Tak! Dylatacja czasu zosta\u0142a potwierdzona zegarami atomowymi na samolotach. Korekty relatywistyczne \u2014 zar\u00F3wno ze szczeg\u00F3lnej, jak i og\u00F3lnej teorii wzgl\u0119dno\u015Bci \u2014 s\u0105 niezb\u0119dne do dzia\u0142ania satelit\u00F3w GPS.\n\nUwaga: ten widok por\u00F3wnuje czas up\u0142ywaj\u0105cy w uk\u0142adzie Ziemi z czasem w\u0142asnym podr\u00F3\u017Cnika. Nie jest to symulacja tego, co ka\u017Cdy bli\u017Aniak zobaczy\u0142by przez teleskop.\n\nWz\u00F3r: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
     infoCruise: 'Obserwuj zegary! Podczas lotu swobodnego zegar Ziemi (niebieski) tyka szybciej ni\u017C zegar rakiety (pomara\u0144czowy). Stosunek ich pr\u0119dko\u015Bci to wsp\u00F3\u0142czynnik Lorentza \u03B3 = {gamma}.\n\nPodczas przyspieszania i hamowania r\u00F3\u017Cnica jest mniejsza, bo rakieta nie osi\u0105gn\u0119\u0142a jeszcze pe\u0142nej pr\u0119dko\u015Bci.',
-    infoTurnaround: 'Rakieta wyhamowa\u0142a do zera przy gwi\u017Adzie i przygotowuje si\u0119 do drogi powrotnej. Zegary s\u0105 wstrzymane podczas zawracania.',
+    infoIdleShortTrip: '\n\nUwaga: ta gwiazda jest na tyle blisko, \u017Ce rakieta nie osi\u0105gnie wybranej pr\u0119dko\u015Bci przelotowej. Przyspieszy do {betaActual} (\u03B3 = {gammaActual}), a potem zacznie hamowa\u0107 \u2014 nie ma fazy lotu swobodnego.',
+    infoCruiseShortTrip: 'Obserwuj zegary! Rakieta nie osi\u0105ga wybranej pr\u0119dko\u015Bci na tej kr\u00F3tkiej trasie \u2014 maksymalna pr\u0119dko\u015B\u0107 to {betaActual} (\u03B3 = {gammaActual}). Dylatacja czasu ro\u015Bnie podczas przyspieszania i maleje podczas hamowania.',
+    infoTurnaround: 'Rakieta zatrzyma\u0142a si\u0119 przy gwi\u017Adzie i zawraca na drog\u0119 powrotn\u0105. Oba zegary s\u0105 chwilowo wstrzymane, gdy statek zmienia kierunek.',
     infoPaused: 'Symulacja wstrzymana. Oba zegary s\u0105 zamro\u017Cone. Naci\u015Bnij play, aby wznowi\u0107.',
     infoLanded: 'Podr\u00F3\u017C dobieg\u0142a ko\u0144ca.\n\nPodr\u00F3\u017Cnik zestarza\u0142 si\u0119 o {rocketTime} lat, a na Ziemi min\u0119\u0142o {earthTime} lat \u2014 r\u00F3\u017Cnica {diff} lat.\n\nIm szybciej lecisz, tym wi\u0119ksza r\u00F3\u017Cnica. Spr\u00F3buj 0.99c!',
     // Game mode
@@ -1682,6 +1689,11 @@ function updateInfo() {
   } else {
     if (state.phase === 'idle') {
       text = T('infoIdle');
+      if (!state.hasCruise) {
+        text += T('infoIdleShortTrip')
+          .replace('{betaActual}', fmtBeta(state.betaActual))
+          .replace('{gammaActual}', state.gammaActual.toFixed(2));
+      }
     } else if (state.phase === 'landed') {
       text = T('infoLanded')
         .replace('{rocketTime}', state.rocketTotalYears.toFixed(2))
@@ -1691,9 +1703,13 @@ function updateInfo() {
       text = T('infoPaused');
     } else if (state.phase === 'turnaround') {
       text = T('infoTurnaround');
+    } else if (!state.hasCruise) {
+      text = T('infoCruiseShortTrip')
+        .replace('{betaActual}', fmtBeta(state.betaActual))
+        .replace('{gammaActual}', state.gammaActual.toFixed(2));
     } else {
       text = T('infoCruise')
-        .replace('{gamma}', state.gamma.toFixed(2));
+        .replace('{gamma}', state.gammaActual.toFixed(2));
     }
   }
 
@@ -1803,6 +1819,7 @@ function handleStarDragStart(e) {
       canvas.classList.remove('cursor-grab');
       canvas.classList.add('cursor-grabbing');
       hideStarFacts();
+      hideDragHint();
       if (e.cancelable) e.preventDefault();
       return;
     }
@@ -1996,6 +2013,7 @@ function stepSlider(sliderId, delta) {
 
 function launchFlight() {
   if (state.phase !== 'idle') return;
+  hideDragHint();
 
   if (state.mode === 'game') {
     if (!state.challenge) return;
@@ -2176,11 +2194,6 @@ function animate(timestamp) {
 
   if (!state.paused && state.phase === 'turnaround') {
     state.turnaroundTimer += dt * state.animSpeed;
-    // At v=0 both clocks tick at equal rate (γ=1) — advance by a small amount
-    var turnaroundTickRate = 0.02; // years per real second
-    var tickAmount = dt * turnaroundTickRate;
-    state.earthElapsed += tickAmount;
-    state.rocketElapsed += tickAmount;
     var turnDuration = getTurnaroundDuration();
     if (state.turnaroundTimer >= turnDuration) {
       state.phase = 'return';
@@ -2244,6 +2257,7 @@ function showStarFacts(star, x, y) {
     '<div class="sf-header" style="color:' + star.color + '">' + name + '</div>' +
     '<div class="sf-meta">' + f.type + ' \u00B7 ' + f.constellation + '</div>' +
     '<div class="sf-stats">' +
+      '<div class="sf-stat"><span class="sf-stat-label">' + T('sfDist') + '</span><span>' + (star.approx ? '~' : '') + star.dist + ' ' + T('ly') + '</span></div>' +
       '<div class="sf-stat"><span class="sf-stat-label">' + T('sfMass') + '</span><span>' + f.mass + '</span></div>' +
       '<div class="sf-stat"><span class="sf-stat-label">' + T('sfSize') + '</span><span>' + f.size + '</span></div>' +
       '<div class="sf-stat"><span class="sf-stat-label">' + T('sfTemp') + '</span><span>' + f.temp + '</span></div>' +
@@ -2278,6 +2292,33 @@ canvas.addEventListener('mouseleave', function() { hideStarFacts(); if (drag.act
 canvas.addEventListener('touchstart', function(e) { handleStarDragStart(e); }, { passive: false });
 canvas.addEventListener('touchmove', function(e) { handleStarDragMove(e); }, { passive: false });
 canvas.addEventListener('touchend', function(e) { handleStarDragEnd(e); });
+
+// ====================== DRAG HINT ======================
+
+var dragHintEl = document.getElementById('dragHint');
+var dragHintVisible = false;
+
+function showDragHint() {
+  var sx = getStarScreenX();
+  var sy = getStarY();
+  dragHintEl.textContent = T('dragHint');
+  var ow = 340;
+  var left = sx - ow - 20;
+  if (left < 10) left = sx + 20;
+  var top = sy + 20;
+  dragHintEl.style.left = left + 'px';
+  dragHintEl.style.top = top + 'px';
+  dragHintEl.style.display = 'block';
+  setTimeout(function() { dragHintEl.classList.add('visible'); }, 10);
+  dragHintVisible = true;
+}
+
+function hideDragHint() {
+  if (!dragHintVisible) return;
+  dragHintEl.classList.remove('visible');
+  setTimeout(function() { if (!dragHintVisible) dragHintEl.style.display = 'none'; }, 150);
+  dragHintVisible = false;
+}
 
 // ====================== GAME MODE ======================
 
@@ -2944,7 +2985,11 @@ populateStarSelect();
 applyTranslations();
 requestAnimationFrame(animate);
 
-window.addEventListener('resize', function() { resize(); });
+// Show drag hint after a short delay to let the canvas render
+setTimeout(showDragHint, 600);
+setTimeout(hideDragHint, 8000);
+
+window.addEventListener('resize', function() { resize(); if (dragHintVisible) showDragHint(); });
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     var overlay = document.querySelector('.result-overlay');
