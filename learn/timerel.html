@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="description" content="Interactive time dilation simulator. Watch the twin paradox unfold as a rocket travels to real stars near the speed of light.">
+<meta name="description" content="Interactive time dilation simulator. Watch relativistic aging unfold as a rocket travels to real stars near the speed of light.">
 <meta name="author" content="Łukasz Łepecki">
 <link rel="canonical" href="https://lepecki.com/learn/timerel.html">
 <meta property="og:title" content="Time Dilation Simulator">
-<meta property="og:description" content="Interactive time dilation simulator. Watch the twin paradox unfold as a rocket travels to real stars near the speed of light.">
+<meta property="og:description" content="Interactive time dilation simulator. Watch relativistic aging unfold as a rocket travels to real stars near the speed of light.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://lepecki.com/learn/timerel.html">
 <meta property="og:site_name" content="Łukasz Łepecki">
 <meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Time Dilation Simulator">
-<meta name="twitter:description" content="Interactive time dilation simulator. Watch the twin paradox unfold as a rocket travels to real stars near the speed of light.">
+<meta name="twitter:description" content="Interactive time dilation simulator. Watch relativistic aging unfold as a rocket travels to real stars near the speed of light.">
 <title>Time Dilation Simulator</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -292,7 +292,7 @@
 <header>
   <div class="header-text">
     <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Time Dilation Simulator</span></h1>
-    <p id="subtitleText">A twin on Earth, a twin in a rocket — who ages less on a round trip near the speed of light?</p>
+    <p id="subtitleText">A person on Earth, a person in a rocket — who ages less on a round trip near the speed of light?</p>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
 </header>
@@ -537,7 +537,7 @@ var STARS = [
 var I18N = {
   en: {
     title: 'Time Dilation Simulator',
-    subtitle: 'A twin on Earth, a twin in a rocket \u2014 who ages less on a round trip near the speed of light?',
+    subtitle: 'A person on Earth, a person in a rocket \u2014 who ages less on a round trip near the speed of light?',
     lblStar: 'Destination Star',
     lblSpeed: 'Travel Speed',
     lblAnimSpeed: 'Playback Speed',
@@ -563,10 +563,10 @@ var I18N = {
     rocketLabel: 'Rocket',
     earthClock: 'Earth Clock',
     spacecraftClock: 'Spacecraft Clock',
-    earthPerson: 'Earth twin',
-    rocketPerson: 'Rocket twin',
-    phEarthTwin: 'Earth twin name',
-    phRocketTwin: 'Rocket twin name',
+    earthPerson: 'Earth person',
+    rocketPerson: 'Rocket person',
+    phEarthTwin: 'Earth person name',
+    phRocketTwin: 'Rocket person name',
     customStar: 'My Star',
     lblCustomName: 'Star Name',
     lblCustomDist: 'Distance (ly)',
@@ -575,7 +575,7 @@ var I18N = {
     overlayTitle: 'Journey Complete!',
     overlayConclusion: 'On the rocket, {diff} less time passed than on Earth!',
     clickToDismiss: 'Click to dismiss',
-    infoIdle: 'What is time dilation?\n\nWhen something moves very fast \u2014 close to the speed of light \u2014 time passes more slowly for it. This is Einstein\'s special relativity.\n\nIn this simulator, one twin stays on Earth and the other flies to a star and back. The rocket accelerates at 1g (comfortable Earth gravity) up to the selected cruise speed, cruises, then decelerates to stop at the star \u2014 and repeats for the return trip.\n\nThe faster the rocket goes, the bigger the Lorentz factor \u03B3, and the greater the difference in aging. During each cruise segment, for every year on the rocket, \u03B3 years pass on Earth.\n\nIs this real? Yes! Time dilation has been confirmed by atomic clocks flown on aircraft. Relativistic corrections \u2014 both from special and general relativity \u2014 are essential for GPS satellites to work correctly.\n\nNote: this display shows elapsed times in the Earth frame alongside the traveler\'s proper time. It is not a simulation of what each twin would literally see through a telescope.\n\nFormula: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
+    infoIdle: 'What is time dilation?\n\nWhen something moves very fast \u2014 close to the speed of light \u2014 time passes more slowly for it. This is Einstein\'s special relativity.\n\nIn this simulator, one person stays on Earth and the other flies to a star and back. The rocket accelerates at 1g (comfortable Earth gravity) up to the selected cruise speed, cruises, then decelerates to stop at the star \u2014 and repeats for the return trip.\n\nThe faster the rocket goes, the bigger the Lorentz factor \u03B3, and the greater the difference in aging. During each cruise segment, for every year on the rocket, \u03B3 years pass on Earth.\n\nIs this real? Yes! Time dilation has been confirmed by atomic clocks flown on aircraft. Relativistic corrections \u2014 both from special and general relativity \u2014 are essential for GPS satellites to work correctly.\n\nNote: this display shows elapsed times in the Earth frame alongside the traveler\'s proper time. It is not a simulation of what each person would literally see through a telescope.\n\nFormula: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
     infoCruise: 'Watch the clocks! During cruise, the Earth clock (blue) ticks faster than the rocket clock (amber). The ratio of their rates equals the Lorentz factor \u03B3 = {gamma}.\n\nDuring acceleration and deceleration, the difference is smaller because the ship hasn\'t yet reached full speed.',
     infoIdleShortTrip: '\n\nNote: this star is close enough that the rocket cannot reach the selected cruise speed. It will accelerate to {betaActual} (\u03B3 = {gammaActual}) before needing to decelerate \u2014 there is no cruise phase.',
     infoCruiseShortTrip: 'Watch the clocks! The ship never reaches the selected cruise speed on this short trip \u2014 the maximum speed is {betaActual} (\u03B3 = {gammaActual}). Time dilation grows during acceleration and shrinks during deceleration.',
@@ -598,7 +598,7 @@ var I18N = {
   },
   pl: {
     title: 'Symulator Dylatacji Czasu',
-    subtitle: 'Bli\u017Aniak na Ziemi, bli\u017Aniak w rakiecie \u2014 kto zestarzeje si\u0119 mniej po podr\u00F3\u017Cy blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a?',
+    subtitle: 'Osoba na Ziemi, osoba w rakiecie \u2014 kto zestarzeje si\u0119 mniej po podr\u00F3\u017Cy blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a?',
     lblStar: 'Gwiazda docelowa',
     lblSpeed: 'Pr\u0119dko\u015B\u0107 podr\u00F3\u017Cy',
     lblAnimSpeed: 'Pr\u0119dko\u015B\u0107 odtwarzania',
@@ -624,10 +624,10 @@ var I18N = {
     rocketLabel: 'Rakieta',
     earthClock: 'Zegar Ziemi',
     spacecraftClock: 'Zegar statku',
-    earthPerson: 'Bli\u017Aniak ziemski',
-    rocketPerson: 'Bli\u017Aniak w rakiecie',
-    phEarthTwin: 'Imi\u0119 bli\u017Aniaka ziemskiego',
-    phRocketTwin: 'Imi\u0119 bli\u017Aniaka w rakiecie',
+    earthPerson: 'Osoba na Ziemi',
+    rocketPerson: 'Osoba w rakiecie',
+    phEarthTwin: 'Imi\u0119 osoby na Ziemi',
+    phRocketTwin: 'Imi\u0119 osoby w rakiecie',
     customStar: 'Moja Gwiazda',
     lblCustomName: 'Nazwa gwiazdy',
     lblCustomDist: 'Odleg\u0142o\u015B\u0107 (ly)',
@@ -636,7 +636,7 @@ var I18N = {
     overlayTitle: 'Podr\u00F3\u017C zako\u0144czona!',
     overlayConclusion: 'W rakiecie up\u0142yn\u0119\u0142o o {diff} mniej czasu ni\u017C na Ziemi!',
     clickToDismiss: 'Kliknij, aby zamkn\u0105\u0107',
-    infoIdle: 'Czym jest dylatacja czasu?\n\nGdy co\u015B porusza si\u0119 bardzo szybko \u2014 blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a \u2014 czas p\u0142ynie dla niego wolniej. To szczeg\u00F3lna teoria wzgl\u0119dno\u015Bci Einsteina.\n\nW tym symulatorze jeden bli\u017Aniak zostaje na Ziemi, a drugi leci do gwiazdy i wraca. Rakieta przyspiesza z 1g (komfortowa grawitacja ziemska) do wybranej pr\u0119dko\u015Bci przelotowej, leci z t\u0105 pr\u0119dko\u015Bci\u0105, a potem hamuje, by zatrzyma\u0107 si\u0119 przy gwi\u017Adzie \u2014 i powtarza to na drodze powrotnej.\n\nIm szybciej leci rakieta, tym wi\u0119kszy wsp\u00F3\u0142czynnik Lorentza \u03B3 i tym wi\u0119ksza r\u00F3\u017Cnica w starzeniu si\u0119. Podczas lotu swobodnego, na ka\u017Cdy rok w rakiecie, na Ziemi mija \u03B3 lat.\n\nCzy to prawda? Tak! Dylatacja czasu zosta\u0142a potwierdzona zegarami atomowymi na samolotach. Korekty relatywistyczne \u2014 zar\u00F3wno ze szczeg\u00F3lnej, jak i og\u00F3lnej teorii wzgl\u0119dno\u015Bci \u2014 s\u0105 niezb\u0119dne do dzia\u0142ania satelit\u00F3w GPS.\n\nUwaga: ten widok por\u00F3wnuje czas up\u0142ywaj\u0105cy w uk\u0142adzie Ziemi z czasem w\u0142asnym podr\u00F3\u017Cnika. Nie jest to symulacja tego, co ka\u017Cdy bli\u017Aniak zobaczy\u0142by przez teleskop.\n\nWz\u00F3r: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
+    infoIdle: 'Czym jest dylatacja czasu?\n\nGdy co\u015B porusza si\u0119 bardzo szybko \u2014 blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a \u2014 czas p\u0142ynie dla niego wolniej. To szczeg\u00F3lna teoria wzgl\u0119dno\u015Bci Einsteina.\n\nW tym symulatorze jedna osoba zostaje na Ziemi, a druga leci do gwiazdy i wraca. Rakieta przyspiesza z 1g (komfortowa grawitacja ziemska) do wybranej pr\u0119dko\u015Bci przelotowej, leci z t\u0105 pr\u0119dko\u015Bci\u0105, a potem hamuje, by zatrzyma\u0107 si\u0119 przy gwi\u017Adzie \u2014 i powtarza to na drodze powrotnej.\n\nIm szybciej leci rakieta, tym wi\u0119kszy wsp\u00F3\u0142czynnik Lorentza \u03B3 i tym wi\u0119ksza r\u00F3\u017Cnica w starzeniu si\u0119. Podczas lotu swobodnego, na ka\u017Cdy rok w rakiecie, na Ziemi mija \u03B3 lat.\n\nCzy to prawda? Tak! Dylatacja czasu zosta\u0142a potwierdzona zegarami atomowymi na samolotach. Korekty relatywistyczne \u2014 zar\u00F3wno ze szczeg\u00F3lnej, jak i og\u00F3lnej teorii wzgl\u0119dno\u015Bci \u2014 s\u0105 niezb\u0119dne do dzia\u0142ania satelit\u00F3w GPS.\n\nUwaga: ten widok por\u00F3wnuje czas up\u0142ywaj\u0105cy w uk\u0142adzie Ziemi z czasem w\u0142asnym podr\u00F3\u017Cnika. Nie jest to symulacja tego, co ka\u017Cda osoba zobaczy\u0142aby przez teleskop.\n\nWz\u00F3r: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
     infoCruise: 'Obserwuj zegary! Podczas lotu swobodnego zegar Ziemi (niebieski) tyka szybciej ni\u017C zegar rakiety (pomara\u0144czowy). Stosunek ich pr\u0119dko\u015Bci to wsp\u00F3\u0142czynnik Lorentza \u03B3 = {gamma}.\n\nPodczas przyspieszania i hamowania r\u00F3\u017Cnica jest mniejsza, bo rakieta nie osi\u0105gn\u0119\u0142a jeszcze pe\u0142nej pr\u0119dko\u015Bci.',
     infoIdleShortTrip: '\n\nUwaga: ta gwiazda jest na tyle blisko, \u017Ce rakieta nie osi\u0105gnie wybranej pr\u0119dko\u015Bci przelotowej. Przyspieszy do {betaActual} (\u03B3 = {gammaActual}), a potem zacznie hamowa\u0107 \u2014 nie ma fazy lotu swobodnego.',
     infoCruiseShortTrip: 'Obserwuj zegary! Rakieta nie osi\u0105ga wybranej pr\u0119dko\u015Bci na tej kr\u00F3tkiej trasie \u2014 maksymalna pr\u0119dko\u015B\u0107 to {betaActual} (\u03B3 = {gammaActual}). Dylatacja czasu ro\u015Bnie podczas przyspieszania i maleje podczas hamowania.',

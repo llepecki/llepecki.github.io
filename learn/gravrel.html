@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="description" content="Interactive gravitational time dilation simulator. Fly two spacecraft past black holes and compare pilot aging.">
+<meta name="description" content="Black Hole Reunion Mission: two captains, one star lab, one black-hole lab — who is younger when they reunite on Earth?">
 <meta name="author" content="Łukasz Łepecki">
 <link rel="canonical" href="https://lepecki.com/learn/gravrel.html">
-<meta property="og:title" content="Gravitational Route Time Dilation">
-<meta property="og:description" content="Interactive gravitational time dilation simulator. Fly two spacecraft past black holes and compare pilot aging.">
+<meta property="og:title" content="Black Hole Reunion Mission">
+<meta property="og:description" content="Black Hole Reunion Mission: two captains, one star lab, one black-hole lab — who is younger when they reunite on Earth?">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://lepecki.com/learn/gravrel.html">
 <meta property="og:site_name" content="Łukasz Łepecki">
 <meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Gravitational Route Time Dilation">
-<meta name="twitter:description" content="Interactive gravitational time dilation simulator. Fly two spacecraft past black holes and compare pilot aging.">
-<title>Gravitational Route Time Dilation</title>
+<meta name="twitter:title" content="Black Hole Reunion Mission">
+<meta name="twitter:description" content="Black Hole Reunion Mission: two captains, one star lab, one black-hole lab — who is younger when they reunite on Earth?">
+<title>Black Hole Reunion Mission</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,10 +74,10 @@
   .canvas-wrap canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 
   .controls {
-    width: 320px; flex-shrink: 0;
+    width: 300px; flex-shrink: 0;
     padding: 20px;
     border-left: 1px solid var(--panel-border);
-    display: flex; flex-direction: column; gap: 18px;
+    display: flex; flex-direction: column; gap: 22px;
     overflow-y: auto;
   }
 
@@ -103,7 +103,7 @@
   }
   .slider-val {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; min-width: 56px; text-align: right; color: var(--text);
+    font-size: 12px; min-width: 72px; text-align: right; color: var(--text);
   }
 
   .step-btn {
@@ -179,17 +179,60 @@
   .star-select:disabled { opacity: 0.5; }
 
   .readout-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
-  .readout-label { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); }
-  .readout-val { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text); }
+  .readout-label { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); }
+  .readout-val { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text); }
 
   .ship-header { display: flex; align-items: center; gap: 6px; }
-  .ship-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ship-header .ship-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-  .route-warning {
-    color: var(--danger);
+  .bh-fact {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
+    font-size: 12px; line-height: 1.5;
+    color: var(--text-dim);
+    min-height: 16px;
   }
+
+  .live-sentence {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; line-height: 1.5;
+    color: var(--text);
+    background: rgba(88,166,255,0.06);
+    border-left: 2px solid var(--accent);
+    padding: 8px 10px; border-radius: 3px;
+  }
+
+  .note-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; line-height: 1.5;
+    color: var(--text-dim);
+  }
+
+  /* Hover fact card (stars and black holes) */
+  .star-facts {
+    position: absolute; z-index: 5;
+    background: rgba(19,24,37,0.95); border: 1px solid var(--panel-border);
+    border-radius: 8px; padding: 14px 16px;
+    max-width: 340px; pointer-events: none;
+    font-family: 'Share Tech Mono', monospace; font-size: 15px;
+    color: var(--text); line-height: 1.5;
+    opacity: 0; transition: opacity 0.15s ease;
+    display: none;
+  }
+  .star-facts.visible { opacity: 1; }
+  .sf-header {
+    font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .sf-meta { color: var(--text-dim); font-size: 15px; margin-bottom: 8px; }
+  .sf-stats { margin-bottom: 10px; }
+  .sf-stat { display: flex; justify-content: space-between; padding: 2px 0; gap: 12px; }
+  .sf-stat-label { color: var(--text-dim); flex-shrink: 0; }
+  .sf-stat-val { text-align: right; }
+  .sf-wow {
+    border-top: 1px solid var(--panel-border); padding-top: 8px;
+    margin-bottom: 8px; color: #ffd27a; font-size: 15px; line-height: 1.5;
+  }
+  .sf-find { color: var(--text-dim); font-size: 15px; line-height: 1.5; }
 
   .info-text {
     font-size: 12px; color: var(--text-dim); line-height: 1.6;
@@ -204,18 +247,19 @@
     cursor: pointer;
     animation: overlayFadeIn 0.3s ease;
   }
-  .overlay-title { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 20px; }
+  .overlay-title { font-size: 36px; font-weight: 700; color: #fff; margin-bottom: 20px; }
   .overlay-detail {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 14px; color: var(--text); line-height: 2.2; text-align: left;
+    font-size: 18px; color: var(--text); line-height: 2.2; text-align: left;
   }
   .overlay-conclusion {
-    font-size: 18px; font-weight: 600; color: #fff;
-    margin-top: 24px; text-align: center; max-width: 500px; line-height: 1.5;
+    font-size: 22px; font-weight: 600; color: #fff;
+    margin-top: 24px; text-align: center; max-width: 580px; line-height: 1.5;
+    padding: 0 16px;
   }
   .overlay-hint {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; margin-top: 16px; color: rgba(255,255,255,0.4);
+    font-size: 14px; margin-top: 16px; color: rgba(255,255,255,0.4);
   }
   @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -227,7 +271,7 @@
     backdrop-filter: blur(4px);
   }
   .name-row { display: flex; align-items: center; gap: 8px; }
-  .ship-dot {
+  .name-row .ship-dot {
     width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
   }
   .name-input {
@@ -254,8 +298,8 @@
 
 <header>
   <div class="header-text">
-    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Gravitational Route Time Dilation</span></h1>
-    <p id="subtitleText">Two spacecraft, one star, different routes through gravity — who ages less?</p>
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Black Hole Reunion Mission</span></h1>
+    <p id="subtitleText">Two captains leave Earth together. One works near a black hole. Who is younger when they reunite?</p>
   </div>
   <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
 </header>
@@ -263,6 +307,7 @@
 <div class="main">
   <div class="canvas-wrap">
     <canvas id="canvas"></canvas>
+    <div id="factsOverlay" class="star-facts"></div>
     <div class="name-panel" id="namePanel">
       <div class="name-row">
         <span class="ship-dot" style="background:var(--ship-a)"></span>
@@ -279,12 +324,18 @@
   <div class="controls">
 
     <div class="ctrl-group">
-      <span class="ctrl-label" id="lblDestination">Destination</span>
+      <span class="ctrl-label" id="lblReferenceStar">Reference Star</span>
       <select class="star-select" id="starSelect" onchange="handleStarChange()"></select>
     </div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label" id="lblSpeed">Cruise Speed</span>
+      <span class="ctrl-label" id="lblBlackHole">Black Hole</span>
+      <select class="star-select" id="bhSelect" onchange="handleBhChange()"></select>
+      <div class="bh-fact" id="bhFactText">&nbsp;</div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblCruiseSpeed">Cruise Speed</span>
       <div class="speed-bar" id="speedBar">
         <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
         <div class="speed-bar-track">
@@ -297,49 +348,43 @@
     </div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label" id="lblBhCount">Black Holes</span>
-      <div class="type-toggle">
-        <button class="type-btn" id="bhBtn1" onclick="setBhCount(1)">1</button>
-        <button class="type-btn active" id="bhBtn2" onclick="setBhCount(2)">2</button>
-        <button class="type-btn" id="bhBtn3" onclick="setBhCount(3)">3</button>
-      </div>
-    </div>
-
-    <div class="ctrl-group" id="bh1MassGroup">
-      <span class="ctrl-label" id="lblBh1Mass">BH 1 Mass</span>
+      <span class="ctrl-label" id="lblMissionDistance">Mission Distance</span>
       <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('bh1MassSlider',-1)">&minus;</button>
-        <input type="range" id="bh1MassSlider" min="3" max="9" value="6" step="1" oninput="handleBhMassChange(0)">
-        <button class="step-btn" onclick="stepSlider('bh1MassSlider',1)">+</button>
-        <span class="slider-val" id="bh1MassVal">10⁶ M☉</span>
-      </div>
-    </div>
-    <div class="ctrl-group" id="bh2MassGroup">
-      <span class="ctrl-label" id="lblBh2Mass">BH 2 Mass</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('bh2MassSlider',-1)">&minus;</button>
-        <input type="range" id="bh2MassSlider" min="3" max="9" value="6" step="1" oninput="handleBhMassChange(1)">
-        <button class="step-btn" onclick="stepSlider('bh2MassSlider',1)">+</button>
-        <span class="slider-val" id="bh2MassVal">10⁶ M☉</span>
-      </div>
-    </div>
-    <div class="ctrl-group" id="bh3MassGroup" style="display:none">
-      <span class="ctrl-label" id="lblBh3Mass">BH 3 Mass</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('bh3MassSlider',-1)">&minus;</button>
-        <input type="range" id="bh3MassSlider" min="3" max="9" value="6" step="1" oninput="handleBhMassChange(2)">
-        <button class="step-btn" onclick="stepSlider('bh3MassSlider',1)">+</button>
-        <span class="slider-val" id="bh3MassVal">10⁶ M☉</span>
+        <button class="step-btn" onclick="stepSlider('distSlider',-1)">&minus;</button>
+        <input type="range" id="distSlider" min="1" max="20" step="0.5" value="4" oninput="handleDistChange()">
+        <button class="step-btn" onclick="stepSlider('distSlider',1)">+</button>
+        <span class="slider-val" id="distVal">4.0 ly</span>
       </div>
     </div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label" id="lblRoutes">Routes</span>
-      <div class="type-toggle">
-        <button class="type-btn" id="btnStraightenA" onclick="straightenRoute('A')">&#x2501; A</button>
-        <button class="type-btn" id="btnStraightenB" onclick="straightenRoute('B')">&#x2501; B</button>
+      <span class="ctrl-label" id="lblBhDistance">BH Science Distance</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('uSlider',-1)">&minus;</button>
+        <input type="range" id="uSlider" min="1.3" max="10" step="0.1" value="1.5" oninput="handleUChange()">
+        <button class="step-btn" onclick="stepSlider('uSlider',1)">+</button>
+        <span class="slider-val" id="uVal">1.5 r/r&#x209B;</span>
       </div>
-      <button class="type-btn full-width" id="btnClearPoints" onclick="clearAllPoints()">&#x2715;</button>
+      <div class="note-text" id="noteSchematic">&nbsp;</div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblTimingMode">Timing Mode</span>
+      <div class="type-toggle">
+        <button class="type-btn active" id="modeEarthBtn" onclick="setTimingMode('earth')">Earth</button>
+        <button class="type-btn" id="modeLocalBtn" onclick="setTimingMode('local')">Local</button>
+      </div>
+      <div class="note-text" id="timingNote">&nbsp;</div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label" id="lblScienceTime">Science Time (Earth)</span>
+      <div class="slider-row">
+        <button class="step-btn" onclick="stepSlider('sciSlider',-1)">&minus;</button>
+        <input type="range" id="sciSlider" min="1" max="20" step="0.5" value="5" oninput="handleSciChange()">
+        <button class="step-btn" onclick="stepSlider('sciSlider',1)">+</button>
+        <span class="slider-val" id="sciVal">5.0 yr</span>
+      </div>
     </div>
 
     <div class="ctrl-group">
@@ -354,44 +399,23 @@
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblMissionData">Mission Data</span>
-      <div class="readout-row"><span class="readout-label" id="lblDistLabel">Distance</span><span class="readout-val" id="readDistance">&mdash;</span></div>
-      <div class="readout-row"><span class="readout-label" id="lblSpeedLabel">Speed</span><span class="readout-val" id="readSpeed">&mdash;</span></div>
-      <div class="readout-row"><span class="readout-label" id="lblGammaLabel">Lorentz &gamma;</span><span class="readout-val" id="readGamma">&mdash;</span></div>
-      <div class="readout-row"><span class="readout-label" id="lblBhCountLabel">Black holes</span><span class="readout-val" id="readBhCount">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblPhaseLabel">Phase</span><span class="readout-val" id="readPhase">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblAgeDiffLabel">Age difference</span><span class="readout-val" id="readAgeDiff">&mdash;</span></div>
     </div>
 
     <div class="ctrl-group">
-      <div class="ship-header">
-        <div class="ship-dot" style="background:var(--ship-a)"></div>
-        <span class="ctrl-label" id="lblShipA">Ship A</span>
-      </div>
-      <div id="readAWarning" class="route-warning" style="display:none"></div>
-      <div class="readout-row"><span class="readout-label" id="lrALen">Route length</span><span class="readout-val" id="readALength">&mdash;</span></div>
-      <div class="readout-row"><span class="readout-label" id="lrAMission">Mission time</span><span class="readout-val" id="readAMission">&mdash;</span></div>
-      <div class="readout-row"><span class="readout-label" id="lrAPilot">Pilot time</span><span class="readout-val" id="readAPilot">&mdash;</span></div>
-      <div class="readout-row" id="readAMin1Row" style="display:none"><span class="readout-label" id="lrAMin1">Min BH 1</span><span class="readout-val" id="readAMin1">&mdash;</span></div>
-      <div class="readout-row" id="readAMin2Row" style="display:none"><span class="readout-label" id="lrAMin2">Min BH 2</span><span class="readout-val" id="readAMin2">&mdash;</span></div>
-      <div class="readout-row" id="readAMin3Row" style="display:none"><span class="readout-label" id="lrAMin3">Min BH 3</span><span class="readout-val" id="readAMin3">&mdash;</span></div>
+      <span class="ctrl-label" id="lblPhysics">Physics</span>
+      <div class="readout-row"><span class="readout-label" id="lblGammaLabel">Cruise &gamma;</span><span class="readout-val" id="readGamma">&mdash;</span></div>
+      <div class="readout-row"><span class="readout-label" id="lblGBhLabel">BH clock rate g</span><span class="readout-val" id="readGBh">&mdash;</span></div>
     </div>
 
     <div class="ctrl-group">
-      <div class="ship-header">
-        <div class="ship-dot" style="background:var(--ship-b)"></div>
-        <span class="ctrl-label" id="lblShipB">Ship B</span>
-      </div>
-      <div id="readBWarning" class="route-warning" style="display:none"></div>
-      <div class="readout-row"><span class="readout-label" id="lrBLen">Route length</span><span class="readout-val" id="readBLength">&mdash;</span></div>
-      <div class="readout-row"><span class="readout-label" id="lrBMission">Mission time</span><span class="readout-val" id="readBMission">&mdash;</span></div>
-      <div class="readout-row"><span class="readout-label" id="lrBPilot">Pilot time</span><span class="readout-val" id="readBPilot">&mdash;</span></div>
-      <div class="readout-row" id="readBMin1Row" style="display:none"><span class="readout-label" id="lrBMin1">Min BH 1</span><span class="readout-val" id="readBMin1">&mdash;</span></div>
-      <div class="readout-row" id="readBMin2Row" style="display:none"><span class="readout-label" id="lrBMin2">Min BH 2</span><span class="readout-val" id="readBMin2">&mdash;</span></div>
-      <div class="readout-row" id="readBMin3Row" style="display:none"><span class="readout-label" id="lrBMin3">Min BH 3</span><span class="readout-val" id="readBMin3">&mdash;</span></div>
+      <div class="live-sentence" id="liveSentence">&nbsp;</div>
     </div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label" id="lblAgeDiffLabel">Pilot Age Difference</span>
-      <div class="readout-row"><span class="readout-val" id="readAgeDiff" style="font-size:15px">&mdash;</span></div>
-      <div id="readAgeDesc" style="font-size:12px;color:var(--text-dim)"></div>
+      <div class="note-text" id="noteStationKeeping">&nbsp;</div>
+      <div class="note-text" id="noteStarReference">&nbsp;</div>
     </div>
 
     <div class="ctrl-group">
@@ -405,126 +429,415 @@
 // ====================== CONSTANTS ======================
 
 var EPS_BETA    = 1e-10;
-var EPS_G       = 1e-12;
-var G_MIN       = 0.001;
-var EPS_LENGTH  = 1e-6;
 var BETA_MIN    = 0.10;
 var BETA_MAX    = 0.99;
-var DELTA_SAFE  = 0.35;
-var KEEPOUT_MIN       = 60;
-var ENDPOINT_MARGIN   = 20;
-var MIN_BH_SEPARATION = 10;
-var RSAFE_FACTOR = 1.35;
-var RINF_FACTOR  = 6;
-var RINF_FADE_START = 0.80;
-var RH_MIN       = 10;
-var RH_PER_EXP   = 2;
-var CP_HIT_RADIUS    = 12;
-var ROUTE_HIT_RADIUS = 16;
-var BH_HIT_EXTRA     = 10;
-var CP_VISUAL_RADIUS = 5;
 var EARTH_RADIUS = 14;
 var STAR_RADIUS  = 8;
-var EARTH_X_FRAC = 0.10;
-var STAR_X_FRAC  = 0.90;
+var BH_RADIUS    = 18;
 var NUM_BG_STARS = 200;
-var SAMPLES_PER_SEG = 50;
 var WALL_SECONDS = 8.0;
-var WARP_LEVELS = { normal: 1, fast: 2, fastest: 4 };
-var HYSTERESIS_ENTER = 1.0;
-var HYSTERESIS_EXIT  = 1.08;
+var WARP_LEVELS  = { normal: 1, fast: 2, fastest: 4 };
 
-var SUP = ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'];
+var SUP = ['\u2070','\u00B9','\u00B2','\u00B3','\u2074','\u2075','\u2076','\u2077','\u2078','\u2079'];
 
 // ====================== STAR DATA ======================
 
 var STARS = [
-  { nameEn: 'Proxima Centauri', namePl: 'Proxima Centauri', dist: 4.24 },
-  { nameEn: "Barnard's Star",   namePl: 'Gwiazda Barnarda', dist: 5.96 },
-  { nameEn: 'Sirius',           namePl: 'Syriusz',          dist: 8.60 },
-  { nameEn: 'Epsilon Eridani',  namePl: 'Epsilon Eridani',  dist: 10.47 },
-  { nameEn: 'Tau Ceti',         namePl: 'Tau Ceti',         dist: 11.91 },
-  { nameEn: 'Altair',           namePl: 'Altair',           dist: 16.73 },
-  { nameEn: 'Vega',             namePl: 'Wega',             dist: 25.04 },
-  { nameEn: 'Arcturus',         namePl: 'Arktur',           dist: 36.66 },
+  { nameEn: 'Proxima Centauri', namePl: 'Proxima Centauri', dist: 4.24,
+    color: '#ff9988', glowRgb: '255,153,136', radius: 5,
+    facts: {
+      en: { type: 'Red dwarf', mass: '0.12\u00D7 Sun', size: '0.15\u00D7 Sun', temp: '~3,040 K', bright: '0.0017\u00D7 Sun', constellation: 'Centaurus',
+        wow: 'Our closest stellar neighbor \u2014 but so dim you need a telescope to see it, even though it\u2019s only 4.24 light-years away!',
+        find: 'Best seen from southern latitudes, near the bright pair Alpha Centauri A and B.' },
+      pl: { type: 'Czerwony karze\u0142', mass: '0,12\u00D7 S\u0142o\u0144ca', size: '0,15\u00D7 S\u0142o\u0144ca', temp: '~3 040 K', bright: '0,0017\u00D7 S\u0142o\u0144ca', constellation: 'Centaur',
+        wow: 'Najbli\u017Csza s\u0105siadka S\u0142o\u0144ca \u2014 ale tak s\u0142aba, \u017Ce potrzebujesz teleskopu, by j\u0105 zobaczy\u0107!',
+        find: 'Najlepiej widoczna z po\u0142udniowych szeroko\u015Bci, blisko jasnej pary Alfa Centauri A i B.' }
+    }
+  },
+  { nameEn: "Barnard's Star", namePl: 'Gwiazda Barnarda', dist: 5.96,
+    color: '#ff8877', glowRgb: '255,136,119', radius: 5,
+    facts: {
+      en: { type: 'Red dwarf', mass: '0.16\u00D7 Sun', size: '0.20\u00D7 Sun', temp: '~3,130 K', bright: '0.0035\u00D7 Sun', constellation: 'Ophiuchus',
+        wow: 'The fastest-moving star in our night sky \u2014 it drifts across the background so quickly (10.3 arcseconds per year) that you could watch it shift in a single lifetime.',
+        find: 'Almost invisible to the naked eye; find it with binoculars about 4\u00B0 north-east of the star Beta Ophiuchi.' },
+      pl: { type: 'Czerwony karze\u0142', mass: '0,16\u00D7 S\u0142o\u0144ca', size: '0,20\u00D7 S\u0142o\u0144ca', temp: '~3 130 K', bright: '0,0035\u00D7 S\u0142o\u0144ca', constellation: 'W\u0119\u017Cownik',
+        wow: 'Najszybciej przesuwaj\u0105ca si\u0119 gwiazda na naszym niebie \u2014 przemieszcza si\u0119 10,3 sekund k\u0105towych rocznie, mo\u017Cna zauwa\u017Cy\u0107 ten ruch w ci\u0105gu jednego \u017Cycia.',
+        find: 'Niewidoczna go\u0142ym okiem; szukaj przez lornetk\u0119 oko\u0142o 4\u00B0 na p\u00F3\u0142nocny wsch\u00F3d od Beta Ophiuchi.' }
+    }
+  },
+  { nameEn: 'Sirius', namePl: 'Syriusz', dist: 8.60,
+    color: '#ccddff', glowRgb: '204,221,255', radius: 7,
+    facts: {
+      en: { type: 'Blue-white main sequence + white dwarf', mass: '2.06\u00D7 Sun', size: '1.71\u00D7 Sun', temp: '~9,940 K', bright: '25\u00D7 Sun', constellation: 'Canis Major',
+        wow: 'The brightest star in our night sky! Ancient Egyptians based their calendar on it \u2014 when Sirius rose at dawn, the Nile would soon flood.',
+        find: 'Follow Orion\u2019s belt downward and to the left \u2014 the dazzling blue-white star you hit is Sirius.' },
+      pl: { type: 'Bia\u0142o-niebieska + bia\u0142y karze\u0142', mass: '2,06\u00D7 S\u0142o\u0144ca', size: '1,71\u00D7 S\u0142o\u0144ca', temp: '~9 940 K', bright: '25\u00D7 S\u0142o\u0144ca', constellation: 'Wielki Pies',
+        wow: 'Najja\u015Bniejsza gwiazda na nocnym niebie! Staro\u017Cytni Egipcjanie oparli na niej sw\u00F3j kalendarz \u2014 gdy Syriusz wschodzi\u0142 o \u015Bwicie, Nil wkr\u00F3tce wylewa\u0142.',
+        find: 'Pod\u0105\u017Caj wzd\u0142u\u017C Pasa Oriona w d\u00F3\u0142 i w lewo \u2014 ol\u015Bniewaj\u0105ca bia\u0142o-niebieska gwiazda to Syriusz.' }
+    }
+  },
+  { nameEn: 'Epsilon Eridani', namePl: 'Epsilon Eridani', dist: 10.47,
+    color: '#ffcc88', glowRgb: '255,204,136', radius: 6,
+    facts: {
+      en: { type: 'Orange main-sequence (K2)', mass: '0.82\u00D7 Sun', size: '0.74\u00D7 Sun', temp: '~5,080 K', bright: '0.34\u00D7 Sun', constellation: 'Eridanus',
+        wow: 'A young star surrounded by a dusty disk and at least one confirmed planet \u2014 it may look like our solar system did four billion years ago.',
+        find: 'Visible to the naked eye on a dark autumn night, in the long winding constellation Eridanus south of Orion.' },
+      pl: { type: 'Pomara\u0144czowa ci\u0105gu g\u0142\u00F3wnego (K2)', mass: '0,82\u00D7 S\u0142o\u0144ca', size: '0,74\u00D7 S\u0142o\u0144ca', temp: '~5 080 K', bright: '0,34\u00D7 S\u0142o\u0144ca', constellation: 'Eridan',
+        wow: 'M\u0142oda gwiazda otoczona dyskiem py\u0142owym i co najmniej jedn\u0105 potwierdzon\u0105 planet\u0105 \u2014 mo\u017Ce wygl\u0105da\u0107 jak nasz Uk\u0142ad S\u0142oneczny cztery miliardy lat temu.',
+        find: 'Widoczna go\u0142ym okiem w ciemn\u0105 jesienn\u0105 noc, w wij\u0105cym si\u0119 gwiazdozbiorze Eridan na po\u0142udnie od Oriona.' }
+    }
+  },
+  { nameEn: 'Tau Ceti', namePl: 'Tau Ceti', dist: 11.91,
+    color: '#fff0c0', glowRgb: '255,240,192', radius: 6,
+    facts: {
+      en: { type: 'Yellow-white main-sequence (G8)', mass: '0.78\u00D7 Sun', size: '0.79\u00D7 Sun', temp: '~5,344 K', bright: '0.52\u00D7 Sun', constellation: 'Cetus',
+        wow: 'The nearest single Sun-like star \u2014 a favorite target of SETI since the 1960s, and host to a swarm of candidate rocky planets.',
+        find: 'A faint naked-eye star in Cetus the Whale, visible from almost anywhere on Earth on autumn evenings.' },
+      pl: { type: '\u017B\u00F3\u0142to-bia\u0142a ci\u0105gu g\u0142\u00F3wnego (G8)', mass: '0,78\u00D7 S\u0142o\u0144ca', size: '0,79\u00D7 S\u0142o\u0144ca', temp: '~5 344 K', bright: '0,52\u00D7 S\u0142o\u0144ca', constellation: 'Wieloryb',
+        wow: 'Najbli\u017Csza samotna gwiazda typu S\u0142o\u0144ca \u2014 od lat 60. ulubiony cel SETI i gospodyni roju potencjalnie skalistych planet.',
+        find: 'S\u0142aba, ale widoczna go\u0142ym okiem gwiazda w gwiazdozbiorze Wieloryba, dost\u0119pna z niemal ca\u0142ej Ziemi jesiennymi wieczorami.' }
+    }
+  },
+  { nameEn: 'Altair', namePl: 'Altair', dist: 16.73,
+    color: '#f0f8ff', glowRgb: '240,248,255', radius: 7,
+    facts: {
+      en: { type: 'White main-sequence (A7)', mass: '1.79\u00D7 Sun', size: '1.63\u00D7 Sun', temp: '~7,550 K', bright: '10.6\u00D7 Sun', constellation: 'Aquila',
+        wow: 'Altair spins so fast \u2014 once every 9 hours \u2014 that it bulges at its equator by about 22 % more than at its poles.',
+        find: 'One of the three stars of the Summer Triangle; the bright point lowest in the sky, in the constellation Aquila the Eagle.' },
+      pl: { type: 'Bia\u0142a ci\u0105gu g\u0142\u00F3wnego (A7)', mass: '1,79\u00D7 S\u0142o\u0144ca', size: '1,63\u00D7 S\u0142o\u0144ca', temp: '~7 550 K', bright: '10,6\u00D7 S\u0142o\u0144ca', constellation: 'Orze\u0142',
+        wow: 'Altair obraca si\u0119 tak szybko \u2014 raz na 9 godzin \u2014 \u017Ce wybrzusza si\u0119 na r\u00F3wniku o oko\u0142o 22 % bardziej ni\u017C na biegunach.',
+        find: 'Jedna z trzech gwiazd Tr\u00F3jk\u0105ta Letniego; najni\u017Csza w gwiazdozbiorze Or\u0142a.' }
+    }
+  },
+  { nameEn: 'Vega', namePl: 'Wega', dist: 25.04,
+    color: '#ffffff', glowRgb: '255,255,255', radius: 6,
+    facts: {
+      en: { type: 'Blue-white main sequence (A0)', mass: '2.1\u00D7 Sun', size: '2.36\u00D7 Sun', temp: '~9,600 K', bright: '40\u00D7 Sun', constellation: 'Lyra',
+        wow: 'Vega spins so fast \u2014 once every 12.5 hours \u2014 that it bulges at its equator like a squished ball! It was also the first star ever photographed (1850).',
+        find: 'In summer, look almost straight overhead for a brilliant blue-white star \u2014 the brightest point of the Summer Triangle.' },
+      pl: { type: 'Bia\u0142o-niebieska ci\u0105gu g\u0142\u00F3wnego (A0)', mass: '2,1\u00D7 S\u0142o\u0144ca', size: '2,36\u00D7 S\u0142o\u0144ca', temp: '~9 600 K', bright: '40\u00D7 S\u0142o\u0144ca', constellation: 'Lutnia',
+        wow: 'Wega wiruje tak szybko \u2014 raz na 12,5 godziny \u2014 \u017Ce wybrzusza si\u0119 na r\u00F3wniku jak sp\u0142aszczona pi\u0142ka! By\u0142a te\u017C pierwsz\u0105 sfotografowan\u0105 gwiazd\u0105 (1850).',
+        find: 'Latem sp\u00F3jrz prawie prosto nad siebie \u2014 ol\u015Bniewaj\u0105ca bia\u0142o-niebieska gwiazda to najja\u015Bniejszy wierzcho\u0142ek Tr\u00F3jk\u0105ta Letniego.' }
+    }
+  },
+  { nameEn: 'Arcturus', namePl: 'Arktur', dist: 36.66,
+    color: '#ffaa55', glowRgb: '255,170,85', radius: 9,
+    facts: {
+      en: { type: 'Orange giant (K1 III)', mass: '1.08\u00D7 Sun', size: '25.4\u00D7 Sun', temp: '~4,286 K', bright: '170\u00D7 Sun', constellation: 'Bo\u00F6tes',
+        wow: 'Arcturus travels perpendicular to the plane of the Milky Way at 122 km/s \u2014 it\u2019s a visitor from the galaxy\u2019s ancient halo, passing through our disk.',
+        find: 'Follow the curve of the Big Dipper\u2019s handle \u2014 \u201Carc to Arcturus\u201D, a warm orange star in the constellation Bo\u00F6tes.' },
+      pl: { type: 'Pomara\u0144czowy olbrzym (K1 III)', mass: '1,08\u00D7 S\u0142o\u0144ca', size: '25,4\u00D7 S\u0142o\u0144ca', temp: '~4 286 K', bright: '170\u00D7 S\u0142o\u0144ca', constellation: 'Wolarz',
+        wow: 'Arktur porusza si\u0119 prostopadle do p\u0142aszczyzny Drogi Mlecznej z pr\u0119dko\u015Bci\u0105 122 km/s \u2014 to go\u015B\u0107 z prastarego halo galaktyki, przelatuj\u0105cy przez dysk.',
+        find: 'Pod\u0105\u017Caj wzd\u0142u\u017C \u0142uku r\u0119koje\u015Bci Wielkiego Wozu \u2014 \u201E\u0142ukiem do Arktura\u201D, ciep\u0142ej pomara\u0144czowej gwiazdy w gwiazdozbiorze Wolarza.' }
+    }
+  },
 ];
+
+// ============================================================
+//  BH CATALOG - single source of truth. Physics, UI, and I18N
+//  read everything from BH_CATALOG[i]. Ordered small -> giant.
+// ============================================================
+var BH_CATALOG = [
+  {
+    nameEn: 'V616 Monocerotis', shortEn: 'V616 Mon',
+    namePl: 'V616 Monocerotis', shortPl: 'V616 Mon',
+    logMass: 0.82, uMin: 3.0,
+    coreRadius: 12, ringColor: '#ff4a2a', glowRgb: '255,74,42', distanceLy: 3000,
+    factEn: 'First confirmed stellar black hole, in a binary 3,000 ly away.',
+    factPl: 'Pierwsza potwierdzona gwiazdowa czarna dziura, 3000 lat \u015Bwietlnych st\u0105d.',
+    facts: {
+      en: { type: 'Stellar black hole', mass: '~6.6\u00D7 Sun', size: '~40 km horizon', temp: 'No thermal emission from horizon', bright: 'Quiescent; outburst in 1975', constellation: 'Monoceros',
+        wow: 'Also called A0620\u221200, this was the first object proven to be a black hole through careful weighing of its orbit with a companion star \u2014 any object heavier than ~3 Suns and that compact cannot be anything else.',
+        find: 'Invisible; located by its X-ray outbursts and the wobble of its orange-dwarf partner, a few degrees south-east of the star Betelgeuse.' },
+      pl: { type: 'Gwiazdowa czarna dziura', mass: '~6,6\u00D7 S\u0142o\u0144ca', size: '~40 km horyzontu', temp: 'Horyzont nie wysy\u0142a promieniowania', bright: 'Spoczywa; wybuch w 1975', constellation: 'Jednoro\u017Cec',
+        wow: 'Zwana te\u017C A0620\u221200, by\u0142a pierwszym obiektem jednoznacznie uznanym za czarn\u0105 dziur\u0119 \u2014 jej masa ponad 3 S\u0142o\u0144c w tak ma\u0142ej przestrzeni wyklucza cokolwiek innego.',
+        find: 'Niewidoczna go\u0142ym okiem; wykrywana po wybuchach rentgenowskich i po ruchu pomara\u0144czowego karla-partnera, kilka stopni na po\u0142udniowy wsch\u00F3d od Betelgezy.' }
+    }
+  },
+  {
+    nameEn: 'Cygnus X-1', shortEn: 'Cyg X-1',
+    namePl: 'Cygnus X-1', shortPl: 'Cyg X-1',
+    logMass: 1.32, uMin: 3.0,
+    coreRadius: 13, ringColor: '#ff4a2a', glowRgb: '255,74,42', distanceLy: 7200,
+    factEn: 'First widely accepted black hole (confirmed 1971). About 7,200 ly away.',
+    factPl: 'Pierwsza szeroko zaakceptowana czarna dziura (potwierdzona w 1971).',
+    facts: {
+      en: { type: 'Stellar black hole (X-ray binary)', mass: '~21\u00D7 Sun', size: '~125 km horizon', temp: 'Accretion disk: millions of K', bright: 'Steady bright X-ray source', constellation: 'Cygnus',
+        wow: 'Stephen Hawking once bet Kip Thorne that Cyg X-1 was NOT a black hole \u2014 as insurance, he said, in case his work on black holes was wrong. He lost the bet in 1990.',
+        find: 'Lies near the bright star Eta Cygni in the Summer Triangle; its presence betrayed by X-rays and the orbital wobble of its blue-supergiant companion HDE 226868.' },
+      pl: { type: 'Gwiazdowa czarna dziura (uk\u0142ad rentgenowski)', mass: '~21\u00D7 S\u0142o\u0144ca', size: '~125 km horyzontu', temp: 'Dysk akrecyjny: miliony K', bright: 'Sta\u0142e jasne \u017Ar\u00F3d\u0142o rentgenowskie', constellation: 'Lab\u0119d\u017A',
+        wow: 'Stephen Hawking za\u0142o\u017Cy\u0142 si\u0119 kiedy\u015B z Kipem Thorne\u2019em, \u017Ce Cyg X-1 NIE jest czarn\u0105 dziur\u0105 \u2014 jako polis\u0119, na wypadek gdyby jego teoria by\u0142a b\u0142\u0119dna. Przegra\u0142 zak\u0142ad w 1990.',
+        find: 'Blisko jasnej gwiazdy Eta Cygni w Tr\u00F3jk\u0105cie Letnim; zdradzaj\u0105 j\u0105 promieniowanie X i wahania orbity niebieskiego nadolbrzyma HDE 226868.' }
+    }
+  },
+  {
+    nameEn: 'GW150914 remnant', shortEn: 'GW150914',
+    namePl: 'GW150914 (pozosta\u0142o\u015B\u0107)', shortPl: 'GW150914',
+    logMass: 1.79, uMin: 2.5,
+    coreRadius: 14, ringColor: '#ff5a3a', glowRgb: '255,90,58', distanceLy: 1400000000,
+    factEn: 'Remnant of the first gravitational wave detection (LIGO, 2015).',
+    factPl: 'Pozosta\u0142o\u015B\u0107 po pierwszej wykrytej fali grawitacyjnej (LIGO, 2015).',
+    facts: {
+      en: { type: 'Stellar-mass merger remnant', mass: '~62\u00D7 Sun', size: '~370 km horizon', temp: 'No thermal emission', bright: 'Signaled only by gravitational waves', constellation: 'Southern sky (direction uncertain)',
+        wow: 'When two black holes spiraled together 1.4 billion years ago, they radiated 3 solar masses of pure energy as gravitational waves in a fraction of a second \u2014 briefly outshining every star in the observable universe combined.',
+        find: 'Invisible by light. LIGO detected the final 0.2-second \u201Cchirp\u201D on 14 September 2015 \u2014 the first direct proof that gravitational waves exist.' },
+      pl: { type: 'Pozosta\u0142o\u015B\u0107 po zderzeniu gwiazdowych czarnych dziur', mass: '~62\u00D7 S\u0142o\u0144ca', size: '~370 km horyzontu', temp: 'Brak promieniowania', bright: 'Sygnalizowana tylko falami grawitacyjnymi', constellation: 'Niebo po\u0142udniowe (kierunek niepewny)',
+        wow: 'Gdy dwie czarne dziury po\u0142\u0105czy\u0142y si\u0119 1,4 miliarda lat temu, w u\u0142amku sekundy wypromieniowa\u0142y 3 masy S\u0142o\u0144ca czystej energii jako fale grawitacyjne \u2014 kr\u00F3tko ja\u015Bniej\u0105c bardziej ni\u017C wszystkie gwiazdy widzialnego Wszech\u015Bwiata razem.',
+        find: 'Niewidzialna w \u015Bwietle. LIGO zarejestrowa\u0142o ko\u0144cowy \u201E\u0107wierkot\u201D 0,2 sekundy 14 wrze\u015Bnia 2015 \u2014 pierwszy bezpo\u015Bredni dow\u00F3d istnienia fal grawitacyjnych.' }
+    }
+  },
+  {
+    nameEn: 'HLX-1', shortEn: 'HLX-1',
+    namePl: 'HLX-1', shortPl: 'HLX-1',
+    logMass: 4.30, uMin: 2.0,
+    coreRadius: 16, ringColor: '#ff7a59', glowRgb: '255,122,89', distanceLy: 290000000,
+    factEn: 'An intermediate-mass black hole candidate \u2014 the rare middle class.',
+    factPl: 'Kandydat na czarn\u0105 dziur\u0119 o masie po\u015Bredniej \u2014 rzadka klasa \u015Brednia.',
+    facts: {
+      en: { type: 'Intermediate-mass candidate', mass: '~20,000\u00D7 Sun', size: '~120,000 km horizon', temp: 'Accretion disk: hundreds of thousands of K', bright: 'Brightest ultraluminous X-ray source known', constellation: 'Hydra (in galaxy ESO 243-49)',
+        wow: 'The missing link between stellar and supermassive black holes. Too heavy to have formed from one star, too light for a galaxy core \u2014 astronomers think it may be the stripped nucleus of a dwarf galaxy swallowed by its host.',
+        find: 'Invisible to amateur gear. Chandra and Hubble pinpointed it at the edge of the edge-on galaxy ESO 243-49 in the southern constellation Hydra.' },
+      pl: { type: 'Kandydat na czarn\u0105 dziur\u0119 o masie po\u015Bredniej', mass: '~20 000\u00D7 S\u0142o\u0144ca', size: '~120 000 km horyzontu', temp: 'Dysk akrecyjny: setki tysi\u0119cy K', bright: 'Najja\u015Bniejsze znane \u017Ar\u00F3d\u0142o ultrajasne w rentgenie', constellation: 'Hydra (w galaktyce ESO 243-49)',
+        wow: 'Brakuj\u0105ce ogniwo mi\u0119dzy czarnymi dziurami gwiazdowymi a supermasywnymi. Za ci\u0119\u017Cka na powstanie z jednej gwiazdy, za lekka jak na j\u0105dro galaktyki \u2014 by\u0107 mo\u017Ce to ogo\u0142ocone j\u0105dro karlej galaktyki po\u0142kni\u0119tej przez gospodarza.',
+        find: 'Niewidoczna dla amator\u00F3w. Chandra i Hubble zlokalizowa\u0142y j\u0105 na skraju galaktyki ESO 243-49 w po\u0142udniowym gwiazdozbiorze Hydry.' }
+    }
+  },
+  {
+    nameEn: 'Sagittarius A*', shortEn: 'Sgr A*',
+    namePl: 'Sagittarius A*', shortPl: 'Sgr A*',
+    logMass: 6.63, uMin: 1.3,
+    coreRadius: 20, ringColor: '#ff9944', glowRgb: '255,153,68', distanceLy: 26700,
+    factEn: 'The supermassive black hole at the center of our Milky Way.',
+    factPl: 'Supermasywna czarna dziura w centrum naszej Drogi Mlecznej.',
+    facts: {
+      en: { type: 'Supermassive black hole', mass: '~4.3 million\u00D7 Sun', size: '~24 million km horizon', temp: 'Quiet; accretes only a trickle of gas', bright: 'Radio, infrared, and occasional X-ray flares', constellation: 'Sagittarius',
+        wow: 'The beating heart of our galaxy. Stars orbit it at up to 24,000 km/s \u2014 Andrea Ghez and Reinhard Genzel won the 2020 Nobel Prize for tracking those orbits and proving Sgr A* is a black hole.',
+        find: 'Hidden behind thick dust clouds on the sky, but you can aim at it: face southern Sagittarius in summer and look toward the spout of the \u201Cteapot.\u201D' },
+      pl: { type: 'Supermasywna czarna dziura', mass: '~4,3 mln\u00D7 S\u0142o\u0144ca', size: '~24 mln km horyzontu', temp: 'Spokojna; po\u017Cera znikom\u0105 ilo\u015B\u0107 gazu', bright: 'Radio, podczerwie\u0144, rzadkie rozb\u0142yski rentgenowskie', constellation: 'Strzelec',
+        wow: 'Bij\u0105ce serce naszej galaktyki. Gwiazdy kr\u0105\u017C\u0105 wok\u00F3\u0142 niej z pr\u0119dko\u015Bci\u0105 do 24 000 km/s \u2014 Andrea Ghez i Reinhard Genzel dostali za \u015Bledzenie tych orbit Nagrod\u0119 Nobla w 2020 roku.',
+        find: 'Ukryta za g\u0119stymi ob\u0142okami py\u0142u, ale mo\u017Cna wskaza\u0107 kierunek: latem sp\u00F3jrz na po\u0142udniowego Strzelca, w stron\u0119 dzi\u00F3bka \u201Eimbryczka\u201D.' }
+    }
+  },
+  {
+    nameEn: 'M87*', shortEn: 'M87*',
+    namePl: 'M87*', shortPl: 'M87*',
+    logMass: 9.81, uMin: 1.1,
+    coreRadius: 22, ringColor: '#ffaa44', glowRgb: '255,170,68', distanceLy: 53000000,
+    factEn: 'First black hole ever directly imaged (Event Horizon Telescope, 2019).',
+    factPl: 'Pierwsza czarna dziura uwieczniona na zdj\u0119ciu (Event Horizon Telescope, 2019).',
+    facts: {
+      en: { type: 'Supermassive black hole', mass: '~6.5 billion\u00D7 Sun', size: '~38 billion km horizon', temp: 'Plasma jet: trillions of K at base', bright: 'Powers a 5,000 ly relativistic jet', constellation: 'Virgo (elliptical galaxy M87)',
+        wow: 'On 10 April 2019 the Event Horizon Telescope unveiled the first-ever photograph of a black hole\u2019s shadow \u2014 a fiery orange donut around M87*, assembled from eight telescopes spanning the globe.',
+        find: 'Center of the giant elliptical galaxy M87 in Virgo. Small telescopes can spot the host galaxy; the black hole itself was imaged at radio wavelengths.' },
+      pl: { type: 'Supermasywna czarna dziura', mass: '~6,5 mld\u00D7 S\u0142o\u0144ca', size: '~38 mld km horyzontu', temp: 'Strumie\u0144 plazmy: biliony K u podstawy', bright: 'Nap\u0119dza relatywistyczny d\u017Cet o d\u0142ugo\u015Bci 5000 ly', constellation: 'Panna (galaktyka eliptyczna M87)',
+        wow: '10 kwietnia 2019 Event Horizon Telescope pokaza\u0142 pierwsze w historii zdj\u0119cie cienia czarnej dziury \u2014 ognist\u0105 pomara\u0144czow\u0105 \u201Ep\u0105czk\u00F3wk\u0119\u201D wok\u00F3\u0142 M87*, z\u0142o\u017Con\u0105 z danych o\u015Bmiu teleskop\u00F3w na ca\u0142ym \u015Bwiecie.',
+        find: 'Centrum olbrzymiej galaktyki eliptycznej M87 w Pannie. Ma\u0142ym teleskopem zobaczysz galaktyk\u0119; sam\u0105 czarn\u0105 dziur\u0119 sfotografowano w falach radiowych.' }
+    }
+  },
+  {
+    nameEn: 'TON 618', shortEn: 'TON 618',
+    namePl: 'TON 618', shortPl: 'TON 618',
+    logMass: 10.82, uMin: 1.05,
+    coreRadius: 24, ringColor: '#ffcc77', glowRgb: '255,204,119', distanceLy: 10400000000,
+    factEn: 'Among the most massive black holes known \u2014 over 60 billion suns.',
+    factPl: 'Jedna z najmasywniejszych znanych czarnych dziur \u2014 ponad 60 miliard\u00F3w S\u0142o\u0144c.',
+    facts: {
+      en: { type: 'Ultra-massive supermassive', mass: '~66 billion\u00D7 Sun', size: '~1,300 AU horizon', temp: 'Quasar disk: hundreds of thousands of K', bright: 'Quasar shining as 140 trillion Suns', constellation: 'Canes Venatici',
+        wow: 'Its event horizon alone is wider than our entire solar system out to the Kuiper belt. The quasar it powers is so bright that we see it across 10 billion light-years \u2014 most of the observable universe.',
+        find: 'Catalogued as a faint blue point on Tonantzintla Observatory plates in 1970; only radio and spectroscopic surveys reveal the monster driving the light.' },
+      pl: { type: 'Ultra-masywna supermasywna', mass: '~66 mld\u00D7 S\u0142o\u0144ca', size: '~1 300 AU horyzontu', temp: 'Dysk kwazaru: setki tysi\u0119cy K', bright: 'Kwazar \u015Bwiec\u0105cy jak 140 bilion\u00F3w S\u0142o\u0144c', constellation: 'Psy Go\u0144cze',
+        wow: 'Sam jej horyzont jest szerszy ni\u017C ca\u0142y nasz Uk\u0142ad S\u0142oneczny a\u017C po pas Kuipera. Kwazar, kt\u00F3ry zasila, \u015Bwieci tak jasno, \u017Ce widzimy go z odleg\u0142o\u015Bci 10 miliard\u00F3w lat \u015Bwietlnych.',
+        find: 'Odnotowany jako s\u0142aby b\u0142\u0119kitny punkt na kliszach obserwatorium Tonantzintla w 1970 roku; potw\u00F3r nap\u0119dzaj\u0105cy \u015Bwiat\u0142o zdradzaj\u0105 przegl\u0105dy radiowe i spektroskopowe.' }
+    }
+  },
+];
+var BH_DEFAULT_INDEX = 4;
+var BH_U_MAX = 10.0;
+
+function bhUMin(idx) { return BH_CATALOG[idx].uMin; }
+
+function bhShortName(idx) {
+  var e = BH_CATALOG[idx];
+  return state.lang === 'en' ? e.shortEn : e.shortPl;
+}
+function bhFullName(idx) {
+  var e = BH_CATALOG[idx];
+  return state.lang === 'en' ? e.nameEn : e.namePl;
+}
+function bhFact(idx) {
+  var e = BH_CATALOG[idx];
+  return state.lang === 'en' ? e.factEn : e.factPl;
+}
+function toSuperscript(n) {
+  var s = Math.abs(n).toString();
+  var out = '';
+  for (var i = 0; i < s.length; i++) out += SUP[parseInt(s[i])];
+  return n < 0 ? '\u207B' + out : out;
+}
+function bhMassDisplay(idx) {
+  var logM = BH_CATALOG[idx].logMass;
+  var exp = Math.floor(logM);
+  var mantissa = Math.pow(10, logM - exp);
+  var mantStr = mantissa < 10 ? mantissa.toFixed(1) : Math.round(mantissa).toString();
+  var sup = toSuperscript(exp);
+  if (mantStr === '1.0' || mantStr === '1') return '10' + sup + ' M\u2609';
+  return mantStr + '\u00D7' + '10' + sup + ' M\u2609';
+}
 
 // ====================== I18N ======================
 
 var I18N = {
   en: {
-    title: 'Gravitational Route Time Dilation',
-    subtitle: 'Two spacecraft, one star, different routes through gravity \u2014 who ages less?',
-    lblDestination: 'Destination',
-    lblSpeed: 'Cruise Speed',
-    lblBlackHoles: 'Black Holes',
-    lblBhMass1: 'BH 1 Mass', lblBhMass2: 'BH 2 Mass', lblBhMass3: 'BH 3 Mass',
-    lblRoutes: 'Routes',
-    btnStraightenA: 'Straighten A', btnStraightenB: 'Straighten B',
-    btnClearPoints: 'Clear Points',
-    btnReset: 'Reset',
+    title: 'Black Hole Reunion Mission',
+    subtitle: 'Two captains leave Earth together. One works near a black hole. Who is younger when they reunite?',
+
+    lblReferenceStar: 'Reference Star',
+    lblBlackHole: 'Black Hole',
+    lblCruiseSpeed: 'Cruise Speed',
+    lblMissionDistance: 'Mission Distance',
+    lblBhDistance: 'BH Science Distance',
+    lblTimingMode: 'Timing Mode',
+    modeEarth: 'Earth',
+    modeLocal: 'Local',
+    lblScienceTimeEarth: 'Science Time (Earth)',
+    lblScienceTimeLocal: 'Science Time (Local)',
     lblTimeWarp: 'Time Warp',
     warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
+    btnReset: 'Reset',
+
     lblMissionData: 'Mission Data',
-    lblDistance: 'Distance', lblCruiseSpeed: 'Speed', lblLorentz: 'Lorentz \u03B3', lblBhCountRead: 'Black holes',
+    lblPhase: 'Phase',
+    phaseIdle: 'Idle',
+    phaseOutbound: 'Outbound',
+    phaseScience: 'Science',
+    phaseReturn: 'Return',
+    phaseWaiting: 'Waiting on Earth',
+    phaseReunion: 'Reunion',
+    phasePaused: 'Paused',
+
+    lblEarthElapsed: 'Earth elapsed',
+    lblCaptainAElapsedRead: 'Captain A',
+    lblCaptainBElapsedRead: 'Captain B',
+    lblAgeDiff: 'Age difference',
+
+    lblPhysics: 'Physics',
+    lblGamma: 'Cruise \u03B3',
+    lblGBh: 'BH clock rate g',
+
     lblShipA: 'Ship A', lblShipB: 'Ship B',
     phCaptainA: 'Captain A', phCaptainB: 'Captain B',
     phShipA: 'Ship A', phShipB: 'Ship B',
-    lblRouteLength: 'Route length', lblMissionTime: 'Mission time', lblPilotTime: 'Pilot time',
-    lblMinBh: 'Min BH',
-    lblInvalidRoute: '\u26A0 INVALID ROUTE',
-    lblAgeDiff: 'Pilot Age Difference',
-    lblAgesLess: '{ship} ages {diff} yr less',
-    lblIdentical: 'Same aging',
+    lblPilot: 'Pilot',
     lblEarth: 'Earth',
-    lblBhLabel: 'BH',
-    lblMission: 'Mission', lblPilot: 'Pilot',
-    lblYr: 'yr', lblLy: 'ly',
-    summaryTitle: 'Mission Complete',
-    summaryConclusion: 'Pilot {ship} aged {diff} years less by flying deeper through strong gravity.',
-    summaryEqual: 'Both pilots aged the same \u2014 their routes had equal gravitational exposure.',
-    clickToDismiss: 'Click to dismiss',
-    infoDefault: 'Drag either route to bend it around black holes. The pilot whose ship flies closer to a black hole ages less due to gravitational time dilation.\n\nHow this model works:\n\u2022 Star distances are real. The map is schematic, not to astronomical scale.\n\u2022 Each black hole uses the Schwarzschild time-dilation factor, exact for one isolated non-rotating mass.\n\u2022 Multiple black holes are combined by multiplying their factors \u2014 a teaching heuristic, not exact general relativity.\n\u2022 The speed factor (1/\u03B3) assumes local speed relative to static observers near each hole.\n\u2022 Encounter distances are compressed for interactivity. The horizon ring is a visual stand-in, not a literal Schwarzschild radius.\n\u2022 The mission clock near Earth is a far-away reference clock, kept safe from black-hole influence by a keep-out zone.',
-    infoFlying: 'Ships are in flight. Watch the pilot clocks \u2014 the one deeper in gravity ticks slower.',
-    infoComplete: 'Both ships arrived. Check the summary to see who aged less!',
-    infoInvalid: 'A route crosses a black hole safety zone. Drag it away to enable launch.',
+    lblStarLab: 'Star Lab',
+    lblBhLab: 'Black-Hole Lab',
+    lblYr: 'yr',
+    lblLy: 'ly',
+    lblRsUnit: 'r/r\u209B',
+    lblUnitDistMission: '{d} ly',
+
+    fmtLiveSentence: 'For every 1.00 yr on Earth, Captain {B} experiences {g} yr at this black-hole station.',
+    fmtBhClosestHover: 'Closest safe hover: u \u2248 {u} r/r\u209B (tides).',
+    sfType: 'Type', sfMass: 'Mass', sfSize: 'Size', sfTemp: 'Temperature',
+    sfBright: 'Brightness', sfDist: 'Distance', sfFind: 'Find it',
+    hoverHint: 'Hover the star or black hole for details.',
+    noteStationKeeping: 'The black-hole lab is held at a fixed distance by station-keeping engines. This is not a free orbit.',
+    noteStarReference: 'The reference star is used as a weak-gravity comparison stop; its own dilation is neglected.',
+    noteTimingEarth: 'Science time is scheduled by Mission Control. Both captains work away from Earth for the same Earth-measured duration.',
+    noteTimingLocal: 'Each captain performs the same amount of local lab time. Near the black hole, the same local duration takes longer from Earth\'s point of view.',
+    noteSchematic: 'Scene is schematic; physics uses the numeric u = r/r\u209B.',
+
+    summaryTitle: 'Reunion on Earth',
+    summaryLabelEarth: 'Earth elapsed',
+    summaryLabelCaptainA: 'Captain {A}',
+    summaryLabelCaptainB: 'Captain {B}',
+    summaryLabelAgeDiff: 'Age difference',
+    summaryYounger: '{B} is younger',
+    summaryConclusionEarth: '{B} spent {T} Earth years hovering near {bh} at u = r/r\u209B = {u}. Their clock ran at {g}\u00D7 Earth rate during the science phase, so they aged less \u2014 even though both flew the same distance at the same speed.',
+    summaryConclusionLocal: 'Each captain performed {T} local years of lab time. {A} finished first in Earth time and waited {wait} years on Earth for {B} to return. That Earth wait is why {A} ended up older.',
+    summaryEqual: 'Both captains aged the same at reunion.',
+    clickToDismiss: 'Click or press Esc to dismiss',
+
+    infoDefault: 'Two captains start the same age on Earth. They fly the same distance at the same speed. Captain A works at a reference star-side lab in weak gravity. Captain B hovers near a black hole, where clocks run more slowly. When they come back to Earth, Captain B has aged less.\n\nHow this teaching model works:\n\u2022 Cruise uses exact special relativity.\n\u2022 The black-hole science phase uses the Schwarzschild static-clock factor g = \u221A(1 \u2212 1/u), u = r/r\u209B.\n\u2022 The star-side lab is an explicit weak-gravity reference; its own time-dilation effect is neglected.\n\u2022 Canvas geometry is schematic \u2014 mission distance is the number shown, not the pixel length.',
+    infoRunning: 'Ships are in flight. Earth-frame clocks tick steadily; each pilot\'s clock runs at the rate set by local physics.',
+    infoComplete: 'Reunion on Earth. Compare the ages.',
+    infoPaused: 'Mission paused. Press a warp button to resume, or Reset to start over.',
   },
   pl: {
-    title: 'Dylatacja Czasu na Trasie Grawitacyjnej',
-    subtitle: 'Dwa statki, jedna gwiazda, r\u00F3\u017Cne trasy przez grawitacj\u0119 \u2014 kto zestarzeje si\u0119 mniej?',
-    lblDestination: 'Cel podr\u00F3\u017Cy',
-    lblSpeed: 'Pr\u0119dko\u015B\u0107 przelotowa',
-    lblBlackHoles: 'Czarne dziury',
-    lblBhMass1: 'Masa CD 1', lblBhMass2: 'Masa CD 2', lblBhMass3: 'Masa CD 3',
-    lblRoutes: 'Trasy',
-    btnStraightenA: 'Wyprostuj A', btnStraightenB: 'Wyprostuj B',
-    btnClearPoints: 'Wyczy\u015B\u0107 punkty',
-    btnReset: 'Resetuj',
+    title: 'Misja Powrotna w Cieniu Czarnej Dziury',
+    subtitle: 'Dw\u00F3ch kapitan\u00F3w wyrusza razem z Ziemi. Jeden pracuje przy czarnej dziurze. Kto b\u0119dzie m\u0142odszy, gdy si\u0119 spotkaj\u0105?',
+
+    lblReferenceStar: 'Gwiazda odniesienia',
+    lblBlackHole: 'Czarna dziura',
+    lblCruiseSpeed: 'Pr\u0119dko\u015B\u0107 przelotowa',
+    lblMissionDistance: 'Odleg\u0142o\u015B\u0107 misji',
+    lblBhDistance: 'Dystans naukowy CD',
+    lblTimingMode: 'Tryb czasu',
+    modeEarth: 'Ziemia',
+    modeLocal: 'Lokalny',
+    lblScienceTimeEarth: 'Czas nauki (Ziemia)',
+    lblScienceTimeLocal: 'Czas nauki (lokalny)',
     lblTimeWarp: 'Przyspieszenie',
     warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
+    btnReset: 'Reset',
+
     lblMissionData: 'Dane misji',
-    lblDistance: 'Odleg\u0142o\u015B\u0107', lblCruiseSpeed: 'Pr\u0119dko\u015B\u0107', lblLorentz: 'Lorentz \u03B3', lblBhCountRead: 'Czarne dziury',
+    lblPhase: 'Faza',
+    phaseIdle: 'Gotowo\u015B\u0107',
+    phaseOutbound: 'Wylot',
+    phaseScience: 'Nauka',
+    phaseReturn: 'Powr\u00F3t',
+    phaseWaiting: 'Oczekiwanie na Ziemi',
+    phaseReunion: 'Spotkanie',
+    phasePaused: 'Pauza',
+
+    lblEarthElapsed: 'Czas Ziemi',
+    lblCaptainAElapsedRead: 'Kapitan A',
+    lblCaptainBElapsedRead: 'Kapitan B',
+    lblAgeDiff: 'R\u00F3\u017Cnica wieku',
+
+    lblPhysics: 'Fizyka',
+    lblGamma: '\u03B3 przelotu',
+    lblGBh: 'Tempo zegara g',
+
     lblShipA: 'Statek A', lblShipB: 'Statek B',
     phCaptainA: 'Kapitan A', phCaptainB: 'Kapitan B',
     phShipA: 'Statek A', phShipB: 'Statek B',
-    lblRouteLength: 'D\u0142ugo\u015B\u0107 trasy', lblMissionTime: 'Czas misji', lblPilotTime: 'Czas pilota',
-    lblMinBh: 'Min CD',
-    lblInvalidRoute: '\u26A0 NIEPRAWID\u0141OWA TRASA',
-    lblAgeDiff: 'R\u00F3\u017Cnica Wieku Pilot\u00F3w',
-    lblAgesLess: '{ship} starzeje si\u0119 o {diff} lat mniej',
-    lblIdentical: 'Takie samo starzenie',
+    lblPilot: 'Pilot',
     lblEarth: 'Ziemia',
-    lblBhLabel: 'CD',
-    lblMission: 'Misja', lblPilot: 'Pilot',
-    lblYr: 'lat', lblLy: 'ly',
-    summaryTitle: 'Misja zako\u0144czona',
-    summaryConclusion: 'Pilot {ship} zestarza\u0142 si\u0119 o {diff} lat mniej, lec\u0105c bli\u017Cej silnej grawitacji.',
-    summaryEqual: 'Obaj piloci zestarzeli si\u0119 tak samo \u2014 ich trasy mia\u0142y r\u00F3wn\u0105 ekspozycj\u0119 grawitacyjn\u0105.',
-    clickToDismiss: 'Kliknij, aby zamkn\u0105\u0107',
-    infoDefault: 'Przeci\u0105gnij tras\u0119, aby zakrzywi\u0107 j\u0105 wok\u00F3\u0142 czarnych dziur. Pilot, kt\u00F3rego statek leci bli\u017Cej czarnej dziury, starzeje si\u0119 mniej dzi\u0119ki grawitacyjnej dylatacji czasu.\n\nJak dzia\u0142a ten model:\n\u2022 Odleg\u0142o\u015Bci gwiazd s\u0105 prawdziwe. Mapa jest schematyczna, nie w skali astronomicznej.\n\u2022 Ka\u017Cda czarna dziura u\u017Cywa czynnika dylatacji Schwarzschilda, dok\u0142adnego dla pojedynczej izolowanej nierotuj\u0105cej masy.\n\u2022 Wiele czarnych dziur \u0142\u0105czymy mno\u017C\u0105c ich czynniki \u2014 to przybli\u017Cenie edukacyjne, nie dok\u0142adna og\u00F3lna teoria wzgl\u0119dno\u015Bci.\n\u2022 Czynnik pr\u0119dko\u015Bci (1/\u03B3) zak\u0142ada lokaln\u0105 pr\u0119dko\u015B\u0107 wzgl\u0119dem statycznych obserwator\u00F3w przy ka\u017Cdej dziurze.\n\u2022 Odleg\u0142o\u015Bci spotka\u0144 s\u0105 skompresowane dla interaktywno\u015Bci. Pier\u015Bcie\u0144 horyzontu to wizualne przybli\u017Cenie, nie dos\u0142owny promie\u0144 Schwarzschilda.\n\u2022 Zegar misji przy Ziemi to odleg\u0142y zegar odniesienia, chroniony stref\u0105 buforow\u0105 przed wp\u0142ywem czarnych dziur.',
-    infoFlying: 'Statki s\u0105 w locie. Obserwuj zegary pilot\u00F3w \u2014 ten g\u0142\u0119biej w grawitacji tyka wolniej.',
-    infoComplete: 'Oba statki dotar\u0142y. Sprawd\u017A podsumowanie, kto zestarza\u0142 si\u0119 mniej!',
-    infoInvalid: 'Trasa przecina stref\u0119 bezpiecze\u0144stwa czarnej dziury. Odsu\u0144 j\u0105, aby umo\u017Cliwi\u0107 start.',
+    lblStarLab: 'Laboratorium Gwiezdne',
+    lblBhLab: 'Laboratorium Czarnodziurowe',
+    lblYr: 'lat',
+    lblLy: 'ly',
+    lblRsUnit: 'r/r\u209B',
+    lblUnitDistMission: '{d} ly',
+
+    fmtLiveSentence: 'Na ka\u017Cdy 1,00 rok na Ziemi Kapitan {B} do\u015Bwiadcza {g} lat na tej stacji przy czarnej dziurze.',
+    fmtBhClosestHover: 'Najbli\u017Csze bezpieczne zawi\u015Bni\u0119cie: u \u2248 {u} r/r\u209B (si\u0142y p\u0142ywowe).',
+    sfType: 'Typ', sfMass: 'Masa', sfSize: 'Rozmiar', sfTemp: 'Temperatura',
+    sfBright: 'Jasno\u015B\u0107', sfDist: 'Odleg\u0142o\u015B\u0107', sfFind: 'Znajd\u017A j\u0105',
+    hoverHint: 'Naje\u017Cd\u017A na gwiazd\u0119 lub czarn\u0105 dziur\u0119, aby zobaczy\u0107 szczeg\u00F3\u0142y.',
+    noteStationKeeping: 'Laboratorium przy czarnej dziurze jest utrzymywane w sta\u0142ej odleg\u0142o\u015Bci przez silniki podtrzymuj\u0105ce. To nie jest swobodna orbita.',
+    noteStarReference: 'Gwiazda odniesienia s\u0142u\u017Cy jako przystanek w s\u0142abym polu grawitacyjnym; jej w\u0142asn\u0105 dylatacj\u0119 pomijamy.',
+    noteTimingEarth: 'Czas nauki jest wyznaczony przez Kontrol\u0119 Misji. Obaj kapitanowie pracuj\u0105 z dala od Ziemi przez ten sam czas mierzony na Ziemi.',
+    noteTimingLocal: 'Ka\u017Cdy kapitan wykonuje ten sam lokalny czas pracy. Przy czarnej dziurze ten sam lokalny czas trwa d\u0142u\u017Cej z perspektywy Ziemi.',
+    noteSchematic: 'Scena schematyczna; fizyka u\u017Cywa liczby u = r/r\u209B.',
+
+    summaryTitle: 'Spotkanie na Ziemi',
+    summaryLabelEarth: 'Czas Ziemi',
+    summaryLabelCaptainA: 'Kapitan {A}',
+    summaryLabelCaptainB: 'Kapitan {B}',
+    summaryLabelAgeDiff: 'R\u00F3\u017Cnica wieku',
+    summaryYounger: '{B} jest m\u0142odszy',
+    summaryConclusionEarth: '{B} sp\u0119dzi\u0142 {T} lat ziemskich zawieszony przy {bh} na u = r/r\u209B = {u}. Jego zegar tyka\u0142 {g}\u00D7 wolniej ni\u017C na Ziemi, wi\u0119c zestarza\u0142 si\u0119 mniej \u2014 mimo \u017Ce obaj lecieli t\u0119 sam\u0105 tras\u0119 z t\u0105 sam\u0105 pr\u0119dko\u015Bci\u0105.',
+    summaryConclusionLocal: 'Ka\u017Cdy kapitan wykona\u0142 {T} lokalnych lat pracy. {A} sko\u0144czy\u0142 pierwszy w czasie ziemskim i czeka\u0142 {wait} lat na Ziemi na powr\u00F3t {B}. To oczekiwanie sprawi\u0142o, \u017Ce {A} jest starszy.',
+    summaryEqual: 'Obaj kapitanowie zestarzeli si\u0119 tak samo.',
+    clickToDismiss: 'Kliknij lub naci\u015Bnij Esc, aby zamkn\u0105\u0107',
+
+    infoDefault: 'Dw\u00F3ch kapitan\u00F3w startuje z Ziemi w tym samym wieku. Lec\u0105 t\u0119 sam\u0105 odleg\u0142o\u015B\u0107 z t\u0105 sam\u0105 pr\u0119dko\u015Bci\u0105. Kapitan A pracuje w laboratorium przy gwie\u017Adzie w s\u0142abej grawitacji. Kapitan B zawisa przy czarnej dziurze, gdzie zegary tykaj\u0105 wolniej. Po powrocie na Ziemi\u0119 Kapitan B zestarza\u0142 si\u0119 mniej.\n\nJak dzia\u0142a ten model edukacyjny:\n\u2022 Przelot u\u017Cywa dok\u0142adnej szczeg\u00F3lnej teorii wzgl\u0119dno\u015Bci.\n\u2022 Faza naukowa przy czarnej dziurze u\u017Cywa wsp\u00F3\u0142czynnika Schwarzschilda g = \u221A(1 \u2212 1/u), u = r/r\u209B.\n\u2022 Laboratorium gwiezdne to jawne przybli\u017Cenie s\u0142abego pola; jego w\u0142asn\u0105 dylatacj\u0119 czasu pomijamy.\n\u2022 Geometria p\u0142\u00F3tna jest schematyczna \u2014 odleg\u0142o\u015B\u0107 misji jest liczb\u0105, nie d\u0142ugo\u015Bci\u0105 w pikselach.',
+    infoRunning: 'Statki s\u0105 w locie. Zegary ziemskie tykaj\u0105 miarowo; ka\u017Cdy zegar pilota bieg\u0142nie w tempie wyznaczonym przez lokaln\u0105 fizyk\u0119.',
+    infoComplete: 'Spotkanie na Ziemi. Por\u00F3wnaj wiek kapitan\u00F3w.',
+    infoPaused: 'Misja wstrzymana. Naci\u015Bnij przycisk przyspieszenia, aby wznowi\u0107, lub Reset aby zacz\u0105\u0107 od nowa.',
   },
 };
 
@@ -532,33 +845,43 @@ var I18N = {
 
 var state = {
   lang: navigator.language && navigator.language.startsWith('pl') ? 'pl' : 'en',
-  phase: 'idle',
+  phase: 'idle',           // 'idle' | 'running' | 'paused' | 'complete'
+  missionPhase: 'pre',     // 'pre' | 'outbound' | 'science' | 'return' | 'waiting' | 'reunion'
+
   starIndex: 0,
-  beta: 0.50,
-  bhCount: 2,
+  blackHoleIndex: BH_DEFAULT_INDEX,
+
+  betaCruise: 0.50,
+  missionDistance: 4.0,
+  scienceDurationEarth: 5.0,
+  scienceDurationLocal: 5.0,
+  scienceTimingMode: 'earth',
+  uBh: 1.5,
+
+  timeline: null,
+
   warpLevel: 'normal',
-  blackHoles: [
-    { x: 0, y: 0, massExp: 6, Rh: 0, Rsafe: 0, Rinf: 0 },
-    { x: 0, y: 0, massExp: 6, Rh: 0, Rsafe: 0, Rinf: 0 },
-    { x: 0, y: 0, massExp: 6, Rh: 0, Rsafe: 0, Rinf: 0 },
-  ],
-  routeA: null,
-  routeB: null,
-  shipA: { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false },
-  shipB: { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false },
-  missionTime: 0,
-  dragMode: null,
-  dragIndex: -1,
-  dragOffsetX: 0,
-  dragOffsetY: 0,
+  earthElapsed: 0,
+  captainAElapsed: 0,
+  captainBElapsed: 0,
+
+  shipA: { pos: { x: 0, y: 0 }, heading: 0, trajectory: null },
+  shipB: { pos: { x: 0, y: 0 }, heading: 0, trajectory: null },
+
+  earthPos: { x: 0, y: 0 },
+  starLabPos: { x: 0, y: 0 },
+  bhLabPos:   { x: 0, y: 0 },
+
+  summaryShown: false,
 };
 
 // ====================== UTILITY ======================
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function T(key) { return I18N[state.lang][key] || key; }
-function fmtMass(exp) { return '10' + SUP[exp] + ' M\u2609'; }
 function fmt(v) { return v.toFixed(2); }
+function lerp(a, b, f) { return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f }; }
+function heading(from, to) { return Math.atan2(to.y - from.y, to.x - from.x); }
 
 function getCaptainName(which) {
   var el = document.getElementById('captain' + which);
@@ -579,11 +902,11 @@ var W = 0, H = 0;
 var bgStars = [];
 var lastTime = 0;
 var timeScale = 1;
+var summaryTimeoutId = null;
 
 function resize() {
   var rect = canvas.parentElement.getBoundingClientRect();
   var dpr = window.devicePixelRatio || 1;
-  var prevW = W, prevH = H;
   W = rect.width;
   H = rect.height;
   canvas.width = W * dpr;
@@ -592,27 +915,69 @@ function resize() {
   canvas.style.height = H + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  if (prevW > 0 && prevH > 0 && (prevW !== W || prevH !== H)) {
-    var sx = W / prevW, sy = H / prevH;
-    for (var i = 0; i < 3; i++) {
-      state.blackHoles[i].x *= sx;
-      state.blackHoles[i].y *= sy;
-    }
-    if (state.routeA) {
-      for (var j = 0; j < state.routeA.controlPoints.length; j++) {
-        state.routeA.controlPoints[j].x *= sx;
-        state.routeA.controlPoints[j].y *= sy;
-      }
-    }
-    if (state.routeB) {
-      for (var j = 0; j < state.routeB.controlPoints.length; j++) {
-        state.routeB.controlPoints[j].x *= sx;
-        state.routeB.controlPoints[j].y *= sy;
-      }
-    }
-    lockEndpoints();
-    rebuildAllPhysics();
+  // Fixed reunion-mission geometry. Canvas is schematic; both mission tracks
+  // have equal pixel length by construction (symmetric about Earth's horizontal).
+  state.earthPos   = { x: 0.12 * W, y: 0.50 * H };
+  state.starLabPos = { x: 0.85 * W, y: 0.22 * H };
+  state.bhLabPos   = { x: 0.85 * W, y: 0.78 * H };
+  computeShipTrajectories();
+
+  if (state.phase === 'idle') {
+    state.shipA.pos = shipParkingPos(state.shipA.trajectory);
+    state.shipB.pos = shipParkingPos(state.shipB.trajectory);
+    state.shipA.heading = heading(state.earthPos, state.shipA.trajectory.T1);
+    state.shipB.heading = heading(state.earthPos, state.shipB.trajectory.T1);
   }
+}
+
+// Star-lab dashed ring radius: large enough for the ship (glow ~18 px) to
+// visibly orbit without overlapping the star body.
+function starLabRingR(star) {
+  var r = (star && star.radius) || STAR_RADIUS;
+  return Math.max(r + 24, 34);
+}
+
+// Given Earth E, object centre C, and orbit ring radius R, return the pair of
+// tangent points from E plus the science-phase arc parameters. The ship will
+// travel E → T1 (outbound), arc CCW the long way from T1 around the far side
+// to T2 (science), then T2 → E (return).
+function computeTangentArc(E, C, R) {
+  var dx = C.x - E.x, dy = C.y - E.y;
+  var D = Math.sqrt(dx * dx + dy * dy) || 1;
+  if (R >= D - 2) R = Math.max(1, D - 2);
+  var a = Math.acos(clamp(R / D, -1, 1));
+  var thetaCE = Math.atan2(-dy, -dx);           // direction from C toward E
+  var angEntry = thetaCE + a;
+  var angExit  = thetaCE - a;
+  return {
+    E: { x: E.x, y: E.y }, C: { x: C.x, y: C.y }, R: R,
+    T1: { x: C.x + R * Math.cos(angEntry), y: C.y + R * Math.sin(angEntry) },
+    T2: { x: C.x + R * Math.cos(angExit),  y: C.y + R * Math.sin(angExit)  },
+    angEntry: angEntry, angExit: angExit,
+    arcSweep: 2 * Math.PI - 2 * a,
+  };
+}
+
+// Refresh both ships' tangent-arc trajectories. Call after anything that
+// changes Earth/target positions or the ring radii: resize, star/BH change,
+// u change.
+function computeShipTrajectories() {
+  var star = STARS[state.starIndex];
+  var rStarRing = starLabRingR(star);
+  var rBhRing   = stationRadius(state.uBh);
+  state.shipA.trajectory = computeTangentArc(state.earthPos, state.starLabPos, rStarRing);
+  state.shipB.trajectory = computeTangentArc(state.earthPos, state.bhLabPos,   rBhRing);
+}
+
+// Position and heading on the science-phase arc at parameter fSci ∈ [0,1].
+function arcPosAt(traj, fSci) {
+  var ang = traj.angEntry + traj.arcSweep * fSci;
+  return { x: traj.C.x + traj.R * Math.cos(ang), y: traj.C.y + traj.R * Math.sin(ang) };
+}
+function arcHeadAt(traj, fSci) {
+  var ang = traj.angEntry + traj.arcSweep * fSci;
+  // CCW motion velocity = R*(-sin ang, cos ang); heading = atan2(vy, vx).
+  return Math.atan2(Math.cos(ang), -Math.sin(ang));
 }
 
 function initBgStars(n) {
@@ -626,193 +991,699 @@ function initBgStars(n) {
   }
 }
 
-// ====================== LAYOUT HELPERS ======================
+// ====================== TIMELINE ======================
 
-function getEarthPos() { return { x: W * EARTH_X_FRAC, y: H * 0.5 }; }
-function getStarPos() { return { x: W * STAR_X_FRAC, y: H * 0.5 }; }
+function buildTimeline() {
+  var b = clamp(state.betaCruise, BETA_MIN, BETA_MAX);
+  var D = state.missionDistance;
+  var u = Math.max(state.uBh, 1.01);
 
-function straightLineMapLength() {
-  var ep = getEarthPos(), sp = getStarPos();
-  var dx = sp.x - ep.x, dy = sp.y - ep.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
+  var gamma     = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - b * b));
+  var tCruise   = D / b;
+  var tauCruise = tCruise / gamma;
+  var gBh       = Math.sqrt(Math.max(0, 1 - 1 / u));
 
-function lockEndpoints() {
-  var ep = getEarthPos(), sp = getStarPos();
-  if (state.routeA && state.routeA.controlPoints.length >= 2) {
-    state.routeA.controlPoints[0] = { x: ep.x, y: ep.y };
-    state.routeA.controlPoints[state.routeA.controlPoints.length - 1] = { x: sp.x, y: sp.y };
-  }
-  if (state.routeB && state.routeB.controlPoints.length >= 2) {
-    state.routeB.controlPoints[0] = { x: ep.x, y: ep.y };
-    state.routeB.controlPoints[state.routeB.controlPoints.length - 1] = { x: sp.x, y: sp.y };
-  }
-}
-
-// ====================== BLACK HOLE FUNCTIONS ======================
-
-// Encounter-scale compression: physical r_s is proportional to M, but we compress
-// 10^3..10^9 M_sun into Rh = 10..22 px for interactive usability on the schematic map.
-// Rh is the app's local horizon stand-in, not a literal Schwarzschild radius.
-function computeRh(massExp) {
-  return RH_MIN + RH_PER_EXP * (massExp - 3);
-}
-
-function updateBlackHoleRadii(bh) {
-  bh.Rh = computeRh(bh.massExp);
-  bh.Rsafe = RSAFE_FACTOR * bh.Rh;
-  bh.Rinf = RINF_FACTOR * bh.Rh;
-}
-
-function initBlackHoles() {
-  state.blackHoles[0].x = W * 0.45; state.blackHoles[0].y = H * 0.33; state.blackHoles[0].massExp = 6;
-  state.blackHoles[1].x = W * 0.55; state.blackHoles[1].y = H * 0.67; state.blackHoles[1].massExp = 6;
-  state.blackHoles[2].x = W * 0.35; state.blackHoles[2].y = H * 0.50; state.blackHoles[2].massExp = 6;
-  for (var i = 0; i < 3; i++) updateBlackHoleRadii(state.blackHoles[i]);
-}
-
-function endpointKeepout(bh) {
-  return Math.max(KEEPOUT_MIN, bh.Rinf + ENDPOINT_MARGIN);
-}
-
-function constrainBlackHole(x, y, bhIdx) {
-  var ep = getEarthPos(), sp = getStarPos();
-  var dx, dy, d;
-  var ko = endpointKeepout(state.blackHoles[bhIdx]);
-
-  dx = x - ep.x; dy = y - ep.y; d = Math.sqrt(dx * dx + dy * dy);
-  if (d < ko && d > 0) { x = ep.x + dx / d * ko; y = ep.y + dy / d * ko; }
-
-  dx = x - sp.x; dy = y - sp.y; d = Math.sqrt(dx * dx + dy * dy);
-  if (d < ko && d > 0) { x = sp.x + dx / d * ko; y = sp.y + dy / d * ko; }
-
-  for (var i = 0; i < state.bhCount; i++) {
-    if (i === bhIdx) continue;
-    var other = state.blackHoles[i];
-    var minDist = state.blackHoles[bhIdx].Rsafe + other.Rsafe + MIN_BH_SEPARATION;
-    dx = x - other.x; dy = y - other.y; d = Math.sqrt(dx * dx + dy * dy);
-    if (d < minDist && d > 0) { x = other.x + dx / d * minDist; y = other.y + dy / d * minDist; }
-  }
-
-  x = clamp(x, 30, W - 30);
-  y = clamp(y, 30, H - 30);
-  return [x, y];
-}
-
-// ====================== CATMULL-ROM SPLINE ======================
-
-function catmullRomPoint(P0, P1, P2, P3, t) {
-  var d01 = Math.pow(Math.hypot(P1.x - P0.x, P1.y - P0.y), 0.5);
-  var d12 = Math.pow(Math.hypot(P2.x - P1.x, P2.y - P1.y), 0.5);
-  var d23 = Math.pow(Math.hypot(P3.x - P2.x, P3.y - P2.y), 0.5);
-  d01 = Math.max(d01, 1e-4); d12 = Math.max(d12, 1e-4); d23 = Math.max(d23, 1e-4);
-
-  var t0 = 0, t1 = t0 + d01, t2 = t1 + d12, t3 = t2 + d23;
-  var tt = t1 + t * (t2 - t1);
-
-  var A1x = (t1 - tt) / (t1 - t0) * P0.x + (tt - t0) / (t1 - t0) * P1.x;
-  var A1y = (t1 - tt) / (t1 - t0) * P0.y + (tt - t0) / (t1 - t0) * P1.y;
-  var A2x = (t2 - tt) / (t2 - t1) * P1.x + (tt - t1) / (t2 - t1) * P2.x;
-  var A2y = (t2 - tt) / (t2 - t1) * P1.y + (tt - t1) / (t2 - t1) * P2.y;
-  var A3x = (t3 - tt) / (t3 - t2) * P2.x + (tt - t2) / (t3 - t2) * P3.x;
-  var A3y = (t3 - tt) / (t3 - t2) * P2.y + (tt - t2) / (t3 - t2) * P3.y;
-
-  var B1x = (t2 - tt) / (t2 - t0) * A1x + (tt - t0) / (t2 - t0) * A2x;
-  var B1y = (t2 - tt) / (t2 - t0) * A1y + (tt - t0) / (t2 - t0) * A2y;
-  var B2x = (t3 - tt) / (t3 - t1) * A2x + (tt - t1) / (t3 - t1) * A3x;
-  var B2y = (t3 - tt) / (t3 - t1) * A2y + (tt - t1) / (t3 - t1) * A3y;
-
-  var Cx = (t2 - tt) / (t2 - t1) * B1x + (tt - t1) / (t2 - t1) * B2x;
-  var Cy = (t2 - tt) / (t2 - t1) * B1y + (tt - t1) / (t2 - t1) * B2y;
-
-  return { x: Cx, y: Cy };
-}
-
-// ====================== ROUTE FUNCTIONS ======================
-
-function createRoute(start, end) {
-  return {
-    controlPoints: [{ x: start.x, y: start.y }, { x: end.x, y: end.y }],
-    samples: [],
-    lengthMap: 0,
-    lengthPhysical: 0,
-    refTime: 0,
-    pilotTime: 0,
-    valid: true,
-    wasInvalid: false,
-    invalidSegments: [],
-    minDist: [],
+  var tl = {
+    gamma: gamma, gBh: gBh,
+    tCruise: tCruise, tauCruise: tauCruise,
+    outboundEnd: tCruise,
+    scienceEnd: 0, returnEnd: 0, earthTotal: 0,
+    aTotal: 0, bTotal: 0, ageDiff: 0,
+    aReturnArrival: 0, waitOnEarth: 0,
+    mode: state.scienceTimingMode,
   };
+
+  if (state.scienceTimingMode === 'earth') {
+    var Tsci = state.scienceDurationEarth;
+    tl.scienceEnd  = tCruise + Tsci;
+    tl.returnEnd   = 2 * tCruise + Tsci;
+    tl.earthTotal  = tl.returnEnd;
+    tl.aTotal      = 2 * tauCruise + Tsci;
+    tl.bTotal      = 2 * tauCruise + Tsci * gBh;
+    tl.ageDiff     = tl.aTotal - tl.bTotal;
+  } else {
+    var Tloc  = state.scienceDurationLocal;
+    var tAsci = Tloc;
+    var tBsci = gBh > 0 ? Tloc / gBh : Tloc;
+    tl.scienceEnd      = tCruise + tBsci;
+    tl.aReturnArrival  = 2 * tCruise + tAsci;
+    tl.returnEnd       = 2 * tCruise + tBsci;
+    tl.earthTotal      = tl.returnEnd;
+    tl.waitOnEarth     = tl.returnEnd - tl.aReturnArrival;
+    tl.aTotal          = 2 * tauCruise + Tloc + tl.waitOnEarth;
+    tl.bTotal          = 2 * tauCruise + Tloc;
+    tl.ageDiff         = tl.aTotal - tl.bTotal;
+  }
+
+  state.timeline = tl;
 }
 
-function initRoutes() {
-  var ep = getEarthPos(), sp = getStarPos();
-  state.routeA = createRoute(ep, sp);
-  state.routeB = createRoute(ep, sp);
+function rebuildTimeline() {
+  buildTimeline();
+  if (state.phase === 'idle') {
+    state.earthElapsed = 0;
+    state.captainAElapsed = 0;
+    state.captainBElapsed = 0;
+    state.missionPhase = 'pre';
+  }
+  updateReadouts();
 }
 
-function resampleRoute(route) {
-  var cps = route.controlPoints;
-  var n = cps.length;
-  if (n < 2) { route.samples = []; route.lengthMap = 0; return; }
+// ====================== MISSION ANIMATION ======================
 
-  var samples = [];
-  for (var i = 0; i < n - 1; i++) {
-    var P0 = (i > 0) ? cps[i - 1] : { x: 2 * cps[0].x - cps[1].x, y: 2 * cps[0].y - cps[1].y };
-    var P1 = cps[i];
-    var P2 = cps[i + 1];
-    var P3 = (i < n - 2) ? cps[i + 2] : { x: 2 * cps[n - 1].x - cps[n - 2].x, y: 2 * cps[n - 1].y - cps[n - 2].y };
+function advanceMission(rawDt) {
+  var tl = state.timeline;
+  if (!tl || tl.earthTotal <= 0) return;
 
-    var startJ = (i === 0) ? 0 : 1;
-    for (var j = startJ; j <= SAMPLES_PER_SEG; j++) {
-      var t = j / SAMPLES_PER_SEG;
-      var pt = catmullRomPoint(P0, P1, P2, P3, t);
-      pt.segIdx = i;
-      samples.push(pt);
+  var scaled = rawDt * (WARP_LEVELS[state.warpLevel] || 1) * timeScale;
+  state.earthElapsed = Math.min(state.earthElapsed + scaled, tl.earthTotal);
+
+  var t = state.earthElapsed;
+  var gamma = tl.gamma, gBh = tl.gBh;
+
+  var tA = state.shipA.trajectory, tB = state.shipB.trajectory;
+  var parkA = shipParkingPos(tA), parkB = shipParkingPos(tB);
+
+  if (tl.mode === 'earth') {
+    if (t < tl.outboundEnd) {
+      state.missionPhase = 'outbound';
+      var f = tl.tCruise > 0 ? t / tl.tCruise : 1;
+      state.shipA.pos = lerp(parkA, tA.T1, f);
+      state.shipB.pos = lerp(parkB, tB.T1, f);
+      state.shipA.heading = heading(state.earthPos, tA.T1);
+      state.shipB.heading = heading(state.earthPos, tB.T1);
+      state.captainAElapsed = t / gamma;
+      state.captainBElapsed = t / gamma;
+    } else if (t < tl.scienceEnd) {
+      state.missionPhase = 'science';
+      var Tsci = state.scienceDurationEarth;
+      var fS = Tsci > 0 ? (t - tl.tCruise) / Tsci : 1;
+      state.shipA.pos = arcPosAt(tA, fS);
+      state.shipB.pos = arcPosAt(tB, fS);
+      state.shipA.heading = arcHeadAt(tA, fS);
+      state.shipB.heading = arcHeadAt(tB, fS);
+      state.captainAElapsed = tl.tauCruise + (t - tl.tCruise);
+      state.captainBElapsed = tl.tauCruise + (t - tl.tCruise) * gBh;
+    } else if (t < tl.returnEnd) {
+      state.missionPhase = 'return';
+      var fr = tl.tCruise > 0 ? (t - tl.scienceEnd) / tl.tCruise : 1;
+      state.shipA.pos = lerp(tA.T2, shipLandingPos(tA), fr);
+      state.shipB.pos = lerp(tB.T2, shipLandingPos(tB), fr);
+      state.shipA.heading = heading(tA.T2, state.earthPos);
+      state.shipB.heading = heading(tB.T2, state.earthPos);
+      state.captainAElapsed = tl.tauCruise + state.scienceDurationEarth + (t - tl.scienceEnd) / gamma;
+      state.captainBElapsed = tl.tauCruise + state.scienceDurationEarth * gBh + (t - tl.scienceEnd) / gamma;
+    } else {
+      state.missionPhase = 'reunion';
+      state.shipA.pos = shipLandingPos(tA);
+      state.shipB.pos = shipLandingPos(tB);
+      state.captainAElapsed = tl.aTotal;
+      state.captainBElapsed = tl.bTotal;
+      completeMission();
+    }
+  } else {
+    // Advanced: Fixed Local Experiment Time — ships have independent schedules.
+    var Tloc = state.scienceDurationLocal;
+    var tAsciEnd = tl.tCruise + Tloc;
+    var tAarrive = tl.aReturnArrival;
+    var tBsciEnd = tl.scienceEnd;
+    var tBarrive = tl.returnEnd;
+    var TBsci    = tBsciEnd - tl.tCruise;   // === Tloc / gBh in Earth time
+
+    // -------- Ship A: tangent → arc (Tloc) → tangent --------
+    if (t < tl.outboundEnd) {
+      var fA = tl.tCruise > 0 ? t / tl.tCruise : 1;
+      state.shipA.pos = lerp(parkA, tA.T1, fA);
+      state.shipA.heading = heading(state.earthPos, tA.T1);
+      state.captainAElapsed = t / gamma;
+    } else if (t < tAsciEnd) {
+      var fAS = Tloc > 0 ? (t - tl.tCruise) / Tloc : 1;
+      state.shipA.pos = arcPosAt(tA, fAS);
+      state.shipA.heading = arcHeadAt(tA, fAS);
+      state.captainAElapsed = tl.tauCruise + (t - tl.tCruise);
+    } else if (t < tAarrive) {
+      var fAR = tl.tCruise > 0 ? (t - tAsciEnd) / tl.tCruise : 1;
+      state.shipA.pos = lerp(tA.T2, shipLandingPos(tA), fAR);
+      state.shipA.heading = heading(tA.T2, state.earthPos);
+      state.captainAElapsed = tl.tauCruise + Tloc + (t - tAsciEnd) / gamma;
+    } else {
+      state.shipA.pos = shipLandingPos(tA);
+      state.captainAElapsed = 2 * tl.tauCruise + Tloc + (t - tAarrive);
+    }
+
+    // -------- Ship B: tangent → arc (TBsci) → tangent --------
+    if (t < tl.outboundEnd) {
+      var fB = tl.tCruise > 0 ? t / tl.tCruise : 1;
+      state.shipB.pos = lerp(parkB, tB.T1, fB);
+      state.shipB.heading = heading(state.earthPos, tB.T1);
+      state.captainBElapsed = t / gamma;
+    } else if (t < tBsciEnd) {
+      var fBS = TBsci > 0 ? (t - tl.tCruise) / TBsci : 1;
+      state.shipB.pos = arcPosAt(tB, fBS);
+      state.shipB.heading = arcHeadAt(tB, fBS);
+      state.captainBElapsed = tl.tauCruise + (t - tl.tCruise) * gBh;
+    } else if (t < tBarrive) {
+      var fBR = tl.tCruise > 0 ? (t - tBsciEnd) / tl.tCruise : 1;
+      state.shipB.pos = lerp(tB.T2, shipLandingPos(tB), fBR);
+      state.shipB.heading = heading(tB.T2, state.earthPos);
+      state.captainBElapsed = tl.tauCruise + Tloc + (t - tBsciEnd) / gamma;
+    } else {
+      state.shipB.pos = shipLandingPos(tB);
+      state.captainBElapsed = tl.bTotal;
+    }
+
+    // Derive phase label
+    if (t < tl.outboundEnd) {
+      state.missionPhase = 'outbound';
+    } else if (t < tAsciEnd) {
+      state.missionPhase = 'science';
+    } else if (t < tBsciEnd) {
+      // A is returning / waiting; B is still arcing
+      state.missionPhase = (t < tAarrive) ? 'return' : 'waiting';
+    } else if (t < tBarrive) {
+      state.missionPhase = 'return';
+    } else {
+      state.missionPhase = 'reunion';
+      completeMission();
+    }
+  }
+}
+
+function completeMission() {
+  if (state.phase === 'complete') return;
+  state.phase = 'complete';
+  state.missionPhase = 'reunion';
+  updateWarpBtns();
+  updateControlStates();
+  if (!state.summaryShown) {
+    state.summaryShown = true;
+    summaryTimeoutId = setTimeout(showReunionSummary, 400);
+  }
+}
+
+// ====================== DRAWING ======================
+
+function drawStarfield() {
+  for (var i = 0; i < bgStars.length; i++) {
+    var s = bgStars[i];
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(200,210,220,' + (s.b * 0.3) + ')';
+    ctx.fill();
+  }
+}
+
+// Progress fractions within outbound / science / return phases for a given
+// ship in the current timeline state. Values are clamped to [0, 1].
+function shipPhaseProgress(which) {
+  var tl = state.timeline;
+  if (!tl || tl.earthTotal <= 0) return { out: 0, sci: 0, ret: 0 };
+  var t = state.earthElapsed;
+  var tC = tl.tCruise;
+  var Tsci, sciEnd;
+  if (tl.mode === 'earth') {
+    Tsci = state.scienceDurationEarth;
+    sciEnd = tl.scienceEnd;
+  } else {
+    var Tloc = state.scienceDurationLocal;
+    if (which === 'A') { Tsci = Tloc; sciEnd = tC + Tloc; }
+    else               { sciEnd = tl.scienceEnd; Tsci = sciEnd - tC; }
+  }
+  var out = tC > 0    ? clamp(t / tC, 0, 1)              : 0;
+  var sci = Tsci > 0  ? clamp((t - tC) / Tsci, 0, 1)     : 0;
+  var ret = tC > 0    ? clamp((t - sciEnd) / tC, 0, 1)   : 0;
+  return { out: out, sci: sci, ret: ret };
+}
+
+// Comet-tail trail behind the ship: grows as the ship moves, and each segment
+// fades with distance behind the head. No trail shown in the idle phase; after
+// the mission ends, the tail drifts to nothing as no new segments are emitted.
+var TRAIL_TAIL_LEN = 480;   // pixels — length of the visible fade window
+var TRAIL_SAMPLE   = 4;     // pixels — spacing between sampled points
+
+function drawShipTrail(traj, which, rgb) {
+  if (!traj || state.phase === 'idle') return;
+  var p = shipPhaseProgress(which);
+  if (p.out <= 0) return;
+
+  // Sample points along the traveled path, tracking cumulative path length.
+  var pts = [];
+  function pushPt(x, y) {
+    var prev = pts.length > 0 ? pts[pts.length - 1] : null;
+    var d = prev ? Math.hypot(x - prev.x, y - prev.y) : 0;
+    pts.push({ x: x, y: y, cum: prev ? prev.cum + d : 0 });
+  }
+
+  var park = shipParkingPos(traj);
+  // Outbound
+  var outEnd = lerp(park, traj.T1, p.out);
+  var outLen = Math.hypot(outEnd.x - park.x, outEnd.y - park.y);
+  var outN = Math.max(1, Math.ceil(outLen / TRAIL_SAMPLE));
+  for (var i = 0; i <= outN; i++) {
+    var f = (i / outN) * p.out;
+    var pt = lerp(park, traj.T1, f);
+    pushPt(pt.x, pt.y);
+  }
+  // Arc
+  if (p.sci > 0) {
+    var arcLen = traj.arcSweep * traj.R * p.sci;
+    var arcN = Math.max(1, Math.ceil(arcLen / TRAIL_SAMPLE));
+    for (var j = 1; j <= arcN; j++) {
+      var fS = (j / arcN) * p.sci;
+      var ang = traj.angEntry + traj.arcSweep * fS;
+      pushPt(traj.C.x + traj.R * Math.cos(ang), traj.C.y + traj.R * Math.sin(ang));
+    }
+  }
+  // Return (p.sci must be 1 here because ret > 0 ⇒ t > scienceEnd)
+  if (p.ret > 0) {
+    var retEnd = lerp(traj.T2, state.earthPos, p.ret);
+    var retLen = Math.hypot(retEnd.x - traj.T2.x, retEnd.y - traj.T2.y);
+    var retN = Math.max(1, Math.ceil(retLen / TRAIL_SAMPLE));
+    for (var k = 1; k <= retN; k++) {
+      var fR = (k / retN) * p.ret;
+      var pt = lerp(traj.T2, state.earthPos, fR);
+      pushPt(pt.x, pt.y);
     }
   }
 
-  var cumLen = 0;
-  samples[0].cumLen = 0;
-  samples[0].cumPilotTime = 0;
-  for (var k = 1; k < samples.length; k++) {
-    var dx = samples[k].x - samples[k - 1].x;
-    var dy = samples[k].y - samples[k - 1].y;
-    cumLen += Math.sqrt(dx * dx + dy * dy);
-    samples[k].cumLen = cumLen;
-    samples[k].cumPilotTime = 0;
+  var headCum = pts[pts.length - 1].cum;
+
+  // Stroke each segment with alpha that falls off quadratically with distance
+  // behind the ship. Segments beyond the tail window are skipped outright.
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+  for (var m = pts.length - 2; m >= 0; m--) {
+    var segMidCum = (pts[m].cum + pts[m + 1].cum) * 0.5;
+    var distBehind = headCum - segMidCum;
+    if (distBehind > TRAIL_TAIL_LEN) break;            // we walk backward, the rest is farther
+    var t01 = 1 - distBehind / TRAIL_TAIL_LEN;         // 1 at head, 0 at tail end
+    var alpha = 0.55 * t01 * t01;
+    if (alpha < 0.01) continue;
+    ctx.strokeStyle = 'rgba(' + rgb + ',' + alpha.toFixed(3) + ')';
+    ctx.beginPath();
+    ctx.moveTo(pts[m].x, pts[m].y);
+    ctx.lineTo(pts[m + 1].x, pts[m + 1].y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// Ship parking spot before launch and after reset: a few pixels beyond Earth's
+// surface along its outbound tangent, so the ship is visible and already
+// aligned with the path it will fly.
+function shipParkingPos(traj) {
+  var dx = traj.T1.x - state.earthPos.x;
+  var dy = traj.T1.y - state.earthPos.y;
+  var d = Math.sqrt(dx * dx + dy * dy) || 1;
+  var off = EARTH_RADIUS + 10;
+  return {
+    x: state.earthPos.x + (dx / d) * off,
+    y: state.earthPos.y + (dy / d) * off,
+  };
+}
+
+// Arrival stop at mission's end: ship's nose ~1 px short of Earth's surface,
+// on the side it approached from (T2 → Earth direction). Ship hull nose is
+// 12 px ahead of pos (see drawShip moveTo(12,0)), so we sit the centre back
+// by EARTH_RADIUS + 12 + 1 along the approach direction.
+function shipLandingPos(traj) {
+  var dx = state.earthPos.x - traj.T2.x;
+  var dy = state.earthPos.y - traj.T2.y;
+  var d = Math.sqrt(dx * dx + dy * dy) || 1;
+  var ux = dx / d, uy = dy / d;
+  var back = EARTH_RADIUS + 13;
+  return {
+    x: state.earthPos.x - ux * back,
+    y: state.earthPos.y - uy * back,
+  };
+}
+
+function drawEarth() {
+  var ep = state.earthPos, r = EARTH_RADIUS;
+  var glow = ctx.createRadialGradient(ep.x, ep.y, r * 0.5, ep.x, ep.y, r * 2.5);
+  glow.addColorStop(0, 'rgba(77,184,255,0.25)');
+  glow.addColorStop(1, 'rgba(77,184,255,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(ep.x - r * 3, ep.y - r * 3, r * 6, r * 6);
+
+  var grad = ctx.createRadialGradient(ep.x - r * 0.3, ep.y - r * 0.3, r * 0.1, ep.x, ep.y, r);
+  grad.addColorStop(0, '#7ed6f7');
+  grad.addColorStop(0.5, '#4db8ff');
+  grad.addColorStop(1, '#1a6e8e');
+  ctx.beginPath();
+  ctx.arc(ep.x, ep.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.font = '15px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(201,209,217,0.8)';
+  ctx.textAlign = 'center';
+  ctx.fillText(T('lblEarth'), ep.x, ep.y + r + 20);
+}
+
+function drawStarLab() {
+  var sp = state.starLabPos;
+  var star = STARS[state.starIndex];
+  var r = star.radius || STAR_RADIUS;
+  var rgb = star.glowRgb || '255,241,168';
+  var bodyColor = star.color || '#fff1a8';
+
+  // Outer glow (3-stop radial gradient, extent r*4)
+  var glow = ctx.createRadialGradient(sp.x, sp.y, r * 0.2, sp.x, sp.y, r * 4);
+  glow.addColorStop(0,   'rgba(' + rgb + ',0.40)');
+  glow.addColorStop(0.4, 'rgba(' + rgb + ',0.10)');
+  glow.addColorStop(1,   'rgba(' + rgb + ',0.00)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(sp.x, sp.y, r * 4, 0, Math.PI * 2); ctx.fill();
+
+  // Body
+  ctx.beginPath();
+  ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = bodyColor;
+  ctx.fill();
+
+  // Lab ring accent (dashed ring around the star, denotes research station).
+  // Enlarged so the ship can orbit visibly during the science-phase arc.
+  var ringR = starLabRingR(star);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(' + rgb + ',0.45)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 4]);
+  ctx.beginPath();
+  ctx.arc(sp.x, sp.y, ringR, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Store hit radius for hover detection
+  state.starLabHitR = ringR + 10;
+
+  var name = state.lang === 'en' ? star.nameEn : star.namePl;
+  ctx.font = '15px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(' + rgb + ',0.85)';
+  ctx.textAlign = 'center';
+  ctx.fillText(T('lblStarLab'), sp.x, sp.y - ringR - 26);
+  ctx.font = '13px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(' + rgb + ',0.55)';
+  ctx.fillText(name, sp.x, sp.y - ringR - 10);
+}
+
+// Schematic, monotonic compressed mapping from u = r/r_s to ring radius in px.
+// Global anchors UMIN=1.0 / UMAX=BH_U_MAX so same u yields same ring size for all
+// Schwarzschild BHs (the invariance holds — selector only changes reachable u range).
+function stationRadius(u) {
+  var bh = BH_CATALOG[state.blackHoleIndex];
+  var coreR = (bh && bh.coreRadius) || BH_RADIUS;
+  var UMIN = 1.0, UMAX = BH_U_MAX;
+  // RMIN leaves ship glow (~18 px) room outside the core.
+  var RMIN = coreR + 22;
+  // BH is at (0.85W, 0.78H), so available space to canvas edge is 0.15W right
+  // and 0.22H below. Use the tighter bound minus a small margin to keep the
+  // ring on-canvas at all viewport sizes.
+  var RMAX = Math.min(0.13 * W, 0.20 * H);
+  if (RMAX < RMIN + 4) RMAX = RMIN + 4;
+  var a = Math.pow(UMIN, 0.7);
+  var b = Math.pow(UMAX, 0.7);
+  var uc = clamp(u, UMIN, UMAX);
+  var x = (Math.pow(uc, 0.7) - a) / (b - a);
+  return RMIN + x * (RMAX - RMIN);
+}
+
+function drawBhLab() {
+  var bp = state.bhLabPos;
+  var bh = BH_CATALOG[state.blackHoleIndex];
+  var r = bh.coreRadius || BH_RADIUS;
+  var rgb = bh.glowRgb || '255,122,89';
+  var ringColor = bh.ringColor || '#ff7a59';
+
+  // Outer glow
+  var glow = ctx.createRadialGradient(bp.x, bp.y, r * 0.5, bp.x, bp.y, r * 3);
+  glow.addColorStop(0,   'rgba(' + rgb + ',0.35)');
+  glow.addColorStop(0.5, 'rgba(' + rgb + ',0.10)');
+  glow.addColorStop(1,   'rgba(' + rgb + ',0.00)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(bp.x, bp.y, r * 3, 0, Math.PI * 2); ctx.fill();
+
+  // Ring at event horizon
+  ctx.strokeStyle = ringColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(bp.x, bp.y, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Dark core with per-BH rim tint
+  var coreGrad = ctx.createRadialGradient(bp.x, bp.y, 0, bp.x, bp.y, r);
+  coreGrad.addColorStop(0, '#05070c');
+  coreGrad.addColorStop(0.8, '#05070c');
+  coreGrad.addColorStop(1, 'rgba(' + rgb + ',0.25)');
+  ctx.beginPath();
+  ctx.arc(bp.x, bp.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = coreGrad;
+  ctx.fill();
+
+  // Station-keeping platform indicator: dashed ring whose radius is a monotonic
+  // compressed mapping of the current u = r/r_s. Scene is schematic (see note).
+  var stationR = stationRadius(state.uBh);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(102,217,194,0.5)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.arc(bp.x, bp.y, stationR, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Store hit radius for hover detection
+  state.bhLabHitR = Math.max(r * 3, stationR + 10);
+
+  // Label — anchored above the station ring, so it tracks state.uBh live.
+  ctx.font = '15px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(' + rgb + ',0.85)';
+  ctx.textAlign = 'center';
+  ctx.fillText(T('lblBhLab'), bp.x, bp.y - stationR - 26);
+  ctx.font = '13px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(' + rgb + ',0.55)';
+  ctx.fillText(bhShortName(state.blackHoleIndex), bp.x, bp.y - stationR - 10);
+}
+
+function drawSciencePulse(pos, color, baseR) {
+  // A single expanding ring whose phase is tied to wall-clock time.
+  var t = (Date.now() % 2000) / 2000;  // 0..1 over 2s
+  var rad = baseR + t * 30;
+  var alpha = (1 - t) * 0.4;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, rad, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function hexToRgbStr(hex) {
+  // Accepts '#RRGGBB' or '#RGB'; returns 'r,g,b'.
+  if (!hex || hex.charAt(0) !== '#') return '255,255,255';
+  var h = hex.slice(1);
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  var r = parseInt(h.slice(0, 2), 16);
+  var g = parseInt(h.slice(2, 4), 16);
+  var b = parseInt(h.slice(4, 6), 16);
+  return r + ',' + g + ',' + b;
+}
+
+function drawShip(ship, color, label, captainLabel, clockValue) {
+  var pos = ship.pos;
+  var rgb = hexToRgbStr(color);
+
+  ctx.save();
+  ctx.translate(pos.x, pos.y);
+  ctx.rotate(ship.heading || 0);
+
+  // Colored radial glow halo around the hull
+  var glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 18);
+  glow.addColorStop(0, 'rgba(' + rgb + ',0.45)');
+  glow.addColorStop(1, 'rgba(' + rgb + ',0.00)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
+
+  // Clean triangle hull
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(12, 0);
+  ctx.lineTo(-6, -5.5);
+  ctx.lineTo(-6,  5.5);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+
+  // Label: captain name only (elapsed time lives on the sidebar clock now)
+  var offsetY = label === 'A' ? -18 : 20;
+  ctx.font = '14px "Share Tech Mono", monospace';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left';
+  ctx.fillText(getCaptainName(label), pos.x + 16, pos.y + offsetY);
+}
+
+// ====================== SIDEBAR CLOCKS ======================
+
+// How many years one full clock revolution represents. Matches timerel.html.
+// Keeps hand speed visible across very different mission durations.
+function computeYearsPerRev(total) {
+  if (!total || total <= 20) return 1;
+  if (total <= 100)          return 5;
+  if (total <= 1000)         return 50;
+  return 500;
+}
+
+// Generic analog clock. Ported from timerel.html drawAnalogClock().
+// `g` is the 2D context of the clocks canvas (not the main mission canvas).
+function drawAnalogClock(g, cx, cy, radius, elapsed, color, label, digitalText, yearsPerRev) {
+  var angle = ((elapsed / yearsPerRev) % 1) * Math.PI * 2 - Math.PI / 2;
+
+  // Face
+  g.beginPath();
+  g.arc(cx, cy, radius, 0, Math.PI * 2);
+  g.fillStyle = 'rgba(0,0,0,0.45)';
+  g.fill();
+  g.strokeStyle = color;
+  g.lineWidth = 2;
+  g.stroke();
+
+  // 12 ticks — every third is thicker and longer
+  for (var i = 0; i < 12; i++) {
+    var tickAngle = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    var inner = radius * (i % 3 === 0 ? 0.75 : 0.82);
+    var outer = radius * 0.95;
+    g.beginPath();
+    g.moveTo(cx + Math.cos(tickAngle) * inner, cy + Math.sin(tickAngle) * inner);
+    g.lineTo(cx + Math.cos(tickAngle) * outer, cy + Math.sin(tickAngle) * outer);
+    g.strokeStyle = color;
+    g.lineWidth = (i % 3 === 0) ? 2 : 1;
+    g.stroke();
   }
 
-  route.samples = samples;
-  route.lengthMap = cumLen;
+  // Hand
+  g.beginPath();
+  g.moveTo(cx, cy);
+  g.lineTo(cx + Math.cos(angle) * radius * 0.72, cy + Math.sin(angle) * radius * 0.72);
+  g.strokeStyle = color;
+  g.lineWidth = 2.5;
+  g.lineCap = 'round';
+  g.stroke();
+
+  // Centre dot
+  g.beginPath();
+  g.arc(cx, cy, 3, 0, Math.PI * 2);
+  g.fillStyle = color;
+  g.fill();
+
+  // Label above
+  g.font = '13px "Share Tech Mono", monospace';
+  g.fillStyle = 'rgba(201,209,217,0.75)';
+  g.textAlign = 'center';
+  g.fillText(label, cx, cy - radius - 10);
+
+  // Digital readout below
+  g.font = '13px "Share Tech Mono", monospace';
+  g.fillStyle = color;
+  g.fillText(digitalText, cx, cy + radius + 18);
 }
 
-function straightenRouteObj(route) {
-  var ep = getEarthPos(), sp = getStarPos();
-  route.controlPoints = [{ x: ep.x, y: ep.y }, { x: sp.x, y: sp.y }];
-  resampleRoute(route);
-  computeRoutePhysics(route);
+// Draws three analog clocks on the main mission canvas, anchored to each actor.
+// Called from drawScene() so hands stay synchronized with the animation loop.
+function drawClocks() {
+  var tl = state.timeline;
+  var total = tl ? tl.earthTotal : 0;
+  var yrPerRev = computeYearsPerRev(total);
+  var yr = T('lblYr');
+  var R = 24;  // tighter than timerel's 28 — main canvas is busier
+
+  // Earth clock: above Earth body
+  drawAnalogClock(ctx,
+    state.earthPos.x, state.earthPos.y - EARTH_RADIUS - 48, R,
+    state.earthElapsed, '#4db8ff',
+    T('lblEarth'), state.earthElapsed.toFixed(2) + ' ' + yr,
+    yrPerRev);
+
+  // Captain A and Captain B clocks: spaced evenly between star and BH centers,
+  // so the four points star → clock A → clock B → BH are equidistant.
+  var sy = state.starLabPos.y;
+  var by = state.bhLabPos.y;
+  var seg = (by - sy) / 3;
+
+  drawAnalogClock(ctx,
+    state.starLabPos.x, sy + seg, R,
+    state.captainAElapsed, '#ffb347',
+    getCaptainName('A'), state.captainAElapsed.toFixed(2) + ' ' + yr,
+    yrPerRev);
+
+  drawAnalogClock(ctx,
+    state.bhLabPos.x, sy + 2 * seg, R,
+    state.captainBElapsed, '#66d9c2',
+    getCaptainName('B'), state.captainBElapsed.toFixed(2) + ' ' + yr,
+    yrPerRev);
 }
 
-// ====================== PHYSICS ======================
-
-function minDistSegToPoint(ax, ay, bx, by, px, py) {
-  var dx = bx - ax, dy = by - ay;
-  var lenSq = dx * dx + dy * dy;
-  if (lenSq < 1e-12) return Math.hypot(px - ax, py - ay);
-  var t = clamp(((px - ax) * dx + (py - ay) * dy) / lenSq, 0, 1);
-  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+function drawPhaseLabel() {
+  var text = T('lblPhase') + ': ' + T('phase' + capitalize(state.missionPhase));
+  ctx.font = '13px "Share Tech Mono", monospace';
+  ctx.fillStyle = 'rgba(201,209,217,0.55)';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, 12, H - 14);
 }
 
-function computeGamma(beta) {
-  var b = clamp(beta, BETA_MIN, BETA_MAX);
-  return 1 / Math.sqrt(Math.max(EPS_BETA, 1 - b * b));
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function drawScene() {
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, W, H);
+
+  drawStarfield();
+
+  drawShipTrail(state.shipA.trajectory, 'A', '255,179,71');
+  drawShipTrail(state.shipB.trajectory, 'B', '102,217,194');
+
+  drawEarth();
+  drawStarLab();
+  drawBhLab();
+
+  drawClocks();
+
+  // Science-phase flourishes
+  if (state.phase === 'running' && state.missionPhase === 'science') {
+    var _star = STARS[state.starIndex];
+    var _starRgb = _star.glowRgb || '255,241,168';
+    var _starR = _star.radius || STAR_RADIUS;
+    drawSciencePulse(state.starLabPos, 'rgba(' + _starRgb + ',0.9)', _starR + 14);
+    var _bh = BH_CATALOG[state.blackHoleIndex];
+    var _bhR = (_bh && _bh.coreRadius) || BH_RADIUS;
+    drawSciencePulse(state.bhLabPos, 'rgba(' + (_bh.glowRgb || '255,122,89') + ',0.9)', _bhR + 14);
+  }
+  // In advanced mode, B may still be in science while A is returning/waiting
+  if (state.phase === 'running' && state.timeline && state.timeline.mode === 'local') {
+    var t = state.earthElapsed;
+    var tBsciEnd = state.timeline.scienceEnd;
+    if (t >= state.timeline.outboundEnd && t < tBsciEnd && state.missionPhase !== 'science') {
+      var _bh2 = BH_CATALOG[state.blackHoleIndex];
+      var _bhR2 = (_bh2 && _bh2.coreRadius) || BH_RADIUS;
+      drawSciencePulse(state.bhLabPos, 'rgba(' + (_bh2.glowRgb || '255,122,89') + ',0.9)', _bhR2 + 14);
+    }
+  }
+
+  if (state.phase !== 'idle') {
+    drawShip(state.shipA, '#ffb347', 'A', null, state.captainAElapsed);
+    drawShip(state.shipB, '#66d9c2', 'B', null, state.captainBElapsed);
+  }
+
+  drawPhaseLabel();
 }
 
 // ====================== SPEED BAR ======================
 
-// Non-linear slider: 0-1000 → beta 0.10-0.99
-// Linear 0.10-0.90 for slider 0-667, exponential 0.90-0.99 for 667-1000
 function sliderToBeta(s) {
   s = clamp(s, 0, 1000);
   if (s <= 667) return BETA_MIN + (0.90 - BETA_MIN) * (s / 667);
@@ -827,9 +1698,9 @@ function betaToSlider(beta) {
 }
 
 var SPEED_COLOR_STOPS = [
-  [0.10, 200, 100, 50],  // cyan
-  [0.70,  34, 100, 50],  // amber
-  [0.99, 349, 100, 55]   // danger red
+  [0.10, 200, 100, 50],
+  [0.70,  34, 100, 50],
+  [0.99, 349, 100, 55]
 ];
 
 function speedBarColor(beta) {
@@ -851,7 +1722,6 @@ function speedBarColor(beta) {
   }
   return 'hsl(212,100%,67%)';
 }
-
 function speedBarLightness(beta) {
   var stops = SPEED_COLOR_STOPS;
   if (beta <= stops[0][0]) return stops[0][3];
@@ -895,13 +1765,11 @@ function initSpeedBar(barEl) {
     var pct = (clientX - rect.left) / rect.width;
     return Math.round(clamp(pct, 0, 1) * 1000);
   }
-
   function applyValue(sliderVal) {
     sliderVal = clamp(sliderVal, 0, 1000);
     document.getElementById('speedSlider').value = sliderVal;
     handleSpeedChange();
   }
-
   function onPointerDown(e) {
     if (barEl.classList.contains('disabled')) return;
     e.preventDefault();
@@ -949,673 +1817,12 @@ function initSpeedBar(barEl) {
   plusBtn.addEventListener('touchend', function(e) { e.preventDefault(); stopHold(); });
 }
 
-function computeEffectiveGravity(px, py) {
-  // Log-space multiplication of per-hole Schwarzschild factors with smooth
-  // taper to g=1 at the influence ring so the drawn ring matches the physics.
-  var logG = 0;
-  for (var i = 0; i < state.bhCount; i++) {
-    var bh = state.blackHoles[i];
-    var dx = px - bh.x, dy = py - bh.y;
-    var dCanvas = Math.sqrt(dx * dx + dy * dy);
-    if (dCanvas >= bh.Rinf) continue; // beyond influence ring: no contribution
-    var rOverRs = Math.max(dCanvas / Math.max(bh.Rh, 1), 1 + DELTA_SAFE);
-    var term = Math.max(EPS_G, 1 - 1 / rOverRs);
-    var contrib = 0.5 * Math.log(term);
-    // Smooth fade in outer portion of influence zone to avoid ring discontinuity
-    var frac = dCanvas / bh.Rinf;
-    if (frac > RINF_FADE_START) {
-      contrib *= (1 - frac) / (1 - RINF_FADE_START);
-    }
-    logG += contrib;
-  }
-  return clamp(Math.exp(logG), G_MIN, 1);
-}
-
-function computeRoutePhysics(route) {
-  var samples = route.samples;
-  if (samples.length < 2) {
-    route.refTime = 0; route.pilotTime = 0; route.valid = true;
-    route.invalidSegments = []; route.minDist = []; route.lengthPhysical = 0;
-    return;
-  }
-
-  var star = STARS[state.starIndex];
-  var L0_map = straightLineMapLength();
-  if (L0_map < EPS_LENGTH) return;
-
-  var beta = clamp(state.beta, BETA_MIN, BETA_MAX);
-  var gamma = computeGamma(beta);
-  var invGamma = 1 / gamma;
-
-  var cumRefTime = 0, cumPilotTime = 0;
-  var anyInvalid = false;
-  var invalidSegs = [];
-  var minDists = [];
-  for (var i = 0; i < state.bhCount; i++) minDists.push(Infinity);
-
-  samples[0].cumPilotTime = 0;
-
-  for (var i = 1; i < samples.length; i++) {
-    var prev = samples[i - 1], cur = samples[i];
-    var dx = cur.x - prev.x, dy = cur.y - prev.y;
-    var dsMap = Math.sqrt(dx * dx + dy * dy);
-
-    if (dsMap < 1e-8) { cur.cumPilotTime = cumPilotTime; continue; }
-
-    var dsPhysical = star.dist * (dsMap / L0_map);
-    var dtRef = dsPhysical / beta;
-    var mx = (prev.x + cur.x) * 0.5, my = (prev.y + cur.y) * 0.5;
-    var g = computeEffectiveGravity(mx, my);
-    var dPilot = dtRef * invGamma * g;
-
-    cumRefTime += dtRef;
-    cumPilotTime += dPilot;
-    cur.cumPilotTime = cumPilotTime;
-
-    // Validation: true segment-circle minimum distance, not midpoint
-    var segInvalid = false;
-    for (var j = 0; j < state.bhCount; j++) {
-      var bh = state.blackHoles[j];
-      var dist = minDistSegToPoint(prev.x, prev.y, cur.x, cur.y, bh.x, bh.y);
-      if (dist < minDists[j]) minDists[j] = dist;
-      // Hysteresis: tighter threshold to enter invalid, looser to leave
-      var threshold = route.wasInvalid ? (bh.Rsafe * HYSTERESIS_EXIT) : (bh.Rsafe * HYSTERESIS_ENTER);
-      if (dist < threshold) segInvalid = true;
-    }
-
-    if (segInvalid) {
-      anyInvalid = true;
-      invalidSegs.push({ fromIdx: i - 1, toIdx: i });
-    }
-  }
-
-  route.lengthPhysical = star.dist * (route.lengthMap / L0_map);
-  route.wasInvalid = route.valid === false;
-  route.valid = !anyInvalid;
-  route.invalidSegments = mergeInvalidSegments(invalidSegs);
-  route.minDist = minDists;
-
-  // G4: invalid routes do not return physical timing data
-  if (anyInvalid) {
-    route.refTime = NaN;
-    route.pilotTime = NaN;
-  } else {
-    route.refTime = cumRefTime;
-    route.pilotTime = cumPilotTime;
-  }
-}
-
-function mergeInvalidSegments(segs) {
-  if (segs.length === 0) return [];
-  var merged = [{ fromIdx: segs[0].fromIdx, toIdx: segs[0].toIdx }];
-  for (var i = 1; i < segs.length; i++) {
-    var last = merged[merged.length - 1];
-    if (segs[i].fromIdx <= last.toIdx + 1) {
-      last.toIdx = Math.max(last.toIdx, segs[i].toIdx);
-    } else {
-      merged.push({ fromIdx: segs[i].fromIdx, toIdx: segs[i].toIdx });
-    }
-  }
-  return merged;
-}
-
-function rebuildAllPhysics() {
-  for (var i = 0; i < 3; i++) updateBlackHoleRadii(state.blackHoles[i]);
-  if (state.routeA) { resampleRoute(state.routeA); computeRoutePhysics(state.routeA); }
-  if (state.routeB) { resampleRoute(state.routeB); computeRoutePhysics(state.routeB); }
-}
-
-// ====================== INTERPOLATION ======================
-
-function interpolateRoute(route, fraction) {
-  var samples = route.samples;
-  if (!samples || samples.length < 2) return getEarthPos();
-  if (fraction <= 0) return { x: samples[0].x, y: samples[0].y };
-  if (fraction >= 1) return { x: samples[samples.length - 1].x, y: samples[samples.length - 1].y };
-
-  var targetLen = fraction * route.lengthMap;
-  var lo = 0, hi = samples.length - 1;
-  while (lo < hi - 1) {
-    var mid = (lo + hi) >> 1;
-    if (samples[mid].cumLen < targetLen) lo = mid; else hi = mid;
-  }
-  var s0 = samples[lo], s1 = samples[hi];
-  var segLen = s1.cumLen - s0.cumLen;
-  if (segLen < 1e-8) return { x: s0.x, y: s0.y };
-  var t = (targetLen - s0.cumLen) / segLen;
-  return { x: s0.x + t * (s1.x - s0.x), y: s0.y + t * (s1.y - s0.y) };
-}
-
-function interpolatePilotTime(route, fraction) {
-  var samples = route.samples;
-  if (!samples || samples.length < 2) return 0;
-  if (fraction <= 0) return 0;
-  if (fraction >= 1) return route.pilotTime;
-
-  var targetLen = fraction * route.lengthMap;
-  var lo = 0, hi = samples.length - 1;
-  while (lo < hi - 1) {
-    var mid = (lo + hi) >> 1;
-    if (samples[mid].cumLen < targetLen) lo = mid; else hi = mid;
-  }
-  var s0 = samples[lo], s1 = samples[hi];
-  var segLen = s1.cumLen - s0.cumLen;
-  if (segLen < 1e-8) return s0.cumPilotTime || 0;
-  var t = (targetLen - s0.cumLen) / segLen;
-  return (s0.cumPilotTime || 0) + t * ((s1.cumPilotTime || 0) - (s0.cumPilotTime || 0));
-}
-
-function getRouteTangent(route, fraction) {
-  var samples = route.samples;
-  if (!samples || samples.length < 2) return 0;
-  var targetLen = clamp(fraction, 0, 1) * route.lengthMap;
-  var idx = 0;
-  for (var i = 1; i < samples.length; i++) {
-    if (samples[i].cumLen >= targetLen) { idx = i; break; }
-    idx = i;
-  }
-  var prev = samples[Math.max(0, idx - 1)];
-  var cur = samples[idx];
-  return Math.atan2(cur.y - prev.y, cur.x - prev.x);
-}
-
-// ====================== DRAWING ======================
-
-function drawStarfield() {
-  for (var i = 0; i < bgStars.length; i++) {
-    var s = bgStars[i];
-    ctx.beginPath();
-    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(200,210,220,' + (s.b * 0.3) + ')';
-    ctx.fill();
-  }
-}
-
-function drawBaseline() {
-  var ep = getEarthPos(), sp = getStarPos();
-  ctx.setLineDash([4, 8]);
-  ctx.strokeStyle = 'rgba(201,209,217,0.08)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(ep.x, ep.y);
-  ctx.lineTo(sp.x, sp.y);
-  ctx.stroke();
-  ctx.setLineDash([]);
-}
-
-function drawBlackHoleZones(bh, idx) {
-  ctx.setLineDash([4, 6]);
-  ctx.strokeStyle = 'rgba(255,122,89,0.10)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(bh.x, bh.y, bh.Rinf, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(249,117,131,0.30)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(bh.x, bh.y, bh.Rsafe, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-}
-
-function drawBlackHoleCore(bh, idx) {
-  ctx.strokeStyle = '#ff7a59';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(bh.x, bh.y, bh.Rh, 0, Math.PI * 2);
-  ctx.stroke();
-
-  var coreGrad = ctx.createRadialGradient(bh.x, bh.y, 0, bh.x, bh.y, bh.Rh);
-  coreGrad.addColorStop(0, '#05070c');
-  coreGrad.addColorStop(0.8, '#05070c');
-  coreGrad.addColorStop(1, 'rgba(255,122,89,0.25)');
-  ctx.beginPath();
-  ctx.arc(bh.x, bh.y, bh.Rh, 0, Math.PI * 2);
-  ctx.fillStyle = coreGrad;
-  ctx.fill();
-
-  var label = T('lblBhLabel') + ' ' + (idx + 1);
-  ctx.font = '11px "Share Tech Mono", monospace';
-  ctx.fillStyle = 'rgba(255,122,89,0.6)';
-  ctx.textAlign = 'center';
-  ctx.fillText(label, bh.x, bh.y - bh.Rh - 8);
-}
-
-function drawRoute(route, color, progress) {
-  var samples = route.samples;
-  if (!samples || samples.length < 2) return;
-
-  // Find the sample index where the ship currently is
-  var splitIdx = 0;
-  if (progress > 0 && progress < 1 && route.lengthMap > 0) {
-    var targetLen = progress * route.lengthMap;
-    for (var s = 1; s < samples.length; s++) {
-      if (samples[s].cumLen >= targetLen) { splitIdx = s; break; }
-      splitIdx = s;
-    }
-  } else if (progress >= 1) {
-    splitIdx = samples.length - 1;
-  }
-
-  // Planned route: dashed, faint (ahead of ship, or entire route when idle)
-  var planStart = (progress > 0) ? Math.max(0, splitIdx - 1) : 0;
-  if (planStart < samples.length - 1) {
-    ctx.save();
-    ctx.setLineDash([6, 5]);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.35;
-    ctx.beginPath();
-    ctx.moveTo(samples[planStart].x, samples[planStart].y);
-    for (var i = planStart + 1; i < samples.length; i++) ctx.lineTo(samples[i].x, samples[i].y);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // Traveled route: solid, bright (behind ship during flight)
-  if (splitIdx > 0 && progress > 0) {
-    ctx.beginPath();
-    ctx.moveTo(samples[0].x, samples[0].y);
-    for (var i = 1; i <= splitIdx; i++) ctx.lineTo(samples[i].x, samples[i].y);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-  }
-
-  // Invalid segments: always visible as red glow
-  if (route.invalidSegments.length > 0) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(249,117,131,0.8)';
-    ctx.lineWidth = 4;
-    ctx.shadowColor = '#f97583';
-    ctx.shadowBlur = 8;
-    for (var s = 0; s < route.invalidSegments.length; s++) {
-      var seg = route.invalidSegments[s];
-      ctx.beginPath();
-      ctx.moveTo(samples[seg.fromIdx].x, samples[seg.fromIdx].y);
-      for (var k = seg.fromIdx + 1; k <= Math.min(seg.toIdx, samples.length - 1); k++) {
-        ctx.lineTo(samples[k].x, samples[k].y);
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-}
-
-function drawControlPoints(route, color) {
-  if (state.phase !== 'idle') return;
-  var cps = route.controlPoints;
-  for (var i = 0; i < cps.length; i++) {
-    var cp = cps[i];
-    var isEnd = (i === 0 || i === cps.length - 1);
-    ctx.beginPath();
-    ctx.arc(cp.x, cp.y, isEnd ? 4 : CP_VISUAL_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = isEnd ? 'rgba(201,209,217,0.4)' : color;
-    ctx.fill();
-    if (!isEnd) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-  }
-}
-
-function drawEarth() {
-  var ep = getEarthPos(), r = EARTH_RADIUS;
-  var glow = ctx.createRadialGradient(ep.x, ep.y, r * 0.5, ep.x, ep.y, r * 2.5);
-  glow.addColorStop(0, 'rgba(77,184,255,0.25)');
-  glow.addColorStop(1, 'rgba(77,184,255,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(ep.x - r * 3, ep.y - r * 3, r * 6, r * 6);
-
-  var grad = ctx.createRadialGradient(ep.x - r * 0.3, ep.y - r * 0.3, r * 0.1, ep.x, ep.y, r);
-  grad.addColorStop(0, '#7ed6f7');
-  grad.addColorStop(0.5, '#4db8ff');
-  grad.addColorStop(1, '#1a6e8e');
-  ctx.beginPath();
-  ctx.arc(ep.x, ep.y, r, 0, Math.PI * 2);
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  ctx.font = '12px "Share Tech Mono", monospace';
-  ctx.fillStyle = 'rgba(201,209,217,0.7)';
-  ctx.textAlign = 'center';
-  ctx.fillText(T('lblEarth'), ep.x, ep.y + r + 16);
-}
-
-function drawDestStar() {
-  var sp = getStarPos(), r = STAR_RADIUS;
-  var glow = ctx.createRadialGradient(sp.x, sp.y, r * 0.5, sp.x, sp.y, r * 4);
-  glow.addColorStop(0, 'rgba(255,241,168,0.35)');
-  glow.addColorStop(1, 'rgba(255,241,168,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(sp.x - r * 5, sp.y - r * 5, r * 10, r * 10);
-
-  ctx.beginPath();
-  ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff1a8';
-  ctx.fill();
-
-  var star = STARS[state.starIndex];
-  var name = state.lang === 'en' ? star.nameEn : star.namePl;
-  ctx.font = '12px "Share Tech Mono", monospace';
-  ctx.fillStyle = 'rgba(255,241,168,0.8)';
-  ctx.textAlign = 'center';
-  ctx.fillText(name, sp.x, sp.y + r + 16);
-  ctx.font = '10px "Share Tech Mono", monospace';
-  ctx.fillStyle = 'rgba(255,241,168,0.5)';
-  ctx.fillText(star.dist.toFixed(2) + ' ' + T('lblLy'), sp.x, sp.y + r + 30);
-}
-
-function drawShip(ship, route, color, label) {
-  var pos = interpolateRoute(route, ship.progress);
-  var angle = getRouteTangent(route, ship.progress);
-
-  ctx.save();
-  ctx.translate(pos.x, pos.y);
-  ctx.rotate(angle);
-  ctx.beginPath();
-  ctx.moveTo(10, 0);
-  ctx.lineTo(-6, -5);
-  ctx.lineTo(-3, 0);
-  ctx.lineTo(-6, 5);
-  ctx.closePath();
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.restore();
-
-  if (ship.arrived) {
-    ctx.save();
-    ctx.globalAlpha = 0.25 + 0.1 * Math.sin(Date.now() * 0.005);
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.restore();
-  }
-
-  var offsetY = label === 'A' ? -14 : 14;
-  ctx.font = '11px "Share Tech Mono", monospace';
-  ctx.fillStyle = color;
-  ctx.textAlign = 'left';
-  var pilotText = getCaptainName(label) + ': ' + ship.pilotTimeElapsed.toFixed(2) + ' ' + T('lblYr');
-  ctx.fillText(pilotText, pos.x + 14, pos.y + offsetY);
-}
-
-function drawRouteLabel(route, color, above) {
-  var samples = route.samples;
-  if (!samples || samples.length < 2 || !isFinite(route.lengthPhysical)) return;
-  // Place label at the route midpoint by arc length
-  var midPos = interpolateRoute(route, 0.5);
-  // Compute local tangent to offset perpendicular to the route
-  var angle = getRouteTangent(route, 0.5);
-  var perpX = -Math.sin(angle), perpY = Math.cos(angle);
-  var offsetDist = above ? -16 : 16;
-  var lx = midPos.x + perpX * offsetDist;
-  var ly = midPos.y + perpY * offsetDist;
-  // Clamp within canvas
-  lx = clamp(lx, 40, W - 40);
-  ly = clamp(ly, 14, H - 6);
-  var text = route.lengthPhysical.toFixed(2) + ' ' + T('lblLy');
-  ctx.font = '11px "Share Tech Mono", monospace';
-  ctx.textAlign = 'center';
-  // Background pill for legibility
-  var tw = ctx.measureText(text).width;
-  ctx.fillStyle = 'rgba(11,15,24,0.7)';
-  ctx.beginPath();
-  ctx.roundRect(lx - tw / 2 - 4, ly - 9, tw + 8, 14, 3);
-  ctx.fill();
-  ctx.fillStyle = color;
-  ctx.fillText(text, lx, ly + 2);
-}
-
-function drawMissionClock() {
-  if (state.phase === 'idle') return;
-  var ep = getEarthPos();
-  var maxRef = Math.max(state.routeA.refTime, state.routeB.refTime);
-  var displayed = Math.min(state.missionTime, maxRef);
-  ctx.font = '12px "Share Tech Mono", monospace';
-  ctx.fillStyle = 'rgba(201,209,217,0.8)';
-  ctx.textAlign = 'center';
-  ctx.fillText(T('lblMission') + ': ' + displayed.toFixed(2) + ' ' + T('lblYr'), ep.x, ep.y - EARTH_RADIUS - 20);
-}
-
-function drawScene() {
-  ctx.fillStyle = '#080c14';
-  ctx.fillRect(0, 0, W, H);
-
-  drawStarfield();
-  drawBaseline();
-
-  for (var i = 0; i < state.bhCount; i++) drawBlackHoleZones(state.blackHoles[i], i);
-
-  var progA = (state.phase !== 'idle') ? state.shipA.progress : 0;
-  var progB = (state.phase !== 'idle') ? state.shipB.progress : 0;
-  if (state.routeA) drawRoute(state.routeA, '#ffb347', progA);
-  if (state.routeB) drawRoute(state.routeB, '#66d9c2', progB);
-
-  if (state.routeA) drawRouteLabel(state.routeA, '#ffb347', true);
-  if (state.routeB) drawRouteLabel(state.routeB, '#66d9c2', false);
-
-  if (state.routeA) drawControlPoints(state.routeA, '#ffb347');
-  if (state.routeB) drawControlPoints(state.routeB, '#66d9c2');
-
-  for (var i = 0; i < state.bhCount; i++) drawBlackHoleCore(state.blackHoles[i], i);
-
-  drawEarth();
-  drawDestStar();
-
-  if (state.phase !== 'idle') {
-    drawShip(state.shipA, state.routeA, '#ffb347', 'A');
-    drawShip(state.shipB, state.routeB, '#66d9c2', 'B');
-    drawMissionClock();
-  }
-}
-
-// ====================== INTERACTION ======================
-
-function getCanvasPos(e) {
-  var rect = canvas.getBoundingClientRect();
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-}
-
-function hitTestControlPoints(px, py) {
-  var routes = [
-    { key: 'cpA', route: state.routeA },
-    { key: 'cpB', route: state.routeB },
-  ];
-  for (var r = 0; r < routes.length; r++) {
-    var route = routes[r].route;
-    if (!route) continue;
-    var cps = route.controlPoints;
-    for (var i = 1; i < cps.length - 1; i++) {
-      var dx = px - cps[i].x, dy = py - cps[i].y;
-      if (dx * dx + dy * dy < CP_HIT_RADIUS * CP_HIT_RADIUS) {
-        return { key: routes[r].key, route: route, index: i };
-      }
-    }
-  }
-  return null;
-}
-
-function hitTestBlackHole(px, py) {
-  for (var i = 0; i < state.bhCount; i++) {
-    var bh = state.blackHoles[i];
-    var dx = px - bh.x, dy = py - bh.y;
-    var r = bh.Rh + BH_HIT_EXTRA;
-    if (dx * dx + dy * dy < r * r) return i;
-  }
-  return -1;
-}
-
-function findNearestSampleOnRoute(route, px, py) {
-  var bestDist = Infinity, bestIdx = -1;
-  var samples = route.samples;
-  if (!samples) return { dist: Infinity, idx: -1 };
-  for (var i = 0; i < samples.length; i++) {
-    var dx = samples[i].x - px, dy = samples[i].y - py;
-    var d = dx * dx + dy * dy;
-    if (d < bestDist) { bestDist = d; bestIdx = i; }
-  }
-  return { dist: Math.sqrt(bestDist), idx: bestIdx };
-}
-
-var MAX_INTERIOR_CPS = 5;
-
-function insertControlPointOnRoute(route, sampleIdx) {
-  // Interior points = total minus 2 endpoints
-  if (route.controlPoints.length - 2 >= MAX_INTERIOR_CPS) return -1;
-  var sample = route.samples[sampleIdx];
-  var cpIdx = sample.segIdx + 1;
-  route.controlPoints.splice(cpIdx, 0, { x: sample.x, y: sample.y });
-  resampleRoute(route);
-  computeRoutePhysics(route);
-  return cpIdx;
-}
-
-function handlePointerDown(px, py) {
-  if (state.phase !== 'idle') return false;
-
-  var cpHit = hitTestControlPoints(px, py);
-  if (cpHit) {
-    state.dragMode = cpHit.key;
-    state.dragIndex = cpHit.index;
-    return true;
-  }
-
-  var bhHit = hitTestBlackHole(px, py);
-  if (bhHit >= 0) {
-    state.dragMode = 'bh';
-    state.dragIndex = bhHit;
-    state.dragOffsetX = px - state.blackHoles[bhHit].x;
-    state.dragOffsetY = py - state.blackHoles[bhHit].y;
-    return true;
-  }
-
-  var bestDist = Infinity, bestRoute = null, bestKey = null, bestIdx = -1;
-  var checks = [
-    { key: 'cpA', route: state.routeA },
-    { key: 'cpB', route: state.routeB },
-  ];
-  for (var c = 0; c < checks.length; c++) {
-    if (!checks[c].route) continue;
-    var hit = findNearestSampleOnRoute(checks[c].route, px, py);
-    if (hit.dist < bestDist) {
-      bestDist = hit.dist;
-      bestRoute = checks[c].route;
-      bestKey = checks[c].key;
-      bestIdx = hit.idx;
-    }
-  }
-  if (bestDist < ROUTE_HIT_RADIUS && bestRoute) {
-    var cpIdx = insertControlPointOnRoute(bestRoute, bestIdx);
-    if (cpIdx < 0) return false; // limit reached
-    state.dragMode = bestKey;
-    state.dragIndex = cpIdx;
-    return true;
-  }
-
-  return false;
-}
-
-function handlePointerMove(px, py) {
-  if (state.dragMode === 'cpA' || state.dragMode === 'cpB') {
-    var route = state.dragMode === 'cpA' ? state.routeA : state.routeB;
-    if (state.dragIndex > 0 && state.dragIndex < route.controlPoints.length - 1) {
-      route.controlPoints[state.dragIndex].x = px;
-      route.controlPoints[state.dragIndex].y = py;
-      resampleRoute(route);
-      computeRoutePhysics(route);
-      updateReadouts();
-    }
-    return;
-  }
-
-  if (state.dragMode === 'bh') {
-    var nx = px - state.dragOffsetX;
-    var ny = py - state.dragOffsetY;
-    var c = constrainBlackHole(nx, ny, state.dragIndex);
-    state.blackHoles[state.dragIndex].x = c[0];
-    state.blackHoles[state.dragIndex].y = c[1];
-    rebuildAllPhysics();
-    updateReadouts();
-    return;
-  }
-}
-
-function handlePointerUp() {
-  if (state.dragMode) {
-    state.dragMode = null;
-    canvas.style.cursor = 'default';
-  }
-}
-
-function updateHoverCursor(px, py) {
-  if (state.phase !== 'idle') { canvas.style.cursor = 'default'; return; }
-  if (hitTestControlPoints(px, py)) { canvas.style.cursor = 'grab'; return; }
-  if (hitTestBlackHole(px, py) >= 0) { canvas.style.cursor = 'move'; return; }
-  var routes = [state.routeA, state.routeB];
-  for (var r = 0; r < routes.length; r++) {
-    if (routes[r] && findNearestSampleOnRoute(routes[r], px, py).dist < ROUTE_HIT_RADIUS) {
-      canvas.style.cursor = 'pointer';
-      return;
-    }
-  }
-  canvas.style.cursor = 'default';
-}
-
-canvas.addEventListener('mousedown', function(e) {
-  var pos = getCanvasPos(e);
-  if (handlePointerDown(pos.x, pos.y)) {
-    canvas.style.cursor = state.dragMode === 'bh' ? 'move' : 'grabbing';
-    e.preventDefault();
-  }
-});
-
-canvas.addEventListener('mousemove', function(e) {
-  var pos = getCanvasPos(e);
-  if (state.dragMode) handlePointerMove(pos.x, pos.y);
-  else updateHoverCursor(pos.x, pos.y);
-});
-
-canvas.addEventListener('mouseup', handlePointerUp);
-canvas.addEventListener('mouseleave', handlePointerUp);
-
-canvas.addEventListener('touchstart', function(e) {
-  if (!e.touches.length) return;
-  var pos = getCanvasPos(e.touches[0]);
-  if (handlePointerDown(pos.x, pos.y)) e.preventDefault();
-}, { passive: false });
-
-canvas.addEventListener('touchmove', function(e) {
-  if (!state.dragMode || !e.touches.length) return;
-  var pos = getCanvasPos(e.touches[0]);
-  handlePointerMove(pos.x, pos.y);
-  e.preventDefault();
-}, { passive: false });
-
-canvas.addEventListener('touchend', handlePointerUp);
-
-canvas.addEventListener('dblclick', function(e) {
-  if (state.phase !== 'idle') return;
-  var pos = getCanvasPos(e);
-  var cpHit = hitTestControlPoints(pos.x, pos.y);
-  if (cpHit && cpHit.index > 0 && cpHit.index < cpHit.route.controlPoints.length - 1) {
-    cpHit.route.controlPoints.splice(cpHit.index, 1);
-    resampleRoute(cpHit.route);
-    computeRoutePhysics(cpHit.route);
-    updateReadouts();
-  }
-});
-
 // ====================== CONTROL HANDLERS ======================
 
 function stepSlider(id, delta) {
   var s = document.getElementById(id);
   var step = parseFloat(s.step) || 1;
-  var v = parseFloat(s.value) + delta;
-  v = Math.round(v / step) * step;
+  var v = parseFloat(s.value) + delta * step;
   v = Math.max(parseFloat(s.min), Math.min(parseFloat(s.max), v));
   v = Math.round(v * 10000) / 10000;
   s.value = v;
@@ -1624,104 +1831,234 @@ function stepSlider(id, delta) {
 
 function handleStarChange() {
   state.starIndex = parseInt(document.getElementById('starSelect').value) || 0;
-  rebuildAllPhysics();
+  computeShipTrajectories();
   updateReadouts();
+}
+
+function applyBhRangeToSlider() {
+  var uMin = bhUMin(state.blackHoleIndex);
+  var slider = document.getElementById('uSlider');
+  slider.min = uMin;
+  slider.max = BH_U_MAX;
+  state.uBh = clamp(state.uBh, uMin, BH_U_MAX);
+  slider.value = state.uBh;
+  document.getElementById('uVal').textContent = state.uBh.toFixed(1) + ' ' + T('lblRsUnit');
+}
+
+function handleBhChange() {
+  state.blackHoleIndex = parseInt(document.getElementById('bhSelect').value) || 0;
+  applyBhRangeToSlider();
+  updateBhFact();
+  computeShipTrajectories();
+  rebuildTimeline();
+}
+
+function updateBhFact() {
+  var el = document.getElementById('bhFactText');
+  if (!el) return;
+  var uMin = bhUMin(state.blackHoleIndex);
+  var hover = T('fmtBhClosestHover').replace('{u}', uMin.toFixed(2));
+  el.textContent = bhMassDisplay(state.blackHoleIndex) + ' \u2014 ' + hover + ' ' + T('hoverHint');
+}
+
+// ============ Facts hover card (stars and black holes) ============
+
+var factsOverlayEl = null;
+var factsVisible = false;
+var factsCurrentKey = '';  // identifies what's currently shown to skip rerender
+
+function formatLy(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + ' Gly';
+  if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + ' Mly';
+  if (n >= 1000) return n.toLocaleString('en-US') + ' ly';
+  return n + ' ly';
+}
+
+function sfRow(label, value) {
+  return '<div class="sf-stat"><span class="sf-stat-label">' + label +
+         '</span><span class="sf-stat-val">' + value + '</span></div>';
+}
+
+function showStarFactsCard(star, x, y) {
+  if (!factsOverlayEl) return;
+  var key = 'star:' + state.starIndex + ':' + state.lang;
+  if (key !== factsCurrentKey) {
+    var f = star.facts[state.lang];
+    var name = state.lang === 'en' ? star.nameEn : star.namePl;
+    factsOverlayEl.innerHTML =
+      '<div class="sf-header" style="color:' + star.color + '">' + name + '</div>' +
+      '<div class="sf-meta">' + f.type + ' \u00B7 ' + f.constellation + '</div>' +
+      '<div class="sf-stats">' +
+        sfRow(T('sfDist'),   star.dist.toFixed(2) + ' ' + T('lblLy')) +
+        sfRow(T('sfMass'),   f.mass) +
+        sfRow(T('sfSize'),   f.size) +
+        sfRow(T('sfTemp'),   f.temp) +
+        sfRow(T('sfBright'), f.bright) +
+      '</div>' +
+      '<div class="sf-wow">' + f.wow + '</div>' +
+      '<div class="sf-find"><b>' + T('sfFind') + ':</b> ' + f.find + '</div>';
+    factsCurrentKey = key;
+  }
+  placeFactsCard(x, y);
+}
+
+function showBhFactsCard(bh, x, y) {
+  if (!factsOverlayEl) return;
+  var key = 'bh:' + state.blackHoleIndex + ':' + state.lang;
+  if (key !== factsCurrentKey) {
+    var f = bh.facts[state.lang];
+    var name = state.lang === 'en' ? bh.nameEn : bh.namePl;
+    factsOverlayEl.innerHTML =
+      '<div class="sf-header" style="color:' + bh.ringColor + '">' + name + '</div>' +
+      '<div class="sf-meta">' + f.type + ' \u00B7 ' + f.constellation + '</div>' +
+      '<div class="sf-stats">' +
+        sfRow(T('sfDist'),   formatLy(bh.distanceLy)) +
+        sfRow(T('sfMass'),   f.mass) +
+        sfRow(T('sfSize'),   f.size) +
+        sfRow(T('sfTemp'),   f.temp) +
+        sfRow(T('sfBright'), f.bright) +
+      '</div>' +
+      '<div class="sf-wow">' + f.wow + '</div>' +
+      '<div class="sf-find"><b>' + T('sfFind') + ':</b> ' + f.find + '</div>';
+    factsCurrentKey = key;
+  }
+  placeFactsCard(x, y);
+}
+
+function placeFactsCard(x, y) {
+  var ow = 340;
+  var left = x - ow - 20;
+  if (left < 10) left = x + 20;
+  var top = Math.max(10, y - 80);
+  // Clamp to canvas-wrap bounds
+  var wrap = factsOverlayEl.parentElement;
+  if (wrap) {
+    var maxTop = wrap.clientHeight - 60;
+    if (top > maxTop) top = Math.max(10, maxTop);
+    var maxLeft = wrap.clientWidth - ow - 10;
+    if (left > maxLeft) left = Math.max(10, maxLeft);
+  }
+  factsOverlayEl.style.left = left + 'px';
+  factsOverlayEl.style.top  = top + 'px';
+  factsOverlayEl.style.display = 'block';
+  if (!factsVisible) {
+    setTimeout(function() { factsOverlayEl.classList.add('visible'); }, 10);
+    factsVisible = true;
+  }
+}
+
+function hideFactsCard() {
+  if (!factsOverlayEl || !factsVisible) return;
+  factsVisible = false;
+  factsCurrentKey = '';
+  factsOverlayEl.classList.remove('visible');
+  setTimeout(function() { if (!factsVisible) factsOverlayEl.style.display = 'none'; }, 150);
+}
+
+function handleDistChange() {
+  var v = parseFloat(document.getElementById('distSlider').value);
+  state.missionDistance = v;
+  document.getElementById('distVal').textContent = v.toFixed(1) + ' ' + T('lblLy');
+  rebuildTimeline();
+}
+
+function handleUChange() {
+  var v = parseFloat(document.getElementById('uSlider').value);
+  state.uBh = v;
+  document.getElementById('uVal').textContent = v.toFixed(1) + ' ' + T('lblRsUnit');
+  computeShipTrajectories();
+  rebuildTimeline();
+}
+
+function handleSciChange() {
+  var v = parseFloat(document.getElementById('sciSlider').value);
+  if (state.scienceTimingMode === 'earth') state.scienceDurationEarth = v;
+  else state.scienceDurationLocal = v;
+  document.getElementById('sciVal').textContent = v.toFixed(1) + ' ' + T('lblYr');
+  rebuildTimeline();
+}
+
+function setTimingMode(mode) {
+  if (state.phase !== 'idle') return;
+  state.scienceTimingMode = mode;
+  document.getElementById('modeEarthBtn').classList.toggle('active', mode === 'earth');
+  document.getElementById('modeLocalBtn').classList.toggle('active', mode === 'local');
+
+  // Swap the active duration value into the slider
+  var active = mode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
+  var slider = document.getElementById('sciSlider');
+  slider.value = active;
+  document.getElementById('sciVal').textContent = active.toFixed(1) + ' ' + T('lblYr');
+
+  // Update slider label and note
+  document.getElementById('lblScienceTime').textContent =
+    mode === 'earth' ? T('lblScienceTimeEarth') : T('lblScienceTimeLocal');
+  document.getElementById('timingNote').textContent =
+    mode === 'earth' ? T('noteTimingEarth') : T('noteTimingLocal');
+
+  rebuildTimeline();
 }
 
 function handleSpeedChange() {
   var s = parseInt(document.getElementById('speedSlider').value);
-  state.beta = sliderToBeta(s);
-  updateSpeedBar('speedBar', s, state.beta);
-  if (state.routeA) computeRoutePhysics(state.routeA);
-  if (state.routeB) computeRoutePhysics(state.routeB);
-  updateReadouts();
-}
-
-function setBhCount(count) {
-  state.bhCount = count;
-  for (var i = 1; i <= 3; i++) {
-    document.getElementById('bhBtn' + i).classList.toggle('active', i === count);
-    document.getElementById('bh' + i + 'MassGroup').style.display = i <= count ? '' : 'none';
-  }
-  rebuildAllPhysics();
-  updateReadouts();
-}
-
-function handleBhMassChange(bhIndex) {
-  var slider = document.getElementById('bh' + (bhIndex + 1) + 'MassSlider');
-  state.blackHoles[bhIndex].massExp = parseInt(slider.value);
-  updateBlackHoleRadii(state.blackHoles[bhIndex]);
-  // Re-constrain position: larger mass means larger keep-out from endpoints
-  var bh = state.blackHoles[bhIndex];
-  var c = constrainBlackHole(bh.x, bh.y, bhIndex);
-  bh.x = c[0]; bh.y = c[1];
-  document.getElementById('bh' + (bhIndex + 1) + 'MassVal').textContent = fmtMass(state.blackHoles[bhIndex].massExp);
-  rebuildAllPhysics();
-  updateReadouts();
+  state.betaCruise = sliderToBeta(s);
+  updateSpeedBar('speedBar', s, state.betaCruise);
+  rebuildTimeline();
 }
 
 function setWarp(level) {
   if (state.phase === 'complete') return;
+  if (!state.timeline || state.timeline.earthTotal <= 0) return;
+
   if (state.phase === 'idle') {
-    if (!state.routeA || !state.routeB) return;
-    if (!state.routeA.valid || !state.routeB.valid) return;
     state.warpLevel = level;
-    state.phase = 'flying';
-    state.missionTime = 0;
-    state.shipA = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
-    state.shipB = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
-    var maxRef = Math.max(state.routeA.refTime, state.routeB.refTime);
-    timeScale = maxRef > 0 ? maxRef / WALL_SECONDS : 1;
+    state.phase = 'running';
+    state.earthElapsed = 0;
+    state.captainAElapsed = 0;
+    state.captainBElapsed = 0;
+    state.summaryShown = false;
+    timeScale = state.timeline.earthTotal / WALL_SECONDS;
     lastTime = 0;
-  } else if (state.phase === 'flying') {
-    if (state.warpLevel === level) {
-      state.phase = 'paused';
-    } else {
-      state.warpLevel = level;
-    }
+  } else if (state.phase === 'running') {
+    if (state.warpLevel === level) state.phase = 'paused';
+    else state.warpLevel = level;
   } else if (state.phase === 'paused') {
     state.warpLevel = level;
-    state.phase = 'flying';
+    state.phase = 'running';
     lastTime = 0;
   }
+
   updateWarpBtns();
   updateControlStates();
   updateReadouts();
 }
 
 function updateWarpBtns() {
-  var flying = state.phase === 'flying';
+  var running = state.phase === 'running';
   var nBtn = document.getElementById('warpNormalBtn');
   var fBtn = document.getElementById('warpFastBtn');
   var ffBtn = document.getElementById('warpFastestBtn');
-  nBtn.classList.toggle('active', flying && state.warpLevel === 'normal');
-  fBtn.classList.toggle('active', flying && state.warpLevel === 'fast');
-  ffBtn.classList.toggle('active', flying && state.warpLevel === 'fastest');
-  nBtn.textContent = (flying && state.warpLevel === 'normal') ? '\u25ae\u25ae' : T('warpNormal');
-  fBtn.textContent = (flying && state.warpLevel === 'fast') ? '\u25ae\u25ae' : T('warpFast');
-  ffBtn.textContent = (flying && state.warpLevel === 'fastest') ? '\u25ae\u25ae' : T('warpFastest');
-}
-
-function straightenRoute(which) {
-  if (state.phase !== 'idle') return;
-  if (which === 'A' && state.routeA) straightenRouteObj(state.routeA);
-  if (which === 'B' && state.routeB) straightenRouteObj(state.routeB);
-  updateReadouts();
-}
-
-function clearAllPoints() {
-  if (state.phase !== 'idle') return;
-  if (state.routeA) straightenRouteObj(state.routeA);
-  if (state.routeB) straightenRouteObj(state.routeB);
-  updateReadouts();
+  nBtn.classList.toggle('active', running && state.warpLevel === 'normal');
+  fBtn.classList.toggle('active', running && state.warpLevel === 'fast');
+  ffBtn.classList.toggle('active', running && state.warpLevel === 'fastest');
+  nBtn.textContent = (running && state.warpLevel === 'normal') ? '\u25ae\u25ae' : T('warpNormal');
+  fBtn.textContent = (running && state.warpLevel === 'fast') ? '\u25ae\u25ae' : T('warpFast');
+  ffBtn.textContent = (running && state.warpLevel === 'fastest') ? '\u25ae\u25ae' : T('warpFastest');
 }
 
 function handleReset() {
+  if (summaryTimeoutId) { clearTimeout(summaryTimeoutId); summaryTimeoutId = null; }
   state.phase = 'idle';
+  state.missionPhase = 'pre';
   state.warpLevel = 'normal';
-  state.missionTime = 0;
-  state.shipA = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
-  state.shipB = { progress: 0, refTimeElapsed: 0, pilotTimeElapsed: 0, arrived: false };
+  state.earthElapsed = 0;
+  state.captainAElapsed = 0;
+  state.captainBElapsed = 0;
+  state.shipA.pos = shipParkingPos(state.shipA.trajectory);
+  state.shipB.pos = shipParkingPos(state.shipB.trajectory);
+  state.shipA.heading = heading(state.earthPos, state.shipA.trajectory.T1);
+  state.shipB.heading = heading(state.earthPos, state.shipB.trajectory.T1);
+  state.summaryShown = false;
   lastTime = 0;
   var overlay = document.querySelector('.result-overlay');
   if (overlay) overlay.remove();
@@ -1733,133 +2070,162 @@ function handleReset() {
 function updateControlStates() {
   var idle = state.phase === 'idle';
   var complete = state.phase === 'complete';
-  var canLaunch = state.routeA && state.routeB && state.routeA.valid && state.routeB.valid;
 
-  // Warp buttons: disabled when idle+invalid or complete
-  var warpDisabled = (idle && !canLaunch) || complete;
-  document.getElementById('warpNormalBtn').disabled = warpDisabled;
-  document.getElementById('warpFastBtn').disabled = warpDisabled;
-  document.getElementById('warpFastestBtn').disabled = warpDisabled;
-
+  // Warp buttons: disabled only on complete
+  document.getElementById('warpNormalBtn').disabled = complete;
+  document.getElementById('warpFastBtn').disabled = complete;
+  document.getElementById('warpFastestBtn').disabled = complete;
   // Reset: disabled only when idle
   document.getElementById('resetBtn').disabled = idle;
 
-  // Speed bar: disabled during flight
+  // Parameter inputs: editable only when idle
   var speedBar = document.getElementById('speedBar');
-  if (idle) { speedBar.classList.remove('disabled'); }
-  else { speedBar.classList.add('disabled'); }
+  if (idle) speedBar.classList.remove('disabled');
+  else      speedBar.classList.add('disabled');
 
   document.getElementById('starSelect').disabled = !idle;
-  document.getElementById('btnStraightenA').disabled = !idle;
-  document.getElementById('btnStraightenB').disabled = !idle;
-  document.getElementById('btnClearPoints').disabled = !idle;
-  for (var i = 1; i <= 3; i++) {
-    document.getElementById('bhBtn' + i).disabled = !idle;
-    var slider = document.getElementById('bh' + i + 'MassSlider');
-    if (slider) slider.disabled = !idle;
-  }
+  document.getElementById('bhSelect').disabled   = !idle;
+  document.getElementById('distSlider').disabled = !idle;
+  document.getElementById('uSlider').disabled    = !idle;
+  document.getElementById('sciSlider').disabled  = !idle;
+  document.getElementById('modeEarthBtn').disabled = !idle;
+  document.getElementById('modeLocalBtn').disabled = !idle;
 }
 
 // ====================== READOUTS ======================
 
 function updateReadouts() {
-  if (!state.routeA || !state.routeB) return;
-  var star = STARS[state.starIndex];
-  var gamma = computeGamma(state.beta);
-  var yr = T('lblYr'), ly = T('lblLy');
+  var tl = state.timeline;
+  var yr = T('lblYr');
+  if (!tl) return;
 
-  document.getElementById('readDistance').textContent = star.dist.toFixed(2) + ' ' + ly;
-  document.getElementById('readSpeed').textContent = state.beta.toFixed(2) + 'c';
-  document.getElementById('readGamma').textContent = gamma.toFixed(2);
-  document.getElementById('readBhCount').textContent = state.bhCount;
+  // Phase
+  document.getElementById('readPhase').textContent = phaseText();
 
-  updateShipReadout('A', state.routeA, state.shipA, yr, ly);
-  updateShipReadout('B', state.routeB, state.shipB, yr, ly);
-  updateAgeDiff(yr);
+  // Age diff (live)
+  var diff = state.captainAElapsed - state.captainBElapsed;
+  var diffEl = document.getElementById('readAgeDiff');
+  diffEl.textContent = diff.toFixed(2) + ' ' + yr;
+  if (Math.abs(diff) < 0.005)      diffEl.style.color = 'var(--text-dim)';
+  else if (diff > 0)               diffEl.style.color = 'var(--ship-b)'; // B younger
+  else                              diffEl.style.color = 'var(--ship-a)'; // A younger
+
+  // Physics
+  document.getElementById('readGamma').textContent = tl.gamma.toFixed(3);
+  document.getElementById('readGBh').textContent   = tl.gBh.toFixed(3);
+
+  // Live sentence
+  var liveEl = document.getElementById('liveSentence');
+  var B = getCaptainName('B');
+  liveEl.textContent = T('fmtLiveSentence')
+    .replace('{B}', B)
+    .replace('{g}', tl.gBh.toFixed(2));
+
+  // Notes (static strings; refreshed so language toggle flips them)
+  document.getElementById('noteStationKeeping').textContent = T('noteStationKeeping');
+  document.getElementById('noteStarReference').textContent  = T('noteStarReference');
+
+  // Ship name headers on control panel (none in this layout, but keep hook if added)
+  updateInfo();
   updateControlStates();
 }
 
-function updateShipReadout(label, route, ship, yr, ly) {
-  var warn = document.getElementById('read' + label + 'Warning');
-  if (!route.valid) {
-    warn.textContent = T('lblInvalidRoute');
-    warn.style.display = 'block';
-  } else {
-    warn.style.display = 'none';
-  }
-
-  var isLive = state.phase === 'flying' || state.phase === 'paused' || state.phase === 'complete';
-
-  var hasLength = isFinite(route.lengthPhysical);
-  document.getElementById('read' + label + 'Length').textContent = hasLength ? route.lengthPhysical.toFixed(2) + ' ' + ly : '\u2014';
-
-  if (isLive) {
-    document.getElementById('read' + label + 'Mission').textContent = ship.refTimeElapsed.toFixed(2) + ' ' + yr;
-    document.getElementById('read' + label + 'Pilot').textContent = ship.pilotTimeElapsed.toFixed(2) + ' ' + yr;
-  } else {
-    var hasTime = route.valid && isFinite(route.refTime);
-    document.getElementById('read' + label + 'Mission').textContent = hasTime ? route.refTime.toFixed(2) + ' ' + yr : '\u2014';
-    document.getElementById('read' + label + 'Pilot').textContent = hasTime ? route.pilotTime.toFixed(2) + ' ' + yr : '\u2014';
-  }
-
-  for (var i = 0; i < 3; i++) {
-    var row = document.getElementById('read' + label + 'Min' + (i + 1) + 'Row');
-    if (i < state.bhCount && route.minDist && route.minDist[i] !== undefined && isFinite(route.minDist[i])) {
-      row.style.display = '';
-      var minR = route.minDist[i] / Math.max(state.blackHoles[i].Rh, 1);
-      var val = document.getElementById('read' + label + 'Min' + (i + 1));
-      val.textContent = minR.toFixed(1) + '\u00D7rh';
-      val.style.color = minR < 1.5 ? 'var(--danger)' : (minR < 3 ? 'var(--star-color)' : '');
-      document.getElementById('lr' + label + 'Min' + (i + 1)).textContent = T('lblMinBh') + ' ' + (i + 1);
-    } else {
-      row.style.display = 'none';
-    }
-  }
-}
-
-function updateAgeDiff(yr) {
-  if (!yr) yr = T('lblYr');
-  var el = document.getElementById('readAgeDiff');
-  var desc = document.getElementById('readAgeDesc');
-  var isLive = state.phase === 'flying' || state.phase === 'paused' || state.phase === 'complete';
-
-  var pA, pB;
-  if (isLive) {
-    pA = state.shipA.pilotTimeElapsed;
-    pB = state.shipB.pilotTimeElapsed;
-  } else {
-    if (!state.routeA.valid || !state.routeB.valid) {
-      el.textContent = '\u2014'; desc.textContent = ''; return;
-    }
-    pA = state.routeA.pilotTime;
-    pB = state.routeB.pilotTime;
-  }
-
-  var diff = Math.abs(pA - pB);
-  el.textContent = diff.toFixed(2) + ' ' + yr;
-
-  if (diff < 0.005) {
-    desc.textContent = T('lblIdentical');
-    desc.style.color = 'var(--text-dim)';
-  } else if (pA < pB) {
-    desc.textContent = T('lblAgesLess').replace('{ship}', getCaptainName('A')).replace('{diff}', diff.toFixed(2));
-    desc.style.color = 'var(--ship-a)';
-  } else {
-    desc.textContent = T('lblAgesLess').replace('{ship}', getCaptainName('B')).replace('{diff}', diff.toFixed(2));
-    desc.style.color = 'var(--ship-b)';
+function phaseText() {
+  if (state.phase === 'paused')   return T('phasePaused');
+  if (state.phase === 'complete') return T('phaseReunion');
+  if (state.phase === 'idle')     return T('phaseIdle');
+  switch (state.missionPhase) {
+    case 'outbound': return T('phaseOutbound');
+    case 'science':  return T('phaseScience');
+    case 'return':   return T('phaseReturn');
+    case 'waiting':  return T('phaseWaiting');
+    case 'reunion':  return T('phaseReunion');
+    default:         return T('phaseIdle');
   }
 }
 
 function updateInfo() {
   var text;
-  if (state.routeA && state.routeB && (!state.routeA.valid || !state.routeB.valid)) text = T('infoInvalid');
-  else if (state.phase === 'flying' || state.phase === 'paused') text = T('infoFlying');
-  else if (state.phase === 'complete') text = T('infoComplete');
-  else text = T('infoDefault');
+  if      (state.phase === 'complete') text = T('infoComplete');
+  else if (state.phase === 'running')  text = T('infoRunning');
+  else if (state.phase === 'paused')   text = T('infoPaused');
+  else                                  text = T('infoDefault');
   document.getElementById('infoText').innerHTML = text.replace(/\n/g, '<br>');
 }
 
-// ====================== I18N FUNCTIONS ======================
+// ====================== REUNION SUMMARY OVERLAY ======================
+
+function showReunionSummary() {
+  var existing = document.querySelector('.result-overlay');
+  if (existing) existing.remove();
+
+  var tl = state.timeline;
+  var yr = T('lblYr');
+  var A = getCaptainName('A');
+  var B = getCaptainName('B');
+
+  // Determine younger
+  var diff = tl.aTotal - tl.bTotal;
+  var younger = null;
+  if (Math.abs(diff) < 0.005) younger = null;
+  else if (diff > 0) younger = 'B';
+  else               younger = 'A';
+
+  // Detail block
+  var detail =
+    '<span style="color:var(--earth-color)">' + T('summaryLabelEarth') + '</span>: ' + tl.earthTotal.toFixed(2) + ' ' + yr + '<br>' +
+    '<span style="color:var(--ship-a)">' + T('summaryLabelCaptainA').replace('{A}', A) + '</span>: ' + tl.aTotal.toFixed(2) + ' ' + yr + '<br>' +
+    '<span style="color:var(--ship-b)">' + T('summaryLabelCaptainB').replace('{B}', B) + '</span>: ' + tl.bTotal.toFixed(2) + ' ' + yr + '<br>' +
+    T('summaryLabelAgeDiff') + ': <b>' + Math.abs(diff).toFixed(2) + ' ' + yr + '</b>';
+  if (younger) {
+    var younglabel = younger === 'B' ? B : A;
+    detail += ' \u2014 ' + T('summaryYounger').replace('{B}', younglabel);
+  }
+
+  // Conclusion — use global regex because placeholders like {A} may appear more than once
+  function fmtReplace(tpl, map) {
+    var out = tpl;
+    for (var k in map) out = out.split('{' + k + '}').join(map[k]);
+    return out;
+  }
+  var conclusion;
+  if (younger === null) {
+    conclusion = T('summaryEqual');
+  } else if (tl.mode === 'earth') {
+    conclusion = fmtReplace(T('summaryConclusionEarth'), {
+      A: A, B: B,
+      T: state.scienceDurationEarth.toFixed(2),
+      bh: bhFullName(state.blackHoleIndex),
+      u: state.uBh.toFixed(2),
+      g: tl.gBh.toFixed(2),
+    });
+  } else {
+    conclusion = fmtReplace(T('summaryConclusionLocal'), {
+      A: A, B: B,
+      T: state.scienceDurationLocal.toFixed(2),
+      wait: tl.waitOnEarth.toFixed(2),
+    });
+  }
+
+  var overlay = document.createElement('div');
+  overlay.className = 'result-overlay';
+  overlay.innerHTML =
+    '<div class="overlay-title">' + T('summaryTitle') + '</div>' +
+    '<div class="overlay-detail">' + detail + '</div>' +
+    '<div class="overlay-conclusion">' + conclusion + '</div>' +
+    '<div class="overlay-hint">' + T('clickToDismiss') + '</div>';
+  overlay.addEventListener('click', function() { overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var overlay = document.querySelector('.result-overlay');
+    if (overlay) overlay.remove();
+  }
+});
+
+// ====================== I18N APPLY ======================
 
 function applyTranslations() {
   var l = I18N[state.lang];
@@ -1868,48 +2234,58 @@ function applyTranslations() {
 
   var ids = {
     titleText: 'title', subtitleText: 'subtitle',
-    lblDestination: 'lblDestination', lblSpeed: 'lblSpeed',
-    lblBhCount: 'lblBlackHoles',
-    lblBh1Mass: 'lblBhMass1', lblBh2Mass: 'lblBhMass2', lblBh3Mass: 'lblBhMass3',
-    lblRoutes: 'lblRoutes',
+    lblReferenceStar: 'lblReferenceStar',
+    lblBlackHole: 'lblBlackHole',
+    lblCruiseSpeed: 'lblCruiseSpeed',
+    lblMissionDistance: 'lblMissionDistance',
+    lblBhDistance: 'lblBhDistance',
+    lblTimingMode: 'lblTimingMode',
     lblTimeWarp: 'lblTimeWarp',
     lblMissionData: 'lblMissionData',
-    lblDistLabel: 'lblDistance', lblSpeedLabel: 'lblCruiseSpeed',
-    lblGammaLabel: 'lblLorentz', lblBhCountLabel: 'lblBhCountRead',
-    lrALen: 'lblRouteLength', lrAMission: 'lblMissionTime', lrAPilot: 'lblPilotTime',
-    lrBLen: 'lblRouteLength', lrBMission: 'lblMissionTime', lrBPilot: 'lblPilotTime',
+    lblPhaseLabel: 'lblPhase',
     lblAgeDiffLabel: 'lblAgeDiff',
+    lblPhysics: 'lblPhysics',
+    lblGammaLabel: 'lblGamma',
+    lblGBhLabel: 'lblGBh',
   };
   for (var id in ids) {
     var el = document.getElementById(id);
     if (el) el.textContent = l[ids[id]];
   }
 
+  // Mode buttons + science time label
+  document.getElementById('modeEarthBtn').textContent = l.modeEarth;
+  document.getElementById('modeLocalBtn').textContent = l.modeLocal;
+  document.getElementById('lblScienceTime').textContent =
+    state.scienceTimingMode === 'earth' ? l.lblScienceTimeEarth : l.lblScienceTimeLocal;
+  document.getElementById('timingNote').textContent =
+    state.scienceTimingMode === 'earth' ? l.noteTimingEarth : l.noteTimingLocal;
+  document.getElementById('noteSchematic').textContent = l.noteSchematic;
+
+  // Reset title
+  document.getElementById('resetBtn').title = l.btnReset;
+
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
 
-  // Icon button tooltips
-  document.getElementById('btnStraightenA').title = T('btnStraightenA');
-  document.getElementById('btnStraightenB').title = T('btnStraightenB');
-  document.getElementById('btnClearPoints').title = T('btnClearPoints');
-  document.getElementById('resetBtn').title = T('btnReset');
-
-  // Warp buttons
   updateWarpBtns();
 
-  // Ship headers use custom names or translated defaults
-  document.getElementById('lblShipA').textContent = getShipName('A');
-  document.getElementById('lblShipB').textContent = getShipName('B');
-
   // Name panel placeholders
-  document.getElementById('captainA').placeholder = T('phCaptainA');
-  document.getElementById('captainB').placeholder = T('phCaptainB');
-  document.getElementById('shipNameA').placeholder = T('phShipA');
-  document.getElementById('shipNameB').placeholder = T('phShipB');
+  document.getElementById('captainA').placeholder = l.phCaptainA;
+  document.getElementById('captainB').placeholder = l.phCaptainB;
+  document.getElementById('shipNameA').placeholder = l.phShipA;
+  document.getElementById('shipNameB').placeholder = l.phShipB;
+
+  // Slider values (re-format with locale-neutral unit labels)
+  document.getElementById('distVal').textContent = state.missionDistance.toFixed(1) + ' ' + T('lblLy');
+  document.getElementById('uVal').textContent    = state.uBh.toFixed(1) + ' ' + T('lblRsUnit');
+  var sci = state.scienceTimingMode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
+  document.getElementById('sciVal').textContent  = sci.toFixed(1) + ' ' + T('lblYr');
 
   populateStarSelect();
+  populateBhSelect();
+  updateBhFact();
   updateControlStates();
   updateReadouts();
-  updateInfo();
 }
 
 function toggleLang() {
@@ -1925,45 +2301,34 @@ function populateStarSelect() {
     var name = state.lang === 'en' ? s.nameEn : s.namePl;
     var opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = name + ' (' + s.dist.toFixed(2) + ' ly)';
+    opt.textContent = name;
     if (i === state.starIndex) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+function populateBhSelect() {
+  var sel = document.getElementById('bhSelect');
+  sel.innerHTML = '';
+  for (var i = 0; i < BH_CATALOG.length; i++) {
+    var name = bhFullName(i);
+    var opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = name;
+    if (i === state.blackHoleIndex) opt.selected = true;
     sel.appendChild(opt);
   }
 }
 
 // ====================== ANIMATION ======================
 
-function updateShipProgress(ship, route) {
-  if (ship.arrived) return;
-  ship.refTimeElapsed = Math.min(state.missionTime, route.refTime);
-  ship.progress = route.refTime > 0 ? ship.refTimeElapsed / route.refTime : 1;
-  ship.pilotTimeElapsed = interpolatePilotTime(route, ship.progress);
-  if (ship.progress >= 1) {
-    ship.arrived = true;
-    ship.progress = 1;
-    ship.refTimeElapsed = route.refTime;
-    ship.pilotTimeElapsed = route.pilotTime;
-  }
-}
-
 function animate(timestamp) {
   if (!lastTime) lastTime = timestamp;
   var rawDt = Math.min((timestamp - lastTime) / 1000, 0.05);
   lastTime = timestamp;
 
-  if (state.phase === 'flying') {
-    state.missionTime += rawDt * (WARP_LEVELS[state.warpLevel] || 1) * timeScale;
-    updateShipProgress(state.shipA, state.routeA);
-    updateShipProgress(state.shipB, state.routeB);
-
-    if (state.shipA.arrived && state.shipB.arrived) {
-      state.phase = 'complete';
-      state.missionTime = Math.max(state.routeA.refTime, state.routeB.refTime);
-      updateWarpBtns();
-      updateControlStates();
-      setTimeout(showSummaryOverlay, 400);
-    }
-
+  if (state.phase === 'running') {
+    advanceMission(rawDt);
     updateReadouts();
   }
 
@@ -1971,79 +2336,49 @@ function animate(timestamp) {
   requestAnimationFrame(animate);
 }
 
-// ====================== SUMMARY OVERLAY ======================
-
-function showSummaryOverlay() {
-  var existing = document.querySelector('.result-overlay');
-  if (existing) existing.remove();
-
-  var overlay = document.createElement('div');
-  overlay.className = 'result-overlay';
-
-  var aRef = state.routeA.refTime.toFixed(2);
-  var aPilot = state.routeA.pilotTime.toFixed(2);
-  var bRef = state.routeB.refTime.toFixed(2);
-  var bPilot = state.routeB.pilotTime.toFixed(2);
-  var diff = Math.abs(state.routeA.pilotTime - state.routeB.pilotTime).toFixed(2);
-  var yr = T('lblYr');
-
-  var conclusion;
-  if (Math.abs(state.routeA.pilotTime - state.routeB.pilotTime) < 0.005) {
-    conclusion = T('summaryEqual');
-  } else {
-    var younger = state.routeA.pilotTime < state.routeB.pilotTime ? 'A' : 'B';
-    conclusion = T('summaryConclusion').replace('{ship}', getCaptainName(younger)).replace('{diff}', diff);
-  }
-
-  overlay.innerHTML =
-    '<div class="overlay-title">' + T('summaryTitle') + '</div>' +
-    '<div class="overlay-detail">' +
-      '<span style="color:var(--ship-a)">' + getShipName('A') + ' — ' + getCaptainName('A') + '</span><br>' +
-      T('lblMissionTime') + ': ' + aRef + ' ' + yr + '<br>' +
-      T('lblPilotTime') + ': ' + aPilot + ' ' + yr + '<br><br>' +
-      '<span style="color:var(--ship-b)">' + getShipName('B') + ' — ' + getCaptainName('B') + '</span><br>' +
-      T('lblMissionTime') + ': ' + bRef + ' ' + yr + '<br>' +
-      T('lblPilotTime') + ': ' + bPilot + ' ' + yr + '<br><br>' +
-      T('lblAgeDiff') + ': <b>' + diff + ' ' + yr + '</b>' +
-    '</div>' +
-    '<div class="overlay-conclusion">' + conclusion + '</div>' +
-    '<div class="overlay-hint">' + T('clickToDismiss') + '</div>';
-
-  overlay.addEventListener('click', function() { overlay.remove(); });
-  document.body.appendChild(overlay);
-}
-
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    var overlay = document.querySelector('.result-overlay');
-    if (overlay) overlay.remove();
-  }
-});
-
 // ====================== INITIALIZATION ======================
 
 window.addEventListener('resize', function() { resize(); });
 
 resize();
 initBgStars(NUM_BG_STARS);
-initBlackHoles();
-initRoutes();
-rebuildAllPhysics();
-populateStarSelect();
+applyBhRangeToSlider();
+computeShipTrajectories();
+buildTimeline();
 initSpeedBar(document.getElementById('speedBar'));
-updateSpeedBar('speedBar', parseInt(document.getElementById('speedSlider').value), state.beta);
+updateSpeedBar('speedBar', parseInt(document.getElementById('speedSlider').value), state.betaCruise);
 applyTranslations();
-updateReadouts();
-updateInfo();
 
-// Refresh readout headers when names are typed
+// Refresh live sentence and overlay when captain/ship names change
 ['captainA', 'shipNameA', 'captainB', 'shipNameB'].forEach(function(id) {
   document.getElementById(id).addEventListener('input', function() {
-    document.getElementById('lblShipA').textContent = getShipName('A');
-    document.getElementById('lblShipB').textContent = getShipName('B');
     updateReadouts();
   });
 });
+
+// Facts hover card wiring (only active during idle phase, on non-touch pointers)
+factsOverlayEl = document.getElementById('factsOverlay');
+canvas.addEventListener('mousemove', function(e) {
+  if (state.phase !== 'idle') { hideFactsCard(); return; }
+  var rect = canvas.getBoundingClientRect();
+  var px = e.clientX - rect.left;
+  var py = e.clientY - rect.top;
+
+  var star = STARS[state.starIndex];
+  var sp = state.starLabPos;
+  var dStar = Math.hypot(px - sp.x, py - sp.y);
+  var starHit = state.starLabHitR || ((star.radius || STAR_RADIUS) + 30);
+  if (dStar < starHit) { showStarFactsCard(star, sp.x, sp.y); return; }
+
+  var bh = BH_CATALOG[state.blackHoleIndex];
+  var bp = state.bhLabPos;
+  var dBh = Math.hypot(px - bp.x, py - bp.y);
+  var bhHit = state.bhLabHitR || ((bh.coreRadius || BH_RADIUS) * 3);
+  if (dBh < bhHit) { showBhFactsCard(bh, bp.x, bp.y); return; }
+
+  hideFactsCard();
+});
+canvas.addEventListener('mouseleave', hideFactsCard);
 
 requestAnimationFrame(animate);
 

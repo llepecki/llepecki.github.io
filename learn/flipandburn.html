@@ -251,27 +251,18 @@
     display: flex; flex-direction: column; gap: 0;
   }
   .met-clock {
-    padding: 10px 22px 6px; border-radius: 8px 8px 0 0;
+    padding: 8px 18px;
     background: rgba(11,15,24,0.88);
     border: 1px solid var(--panel-border);
-    border-bottom: none;
     font-family: 'Share Tech Mono', monospace;
-    font-size: 22px; font-weight: 700; letter-spacing: 2px;
+    font-size: 18px; font-weight: 700; letter-spacing: 2px;
     color: var(--gain);
     text-shadow: 0 0 10px rgba(63,185,80,0.4);
-    transition: color 0.3s, text-shadow 0.3s;
-    min-width: 120px; text-align: center;
+    transition: color 0.3s, text-shadow 0.3s, opacity 0.3s;
+    min-width: 110px; text-align: center;
   }
-  .transfer-time {
-    padding: 4px 22px 8px; border-radius: 0 0 8px 8px;
-    background: rgba(11,15,24,0.88);
-    border: 1px solid var(--panel-border);
-    border-top: none;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; letter-spacing: 1px;
-    color: var(--text-dim);
-    text-align: center;
-  }
+  .met-clock.is-top    { border-radius: 8px 8px 0 0; border-bottom: none; }
+  .met-clock.is-bottom { border-radius: 0 0 8px 8px; border-top: none; }
   .hud-group.paused { opacity: 0.7; }
 
   /* Step indicator */
@@ -342,8 +333,7 @@
     }
     .ctrl-group { min-width: 140px; flex: 1; }
     .hud-group { top: 10px; left: 10px; }
-    .met-clock { font-size: 16px; padding: 6px 14px 4px; min-width: 90px; }
-    .transfer-time { font-size: 11px; padding: 2px 14px 6px; }
+    .met-clock { font-size: 14px; padding: 6px 14px; min-width: 90px; }
   }
 </style>
 </head>
@@ -361,8 +351,8 @@
   <div class="canvas-wrap">
     <canvas id="canvas"></canvas>
     <div class="hud-group">
-      <div class="met-clock" id="accelDisplay">0 g</div>
-      <div class="transfer-time" id="transferTimeDisplay"></div>
+      <div class="met-clock is-top" id="accelDisplay">0 g</div>
+      <div class="met-clock is-bottom" id="transferTimeDisplay"></div>
     </div>
     <div class="canvas-prompt" id="canvasPrompt"></div>
     <div class="step-indicator" id="stepIndicator">
@@ -661,9 +651,10 @@ var state = {
   lang: (navigator.language || '').startsWith('pl') ? 'pl' : 'en',
   homeKey: 'earth',
   destKey: 'mars',
+  homeM0Offset: 0,
   destM0Offset: 0,
-  dragging: false,
-  dragHover: false,
+  draggingKey: null,
+  dragHoverKey: null,
   difficulty: 'easy',
   phase: 'prelaunch',          // prelaunch | burn | flipping | braking | coasting | result
   simTime: 0,
@@ -755,7 +746,8 @@ function solveKepler(M, e) {
 function helioPosition(body, t) {
   if (body.key === 'sun') return { x: 0, y: 0 };
   var M = body.M0 + body.n * t;
-  if (body.key === state.destKey) M += state.destM0Offset;
+  if (body.key === state.homeKey) M += state.homeM0Offset;
+  else if (body.key === state.destKey) M += state.destM0Offset;
   var E = solveKepler(M, body.e);
   var xp = body.a * (Math.cos(E) - body.e);
   var yp = body.bSemi * Math.sin(E);
@@ -773,7 +765,8 @@ function orbitRadiusAtAngle(body, alpha) {
 function helioVelocity(body, t) {
   if (body.key === 'sun') return { vx: 0, vy: 0 };
   var M = body.M0 + body.n * t;
-  if (body.key === state.destKey) M += state.destM0Offset;
+  if (body.key === state.homeKey) M += state.homeM0Offset;
+  else if (body.key === state.destKey) M += state.destM0Offset;
   var E = solveKepler(M, body.e);
   var sinE = Math.sin(E);
   var cosE = Math.cos(E);
@@ -1155,27 +1148,42 @@ function getCanvasPos(e) {
   return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
-function isNearDestPlanet(canvasPos) {
-  var dest = bodyByKey[state.destKey];
-  var pos = helioPosition(dest, state.simTime);
-  var cc = toCanvas(pos.x, pos.y);
-  var dx = canvasPos.x - cc.cx;
-  var dy = canvasPos.y - cc.cy;
-  var hitRadius = Math.max(dest.radius + 8, 20);
-  return dx * dx + dy * dy <= hitRadius * hitRadius;
+function getNearPlanetKey(canvasPos) {
+  var keys = [state.homeKey, state.destKey];
+  var bestKey = null;
+  var bestDist2 = Infinity;
+  for (var i = 0; i < keys.length; i++) {
+    var body = bodyByKey[keys[i]];
+    var pos = helioPosition(body, state.simTime);
+    var cc = toCanvas(pos.x, pos.y);
+    var dx = canvasPos.x - cc.cx;
+    var dy = canvasPos.y - cc.cy;
+    var d2 = dx * dx + dy * dy;
+    var hitRadius = Math.max(body.radius + 8, 20);
+    if (d2 <= hitRadius * hitRadius && d2 < bestDist2) {
+      bestDist2 = d2;
+      bestKey = keys[i];
+    }
+  }
+  return bestKey;
 }
 
-function computeM0OffsetFromCanvasPos(canvasPos) {
-  var dest = bodyByKey[state.destKey];
+function computeM0OffsetFromCanvasPos(canvasPos, planetKey) {
+  var body = bodyByKey[planetKey];
   var world = fromCanvas(canvasPos.x, canvasPos.y);
   var theta = Math.atan2(world.y, world.x);
-  var nu = theta - dest.pomegaRad;
+  var nu = theta - body.pomegaRad;
   var E = 2 * Math.atan2(
-    Math.sqrt(1 - dest.e) * Math.sin(nu / 2),
-    Math.sqrt(1 + dest.e) * Math.cos(nu / 2)
+    Math.sqrt(1 - body.e) * Math.sin(nu / 2),
+    Math.sqrt(1 + body.e) * Math.cos(nu / 2)
   );
-  var M_target = E - dest.e * Math.sin(E);
-  return M_target - dest.M0 - dest.n * state.simTime;
+  var M_target = E - body.e * Math.sin(E);
+  return M_target - body.M0 - body.n * state.simTime;
+}
+
+function applyDragOffset(planetKey, offset) {
+  if (planetKey === state.homeKey) state.homeM0Offset = offset;
+  else if (planetKey === state.destKey) state.destM0Offset = offset;
 }
 
 /* ══════════════════════════════════════════════ */
@@ -1232,10 +1240,10 @@ function drawBody(body, t) {
   ctx.fillStyle = body.color;
   ctx.fill();
 
-  if (body.key === state.destKey && state.phase === 'prelaunch' && (state.dragging || state.dragHover)) {
+  if (state.phase === 'prelaunch' && (body.key === state.draggingKey || body.key === state.dragHoverKey)) {
     ctx.beginPath();
     ctx.arc(cc.cx, cc.cy, r + 4, 0, TWO_PI);
-    ctx.strokeStyle = state.dragging ? 'rgba(88,166,255,0.9)' : 'rgba(88,166,255,0.5)';
+    ctx.strokeStyle = (body.key === state.draggingKey) ? 'rgba(88,166,255,0.9)' : 'rgba(88,166,255,0.5)';
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -1688,49 +1696,54 @@ window.addEventListener('keyup', function(e) {
   if (e.code === 'Space') { e.preventDefault(); endBurn(); }
 });
 
-// --- Destination planet drag ---
+// --- Planet drag (home or destination) ---
 canvas.addEventListener('mousedown', function(e) {
   if (state.phase !== 'prelaunch') return;
   var pos = getCanvasPos(e);
-  if (isNearDestPlanet(pos)) {
-    state.dragging = true;
+  var key = getNearPlanetKey(pos);
+  if (key) {
+    state.draggingKey = key;
     canvas.style.cursor = 'grabbing';
     e.preventDefault();
   }
 });
 canvas.addEventListener('mousemove', function(e) {
   var pos = getCanvasPos(e);
-  if (state.dragging) {
-    state.destM0Offset = computeM0OffsetFromCanvasPos(pos);
+  if (state.draggingKey) {
+    applyDragOffset(state.draggingKey, computeM0OffsetFromCanvasPos(pos, state.draggingKey));
     e.preventDefault();
-  } else if (state.phase === 'prelaunch' && isNearDestPlanet(pos)) {
-    canvas.style.cursor = 'grab';
-    state.dragHover = true;
-  } else if (state.dragHover) {
-    canvas.style.cursor = 'default';
-    state.dragHover = false;
+  } else if (state.phase === 'prelaunch') {
+    var hoverKey = getNearPlanetKey(pos);
+    if (hoverKey) {
+      canvas.style.cursor = 'grab';
+      state.dragHoverKey = hoverKey;
+    } else if (state.dragHoverKey) {
+      canvas.style.cursor = 'default';
+      state.dragHoverKey = null;
+    }
   }
 });
 canvas.addEventListener('mouseup', function() {
-  if (state.dragging) { state.dragging = false; canvas.style.cursor = 'default'; }
+  if (state.draggingKey) { state.draggingKey = null; canvas.style.cursor = 'default'; }
 });
 canvas.addEventListener('mouseleave', function() {
-  if (state.dragging) { state.dragging = false; canvas.style.cursor = 'default'; }
-  state.dragHover = false;
+  if (state.draggingKey) { state.draggingKey = null; canvas.style.cursor = 'default'; }
+  state.dragHoverKey = null;
 });
 canvas.addEventListener('touchstart', function(e) {
   if (state.phase !== 'prelaunch') return;
   var pos = getCanvasPos(e);
-  if (isNearDestPlanet(pos)) { state.dragging = true; e.preventDefault(); }
+  var key = getNearPlanetKey(pos);
+  if (key) { state.draggingKey = key; e.preventDefault(); }
 }, { passive: false });
 canvas.addEventListener('touchmove', function(e) {
-  if (state.dragging) {
-    state.destM0Offset = computeM0OffsetFromCanvasPos(getCanvasPos(e));
+  if (state.draggingKey) {
+    applyDragOffset(state.draggingKey, computeM0OffsetFromCanvasPos(getCanvasPos(e), state.draggingKey));
     e.preventDefault();
   }
 }, { passive: false });
-canvas.addEventListener('touchend', function() { if (state.dragging) state.dragging = false; });
-canvas.addEventListener('touchcancel', function() { if (state.dragging) state.dragging = false;
+canvas.addEventListener('touchend', function() { if (state.draggingKey) state.draggingKey = null; });
+canvas.addEventListener('touchcancel', function() { if (state.draggingKey) state.draggingKey = null;
 });
 
 /* ══════════════════════════════════════════════ */
@@ -2073,6 +2086,7 @@ function populateDestSelect() {
 
 document.getElementById('homeSelect').addEventListener('change', function(e) {
   state.homeKey = e.target.value;
+  state.homeM0Offset = 0;
   state.destM0Offset = 0;
   populateDestSelect();
   recalcMission();
@@ -2116,6 +2130,7 @@ function setWarp(level) {
 
 function resetMission() {
   state.simTime = 0;
+  state.homeM0Offset = 0;
   state.destM0Offset = 0;
   state.phase = 'prelaunch';
   state.burn = { holding: false, holdStart: 0, holdDuration: 0, accel: 0, meterFrac: 0, committed: false };
@@ -2243,7 +2258,7 @@ function animate(timestamp) {
 
     switch (state.phase) {
       case 'prelaunch':
-        if (!state.dragging) {
+        if (!state.draggingKey) {
           dtSim = dtReal * state.timeWarp * SIM_RATE;
           state.simTime += dtSim;
         }
