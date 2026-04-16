@@ -64,3 +64,7 @@ Fire single photons through a beam-splitter setup and watch quantum interference
 ### [Logic Gate Trainer](logigate.html) `Computer Science`
 
 Interactive tool for learning how logic gates work — AND, OR, NOT, XOR, and more. Build circuits and see how inputs flow through gates to produce outputs.
+
+### [Morse Code Practice Sheets](morsegen.html) `Communications`
+
+Printable A4 practice sheets for two kids learning Morse code. One child reads a randomized list of 26 letters and transmits each one in Morse; the other writes down what they decode. Cut the page in half, hand out, and compare.

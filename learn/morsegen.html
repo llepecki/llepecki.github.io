@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode.">
+<meta name="author" content="Łukasz Łepecki">
+<link rel="canonical" href="https://lepecki.com/learn/morsegen.html">
+<meta property="og:title" content="Morse Code Practice Sheets">
+<meta property="og:description" content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lepecki.com/learn/morsegen.html">
+<meta property="og:site_name" content="Łukasz Łepecki">
+<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Morse Code Practice Sheets">
+<meta name="twitter:description" content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode.">
+<title>Morse Code Practice Sheets</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF7;
+    --panel: #ffffff;
+    --panel-border: #E0DDD6;
+    --text: #37474F;
+    --text-head: #263238;
+    --text-dim: #78909C;
+    --text-label: #90A4AE;
+    --accent: #455A64;
+    --accent-light: #ECEFF1;
+    --canvas-bg: #f5f3ee;
+  }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #FAFAF7 0%, #F0EDE6 100%);
+    font-family: 'Outfit', sans-serif;
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+    display: flex; flex-direction: column;
+  }
+
+  header {
+    padding: 6px 28px 5px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--text-head); display: flex; align-items: center; gap: 8px; }
+  header h1 a { color: inherit; text-decoration: none; }
+  header h1 a:hover { opacity: .7; }
+  header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
+  .header-text { flex: 1; }
+
+  .lang-btn {
+    background: none; border: 1px solid var(--panel-border);
+    border-radius: 4px; padding: 3px 8px;
+    cursor: pointer; flex-shrink: 0;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .toolbar {
+    padding: 12px 28px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--panel-border);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .toolbar-row {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+
+  .name-input {
+    flex: 1; min-width: 180px;
+    padding: 8px 12px;
+    border: 1.5px solid var(--panel-border);
+    border-radius: 6px;
+    background: var(--panel);
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    color: var(--text-head);
+    transition: border-color 0.15s;
+  }
+  .name-input:focus { outline: none; border-color: var(--accent); }
+  .name-input::placeholder { color: var(--text-label); }
+
+  .action-btn {
+    padding: 10px 18px;
+    background: var(--text-head); color: #fff;
+    border: none; border-radius: 8px;
+    font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s, transform 0.05s;
+    touch-action: manipulation;
+  }
+  .action-btn:hover { background: #37474F; }
+  .action-btn:active { transform: scale(0.97); }
+  .action-btn:disabled { background: #B0BEC5; cursor: wait; }
+
+  .action-btn.secondary {
+    background: var(--panel); color: var(--accent);
+    border: 1.5px solid var(--panel-border);
+  }
+  .action-btn.secondary:hover { border-color: var(--accent); background: var(--accent-light); }
+
+  .session-id {
+    margin-left: auto;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .session-id .label { color: var(--text-label); margin-right: 6px; text-transform: uppercase; font-size: 11px; }
+  .session-id .value { color: var(--text-head); font-weight: 700; }
+  .session-id .sep { color: var(--text-label); margin: 0 8px; }
+
+  .preview-wrap {
+    background: var(--canvas-bg);
+    flex: 1; min-height: 0;
+    padding: 24px;
+    display: flex; justify-content: center; align-items: stretch;
+  }
+
+  .preview-frame {
+    width: 100%;
+    max-width: 900px;
+    background: #fff;
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(38, 50, 56, 0.08);
+    overflow: hidden;
+  }
+  .preview-frame iframe {
+    width: 100%; height: 100%;
+    border: none; display: block;
+    background: #fff;
+  }
+
+  .empty-state {
+    color: var(--text-dim); font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; text-align: center;
+    display: flex; align-items: center; justify-content: center; height: 100%;
+  }
+
+  @media (max-width: 700px) {
+    .toolbar { padding: 10px 16px; gap: 8px; }
+    .action-btn { padding: 8px 12px; font-size: 13px; }
+    .session-id { width: 100%; margin-left: 0; order: 99; text-align: center; }
+    .name-input { min-width: 140px; font-size: 13px; padding: 7px 10px; }
+    .preview-wrap { padding: 12px; min-height: 60vh; }
+    .preview-frame { min-height: 60vh; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F4E1;</span></a> <span id="titleText">Morse Code Practice Sheets</span></h1>
+    <p id="subtitleText">Printable A4 sheets for two-kid sender/receiver practice.</p>
+  </div>
+  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-row">
+    <input type="text" id="senderInput" class="name-input" placeholder="Sender name" oninput="onNameChange()" maxlength="40">
+    <input type="text" id="receiverInput" class="name-input" placeholder="Receiver name" oninput="onNameChange()" maxlength="40">
+  </div>
+  <div class="toolbar-row">
+    <button class="action-btn" id="generateBtn" onclick="regenerate()">Generate New Sequence</button>
+    <button class="action-btn secondary" id="downloadBtn" onclick="downloadPdf()">Download PDF</button>
+    <span class="session-id">
+      <span class="label" id="sessionLabel">Sequence id</span>
+      <span class="value" id="sessionIdVal">#-----</span>
+      <span class="sep">&middot;</span>
+      <span class="value" id="dateVal">----/--/--</span>
+    </span>
+  </div>
+</div>
+
+<div class="preview-wrap">
+  <div class="preview-frame">
+    <iframe id="previewFrame" title="PDF preview"></iframe>
+  </div>
+</div>
+
+<script>
+/* global pdfMake */
+'use strict';
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const state = {
+  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
+  sequence: [],
+  sessionId: '#-----',
+  senderName: '',
+  receiverName: '',
+  pdfReady: false,
+};
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const COLS = 4;
+const ROWS = 7;
+
+// ══════════════════════════════════════════════
+// I18N
+// ══════════════════════════════════════════════
+const I18N = {
+  en: {
+    title: 'Morse Code Practice Sheets',
+    subtitle: 'Printable A4 sheets for two-kid sender/receiver practice.',
+    generateBtn: 'Generate New Sequence',
+    downloadBtn: 'Download PDF',
+    downloadBusy: 'Preparing PDF\u2026',
+    sessionLabel: 'Sequence id',
+    senderLabel: 'Sender',
+    receiverLabel: 'Receiver',
+    senderPlaceholder: 'Sender name',
+    receiverPlaceholder: 'Receiver name',
+  },
+  pl: {
+    title: 'Arkusze \u0107wicze\u0144 z kodu Morse\u2019a',
+    subtitle: 'Arkusze A4 do druku dla dw\u00F3jki dzieci: nadawca i odbiorca.',
+    generateBtn: 'Losuj now\u0105 sekwencj\u0119',
+    downloadBtn: 'Pobierz PDF',
+    downloadBusy: 'Przygotowuj\u0119 PDF\u2026',
+    sessionLabel: 'Id sekwencji',
+    senderLabel: 'Nadawca',
+    receiverLabel: 'Odbiorca',
+    senderPlaceholder: 'Imi\u0119 nadawcy',
+    receiverPlaceholder: 'Imi\u0119 odbiorcy',
+  },
+};
+
+function T(key) { return I18N[state.lang][key]; }
+
+function applyTranslations() {
+  const l = I18N[state.lang];
+  document.title = l.title;
+  document.documentElement.lang = state.lang;
+  document.getElementById('titleText').textContent = l.title;
+  document.getElementById('subtitleText').textContent = l.subtitle;
+  document.getElementById('generateBtn').textContent = l.generateBtn;
+  document.getElementById('downloadBtn').textContent = l.downloadBtn;
+  document.getElementById('sessionLabel').textContent = l.sessionLabel;
+  document.getElementById('senderInput').placeholder = l.senderPlaceholder;
+  document.getElementById('receiverInput').placeholder = l.receiverPlaceholder;
+}
+
+// eslint-disable-next-line no-unused-vars
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'pl' : 'en';
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+  applyTranslations();
+  refreshPreview();
+}
+
+// ══════════════════════════════════════════════
+// SHUFFLE & SESSION
+// ══════════════════════════════════════════════
+function fisherYates(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function newSessionId() {
+  let n;
+  if (window.crypto?.getRandomValues) {
+    const buf = new Uint32Array(1);
+    window.crypto.getRandomValues(buf);
+    n = buf[0];
+  } else {
+    n = Math.floor(Math.random() * 0xFFFFFFFF);
+  }
+  return '#' + n.toString(16).toUpperCase().padStart(8, '0').slice(0, 5);
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '/' +
+    String(d.getMonth() + 1).padStart(2, '0') + '/' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+// ══════════════════════════════════════════════
+// PDF DOCUMENT DEFINITION
+// ══════════════════════════════════════════════
+function buildSenderCell(letter, idx) {
+  return {
+    stack: [
+      { text: String(idx + 1), fontSize: 11, color: '#90A4AE', characterSpacing: 0.5 },
+      { text: letter, fontSize: 26, bold: true, alignment: 'center', color: '#263238', margin: [0, 2, 0, 0] },
+    ],
+  };
+}
+
+function buildReceiverCell(idx) {
+  return {
+    stack: [
+      { text: String(idx + 1), fontSize: 11, bold: true, color: '#263238', characterSpacing: 0.5 },
+    ],
+  };
+}
+
+function emptyCell() {
+  return { text: '', border: [false, false, false, false] };
+}
+
+function buildGridBody(cellBuilder) {
+  const total = COLS * ROWS;
+  const body = [];
+  for (let r = 0; r < ROWS; r++) {
+    const row = [];
+    for (let c = 0; c < COLS; c++) {
+      const idx = r * COLS + c;
+      if (idx < ALPHABET.length) {
+        row.push(cellBuilder(idx));
+      } else if (idx < total) {
+        row.push(emptyCell());
+      }
+    }
+    body.push(row);
+  }
+  return body;
+}
+
+function gridLayout() {
+  return {
+    hLineWidth: () => 0.6,
+    vLineWidth: () => 0.6,
+    hLineColor: () => '#B0BEC5',
+    vLineColor: () => '#B0BEC5',
+    paddingLeft: () => 4,
+    paddingRight: () => 4,
+    paddingTop: () => 2,
+    paddingBottom: () => 2,
+  };
+}
+
+function buildDocDefinition() {
+  const senderBody = buildGridBody((idx) => buildSenderCell(state.sequence[idx], idx));
+  const receiverBody = buildGridBody((idx) => buildReceiverCell(idx));
+
+  const headerBand = (labelKey, name) => {
+    const label = T(labelKey);
+    const titleParts = name
+      ? [
+          { text: label + ' \u2014 ', color: '#90A4AE' },
+          { text: name, bold: true, color: '#263238' },
+        ]
+      : [{ text: label, bold: true, color: '#455A64' }];
+    return {
+      columns: [
+        { text: titleParts, fontSize: 11 },
+        { text: state.sessionId + '  \u00B7  ' + todayStr(), alignment: 'right', fontSize: 9, color: '#90A4AE', characterSpacing: 0.5 },
+      ],
+      margin: [0, 0, 0, 6],
+    };
+  };
+
+  return {
+    pageSize: 'A4',
+    pageOrientation: 'portrait',
+    pageMargins: [40, 42, 40, 24],
+    content: [
+      headerBand('senderLabel', state.senderName),
+      {
+        table: {
+          widths: ['*', '*', '*', '*'],
+          heights: () => 42,
+          body: senderBody,
+        },
+        layout: gridLayout(),
+      },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.6, dash: { length: 3, space: 3 }, lineColor: '#90A4AE' }], margin: [0, 30, 0, 18] },
+      headerBand('receiverLabel', state.receiverName),
+      {
+        table: {
+          widths: ['*', '*', '*', '*'],
+          heights: () => 42,
+          body: receiverBody,
+        },
+        layout: gridLayout(),
+      },
+    ],
+    defaultStyle: { font: 'Roboto', fontSize: 10, color: '#263238' },
+  };
+}
+
+// ══════════════════════════════════════════════
+// PREVIEW & DOWNLOAD
+// ══════════════════════════════════════════════
+function refreshPreview() {
+  if (typeof pdfMake === 'undefined') return;
+  const pdf = pdfMake.createPdf(buildDocDefinition());
+  pdf.getDataUrl((url) => {
+    document.getElementById('previewFrame').src = url;
+    state.pdfReady = true;
+  });
+}
+
+function regenerate() {
+  state.sequence = fisherYates(ALPHABET);
+  state.sessionId = newSessionId();
+  document.getElementById('sessionIdVal').textContent = state.sessionId;
+  document.getElementById('dateVal').textContent = todayStr();
+  refreshPreview();
+}
+
+let nameDebounceTimer = null;
+// eslint-disable-next-line no-unused-vars
+function onNameChange() {
+  state.senderName = document.getElementById('senderInput').value.trim();
+  state.receiverName = document.getElementById('receiverInput').value.trim();
+  clearTimeout(nameDebounceTimer);
+  nameDebounceTimer = setTimeout(refreshPreview, 300);
+}
+
+// eslint-disable-next-line no-unused-vars
+function downloadPdf() {
+  if (typeof pdfMake === 'undefined') return;
+  const btn = document.getElementById('downloadBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = T('downloadBusy');
+  const filename = 'morse-practice-' + state.sessionId.replace('#', '') + '.pdf';
+  pdfMake.createPdf(buildDocDefinition()).download(filename, () => {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function init() {
+  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+  applyTranslations();
+  regenerate();
+}
+
+if (typeof pdfMake !== 'undefined') {
+  init();
+} else {
+  window.addEventListener('load', init);
+}
+</script>
+
+</body>
+</html>

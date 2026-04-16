@@ -148,6 +148,7 @@
     display: flex; align-items: center; justify-content: center;
   }
   .type-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .type-btn.active { border-color: var(--accent); color: var(--accent); }
   .type-btn:disabled { opacity: 0.4; pointer-events: none; }
 
   .readouts { gap: 6px; }
@@ -259,7 +260,48 @@
   }
   .game-goal b { color: #fff; }
 
-  .ship-bar { border-left: 3px solid var(--panel-border); }
+  .captain-a-readout {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px; text-align: center; color: var(--text-dim);
+    padding: 8px 6px; border: 1px dashed var(--panel-border);
+    border-radius: 6px; line-height: 1.5;
+  }
+  .captain-a-readout b { color: var(--ship-a-color); font-weight: 700; }
+  .captain-a-readout .beta-val { color: var(--text); font-weight: 700; }
+
+  .step-bar {
+    display: grid; gap: 4px; width: 100%;
+    padding: 4px; border-radius: 8px;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel);
+  }
+  .step-bar[data-steps="3"] { grid-template-columns: repeat(3, 1fr); }
+  .step-bar[data-steps="5"] { grid-template-columns: repeat(3, 1fr); }
+  .step-bar[data-steps="7"] { grid-template-columns: repeat(4, 1fr); }
+  .step-btn {
+    min-height: 44px;
+    padding: 6px 2px;
+    border-radius: 6px;
+    border: 1.5px solid var(--panel-border);
+    background: rgba(11,15,24,0.5);
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace; font-size: 14px;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .step-btn.active {
+    border-color: var(--ship-b-color);
+    color: var(--ship-b-color);
+    background: rgba(124,232,143,0.14);
+    font-weight: 700;
+  }
+  .step-btn:disabled { opacity: 0.45; cursor: default; }
+  @keyframes stepBarPulse {
+    0%, 100% { border-color: var(--panel-border); box-shadow: none; }
+    50% { border-color: var(--accent); box-shadow: 0 0 10px rgba(88,166,255,0.35); }
+  }
+  .step-bar.pulse { animation: stepBarPulse 0.7s ease-in-out; }
 
   .game-overlay-detail {
     font-family: 'Share Tech Mono', monospace;
@@ -355,26 +397,20 @@
     <div id="grpGame" style="display:none">
       <div class="game-goal" id="gameGoalText"></div>
 
-      <div class="speed-bar ship-bar" id="speedBarA" data-ship="A" style="border-left-color:var(--ship-a-color)">
-        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
-        <div class="speed-bar-track">
-          <div class="speed-bar-fill" id="speedFillA"></div>
-          <span class="speed-bar-val" id="speedValA">0.5000c</span>
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblDifficulty">Difficulty</span>
+        <div class="type-toggle">
+          <button class="type-btn active" id="diffEasyBtn" onclick="setDifficulty('easy')">&#x2605;</button>
+          <button class="type-btn" id="diffMediumBtn" onclick="setDifficulty('medium')">&#x2605;&#x2605;</button>
+          <button class="type-btn" id="diffHardBtn" onclick="setDifficulty('hard')">&#x2605;&#x2605;&#x2605;</button>
         </div>
-        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
-        <input type="hidden" id="speedSliderA" value="376">
-        <input type="hidden" id="betaInputA" value="0.5000">
       </div>
 
-      <div class="speed-bar ship-bar" id="speedBarB" data-ship="B" style="border-left-color:var(--ship-b-color)">
-        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
-        <div class="speed-bar-track">
-          <div class="speed-bar-fill" id="speedFillB"></div>
-          <span class="speed-bar-val" id="speedValB">0.5000c</span>
-        </div>
-        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
-        <input type="hidden" id="speedSliderB" value="376">
-        <input type="hidden" id="betaInputB" value="0.5000">
+      <div class="captain-a-readout" id="captainAcruise"></div>
+
+      <div class="ctrl-group">
+        <span class="ctrl-label" id="lblCaptainBSpeed">Your cruise speed</span>
+        <div class="step-bar" id="stepBar"></div>
       </div>
 
       <div class="ctrl-group">
@@ -499,10 +535,10 @@ var STARS = [
     noteEn: 'The North Star', notePl: 'Gwiazda P\u00F3\u0142nocna',
     facts: {
       en: { type: 'Yellow supergiant + 2 companions (primary star values)', mass: '5.4\u00D7 Sun', size: '46\u00D7 Sun', temp: '~6,000 K', bright: '2,500\u00D7 Sun', constellation: 'Ursa Minor',
-        wow: 'Polaris barely moves all night \u2014 every other star appears to spin around it! That\u2019s because Earth\u2019s North Pole points almost exactly at it. It also gently pulses in brightness (a Cepheid variable).',
+        wow: 'Polaris barely moves all night \u2014 every other star appears to spin around it! That\u2019s because Earth\u2019s rotation axis points almost exactly at it. It also gently pulses in brightness (a Cepheid variable).',
         find: 'Find the Big Dipper, then draw a line through the two stars at the end of its bowl \u2014 that line points straight to Polaris.' },
       pl: { type: '\u017B\u00F3\u0142ty nadolbrzym + 2 towarzysze (warto\u015Bci g\u0142\u00F3wnej gwiazdy)', mass: '5,4\u00D7 S\u0142o\u0144ca', size: '46\u00D7 S\u0142o\u0144ca', temp: '~6 000 K', bright: '2 500\u00D7 S\u0142o\u0144ca', constellation: 'Ma\u0142a Nied\u017Awied\u017Aica',
-        wow: 'Polaris prawie nie porusza si\u0119 na niebie ca\u0142\u0105 noc \u2014 wszystkie inne gwiazdy kr\u0119c\u0105 si\u0119 wok\u00F3\u0142 niej! To dlatego, \u017Ce biegun p\u00F3\u0142nocny Ziemi wskazuje na ni\u0105. Delikatnie pulsuje jasno\u015Bci\u0105 (cefeida).',
+        wow: 'Polaris prawie nie porusza si\u0119 na niebie ca\u0142\u0105 noc \u2014 wszystkie inne gwiazdy kr\u0119c\u0105 si\u0119 wok\u00F3\u0142 niej! To dlatego, \u017Ce o\u015B obrotu Ziemi wskazuje prawie dok\u0142adnie na ni\u0105. Delikatnie pulsuje jasno\u015Bci\u0105 (cefeida).',
         find: 'Znajd\u017A Wielki W\u00F3z i poprowad\u017A lini\u0119 przez dwie gwiazdy na ko\u0144cu czerpaka \u2014 ta linia wskazuje prosto na Polaris.' }
     }
   },
@@ -570,24 +606,27 @@ var I18N = {
     customStar: 'My Star',
     lblCustomName: 'Star Name',
     lblCustomDist: 'Distance (ly)',
-    sfDist: 'Distance', sfMass: 'Mass', sfSize: 'Radius', sfTemp: 'Temp', sfBright: 'Luminosity (energy)', sfFind: 'Find it',
+    sfDist: 'Distance', sfMass: 'Mass', sfSize: 'Radius', sfTemp: 'Temp', sfBright: 'Luminosity (power)', sfFind: 'Find it',
     dragHint: 'Drag me to another star!',
     overlayTitle: 'Journey Complete!',
     overlayConclusion: 'On the rocket, {diff} less time passed than on Earth!',
     clickToDismiss: 'Click to dismiss',
-    infoIdle: 'What is time dilation?\n\nWhen something moves very fast \u2014 close to the speed of light \u2014 time passes more slowly for it. This is Einstein\'s special relativity.\n\nIn this simulator, one person stays on Earth and the other flies to a star and back. The rocket accelerates at 1g (comfortable Earth gravity) up to the selected cruise speed, cruises, then decelerates to stop at the star \u2014 and repeats for the return trip.\n\nThe faster the rocket goes, the bigger the Lorentz factor \u03B3, and the greater the difference in aging. During each cruise segment, for every year on the rocket, \u03B3 years pass on Earth.\n\nIs this real? Yes! Time dilation has been confirmed by atomic clocks flown on aircraft. Relativistic corrections \u2014 both from special and general relativity \u2014 are essential for GPS satellites to work correctly.\n\nNote: this display shows elapsed times in the Earth frame alongside the traveler\'s proper time. It is not a simulation of what each person would literally see through a telescope.\n\nFormula: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
+    infoIdle: 'What is time dilation?\n\nWhen something moves very fast \u2014 close to the speed of light \u2014 its clock ticks more slowly than a clock that stays behind. This is Einstein\'s special relativity.\n\nIn this simulator, one person stays on Earth and the other flies past a star and back. The rocket accelerates at 1g (comfortable Earth gravity) up to the selected cruise speed, cruises to the star, flies past it at cruise speed on a curved path, cruises back, and finally decelerates to stop at Earth.\n\nThe faster the rocket goes, the bigger the Lorentz factor \u03B3, and the greater the difference in aging. During each cruise segment, for every year on the rocket, \u03B3 years pass on Earth.\n\nIs this real? Yes! Time dilation has been confirmed by atomic clocks flown on aircraft. Relativistic corrections \u2014 both from special and general relativity \u2014 are essential for GPS satellites to work correctly.\n\nNote: this display shows elapsed times in the Earth frame alongside the traveler\'s proper time. It is not a simulation of what each person would literally see through a telescope.\n\nFormula: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
     infoCruise: 'Watch the clocks! During cruise, the Earth clock (blue) ticks faster than the rocket clock (amber). The ratio of their rates equals the Lorentz factor \u03B3 = {gamma}.\n\nDuring acceleration and deceleration, the difference is smaller because the ship hasn\'t yet reached full speed.',
-    infoIdleShortTrip: '\n\nNote: this star is close enough that the rocket cannot reach the selected cruise speed. It will accelerate to {betaActual} (\u03B3 = {gammaActual}) before needing to decelerate \u2014 there is no cruise phase.',
+    infoIdleShortTrip: '\n\nNote: this star is close enough that the rocket cannot reach the selected cruise speed. It will accelerate to {betaActual} (\u03B3 = {gammaActual}) on the way out, fly past the star at that speed, then decelerate on the way back \u2014 there is no cruise phase.',
     infoCruiseShortTrip: 'Watch the clocks! The ship never reaches the selected cruise speed on this short trip \u2014 the maximum speed is {betaActual} (\u03B3 = {gammaActual}). Time dilation grows during acceleration and shrinks during deceleration.',
-    infoTurnaround: 'The rocket has stopped at the star and is turning around for the return trip. Both clocks are momentarily paused while the ship reverses direction.',
+    infoTurnaround: 'The rocket is flying past the star on a curved path at cruise speed, now heading back toward Earth. Both clocks keep ticking \u2014 the rocket\'s clock still runs slower because it\'s moving fast.',
     infoPaused: 'Simulation paused. Both clocks are frozen. Press play to resume.',
     infoLanded: 'The round trip is over.\n\nThe rocket traveler aged {rocketTime} years, while {earthTime} years passed on Earth \u2014 a difference of {diff} years.\n\nThe faster you go, the bigger the difference. Try 0.99c!',
     // Game mode
     explore: 'Explore',
     game: 'Game',
     newChallenge: 'New Challenge',
+    lblDifficulty: 'Difficulty',
+    lblCaptainBSpeed: 'Your cruise speed',
+    gameCaptainACruise: '<b>{name}</b> flies at <span class="beta-val">{beta}c</span>',
     gameGoal: 'Match ages! Gap: <b>{diff} years</b>. Max 100.',
-    gameInfoIdle: 'Both captains depart Earth at the same time. The one who returns first waits \u2014 aging normally.\n\nSet speeds so they\u2019re the same age when they meet. The faster you go, the less you age!',
+    gameInfoIdle: 'Both captains leave Earth together. The one who returns first waits \u2014 aging normally.\n\n{nameA}\u2019s cruise speed is fixed. Pick your own so you both come home the same age. The faster you fly, the less you age!',
     gameInfoFlight: 'Both ships are in flight! Watch how time passes differently for each captain.',
     gameInfoReturn: '{name} has returned to Earth and is aging normally while waiting.',
     gameInfoLanded: 'Both captains have returned to Earth.',
@@ -631,26 +670,27 @@ var I18N = {
     customStar: 'Moja Gwiazda',
     lblCustomName: 'Nazwa gwiazdy',
     lblCustomDist: 'Odleg\u0142o\u015B\u0107 (ly)',
-    sfDist: 'Odleg\u0142o\u015B\u0107', sfMass: 'Masa', sfSize: 'Promie\u0144', sfTemp: 'Temp.', sfBright: 'Jasno\u015B\u0107 (moc)', sfFind: 'Znajd\u017A j\u0105',
+    sfDist: 'Odleg\u0142o\u015B\u0107', sfMass: 'Masa', sfSize: 'Promie\u0144', sfTemp: 'Temp.', sfBright: 'Jasno\u015B\u0107 absolutna (moc)', sfFind: 'Znajd\u017A j\u0105',
     dragHint: 'Przeci\u0105gnij mnie do innej gwiazdy!',
     overlayTitle: 'Podr\u00F3\u017C zako\u0144czona!',
     overlayConclusion: 'W rakiecie up\u0142yn\u0119\u0142o o {diff} mniej czasu ni\u017C na Ziemi!',
     clickToDismiss: 'Kliknij, aby zamkn\u0105\u0107',
-    infoIdle: 'Czym jest dylatacja czasu?\n\nGdy co\u015B porusza si\u0119 bardzo szybko \u2014 blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a \u2014 czas p\u0142ynie dla niego wolniej. To szczeg\u00F3lna teoria wzgl\u0119dno\u015Bci Einsteina.\n\nW tym symulatorze jedna osoba zostaje na Ziemi, a druga leci do gwiazdy i wraca. Rakieta przyspiesza z 1g (komfortowa grawitacja ziemska) do wybranej pr\u0119dko\u015Bci przelotowej, leci z t\u0105 pr\u0119dko\u015Bci\u0105, a potem hamuje, by zatrzyma\u0107 si\u0119 przy gwi\u017Adzie \u2014 i powtarza to na drodze powrotnej.\n\nIm szybciej leci rakieta, tym wi\u0119kszy wsp\u00F3\u0142czynnik Lorentza \u03B3 i tym wi\u0119ksza r\u00F3\u017Cnica w starzeniu si\u0119. Podczas lotu swobodnego, na ka\u017Cdy rok w rakiecie, na Ziemi mija \u03B3 lat.\n\nCzy to prawda? Tak! Dylatacja czasu zosta\u0142a potwierdzona zegarami atomowymi na samolotach. Korekty relatywistyczne \u2014 zar\u00F3wno ze szczeg\u00F3lnej, jak i og\u00F3lnej teorii wzgl\u0119dno\u015Bci \u2014 s\u0105 niezb\u0119dne do dzia\u0142ania satelit\u00F3w GPS.\n\nUwaga: ten widok por\u00F3wnuje czas up\u0142ywaj\u0105cy w uk\u0142adzie Ziemi z czasem w\u0142asnym podr\u00F3\u017Cnika. Nie jest to symulacja tego, co ka\u017Cda osoba zobaczy\u0142aby przez teleskop.\n\nWz\u00F3r: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
+    infoIdle: 'Czym jest dylatacja czasu?\n\nGdy co\u015B porusza si\u0119 bardzo szybko \u2014 blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a \u2014 jego zegar tyka wolniej ni\u017C zegar, kt\u00F3ry pozostaje w miejscu. To szczeg\u00F3lna teoria wzgl\u0119dno\u015Bci Einsteina.\n\nW tym symulatorze jedna osoba zostaje na Ziemi, a druga przelatuje obok gwiazdy i wraca. Rakieta przyspiesza z 1g (komfortowa grawitacja ziemska) do wybranej pr\u0119dko\u015Bci przelotowej, leci z t\u0105 pr\u0119dko\u015Bci\u0105 do gwiazdy, przelatuje obok niej po krzywej z t\u0105 sam\u0105 pr\u0119dko\u015Bci\u0105, wraca, a na koniec hamuje, zatrzymuj\u0105c si\u0119 przy Ziemi.\n\nIm szybciej leci rakieta, tym wi\u0119kszy wsp\u00F3\u0142czynnik Lorentza \u03B3 i tym wi\u0119ksza r\u00F3\u017Cnica w starzeniu si\u0119. Podczas lotu swobodnego, na ka\u017Cdy rok w rakiecie, na Ziemi mija \u03B3 lat.\n\nCzy to prawda? Tak! Dylatacja czasu zosta\u0142a potwierdzona zegarami atomowymi na samolotach. Korekty relatywistyczne \u2014 zar\u00F3wno ze szczeg\u00F3lnej, jak i og\u00F3lnej teorii wzgl\u0119dno\u015Bci \u2014 s\u0105 niezb\u0119dne do dzia\u0142ania satelit\u00F3w GPS.\n\nUwaga: ten widok por\u00F3wnuje czas up\u0142ywaj\u0105cy w uk\u0142adzie Ziemi z czasem w\u0142asnym podr\u00F3\u017Cnika. Nie jest to symulacja tego, co ka\u017Cda osoba zobaczy\u0142aby przez teleskop.\n\nWz\u00F3r: \u03B3 = 1 / \u221A(1 \u2212 v\u00B2/c\u00B2)',
     infoCruise: 'Obserwuj zegary! Podczas lotu swobodnego zegar Ziemi (niebieski) tyka szybciej ni\u017C zegar rakiety (pomara\u0144czowy). Stosunek ich pr\u0119dko\u015Bci to wsp\u00F3\u0142czynnik Lorentza \u03B3 = {gamma}.\n\nPodczas przyspieszania i hamowania r\u00F3\u017Cnica jest mniejsza, bo rakieta nie osi\u0105gn\u0119\u0142a jeszcze pe\u0142nej pr\u0119dko\u015Bci.',
-    infoIdleShortTrip: '\n\nUwaga: ta gwiazda jest na tyle blisko, \u017Ce rakieta nie osi\u0105gnie wybranej pr\u0119dko\u015Bci przelotowej. Przyspieszy do {betaActual} (\u03B3 = {gammaActual}), a potem zacznie hamowa\u0107 \u2014 nie ma fazy lotu swobodnego.',
+    infoIdleShortTrip: '\n\nUwaga: ta gwiazda jest na tyle blisko, \u017Ce rakieta nie osi\u0105gnie wybranej pr\u0119dko\u015Bci przelotowej. Przyspieszy do {betaActual} (\u03B3 = {gammaActual}), przeleci obok gwiazdy z t\u0105 pr\u0119dko\u015Bci\u0105, a potem zahamuje w drodze powrotnej \u2014 nie ma fazy lotu swobodnego.',
     infoCruiseShortTrip: 'Obserwuj zegary! Rakieta nie osi\u0105ga wybranej pr\u0119dko\u015Bci na tej kr\u00F3tkiej trasie \u2014 maksymalna pr\u0119dko\u015B\u0107 to {betaActual} (\u03B3 = {gammaActual}). Dylatacja czasu ro\u015Bnie podczas przyspieszania i maleje podczas hamowania.',
-    infoTurnaround: 'Rakieta zatrzyma\u0142a si\u0119 przy gwi\u017Adzie i zawraca na drog\u0119 powrotn\u0105. Oba zegary s\u0105 chwilowo wstrzymane, gdy statek zmienia kierunek.',
+    infoTurnaround: 'Rakieta leci zakrzywionym torem obok gwiazdy z pr\u0119dko\u015Bci\u0105 przelotow\u0105 i wraca w stron\u0119 Ziemi. Oba zegary ca\u0142y czas tykaj\u0105 \u2014 zegar rakiety wci\u0105\u017C biegnie wolniej, bo statek porusza si\u0119 szybko.',
     infoPaused: 'Symulacja wstrzymana. Oba zegary s\u0105 zamro\u017Cone. Naci\u015Bnij play, aby wznowi\u0107.',
     infoLanded: 'Podr\u00F3\u017C dobieg\u0142a ko\u0144ca.\n\nPodr\u00F3\u017Cnik zestarza\u0142 si\u0119 o {rocketTime} lat, a na Ziemi min\u0119\u0142o {earthTime} lat \u2014 r\u00F3\u017Cnica {diff} lat.\n\nIm szybciej lecisz, tym wi\u0119ksza r\u00F3\u017Cnica. Spr\u00F3buj 0.99c!',
     // Game mode
     explore: 'Odkrywaj',
     game: 'Gra',
     newChallenge: 'Nowe wyzwanie',
-    lblSpeedA: 'Pr\u0119dko\u015B\u0107 statku Alpha',
-    lblSpeedB: 'Pr\u0119dko\u015B\u0107 statku Bravo',
+    lblDifficulty: 'Poziom',
+    lblCaptainBSpeed: 'Twoja pr\u0119dko\u015B\u0107',
+    gameCaptainACruise: '<b>{name}</b> leci z <span class="beta-val">{beta}c</span>',
     gameGoal: 'Wyr\u00F3wnaj wiek! R\u00F3\u017Cnica: <b>{diff} lat</b>. Maks. 100.',
-    gameInfoIdle: 'Obaj kapitanowie wyruszaj\u0105 z Ziemi w tym samym czasie. Ten, kt\u00F3ry wraca pierwszy, czeka \u2014 starzej\u0105c si\u0119 normalnie.\n\nDobierz pr\u0119dko\u015Bci, by mieli ten sam wiek, gdy si\u0119 spotkaj\u0105. Im szybciej lecisz, tym mniej si\u0119 starzejesz!',
+    gameInfoIdle: 'Obaj kapitanowie wyruszaj\u0105 z Ziemi razem. Ten, kto wraca pierwszy, czeka \u2014 starzej\u0105c si\u0119 normalnie.\n\nPr\u0119dko\u015B\u0107 kapitana {nameA} jest ustalona. Wybierz swoj\u0105, tak by wr\u00F3ci\u0107 w tym samym wieku. Im szybciej lecisz, tym mniej si\u0119 starzejesz!',
     gameInfoFlight: 'Oba statki s\u0105 w locie! Obserwuj, jak czas p\u0142ynie inaczej dla ka\u017Cdego kapitana.',
     gameInfoReturn: '{name} wr\u00F3ci\u0142 na Ziemi\u0119 i starzeje si\u0119 normalnie, czekaj\u0105c.',
     gameInfoLanded: 'Obaj kapitanowie wr\u00F3cili na Ziemi\u0119.',
@@ -676,6 +716,8 @@ var state = {
   turnaroundTimer: 0,
   earthElapsed: 0,
   rocketElapsed: 0,
+  arcEarthAccum: 0,   // Earth-years accumulated during the flyby arc (added to display)
+  arcRocketAccum: 0,  // rocket-years accumulated during the flyby arc (added to display)
   earthTotalYears: 0,
   rocketTotalYears: 0,
   // Acceleration model per-leg values
@@ -692,6 +734,8 @@ var state = {
   defaultAge: Math.floor(Math.random() * 16) + 10,  // random 10-25, initial default for both
   // Game mode
   mode: 'explore',
+  difficulty: 'easy',
+  selectedStep: null,
   challenge: null,
   shipA: null,
   shipB: null,
@@ -828,8 +872,7 @@ function initSpeedBar(barEl) {
   function applyValue(sliderVal) {
     sliderVal = clamp(sliderVal, 0, 1000);
     document.getElementById(getSliderId()).value = sliderVal;
-    if (ship) { handleGameSpeedChange(ship); }
-    else { handleSpeedChange(); }
+    handleSpeedChange();
   }
 
   function onPointerDown(e) {
@@ -1117,24 +1160,33 @@ function resize() {
 
 // ====================== PHYSICS ======================
 
-// Pure function: compute round-trip physics for a given distance and target beta
+// Pure function: compute round-trip physics for a given distance and target beta.
+// Flyby model: ship accelerates once at Earth (outbound), cruises to the star,
+// flies through the arc at peak beta (no braking), cruises back, then
+// decelerates once at Earth (return arrival). Legs are asymmetric:
+//   outbound = accel + cruise, return = cruise + decel.
+// Both legs cover the same distance (dist ly) and take the same Earth time.
 function computeShipPhysics(dist, beta) {
   var gamma = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - beta * beta));
   var d_accel = (gamma - 1) / ALPHA;
   var r = { beta: beta, gamma: gamma };
 
-  if (dist >= 2 * d_accel) {
+  if (dist >= d_accel) {
     r.hasCruise = true;
     r.betaActual = beta;
     r.gammaActual = gamma;
     r.t_accel = beta * gamma / ALPHA;
     r.tau_accel = arctanh(beta) / ALPHA;
-    var d_cruise = dist - 2 * d_accel;
-    r.t_cruise = d_cruise / beta;
+    // Per-leg cruise distance: dist minus the single accel (or decel) segment.
+    var d_cruise_leg = dist - d_accel;
+    r.t_cruise = d_cruise_leg / beta;
     r.tau_cruise = r.t_cruise / gamma;
   } else {
+    // Ship cannot reach target beta within one leg's distance. It accelerates
+    // the whole outbound leg, reaching peak gamma at the star, then decels
+    // the whole return leg.
     r.hasCruise = false;
-    r.gammaActual = ALPHA * dist / 2 + 1;
+    r.gammaActual = ALPHA * dist + 1;
     r.betaActual = Math.sqrt(Math.max(0, 1 - 1 / (r.gammaActual * r.gammaActual)));
     r.t_accel = r.betaActual * r.gammaActual / ALPHA;
     r.tau_accel = arctanh(r.betaActual) / ALPHA;
@@ -1142,14 +1194,20 @@ function computeShipPhysics(dist, beta) {
     r.tau_cruise = 0;
   }
 
-  r.legEarthTotal = 2 * r.t_accel + r.t_cruise;
-  r.legRocketTotal = 2 * r.tau_accel + r.tau_cruise;
+  // One leg = t_accel + t_cruise (outbound = accel + cruise, return = cruise + decel)
+  r.legEarthTotal = r.t_accel + r.t_cruise;
+  r.legRocketTotal = r.tau_accel + r.tau_cruise;
   r.earthTotalYears = 2 * r.legEarthTotal;
   r.rocketTotalYears = 2 * r.legRocketTotal;
   return r;
 }
 
-// Pure function: compute elapsed times from progress (0-1) and physics object
+// Pure function: compute elapsed times from progress (0-1) and physics object.
+// Outbound leg: accel(0..t_accel) → cruise(t_accel..legEarthTotal) at peak beta.
+// Return leg:   cruise(0..t_cruise) at peak beta → decel(t_cruise..legEarthTotal).
+// At both ends of the arc, the ship is in cruise at peak gamma — the arc
+// clock model (cruise-speed gamma) matches the adjacent leg segments
+// continuously, no rate discontinuity.
 function computeElapsedForProgress(p, phys) {
   p = clamp(p, 0, 1);
   var legIndex, legProgress;
@@ -1164,16 +1222,25 @@ function computeElapsedForProgress(p, phys) {
   if (ta < EPS_BETA) {
     legRocket = legEarth * phys.legRocketTotal / Math.max(EPS_BETA, phys.legEarthTotal);
     currentBeta = phys.betaActual;
-  } else if (legEarth <= ta) {
-    legRocket = Math.asinh(ALPHA * legEarth) / ALPHA;
-    currentBeta = ALPHA * legEarth / Math.sqrt(1 + ALPHA * ALPHA * legEarth * legEarth);
-  } else if (legEarth <= ta + tc) {
-    legRocket = tauA + (legEarth - ta) / phys.gammaActual;
-    currentBeta = phys.betaActual;
+  } else if (legIndex === 0) {
+    // Outbound: accel then cruise
+    if (legEarth <= ta) {
+      legRocket = Math.asinh(ALPHA * legEarth) / ALPHA;
+      currentBeta = ALPHA * legEarth / Math.sqrt(1 + ALPHA * ALPHA * legEarth * legEarth);
+    } else {
+      legRocket = tauA + (legEarth - ta) / phys.gammaActual;
+      currentBeta = phys.betaActual;
+    }
   } else {
-    var tRemaining = phys.legEarthTotal - legEarth;
-    legRocket = tauA + tauC + (tauA - Math.asinh(ALPHA * tRemaining) / ALPHA);
-    currentBeta = ALPHA * tRemaining / Math.sqrt(1 + ALPHA * ALPHA * tRemaining * tRemaining);
+    // Return: cruise then decel
+    if (legEarth <= tc) {
+      legRocket = legEarth / phys.gammaActual;
+      currentBeta = phys.betaActual;
+    } else {
+      var tRemaining = phys.legEarthTotal - legEarth;  // Earth time until fully stopped
+      legRocket = tauC + (tauA - Math.asinh(ALPHA * tRemaining) / ALPHA);
+      currentBeta = ALPHA * tRemaining / Math.sqrt(1 + ALPHA * ALPHA * tRemaining * tRemaining);
+    }
   }
 
   return {
@@ -1201,11 +1268,12 @@ function recalcPhysics() {
   state.gammaActual = phys.gammaActual;
 }
 
-// Wrapper: update elapsed from progress for explore mode
+// Wrapper: update elapsed from progress for explore mode. Injects arc accumulators
+// on top so the display stays continuous across phase transitions and on landing.
 function updateElapsedFromProgress() {
   var result = computeElapsedForProgress(state.progress, state);
-  state.earthElapsed = result.earthElapsed;
-  state.rocketElapsed = result.rocketElapsed;
+  state.earthElapsed = result.earthElapsed + state.arcEarthAccum;
+  state.rocketElapsed = result.rocketElapsed + state.arcRocketAccum;
   state.currentBeta = result.currentBeta;
 }
 
@@ -1227,76 +1295,198 @@ function getStarScreenX() {
 
 function getStarY() { return state.mode === 'game' ? H * 0.5 : H * 0.55; }
 
-// Ellipse trajectory: Earth at left, star at right.
-// Ellipse trajectory. theta decreases clockwise.
-// BEGIN at theta = pi - earthDelta (upper-left, near Earth, outside Earth's area)
-// END   at theta = -(pi - earthDelta) (lower-left, near Earth)
-// Turnaround at theta near 0 (right end, behind star)
-var TURN_DELTA = Math.PI / 10; // angular gap at the star end for the U-turn
+// Tangent + arc trajectory: two straight legs from Earth to tangent points on
+// a small ring around the star, plus a CCW arc "the long way" behind the star.
+// Outbound leg: park -> T1. Arc: T1 -> T2 (angEntry + arcSweep, CCW behind).
+// Return leg: T2 -> Earth.
+// Ship tail sits at Earth's surface: ship triangle base extends 7 px behind
+// the ship center, so parking the center EARTH_RADIUS + 7 out puts the tail
+// exactly on the surface.
+var SHIP_PARK_OFFSET = EARTH_RADIUS + 7;
 
-function getEllipse() {
-  var earthX = getEarthX();
-  var earthY = getEarthY();
-  var starX = getStarScreenX();
-  var starR = STARS[state.starIndex].radius;
-  var pad = 20;
-  // Left edge at Earth center, right edge past star
-  var leftEdge = earthX;
-  var rightEdge = starX + starR + pad;
-  var a = (rightEdge - leftEdge) / 2;
-  var cx = leftEdge + a;
-  var cy = earthY;
-  var b = clamp(a * 0.25, 15, 60);
-  // Compute EARTH_DELTA so trajectory starts at Earth's edge
-  var clearance = EARTH_RADIUS + 2;
-  var cosVal = 1 - clearance / a;
-  var earthDelta = cosVal < -1 ? Math.PI * 0.4 : Math.acos(Math.max(-1, cosVal));
-  earthDelta = clamp(earthDelta, Math.PI / 8, Math.PI * 0.4);
-  return { cx: cx, cy: cy, a: a, b: b, earthDelta: earthDelta };
+function starFlybyRingR(star) {
+  return Math.max(star.radius + 20, 32);
 }
 
-function ellipsePoint(e, theta) {
-  return { x: e.cx + e.a * Math.cos(theta), y: e.cy - e.b * Math.sin(theta) };
+function computeTangentArc(E, C, R) {
+  var dx = C.x - E.x, dy = C.y - E.y;
+  var D = Math.sqrt(dx * dx + dy * dy) || 1;
+  if (R >= D - 2) R = Math.max(1, D - 2);
+  var a = Math.acos(clamp(R / D, -1, 1));
+  var thetaCE = Math.atan2(-dy, -dx);
+  var angEntry = thetaCE + a;
+  var angExit = thetaCE - a;
+  return {
+    E: { x: E.x, y: E.y }, C: { x: C.x, y: C.y }, R: R, D: D,
+    T1: { x: C.x + R * Math.cos(angEntry), y: C.y + R * Math.sin(angEntry) },
+    T2: { x: C.x + R * Math.cos(angExit),  y: C.y + R * Math.sin(angExit)  },
+    angEntry: angEntry,
+    angExit: angExit,
+    arcSweep: 2 * Math.PI - 2 * a,
+    legLen: Math.sqrt(Math.max(0, D * D - R * R)),
+  };
 }
 
-function ellipseTangentAngle(e, theta) {
-  // Tangent for clockwise motion (theta decreasing)
-  return Math.atan2(e.b * Math.cos(theta), e.a * Math.sin(theta));
+function arcPosAt(traj, f) {
+  var ang = traj.angEntry + traj.arcSweep * f;
+  return { x: traj.C.x + traj.R * Math.cos(ang), y: traj.C.y + traj.R * Math.sin(ang) };
+}
+
+function arcHeadAt(traj, f) {
+  var ang = traj.angEntry + traj.arcSweep * f;
+  // CCW: velocity = R*(-sin ang, cos ang); heading = atan2(vy, vx).
+  return Math.atan2(Math.cos(ang), -Math.sin(ang));
+}
+
+function headingFromTo(from, to) {
+  return Math.atan2(to.y - from.y, to.x - from.x);
+}
+
+function computeTrajectory() {
+  return computeTangentArc(
+    { x: getEarthX(), y: getEarthY() },
+    { x: getStarScreenX(), y: getStarY() },
+    starFlybyRingR(STARS[state.starIndex])
+  );
+}
+
+function getShipParkingPos(traj) {
+  var dx = traj.T1.x - traj.E.x, dy = traj.T1.y - traj.E.y;
+  var d = Math.sqrt(dx * dx + dy * dy) || 1;
+  return { x: traj.E.x + (dx / d) * SHIP_PARK_OFFSET, y: traj.E.y + (dy / d) * SHIP_PARK_OFFSET };
+}
+
+// On return, the ship's nose (tip at +13 in local coords) should just touch
+// Earth's surface, which means the center sits EARTH_RADIUS + 13 from Earth
+// along the approach direction from T2.
+function getShipLandingPos(traj) {
+  var dx = traj.T2.x - traj.E.x, dy = traj.T2.y - traj.E.y;
+  var d = Math.sqrt(dx * dx + dy * dy) || 1;
+  var off = EARTH_RADIUS + 13;
+  return { x: traj.E.x + (dx / d) * off, y: traj.E.y + (dy / d) * off };
 }
 
 function getTurnaroundDuration() {
-  // Compute duration so angular velocity matches the outbound/return legs
-  var e = getEllipse();
-  var thetaBegin = Math.PI - e.earthDelta;
-  var legSpan = thetaBegin - TURN_DELTA;
-  // Leg angular velocity = legSpan / WALL_SECONDS_BASE rad/s (at 1x)
-  // Turnaround covers 2*TURN_DELTA at the same rate
-  return 2 * TURN_DELTA * WALL_SECONDS_BASE / legSpan;
+  // Visual speed on the arc = visual speed on the straight legs.
+  var t = computeTrajectory();
+  var legSpeed = t.legLen / WALL_SECONDS_BASE;
+  if (legSpeed < 1e-3) return 1.0;
+  return (t.arcSweep * t.R) / legSpeed;
 }
 
 function getRocketPos() {
-  var e = getEllipse();
-  var thetaBegin = Math.PI - e.earthDelta;
-  var legSpan = thetaBegin - TURN_DELTA;
-  var turnDuration = getTurnaroundDuration();
-  var theta;
+  var traj = computeTrajectory();
 
   if (state.phase === 'turnaround') {
-    var f = clamp(state.turnaroundTimer / turnDuration, 0, 1);
-    theta = TURN_DELTA - 2 * TURN_DELTA * f;
-  } else {
-    var p = clamp(state.progress, 0, 1);
-    if (state.phase === 'outbound' || state.phase === 'idle') {
-      var legP = p / 0.5;
-      theta = thetaBegin - legSpan * legP;
-    } else {
-      var legP = (p - 0.5) / 0.5;
-      theta = -TURN_DELTA - legSpan * legP;
+    var f = clamp(state.turnaroundTimer / getTurnaroundDuration(), 0, 1);
+    var pt = arcPosAt(traj, f);
+    return { x: pt.x, y: pt.y, angle: arcHeadAt(traj, f), traj: traj, onArc: true, arcF: f };
+  }
+
+  var park = getShipParkingPos(traj);
+  if (state.phase === 'outbound' || state.phase === 'idle') {
+    var legP = clamp(state.progress, 0, 1) / 0.5;
+    return {
+      x: park.x + (traj.T1.x - park.x) * legP,
+      y: park.y + (traj.T1.y - park.y) * legP,
+      angle: headingFromTo(park, traj.T1),
+      traj: traj, onArc: false, legP: legP, leg: 'out',
+    };
+  }
+
+  // return / landed — land at the landing spot (tip touching Earth), not inside Earth
+  var legP = clamp((state.progress - 0.5) / 0.5, 0, 1);
+  var land = getShipLandingPos(traj);
+  return {
+    x: traj.T2.x + (land.x - traj.T2.x) * legP,
+    y: traj.T2.y + (land.y - traj.T2.y) * legP,
+    angle: headingFromTo(traj.T2, land),
+    traj: traj, onArc: false, legP: legP, leg: 'ret',
+  };
+}
+
+// ====================== TRAIL ======================
+
+// Comet-tail parameters — each stroked segment fades quadratically with
+// distance behind the ship, so the trail looks like a receding exhaust
+// plume rather than a solid line.
+var TRAIL_TAIL_LEN = 240;   // pixels — length of the visible fade window
+var TRAIL_SAMPLE   = 4;     // pixels — spacing between sampled points
+
+// Map (phase, progress, turnaroundTimer, turnDuration) → { out, arc, ret },
+// where each value is a 0..1 completion fraction for that phase.
+function phaseProgress(phase, progress, turnaroundTimer, turnDuration) {
+  if (phase === 'idle') return { out: 0, arc: 0, ret: 0 };
+  if (phase === 'outbound') return { out: clamp(progress / 0.5, 0, 1), arc: 0, ret: 0 };
+  if (phase === 'turnaround') return { out: 1, arc: clamp(turnaroundTimer / turnDuration, 0, 1), ret: 0 };
+  // return / waiting / landed
+  return { out: 1, arc: 1, ret: clamp((progress - 0.5) / 0.5, 0, 1) };
+}
+
+// Walk the traveled path, sample at TRAIL_SAMPLE-px intervals, and stroke
+// each segment with alpha that decays with distance behind the ship.
+function drawShipTrail(traj, phase, progress, turnaroundTimer, turnDuration, rgb) {
+  if (!traj || phase === 'idle') return;
+  var p = phaseProgress(phase, progress, turnaroundTimer, turnDuration);
+  if (p.out <= 0) return;
+
+  var park = getShipParkingPos(traj);
+  var land = getShipLandingPos(traj);
+  var pts = [];
+  function pushPt(x, y) {
+    var prev = pts.length > 0 ? pts[pts.length - 1] : null;
+    var d = prev ? Math.hypot(x - prev.x, y - prev.y) : 0;
+    pts.push({ x: x, y: y, cum: prev ? prev.cum + d : 0 });
+  }
+
+  // Outbound leg
+  var outEnd = { x: park.x + (traj.T1.x - park.x) * p.out, y: park.y + (traj.T1.y - park.y) * p.out };
+  var outLen = Math.hypot(outEnd.x - park.x, outEnd.y - park.y);
+  var outN = Math.max(1, Math.ceil(outLen / TRAIL_SAMPLE));
+  for (var i = 0; i <= outN; i++) {
+    var f = (i / outN) * p.out;
+    pushPt(park.x + (traj.T1.x - park.x) * f, park.y + (traj.T1.y - park.y) * f);
+  }
+  // Arc
+  if (p.arc > 0) {
+    var arcLen = traj.arcSweep * traj.R * p.arc;
+    var arcN = Math.max(1, Math.ceil(arcLen / TRAIL_SAMPLE));
+    for (var j = 1; j <= arcN; j++) {
+      var fA = (j / arcN) * p.arc;
+      var ang = traj.angEntry + traj.arcSweep * fA;
+      pushPt(traj.C.x + traj.R * Math.cos(ang), traj.C.y + traj.R * Math.sin(ang));
+    }
+  }
+  // Return leg — towards landing spot, not Earth centre, so the tail head
+  // stays attached to the ship hull.
+  if (p.ret > 0) {
+    var retEnd = { x: traj.T2.x + (land.x - traj.T2.x) * p.ret, y: traj.T2.y + (land.y - traj.T2.y) * p.ret };
+    var retLen = Math.hypot(retEnd.x - traj.T2.x, retEnd.y - traj.T2.y);
+    var retN = Math.max(1, Math.ceil(retLen / TRAIL_SAMPLE));
+    for (var k = 1; k <= retN; k++) {
+      var fR = (k / retN) * p.ret;
+      pushPt(traj.T2.x + (land.x - traj.T2.x) * fR, traj.T2.y + (land.y - traj.T2.y) * fR);
     }
   }
 
-  var pt = ellipsePoint(e, theta);
-  return { x: pt.x, y: pt.y, angle: ellipseTangentAngle(e, theta), theta: theta };
+  var headCum = pts[pts.length - 1].cum;
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+  for (var m = pts.length - 2; m >= 0; m--) {
+    var segMidCum = (pts[m].cum + pts[m + 1].cum) * 0.5;
+    var distBehind = headCum - segMidCum;
+    if (distBehind > TRAIL_TAIL_LEN) break;
+    var t01 = 1 - distBehind / TRAIL_TAIL_LEN;
+    var alpha = 0.55 * t01 * t01;
+    if (alpha < 0.01) continue;
+    ctx.strokeStyle = 'rgba(' + rgb + ',' + alpha.toFixed(3) + ')';
+    ctx.beginPath();
+    ctx.moveTo(pts[m].x, pts[m].y);
+    ctx.lineTo(pts[m + 1].x, pts[m + 1].y);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 // ====================== DRAWING ======================
@@ -1379,8 +1569,7 @@ function drawDestStar(hideLabel) {
   // Label — hidden during drag (shadows have their own labels)
   if (!hideLabel) {
     var name = state.lang === 'en' ? star.nameEn : star.namePl;
-    var e = getEllipse();
-    var labelX = e.cx + e.a + 10;
+    var labelX = cx + starFlybyRingR(star) + 10;
     ctx.font = '15px "Share Tech Mono", monospace';
     ctx.fillStyle = 'rgba(255,248,225,0.7)';
     ctx.textAlign = 'left';
@@ -1547,31 +1736,10 @@ function drawScene() {
   var starX = getStarScreenX();
   var rPos = getRocketPos();
 
-  // Trajectory shadow (faint full ellipse) — visible during flight and after landing
+  // Fading comet-tail trail up to the ship's current position.
   if (state.phase !== 'idle') {
-    var e = getEllipse();
-    ctx.beginPath();
-    ctx.ellipse(e.cx, e.cy, e.a, e.b, 0, 0, 2 * Math.PI);
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(255,224,102,0.08)';
-    ctx.stroke();
-
-    // Bright trail — draw as ellipse arc from thetaBegin to current theta
-    var thetaBegin = Math.PI - e.earthDelta;
-    var TRAIL_STEPS = 120;
-    var tFrom = thetaBegin;
-    var tTo = rPos.theta;
-    ctx.beginPath();
-    for (var si = 0; si <= TRAIL_STEPS; si++) {
-      var th = tFrom + (tTo - tFrom) * si / TRAIL_STEPS;
-      var pt = ellipsePoint(e, th);
-      if (si === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    }
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = 'rgba(255,224,102,0.55)';
-    ctx.stroke();
+    drawShipTrail(rPos.traj, state.phase, state.progress, state.turnaroundTimer,
+                  getTurnaroundDuration(), '255,224,102');
   }
 
   drawSpacecraft(rPos.x, rPos.y, rPos.angle);
@@ -1586,12 +1754,10 @@ function drawScene() {
     drawDestStar();
   }
 
-  // Ship's initial position (for clock alignment)
+  // Ship's parking position (for clock alignment)
   var yr = T('yr');
   var earthY = getEarthY();
-  var e = getEllipse();
-  var initPt = ellipsePoint(e, Math.PI - e.earthDelta);
-  var earthClockX = initPt.x;
+  var earthClockX = getShipParkingPos(rPos.traj).x;
 
   // Equal distance from Earth center for both clocks
   var clockOffset = Math.min(earthY * 0.65, (H - earthY) * 0.65, 150);
@@ -1651,14 +1817,15 @@ function updateReadouts() {
     } else if (state.phase === 'landed') {
       phaseLabel = T('phaseLanded');
     } else {
-      // Derive sub-phase from elapsed Earth time within current leg
-      var legEarth = state.earthElapsed % state.legEarthTotal;
-      if (legEarth <= state.t_accel) {
-        phaseLabel = T('phaseAccel');
-      } else if (legEarth <= state.t_accel + state.t_cruise) {
-        phaseLabel = T('phaseCruise');
+      // Outbound: accel then cruise. Return: cruise then decel.
+      var legP = state.phase === 'outbound'
+        ? clamp(state.progress, 0, 1) / 0.5
+        : clamp((state.progress - 0.5) / 0.5, 0, 1);
+      var legEarth = legP * state.legEarthTotal;
+      if (state.phase === 'outbound') {
+        phaseLabel = legEarth <= state.t_accel ? T('phaseAccel') : T('phaseCruise');
       } else {
-        phaseLabel = T('phaseDecel');
+        phaseLabel = legEarth <= state.t_cruise ? T('phaseCruise') : T('phaseDecel');
       }
     }
     document.getElementById('readPhase').textContent = phaseLabel;
@@ -1672,6 +1839,9 @@ function updateInfo() {
   if (state.mode === 'game') {
     if (state.phase === 'idle') {
       text = T('gameInfoIdle');
+      if (state.challenge) {
+        text = text.replace('{nameA}', state.challenge.nameA);
+      }
     } else if (state.phase === 'landed') {
       text = T('gameInfoLanded');
     } else if (state.paused) {
@@ -1696,9 +1866,9 @@ function updateInfo() {
       }
     } else if (state.phase === 'landed') {
       text = T('infoLanded')
-        .replace('{rocketTime}', state.rocketTotalYears.toFixed(2))
-        .replace('{earthTime}', state.earthTotalYears.toFixed(2))
-        .replace('{diff}', (state.earthTotalYears - state.rocketTotalYears).toFixed(2));
+        .replace('{rocketTime}', state.rocketElapsed.toFixed(2))
+        .replace('{earthTime}', state.earthElapsed.toFixed(2))
+        .replace('{diff}', (state.earthElapsed - state.rocketElapsed).toFixed(2));
     } else if (state.paused) {
       text = T('infoPaused');
     } else if (state.phase === 'turnaround') {
@@ -1782,31 +1952,12 @@ function updateStarCursor(pos) {
 
 function handleStarDragStart(e) {
   if (state.phase !== 'idle' && state.phase !== 'landed') return;
+  // Game mode chooses both stars automatically; players tune only captain B's
+  // speed. Dragging a star would invalidate the precomputed step betas.
+  if (state.mode === 'game') return;
   var pos = getCanvasCoords(e);
 
-  if (state.mode === 'game' && state.challenge) {
-    var c = state.challenge;
-    var targets = [
-      { ship: 'A', idx: c.starIndexA, x: getStarScreenXForDist(STARS[c.starIndexA].dist), y: H * 0.36 },
-      { ship: 'B', idx: c.starIndexB, x: getStarScreenXForDist(STARS[c.starIndexB].dist), y: H * 0.80 },
-    ];
-    for (var i = 0; i < targets.length; i++) {
-      var t = targets[i];
-      if (Math.sqrt((pos.x - t.x) * (pos.x - t.x) + (pos.y - t.y) * (pos.y - t.y)) < 35) {
-        drag.active = true;
-        drag.ship = t.ship;
-        drag.origIndex = t.idx;
-        drag.cursorX = pos.x;
-        drag.starY = t.y;
-        drag.nearestSlot = -1;
-        canvas.classList.remove('cursor-grab');
-        canvas.classList.add('cursor-grabbing');
-        hideStarFacts();
-        if (e.cancelable) e.preventDefault();
-        return;
-      }
-    }
-  } else if (state.mode === 'explore') {
+  if (state.mode === 'explore') {
     var sx = getStarScreenX();
     var sy = getStarY();
     if (Math.sqrt((pos.x - sx) * (pos.x - sx) + (pos.y - sy) * (pos.y - sy)) < 35) {
@@ -2017,6 +2168,15 @@ function launchFlight() {
 
   if (state.mode === 'game') {
     if (!state.challenge) return;
+    if (state.selectedStep === null) {
+      var bar = document.getElementById('stepBar');
+      if (bar) {
+        bar.classList.remove('pulse');
+        void bar.offsetWidth;
+        bar.classList.add('pulse');
+      }
+      return;
+    }
     state.phase = 'outbound';
     state.paused = false;
     state.gameMasterProgress = 0;
@@ -2033,6 +2193,8 @@ function launchFlight() {
     state.progress = 0;
     state.paused = false;
     state.turnaroundTimer = 0;
+    state.arcEarthAccum = 0;
+    state.arcRocketAccum = 0;
 
     recalcPhysics();
     updateElapsedFromProgress();
@@ -2050,6 +2212,8 @@ function handleReset() {
   state.turnaroundTimer = 0;
   state.earthElapsed = 0;
   state.rocketElapsed = 0;
+  state.arcEarthAccum = 0;
+  state.arcRocketAccum = 0;
 
   if (state.mode === 'game') {
     state.gameMasterProgress = 0;
@@ -2063,6 +2227,8 @@ function handleReset() {
       state.shipA.rocketElapsed = 0;
       state.shipA.waitingTime = 0;
       state.shipA.currentBeta = 0;
+      state.shipA.arcEarthAccum = 0;
+      state.shipA.arcRocketAccum = 0;
     }
     if (state.shipB) {
       state.shipB.phase = 'idle';
@@ -2072,6 +2238,8 @@ function handleReset() {
       state.shipB.rocketElapsed = 0;
       state.shipB.waitingTime = 0;
       state.shipB.currentBeta = 0;
+      state.shipB.arcEarthAccum = 0;
+      state.shipB.arcRocketAccum = 0;
     }
   }
 
@@ -2088,10 +2256,15 @@ function handleReset() {
 
 function setControlsLocked(locked) {
   if (state.mode === 'game') {
-    var barA = document.getElementById('speedBarA');
-    var barB = document.getElementById('speedBarB');
-    if (barA) barA.classList.toggle('disabled', locked);
-    if (barB) barB.classList.toggle('disabled', locked);
+    ['diffEasyBtn', 'diffMediumBtn', 'diffHardBtn'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.disabled = locked;
+    });
+    var stepBar = document.getElementById('stepBar');
+    if (stepBar) {
+      var btns = stepBar.querySelectorAll('.step-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].disabled = locked;
+    }
     document.getElementById('newChallengeBtn').disabled = locked;
     document.getElementById('gameNameA').disabled = locked;
     document.getElementById('gameNameB').disabled = locked;
@@ -2112,17 +2285,21 @@ function showSummaryOverlay() {
   var overlay = document.createElement('div');
   overlay.className = 'result-overlay';
 
-  var earthFmt = formatYears(state.earthTotalYears);
-  var rocketFmt = formatYears(state.rocketTotalYears);
-  var diffFmt = formatYears(state.earthTotalYears - state.rocketTotalYears);
+  // Use the ship's actually-displayed elapsed times (include arc accumulation)
+  // so the summary agrees with the in-flight clocks.
+  var earthTotal = state.earthElapsed;
+  var rocketTotal = state.rocketElapsed;
+  var earthFmt = formatYears(earthTotal);
+  var rocketFmt = formatYears(rocketTotal);
+  var diffFmt = formatYears(earthTotal - rocketTotal);
   var conclusion = T('overlayConclusion')
     .replace('{diff}', diffFmt);
 
   // Generational meeting
-  var earthGen = getGeneration(state.earthTotalYears);
-  var rocketGen = getGeneration(state.rocketTotalYears);
-  var earthGenAge = Math.floor(getGenerationAge(state.earthTotalYears, earthGen));
-  var rocketGenAge = Math.floor(getGenerationAge(state.rocketTotalYears, rocketGen));
+  var earthGen = getGeneration(earthTotal);
+  var rocketGen = getGeneration(rocketTotal);
+  var earthGenAge = Math.floor(getGenerationAge(earthTotal, earthGen));
+  var rocketGenAge = Math.floor(getGenerationAge(rocketTotal, rocketGen));
   var earthGender = Math.random() < 0.5 ? 'm' : 'f';
   var rocketGender = Math.random() < 0.5 ? 'm' : 'f';
   var earthDesc = getDescendantLabel(getEarthTwinName(), earthGen, earthGender, state.lang, '#4db8ff');
@@ -2194,6 +2371,19 @@ function animate(timestamp) {
 
   if (!state.paused && state.phase === 'turnaround') {
     state.turnaroundTimer += dt * state.animSpeed;
+
+    // Tick both clocks at cruise-speed gamma while the ship flies the arc.
+    // Earth-rate during a leg = legEarthTotal / WALL_SECONDS_BASE. Rocket-rate
+    // = that / gammaActual at peak cruise. The accumulator carries forward
+    // into the return leg via updateElapsedFromProgress().
+    var earthPerWallSec = state.legEarthTotal / WALL_SECONDS_BASE;
+    var dEarth = earthPerWallSec * dt * state.animSpeed;
+    var gAct = Math.max(1, state.gammaActual || 1);
+    state.arcEarthAccum += dEarth;
+    state.arcRocketAccum += dEarth / gAct;
+    updateElapsedFromProgress();
+    state.currentBeta = state.betaActual;
+
     var turnDuration = getTurnaroundDuration();
     if (state.turnaroundTimer >= turnDuration) {
       state.phase = 'return';
@@ -2232,7 +2422,9 @@ function applyTranslations() {
   document.getElementById('modeExploreBtn').textContent = T('explore');
   document.getElementById('modeGameBtn').textContent = T('game');
   document.getElementById('newChallengeLabel').textContent = T('newChallenge');
-  if (state.mode === 'game' && state.challenge) updateChallengeText();
+  document.getElementById('lblDifficulty').textContent = T('lblDifficulty');
+  document.getElementById('lblCaptainBSpeed').textContent = T('lblCaptainBSpeed');
+  if (state.mode === 'game' && state.challenge) { updateChallengeText(); renderStepBar(); }
   populateStarSelect();
   updateWarpButtons();
   if (state.mode === 'explore') updateReadouts();
@@ -2336,7 +2528,89 @@ function makeGameShip(starIndex, beta) {
     rocketElapsed: 0,
     currentBeta: 0,
     waitingTime: 0,
+    arcEarthAccum: 0,
+    arcRocketAccum: 0,
   };
+}
+
+// Stepped speed puzzle: base templates describe the *shape* of each difficulty
+// (step count, spacings). Offsets are signed age-diff targets (finalB - finalA
+// in years). The actual step list for a challenge is built by shifting the
+// template so the zero-offset lands at a randomly chosen hit index.
+var STEP_BASE = {
+  easy:   [ +3,   0, -3 ],
+  medium: [ +3, +1.5, 0, -1.5, -3 ],
+  hard:   [ +2, +1, +0.5, 0, -0.5, -1, -2 ],
+};
+
+function buildStepOffsets(difficulty, hitIdx) {
+  var base = STEP_BASE[difficulty] || STEP_BASE.easy;
+  var baseHit = Math.floor(base.length / 2);
+  var shift = hitIdx - baseHit;
+  var lastIdx = base.length - 1;
+  var startDelta = base[0] - base[1];
+  var endDelta = base[lastIdx - 1] - base[lastIdx];
+  var out = [];
+  for (var i = 0; i < base.length; i++) {
+    var bi = i - shift;
+    if (bi >= 0 && bi <= lastIdx) out.push(base[bi]);
+    else if (bi < 0) out.push(base[0] + startDelta * (-bi));
+    else out.push(base[lastIdx] - endDelta * (bi - lastIdx));
+  }
+  return out;
+}
+
+// Purely geometric arc-to-tangent length ratio for a star at its current
+// canvas position. arcEarth_years = arcRatio * gameMaxEarthTime / 2.
+function arcRatioForStar(star) {
+  var E = { x: getEarthX(), y: 0 };
+  var C = { x: getStarScreenXForDist(star.dist), y: 0 };
+  var R = starFlybyRingR(star);
+  var traj = computeTangentArc(E, C, R);
+  return traj.arcSweep * traj.R / traj.legLen;
+}
+
+// Solve beta_B so that (finalB - finalA) equals signedDiffBA years.
+// Accounts for arc contribution: during turnaround each ship accumulates
+// extra Earth-years (arcRatio_X * gameMaxEarthTime / 2) and rocket-years
+// (that / gamma_X). Identity still holds:
+//   finalB - finalA = (ageB - ageA) + S_A - S_B
+// where S_X = (earthTotal_X - rocketTotal_X) + arcEarth_X * (1 - 1/gamma_X).
+// diff is monotone decreasing in beta_B (S_B grows faster than S_A shrinks),
+// so binary search works.
+function solveBetaBForDiff(signedDiffBA, ctx, arcRatios) {
+  var distA = STARS[ctx.starIndexA].dist;
+  var distB = STARS[ctx.starIndexB].dist;
+  var physA = computeShipPhysics(distA, ctx.betaA);
+  var arA = arcRatios.A, arB = arcRatios.B;
+  var gammaA = physA.gammaActual;
+  var savNomA = physA.earthTotalYears - physA.rocketTotalYears;
+
+  function diffAt(betaB) {
+    var physB = computeShipPhysics(distB, betaB);
+    var gammaB = physB.gammaActual;
+    var savNomB = physB.earthTotalYears - physB.rocketTotalYears;
+    var gameMax = Math.max(physA.earthTotalYears, physB.earthTotalYears);
+    var arcEarthA = arA * gameMax / 2;
+    var arcEarthB = arB * gameMax / 2;
+    var SA = savNomA + arcEarthA * (1 - 1 / gammaA);
+    var SB = savNomB + arcEarthB * (1 - 1 / gammaB);
+    return (ctx.ageB - ctx.ageA) + SA - SB;
+  }
+
+  var lo = BETA_MIN, hi = BETA_MAX;
+  for (var i = 0; i < 60; i++) {
+    var mid = (lo + hi) / 2;
+    var d = diffAt(mid);
+    if (Math.abs(d - signedDiffBA) < 0.005) return mid;
+    // diff decreases as beta_B increases, so if above target we need bigger beta.
+    if (d > signedDiffBA) lo = mid;
+    else hi = mid;
+  }
+  var beta = (lo + hi) / 2;
+  if (beta < BETA_MIN + 0.005 || beta > BETA_MAX - 0.0001) return null;
+  if (Math.abs(diffAt(beta) - signedDiffBA) > 0.3) return null;
+  return beta;
 }
 
 function generateChallenge() {
@@ -2348,56 +2622,65 @@ function _generateChallengeInner() {
   if (state.phase !== 'idle') handleReset();
 
   var ageDiffs = [2, 3, 4, 5, 6, 8, 10];
-  var realStarCount = STARS.length - 1; // exclude custom star
+  // Restrict game mode to the five closest named stars (Proxima..Algol, ≤~93 ly).
+  // More distant stars produce round-trip Earth times that exceed the 100-year
+  // age cap for most step combinations, driving the solver into the fallback.
+  var gameStarCount = Math.min(5, STARS.length - 1);
+  var stepCount = (STEP_BASE[state.difficulty] || STEP_BASE.easy).length;
 
   for (var attempt = 0; attempt < 50; attempt++) {
-    // Pick two distinct stars
-    var idxA = Math.floor(Math.random() * realStarCount);
-    var idxB;
-    do { idxB = Math.floor(Math.random() * realStarCount); } while (idxB === idxA);
+    // Per-attempt random hit position so the perfect match isn't always in
+    // the middle of the bar. Each retry also re-rolls, so the fallback path
+    // doesn't get stuck on a problematic hitIdx.
+    var hitIdx = Math.floor(Math.random() * stepCount);
+    var steps = buildStepOffsets(state.difficulty, hitIdx);
 
-    // Pick ages
+    var idxA = Math.floor(Math.random() * gameStarCount);
+    var idxB;
+    do { idxB = Math.floor(Math.random() * gameStarCount); } while (idxB === idxA);
+
     var ageA = 15 + Math.floor(Math.random() * 21); // 15-35
     var ageDiff = ageDiffs[Math.floor(Math.random() * ageDiffs.length)];
-    var ageB = ageA + ageDiff; // B is older
+    var ageB = ageA + ageDiff;
 
-    // Pick a solution speed for ship A
-    var solBetaA = 0.30 + Math.random() * 0.65; // 0.30 - 0.95
-    solBetaA = Math.round(solBetaA * 1000) / 1000;
-    var physA = computeShipPhysics(STARS[idxA].dist, solBetaA);
-    var savingsA = physA.earthTotalYears - physA.rocketTotalYears;
+    // Captain A's cruise speed is chosen by the game (mid-high range).
+    var betaA = 0.50 + Math.random() * 0.40;
+    betaA = Math.round(betaA * 1000) / 1000;
 
-    // Required savings for B: S_B = S_A + ageDiff
-    var requiredSavingsB = savingsA + ageDiff;
-    if (requiredSavingsB < 0.5) continue; // too small to be interesting
+    // Canvas-dependent arc ratios: used by the solver and by the safety check so
+    // they stay consistent with the runtime arc accumulation.
+    var arcRatios = { A: arcRatioForStar(STARS[idxA]), B: arcRatioForStar(STARS[idxB]) };
+    var ctx = { starIndexA: idxA, starIndexB: idxB, ageA: ageA, ageB: ageB, betaA: betaA };
 
-    // Binary search for betaB that gives the required savings for star B
-    var distB = STARS[idxB].dist;
-    var lo = BETA_MIN, hi = BETA_MAX, solBetaB = -1;
-    for (var bs = 0; bs < 60; bs++) {
-      var mid = (lo + hi) / 2;
-      var physMid = computeShipPhysics(distB, mid);
-      var savMid = physMid.earthTotalYears - physMid.rocketTotalYears;
-      if (Math.abs(savMid - requiredSavingsB) < 0.01) {
-        solBetaB = mid;
-        break;
-      }
-      if (savMid < requiredSavingsB) lo = mid;
-      else hi = mid;
+    // Resolve every step's beta_B.
+    var stepBetas = [];
+    var ok = true;
+    for (var s = 0; s < steps.length; s++) {
+      var bS = solveBetaBForDiff(steps[s], ctx, arcRatios);
+      if (bS === null) { ok = false; break; }
+      stepBetas.push(bS);
     }
-    if (solBetaB < 0) solBetaB = (lo + hi) / 2;
+    if (!ok) continue;
 
-    // Validate range
-    if (solBetaB < BETA_MIN + 0.02 || solBetaB > BETA_MAX - 0.0001) continue;
+    // Safety: every step must keep both captains under 100 years old, including arc.
+    var physA = computeShipPhysics(STARS[idxA].dist, betaA);
+    var safe = true;
+    for (var k = 0; k < stepBetas.length; k++) {
+      var physB = computeShipPhysics(STARS[idxB].dist, stepBetas[k]);
+      var gameMax = Math.max(physA.earthTotalYears, physB.earthTotalYears);
+      var arcEA = arcRatios.A * gameMax / 2;
+      var arcEB = arcRatios.B * gameMax / 2;
+      var tA = physA.earthTotalYears + arcEA;
+      var tB = physB.earthTotalYears + arcEB;
+      var tauA = physA.rocketTotalYears + arcEA / physA.gammaActual;
+      var tauB = physB.rocketTotalYears + arcEB / physB.gammaActual;
+      var fA = ageA + tauA + Math.max(0, tB - tA);
+      var fB = ageB + tauB + Math.max(0, tA - tB);
+      if (fA > 99 || fB > 99) { safe = false; break; }
+    }
+    if (!safe) continue;
 
-    // Validate both captains survive
-    var physBSol = computeShipPhysics(distB, solBetaB);
-    var maxEarthTime = Math.max(physA.earthTotalYears, physBSol.earthTotalYears);
-    var finalAgeA = ageA + physA.rocketTotalYears + Math.max(0, physBSol.earthTotalYears - physA.earthTotalYears);
-    var finalAgeB = ageB + physBSol.rocketTotalYears + Math.max(0, physA.earthTotalYears - physBSol.earthTotalYears);
-    if (finalAgeA > 99 || finalAgeB > 99) continue;
-
-    // Read names from inputs (fall back to random defaults)
+    // Names
     var nameA = document.getElementById('gameNameA').value.trim();
     var nameB = document.getElementById('gameNameB').value.trim();
     if (!nameA || !nameB) {
@@ -2417,63 +2700,115 @@ function _generateChallengeInner() {
       starIndexA: idxA, starIndexB: idxB,
       ageA: ageA, ageB: ageB,
       nameA: nameA, nameB: nameB,
+      betaA: betaA,
+      stepBetas: stepBetas,
+      hitStepIndex: hitIdx,
+      arcRatios: arcRatios,
     };
-
-    // Initialize ships with default mid-range speeds
-    state.shipA = makeGameShip(idxA, 0.50);
-    state.shipB = makeGameShip(idxB, 0.50);
-
-    // Set sliders to defaults
-    var defSlider = betaToSlider(0.50);
-    document.getElementById('speedSliderA').value = defSlider;
-    document.getElementById('speedSliderB').value = defSlider;
-    document.getElementById('betaInputA').value = '0.5000';
-    document.getElementById('betaInputB').value = '0.5000';
-    updateSpeedBar('speedBarA', defSlider, 0.50);
-    updateSpeedBar('speedBarB', defSlider, 0.50);
+    state.selectedStep = null;
+    state.shipA = makeGameShip(idxA, betaA);
+    state.shipB = makeGameShip(idxB, stepBetas[hitIdx]);
 
     updateChallengeText();
+    renderStepBar();
     updateGameReadouts();
     updateInfo();
     return;
   }
-  // Fallback — use safe defaults (Proxima + Sirius, small age gap)
-  console.warn('Challenge generation exhausted attempts, retrying with safe defaults');
+
+  // Fallback — Proxima + Sirius at a known-safe betaA.
+  console.warn('Challenge generation exhausted attempts, using safe fallback');
   var fbNameA = document.getElementById('gameNameA').value.trim();
   var fbNameB = document.getElementById('gameNameB').value.trim();
   if (!fbNameA) fbNameA = state.lang === 'pl' ? pickTwoNames(DEFAULT_NAMES_PL)[0].name : pickTwoNames(DEFAULT_NAMES_EN)[0];
   if (!fbNameB) fbNameB = state.lang === 'pl' ? pickTwoNames(DEFAULT_NAMES_PL)[1].name : pickTwoNames(DEFAULT_NAMES_EN)[1];
+  var fbHitIdx = Math.floor(Math.random() * stepCount);
+  var fbSteps = buildStepOffsets(state.difficulty, fbHitIdx);
+  var fbCtx = { starIndexA: 0, starIndexB: 1, ageA: 20, ageB: 25, betaA: 0.70 };
+  var fbArcRatios = { A: arcRatioForStar(STARS[0]), B: arcRatioForStar(STARS[1]) };
+  var fbStepBetas = [];
+  for (var s2 = 0; s2 < fbSteps.length; s2++) {
+    var b2 = solveBetaBForDiff(fbSteps[s2], fbCtx, fbArcRatios);
+    fbStepBetas.push(b2 !== null ? b2 : 0.50);
+  }
   state.challenge = {
     starIndexA: 0, starIndexB: 1,
     ageA: 20, ageB: 25,
     nameA: fbNameA, nameB: fbNameB,
+    betaA: 0.70,
+    stepBetas: fbStepBetas,
+    hitStepIndex: fbHitIdx,
+    arcRatios: fbArcRatios,
   };
-  state.shipA = makeGameShip(0, 0.50);
-  state.shipB = makeGameShip(1, 0.50);
-  var fbSlider = betaToSlider(0.50);
-  document.getElementById('speedSliderA').value = fbSlider;
-  document.getElementById('speedSliderB').value = fbSlider;
-  document.getElementById('betaInputA').value = '0.5000';
-  document.getElementById('betaInputB').value = '0.5000';
-  updateSpeedBar('speedBarA', fbSlider, 0.50);
-  updateSpeedBar('speedBarB', fbSlider, 0.50);
+  state.selectedStep = null;
+  state.shipA = makeGameShip(0, 0.70);
+  state.shipB = makeGameShip(1, fbStepBetas[fbHitIdx]);
   updateChallengeText();
+  renderStepBar();
   updateGameReadouts();
   updateInfo();
+}
+
+function setDifficulty(d) {
+  if (!(d in STEP_BASE)) return;
+  if (state.phase !== 'idle' && state.phase !== 'landed') return;
+  state.difficulty = d;
+  document.getElementById('diffEasyBtn').classList.toggle('active', d === 'easy');
+  document.getElementById('diffMediumBtn').classList.toggle('active', d === 'medium');
+  document.getElementById('diffHardBtn').classList.toggle('active', d === 'hard');
+  generateChallenge();
+}
+
+function selectGameStep(index) {
+  if (state.phase !== 'idle' && state.phase !== 'landed') return;
+  if (!state.challenge) return;
+  if (index < 0 || index >= state.challenge.stepBetas.length) return;
+  if (state.phase === 'landed') handleReset();
+  state.selectedStep = index;
+  var beta = state.challenge.stepBetas[index];
+  state.shipB = makeGameShip(state.challenge.starIndexB, beta);
+  renderStepBar();
+  updateInfo();
+  // Selection immediately launches the flight at the middle (▶▶) playback speed.
+  setWarp('fast');
+}
+
+function renderStepBar() {
+  var bar = document.getElementById('stepBar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  if (!state.challenge) return;
+  var betas = state.challenge.stepBetas;
+  bar.setAttribute('data-steps', betas.length);
+  var locked = state.phase !== 'idle' && state.phase !== 'landed';
+  for (var i = 0; i < betas.length; i++) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'step-btn' + (i === state.selectedStep ? ' active' : '');
+    btn.disabled = locked;
+    btn.textContent = fmtBeta(betas[i]);
+    (function(idx) {
+      btn.addEventListener('click', function() { selectGameStep(idx); });
+    })(i);
+    bar.appendChild(btn);
+  }
 }
 
 function updateChallengeText() {
   var c = state.challenge;
   if (!c) return;
-  var starA = STARS[c.starIndexA];
-  var starB = STARS[c.starIndexB];
-  var nameStarA = state.lang === 'en' ? starA.nameEn : starA.namePl;
-  var nameStarB = state.lang === 'en' ? starB.nameEn : starB.namePl;
 
   // Goal line
   var diff = c.ageB - c.ageA;
-  var goalText = T('gameGoal').replace('{diff}', diff);
-  document.getElementById('gameGoalText').innerHTML = goalText;
+  document.getElementById('gameGoalText').innerHTML = T('gameGoal').replace('{diff}', diff);
+
+  // Captain A's fixed cruise readout
+  var cap = document.getElementById('captainAcruise');
+  if (cap) {
+    cap.innerHTML = T('gameCaptainACruise')
+      .replace('{name}', c.nameA)
+      .replace('{beta}', c.betaA.toFixed(2));
+  }
 
   // Name panel — set placeholder (shown when empty), preserve user-typed names
   var elA = document.getElementById('gameNameA');
@@ -2484,7 +2819,6 @@ function updateChallengeText() {
   if (!elB.value.trim()) elB.value = '';
   document.getElementById('gameAgeA').value = c.ageA;
   document.getElementById('gameAgeB').value = c.ageB;
-
 }
 
 function updateGameReadouts() {
@@ -2496,48 +2830,7 @@ function syncGameName(ship) {
   var v = document.getElementById('gameName' + ship).value.trim();
   var placeholder = document.getElementById('gameName' + ship).placeholder;
   state.challenge['name' + ship] = v || placeholder;
-}
-
-function handleGameSpeedChange(ship) {
-  var sliderId = 'speedSlider' + ship;
-  var inputId = 'betaInput' + ship;
-  var s = parseInt(document.getElementById(sliderId).value);
-  var beta = sliderToBeta(s);
-  beta = clamp(beta, BETA_MIN, BETA_MAX);
-  document.getElementById(inputId).value = beta.toFixed(4);
-  updateSpeedBar('speedBar' + ship, s, beta);
-  if (ship === 'A') {
-    state.shipA = makeGameShip(state.challenge.starIndexA, beta);
-  } else {
-    state.shipB = makeGameShip(state.challenge.starIndexB, beta);
-  }
-  if (state.phase !== 'idle') handleReset();
-  updateGameReadouts();
-}
-
-function handleBetaInput(ship) {
-  var inputId = 'betaInput' + ship;
-  var sliderId = 'speedSlider' + ship;
-  var val = parseFloat(document.getElementById(inputId).value);
-  if (isNaN(val)) return;
-  var beta = clamp(val, BETA_MIN, BETA_MAX);
-  document.getElementById(sliderId).value = betaToSlider(beta);
-  if (ship === 'A') {
-    state.shipA = makeGameShip(state.challenge.starIndexA, beta);
-  } else {
-    state.shipB = makeGameShip(state.challenge.starIndexB, beta);
-  }
-  if (state.phase !== 'idle') handleReset();
-  updateGameReadouts();
-}
-
-function stepGameSpeed(ship, delta) {
-  var sliderId = 'speedSlider' + ship;
-  var slider = document.getElementById(sliderId);
-  var val = parseInt(slider.value) + delta;
-  val = clamp(val, 0, 1000);
-  slider.value = val;
-  handleGameSpeedChange(ship);
+  if (ship === 'A') updateChallengeText();
 }
 
 function setMode(mode) {
@@ -2569,55 +2862,48 @@ function setMode(mode) {
   updateInfo();
 }
 
-// Game-mode ellipse and position helpers
-function getGameEllipse(dist, yCenter) {
-  var earthX = getEarthX();
-  var star = { dist: dist };
-  var starX = getStarScreenXForDist(dist);
-  var starR = 7;
-  var pad = 20;
-  var leftEdge = earthX;
-  var rightEdge = starX + starR + pad;
-  var a = (rightEdge - leftEdge) / 2;
-  var cx = leftEdge + a;
-  var cy = yCenter;
-  var b = clamp(a * 0.18, 10, 40);
-  var clearance = EARTH_RADIUS + 2;
-  var cosVal = 1 - clearance / a;
-  var earthDelta = cosVal < -1 ? Math.PI * 0.4 : Math.acos(Math.max(-1, cosVal));
-  earthDelta = clamp(earthDelta, Math.PI / 8, Math.PI * 0.4);
-  return { cx: cx, cy: cy, a: a, b: b, earthDelta: earthDelta };
+// Game-mode tangent+arc trajectory and position helpers
+function getGameTrajectory(star, yCenter) {
+  return computeTangentArc(
+    { x: getEarthX(), y: yCenter },
+    { x: getStarScreenXForDist(star.dist), y: yCenter },
+    starFlybyRingR(star)
+  );
 }
 
-function getGameTurnDuration(ell) {
-  var thetaBegin = Math.PI - ell.earthDelta;
-  var legSpan = thetaBegin - TURN_DELTA;
-  return 2 * TURN_DELTA * WALL_SECONDS_BASE / legSpan;
+function getGameTurnDuration(traj) {
+  var legSpeed = traj.legLen / WALL_SECONDS_BASE;
+  if (legSpeed < 1e-3) return 1.0;
+  return (traj.arcSweep * traj.R) / legSpeed;
 }
 
-function getGameRocketPos(ship, ell) {
-  var thetaBegin = Math.PI - ell.earthDelta;
-  var legSpan = thetaBegin - TURN_DELTA;
-  var turnDuration = getGameTurnDuration(ell);
-  var theta;
-
+function getGameRocketPos(ship, traj) {
   if (ship.phase === 'turnaround') {
-    var f = clamp(ship.turnaroundTimer / turnDuration, 0, 1);
-    theta = TURN_DELTA - 2 * TURN_DELTA * f;
-  } else {
-    var p = clamp(ship.progress, 0, 1);
-    if (ship.phase === 'outbound' || ship.phase === 'idle') {
-      var legP = p / 0.5;
-      theta = thetaBegin - legSpan * legP;
-    } else {
-      // return, waiting, landed — use return leg position
-      var legP = (p - 0.5) / 0.5;
-      theta = -TURN_DELTA - legSpan * legP;
-    }
+    var f = clamp(ship.turnaroundTimer / getGameTurnDuration(traj), 0, 1);
+    var pt = arcPosAt(traj, f);
+    return { x: pt.x, y: pt.y, angle: arcHeadAt(traj, f), traj: traj, onArc: true, arcF: f };
   }
 
-  var pt = ellipsePoint(ell, theta);
-  return { x: pt.x, y: pt.y, angle: ellipseTangentAngle(ell, theta), theta: theta };
+  var park = getShipParkingPos(traj);
+  if (ship.phase === 'outbound' || ship.phase === 'idle') {
+    var legP = clamp(ship.progress, 0, 1) / 0.5;
+    return {
+      x: park.x + (traj.T1.x - park.x) * legP,
+      y: park.y + (traj.T1.y - park.y) * legP,
+      angle: headingFromTo(park, traj.T1),
+      traj: traj, onArc: false, legP: legP, leg: 'out',
+    };
+  }
+
+  // return / waiting / landed — land at landing spot, not inside Earth
+  var legP = clamp((ship.progress - 0.5) / 0.5, 0, 1);
+  var land = getShipLandingPos(traj);
+  return {
+    x: traj.T2.x + (land.x - traj.T2.x) * legP,
+    y: traj.T2.y + (land.y - traj.T2.y) * legP,
+    angle: headingFromTo(traj.T2, land),
+    traj: traj, onArc: false, legP: legP, leg: 'ret',
+  };
 }
 
 function computeGameFinalAges() {
@@ -2625,10 +2911,11 @@ function computeGameFinalAges() {
   var c = state.challenge;
   var pA = state.shipA.phys;
   var pB = state.shipB.phys;
-  var tA = pA.earthTotalYears;
-  var tB = pB.earthTotalYears;
-  var tauA = pA.rocketTotalYears;
-  var tauB = pB.rocketTotalYears;
+  // Include arc accumulation so final ages agree with in-flight clocks.
+  var tA = pA.earthTotalYears + state.shipA.arcEarthAccum;
+  var tB = pB.earthTotalYears + state.shipB.arcEarthAccum;
+  var tauA = pA.rocketTotalYears + state.shipA.arcRocketAccum;
+  var tauB = pB.rocketTotalYears + state.shipB.arcRocketAccum;
   var finalA = c.ageA + tauA + Math.max(0, tB - tA);
   var finalB = c.ageB + tauB + Math.max(0, tA - tB);
   return { finalA: finalA, finalB: finalB, diff: Math.abs(finalA - finalB) };
@@ -2672,9 +2959,9 @@ function showGameOverlay(result, tooOldName, ages) {
   if (result === 'perfect') {
     emoji = '\uD83C\uDF89'; msg = T('gamePerfect'); bgColor = 'rgba(63,185,80,0.15)';
   } else if (result === 'close') {
-    emoji = '\uD83D\uDC4D'; msg = T('gameClose').replace('{diff}', formatYears(ages.diff)); bgColor = 'rgba(88,166,255,0.15)';
+    emoji = '\uD83D\uDC4D\uD83C\uDFFB'; msg = T('gameClose').replace('{diff}', formatYears(ages.diff)); bgColor = 'rgba(88,166,255,0.15)';
   } else if (result === 'miss') {
-    emoji = '\uD83D\uDC4E'; msg = T('gameMiss').replace('{diff}', formatYears(ages.diff)); bgColor = 'rgba(240,180,60,0.15)';
+    emoji = '\uD83D\uDC4E\uD83C\uDFFB'; msg = T('gameMiss').replace('{diff}', formatYears(ages.diff)); bgColor = 'rgba(240,180,60,0.15)';
   } else {
     emoji = '\uD83D\uDC80'; msg = T('gameTooOld').replace('{name}', tooOldName); bgColor = 'rgba(249,117,131,0.15)';
   }
@@ -2772,18 +3059,17 @@ function drawGameHalf(ship, starIndex, name, startAge, yCenter, color, rgbaBase,
   }
 
   // Trajectory
-  var ell = getGameEllipse(star.dist, yCenter);
-  drawGameTrajectory(ship, ell, rgbaBase);
+  var traj = getGameTrajectory(star, yCenter);
+  drawGameTrajectory(ship, traj, rgbaBase);
 
   // Spacecraft
-  var pos = getGameRocketPos(ship, ell);
+  var pos = getGameRocketPos(ship, traj);
   drawGameSpacecraft(pos.x, pos.y, pos.angle, color);
 
   // Clock — positioned like explore mode relative to this half's Earth
   var clockOffset = Math.min(H * 0.18, 100);
   var clockY = yCenter - clockOffset;
-  var initPt = ellipsePoint(ell, Math.PI - ell.earthDelta);
-  var clockX = initPt.x;
+  var clockX = getShipParkingPos(traj).x;
   var yr = T('yr');
   var age = startAge + ship.rocketElapsed + ship.waitingTime;
   drawStickFigure(clockX - 16, clockY + 8, color, false);
@@ -2808,43 +3094,24 @@ function drawGameStar(star, cx, cy, hideLabel) {
   ctx.fillStyle = star.color;
   ctx.fill();
   if (hideLabel) return;
-  // Label
+  // Label — clear the flyby ring so it doesn't overlap the arc
   var name = state.lang === 'en' ? star.nameEn : star.namePl;
+  var labelX = cx + starFlybyRingR(star) + 10;
   ctx.font = '15px "Share Tech Mono", monospace';
   ctx.fillStyle = 'rgba(255,248,225,0.7)';
   ctx.textAlign = 'left';
-  ctx.fillText(name, cx + r + 12, cy - r - 26);
+  ctx.fillText(name, labelX, cy - r - 26);
   ctx.font = '13px "Share Tech Mono", monospace';
   ctx.fillStyle = 'rgba(255,248,225,0.4)';
-  ctx.fillText((star.approx ? '~' : '') + star.dist + ' ly', cx + r + 12, cy - r - 12);
+  ctx.fillText((star.approx ? '~' : '') + star.dist + ' ly', labelX, cy - r - 12);
 }
 
-function drawGameTrajectory(ship, ell, rgbaBase) {
+function drawGameTrajectory(ship, traj, rgbaBase) {
   if (ship.phase === 'idle') return;
-  // Faint full ellipse
-  ctx.beginPath();
-  ctx.ellipse(ell.cx, ell.cy, ell.a, ell.b, 0, 0, 2 * Math.PI);
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = rgbaBase + '0.06)';
-  ctx.stroke();
-
-  // Bright trail
-  var thetaBegin = Math.PI - ell.earthDelta;
-  var pos = getGameRocketPos(ship, ell);
-  var TRAIL_STEPS = 80;
-  var tFrom = thetaBegin;
-  var tTo = pos.theta;
-  ctx.beginPath();
-  for (var si = 0; si <= TRAIL_STEPS; si++) {
-    var th = tFrom + (tTo - tFrom) * si / TRAIL_STEPS;
-    var pt = ellipsePoint(ell, th);
-    if (si === 0) ctx.moveTo(pt.x, pt.y);
-    else ctx.lineTo(pt.x, pt.y);
-  }
-  ctx.lineWidth = 1.5;
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = rgbaBase + '0.45)';
-  ctx.stroke();
+  // Fading comet-tail trail (rgbaBase is "rgba(R,G,B," — slice out "R,G,B")
+  var rgb = rgbaBase.slice(5, -1);
+  drawShipTrail(traj, ship.phase, ship.progress, ship.turnaroundTimer,
+                getGameTurnDuration(traj), rgb);
 }
 
 function drawGameSpacecraft(x, y, angle, color) {
@@ -2891,9 +3158,10 @@ function animateGame(dt) {
   if (state.phase !== 'landed' &&
       (shipA.phase === 'waiting') && (shipB.phase === 'waiting')) {
     state.phase = 'landed';
-    // Set final waiting times from physics (exact values, not accumulated)
-    var T_A = shipA.phys.earthTotalYears;
-    var T_B = shipB.phys.earthTotalYears;
+    // Set final waiting times from the effective (arc-inclusive) totals so
+    // the waiting gap matches the in-flight displayed clocks.
+    var T_A = shipA.phys.earthTotalYears + shipA.arcEarthAccum;
+    var T_B = shipB.phys.earthTotalYears + shipB.arcEarthAccum;
     shipA.waitingTime = Math.max(0, T_B - T_A);
     shipB.waitingTime = Math.max(0, T_A - T_B);
     updateWarpButtons();
@@ -2909,19 +3177,32 @@ function advanceGameShip(ship, dt, baseRate) {
   // Ship progress rate: scales so this ship's journey fills the right proportion of wall time
   var shipRate = baseRate * state.gameMaxEarthTime / T_total;
 
-  var ell = (ship === state.shipA) ?
-    getGameEllipse(STARS[state.challenge.starIndexA].dist, H * 0.36) :
-    getGameEllipse(STARS[state.challenge.starIndexB].dist, H * 0.80);
-  var turnDuration = getGameTurnDuration(ell);
+  var star = (ship === state.shipA) ?
+    STARS[state.challenge.starIndexA] : STARS[state.challenge.starIndexB];
+  var yCenter = (ship === state.shipA) ? H * 0.36 : H * 0.80;
+  var traj = getGameTrajectory(star, yCenter);
+  var turnDuration = getGameTurnDuration(traj);
 
-  // Turnaround: animate U-turn visually, don't advance progress
+  // Turnaround: animate the arc and tick clocks at cruise-speed gamma.
+  // In game mode, both ships' legs finish in the same wall-time, so the
+  // common Earth rate per wall-sec is gameMaxEarthTime / (2*WALL_SECONDS_BASE).
   if (ship.phase === 'turnaround') {
     ship.turnaroundTimer += dt * state.animSpeed;
+
+    var earthPerWallSec = state.gameMaxEarthTime / (2 * WALL_SECONDS_BASE);
+    var dEarth = earthPerWallSec * dt * state.animSpeed;
+    var gAct = Math.max(1, ship.phys.gammaActual || 1);
+    ship.arcEarthAccum += dEarth;
+    ship.arcRocketAccum += dEarth / gAct;
+
+    var mid = computeElapsedForProgress(0.5, ship.phys);
+    ship.earthElapsed = mid.earthElapsed + ship.arcEarthAccum;
+    ship.rocketElapsed = mid.rocketElapsed + ship.arcRocketAccum;
+    ship.currentBeta = ship.phys.betaActual;
+
     if (ship.turnaroundTimer >= turnDuration) {
       ship.phase = 'return';
     }
-    // Progress stays frozen at 0.5
-    ship.currentBeta = 0;
     return;
   }
 
@@ -2936,8 +3217,8 @@ function advanceGameShip(ship, dt, baseRate) {
     ship.turnaroundTimer = 0;
     ship.currentBeta = 0;
     var result = computeElapsedForProgress(0.5, ship.phys);
-    ship.earthElapsed = result.earthElapsed;
-    ship.rocketElapsed = result.rocketElapsed;
+    ship.earthElapsed = result.earthElapsed + ship.arcEarthAccum;
+    ship.rocketElapsed = result.rocketElapsed + ship.arcRocketAccum;
     return;
   }
 
@@ -2947,16 +3228,16 @@ function advanceGameShip(ship, dt, baseRate) {
     ship.phase = 'waiting';
     ship.waitingTime = 0;
     var result = computeElapsedForProgress(1, ship.phys);
-    ship.earthElapsed = result.earthElapsed;
-    ship.rocketElapsed = result.rocketElapsed;
+    ship.earthElapsed = result.earthElapsed + ship.arcEarthAccum;
+    ship.rocketElapsed = result.rocketElapsed + ship.arcRocketAccum;
     ship.currentBeta = 0;
     return;
   }
 
-  // Normal flight — update elapsed times
+  // Normal flight — update elapsed times (arc contribution carries through)
   var result = computeElapsedForProgress(ship.progress, ship.phys);
-  ship.earthElapsed = result.earthElapsed;
-  ship.rocketElapsed = result.rocketElapsed;
+  ship.earthElapsed = result.earthElapsed + ship.arcEarthAccum;
+  ship.rocketElapsed = result.rocketElapsed + ship.arcRocketAccum;
   ship.currentBeta = result.currentBeta;
 }
 
@@ -2974,8 +3255,6 @@ document.getElementById('rocketTwinAge').value = state.defaultAge;
 var speedBars = document.querySelectorAll('.speed-bar');
 for (var sb = 0; sb < speedBars.length; sb++) { initSpeedBar(speedBars[sb]); }
 updateSpeedBar('speedBar', 376, sliderToBeta(376));
-updateSpeedBar('speedBarA', 376, sliderToBeta(376));
-updateSpeedBar('speedBarB', 376, sliderToBeta(376));
 
 resize();
 initBgStars(NUM_BG_STARS);
@@ -2989,7 +3268,13 @@ requestAnimationFrame(animate);
 setTimeout(showDragHint, 600);
 setTimeout(hideDragHint, 8000);
 
-window.addEventListener('resize', function() { resize(); if (dragHintVisible) showDragHint(); });
+window.addEventListener('resize', function() {
+  resize();
+  if (dragHintVisible) showDragHint();
+  // Arc ratios depend on canvas width; regenerate the challenge when idle so the
+  // solver's "hit" step still lands inside the perfect-match tolerance.
+  if (state.mode === 'game' && state.phase === 'idle') generateChallenge();
+});
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     var overlay = document.querySelector('.result-overlay');

@@ -966,7 +966,11 @@ function adjustWeightMass(idx, delta) {
   if (state.playing || state.animating || state.mode === 'game') return;
   var w = state.weights[idx];
   w.mass = Math.max(1, Math.min(20, w.mass + delta));
+  // initPhysics() resets platformAngle to 0; preserve current pause angle
+  // so the user doesn't see the platform snap back on each +/− click.
+  var savedAngle = state.platformAngle;
   initPhysics();
+  state.platformAngle = savedAngle;
   updateReadouts();
   // Reset dismiss timer
   clearTimeout(state.selectedTimeout);
@@ -1002,8 +1006,13 @@ function hitTestSelectedButton(sx, sy) {
   var cx = sx - rect.left;
   var cy = sy - rect.top;
   var b = getWeightBtnPos(state.selectedWeight);
-  if (Math.hypot(cx - b.minus.x, cy - b.minus.y) < BTN_R + 5) return 'minus';
-  if (Math.hypot(cx - b.plus.x,  cy - b.plus.y)  < BTN_R + 5) return 'plus';
+  var hitR = BTN_R + 5;
+  var dMinus = Math.hypot(cx - b.minus.x, cy - b.minus.y);
+  var dPlus  = Math.hypot(cx - b.plus.x,  cy - b.plus.y);
+  // Hit areas overlap (centers 30 px apart, radius 18); closer center wins
+  // so the inner edge of each visual button is attributed correctly.
+  if (dMinus < hitR && dMinus <= dPlus) return 'minus';
+  if (dPlus  < hitR) return 'plus';
   return null;
 }
 
@@ -1068,16 +1077,19 @@ function handlePointerDown(sx, sy, e) {
     }
   }
 
-  // 3. Tap anywhere on platform — play/pause
-  var dist = Math.hypot(lp.x - PLATFORM_CX, lp.y - PLATFORM_CY);
-  if (dist < PLATFORM_R) {
-    togglePlay();
-    if (e) e.preventDefault();
-    deselectWeight();
-    return;
+  // 3. Tap anywhere on platform — play/pause (only if no weight selected;
+  //    when +/− buttons are visible they take precedence and a miss just deselects)
+  if (state.selectedWeight < 0) {
+    var dist = Math.hypot(lp.x - PLATFORM_CX, lp.y - PLATFORM_CY);
+    if (dist < PLATFORM_R) {
+      togglePlay();
+      if (e) e.preventDefault();
+      deselectWeight();
+      return;
+    }
   }
 
-  // 4. Tapped empty space — deselect
+  // 4. Tapped empty space, or buttons were visible — deselect
   deselectWeight();
 }
 
