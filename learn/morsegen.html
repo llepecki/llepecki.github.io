@@ -372,7 +372,7 @@ function buildDocDefinition() {
   return {
     pageSize: 'A4',
     pageOrientation: 'portrait',
-    pageMargins: [40, 42, 40, 24],
+    pageMargins: [40, 36, 40, 24],
     content: [
       headerBand('senderLabel', state.senderName),
       {
@@ -383,7 +383,8 @@ function buildDocDefinition() {
         },
         layout: gridLayout(),
       },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.6, dash: { length: 3, space: 3 }, lineColor: '#90A4AE' }], margin: [0, 30, 0, 18] },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.6, dash: { length: 3, space: 3 }, lineColor: '#90A4AE' }], absolutePosition: { x: 40, y: 421 } },
+      { text: '\u00A0', fontSize: 1, margin: [0, 16, 0, 16] },
       headerBand('receiverLabel', state.receiverName),
       {
         table: {
