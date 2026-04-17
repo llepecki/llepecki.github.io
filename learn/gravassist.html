@@ -99,14 +99,11 @@
   /* Larger glyphs for the View zoom buttons */
   #zoomInBtn, #zoomOutBtn { font-size: 18px; line-height: 1; }
 
-  /* Icon-only Play/Pause/Stop buttons */
-  #replayBtn, #resetBtn {
+  /* Stop button centering */
+  #resetBtn {
     display: flex; align-items: center; justify-content: center;
   }
-  #replayBtn .pause-icon { display: none; }
-  #replayBtn.playing .play-icon { display: none; }
-  #replayBtn.playing .pause-icon { display: block; }
-  #replayBtn:hover, #resetBtn:hover { color: var(--accent); }
+  #resetBtn:hover { color: var(--accent); }
 
   .slider-row { display: flex; align-items: center; gap: 6px; }
   .slider-row input[type=range] {
@@ -271,12 +268,12 @@
     </div>
 
     <div class="ctrl-group" id="grpAnim">
-      <span class="ctrl-label" id="lblAnimSpeed">Animation Speed</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('animSlider',-0.1)">&minus;</button>
-        <input type="range" id="animSlider" min="0.1" max="3" value="1" step="0.1">
-        <button class="step-btn" onclick="stepSlider('animSlider',0.1)">+</button>
-        <span class="slider-val" id="animVal">1x</span>
+      <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
+      <div class="type-toggle">
+        <button class="type-btn" id="warpNormalBtn" onclick="setWarp('normal')">&#x25b6;</button>
+        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">&#x25b6;&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="resetBtn" onclick="handleStopClick()">&#x25a0;</button>
       </div>
     </div>
 
@@ -297,15 +294,6 @@
       <button class="type-btn full-width" id="precisionBtn" onclick="togglePrecision()">Precision (Shift)</button>
     </div>
 
-    <div class="type-toggle">
-      <button class="type-btn" id="replayBtn" onclick="togglePlay()" title="Play">
-        <svg class="play-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>
-        <svg class="pause-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
-      </button>
-      <button class="type-btn" id="resetBtn" onclick="handleStopClick()" title="Stop">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
-      </button>
-    </div>
 
     <div class="ctrl-group" id="grpNewTarget" style="display:none">
       <button class="type-btn full-width" id="newTargetBtn" onclick="newTarget()">New Target</button>
@@ -372,11 +360,10 @@ const I18N = {
     planetSpeed: 'Planet Speed',
     flybyAlt: 'Flyby Altitude',
     spacecraftSpeed: 'Spacecraft Speed',
-    animSpeed: 'Animation Speed',
+    timeWarp: 'Time Warp',
+    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
     launch: 'Launch',
     reset: 'Reset',
-    play: 'Play',
-    pause: 'Pause',
     stop: 'Stop (double-click resets the view)',
     newTarget: 'New Target',
     precision: 'Precision (Shift)',
@@ -419,11 +406,10 @@ const I18N = {
     planetSpeed: 'Pr\u0119dko\u015B\u0107 planety',
     flybyAlt: 'Wysoko\u015B\u0107 przelotu',
     spacecraftSpeed: 'Pr\u0119dko\u015B\u0107 statku',
-    animSpeed: 'Pr\u0119dko\u015B\u0107 animacji',
+    timeWarp: 'Przyspieszenie',
+    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
     launch: 'Start',
     reset: 'Resetuj',
-    play: 'Odtw\u00F3rz',
-    pause: 'Pauza',
     stop: 'Zatrzymaj (dwuklik resetuje widok)',
     newTarget: 'Nowy cel',
     precision: 'Precyzja (Shift)',
@@ -500,6 +486,8 @@ const state = {
   approachAngle: Math.PI,
   vecPfX: 0,
   vecPfY: 0,
+  warpLevel: 'normal',
+  warpLevels: { normal: 1, fast: 3, fastest: 10 },
   animSpeed: 1,
   playing: false,
   currentIndex: 0,
@@ -569,9 +557,9 @@ function applyTranslations() {
   document.getElementById('modeGameBtn').textContent = l.modeGame;
   document.getElementById('lblPlanet').textContent = l.planet;
   document.getElementById('lblPlanetSpeed').textContent = l.planetSpeed;
-  document.getElementById('lblAnimSpeed').textContent = l.animSpeed;
+  document.getElementById('lblTimeWarp').textContent = l.timeWarp;
   document.getElementById('resetBtn').title = l.stop;
-  updatePlayButton();
+  updateWarpBtns();
   document.getElementById('newTargetBtn').textContent = l.newTarget;
   document.getElementById('precisionBtn').textContent = l.precision;
   document.getElementById('lblView').textContent = l.view;
@@ -1711,7 +1699,7 @@ function animate(timestamp) {
   }
 
   drawScene();
-  updatePlayButton();
+  updateWarpBtns();
   requestAnimationFrame(animate);
 }
 
@@ -1723,37 +1711,45 @@ function animate(timestamp) {
 // trajectory (or never started), restarts from the beginning. In game mode,
 // every fresh start clears the previous result and re-arms gameLaunched.
 // eslint-disable-next-line no-unused-vars
-function togglePlay() {
-  if (state.playing) {
+function setWarp(level) {
+  if (state.playing && state.warpLevel === level) {
     state.playing = false;
   } else {
-    if (state.currentIndex >= state.trajectory.length - 1) {
-      state.currentIndex = 0;
-      stepAccum = 0;
-    }
-    state.playing = true;
-    if (state.mode === 'game') {
-      state.gameLaunched = true;
-      state.gameResult = null;
+    state.warpLevel = level;
+    state.animSpeed = state.warpLevels[level] || state.warpLevels.normal;
+    if (!state.playing) {
+      if (state.currentIndex >= state.trajectory.length - 1) {
+        state.currentIndex = 0;
+        stepAccum = 0;
+      }
+      state.playing = true;
+      if (state.mode === 'game') {
+        state.gameLaunched = true;
+        state.gameResult = null;
+      }
     }
   }
-  updatePlayButton();
+  updateWarpBtns();
 }
 
-// Sync the Play/Pause icon and tooltip to the current state.playing. Cheap
-// (one class toggle, one title write) so it's safe to call every animation
-// frame; the browser optimizes away no-op DOM writes.
-function updatePlayButton() {
-  const btn = document.getElementById('replayBtn');
-  btn.classList.toggle('playing', state.playing);
-  btn.title = state.playing ? T('pause') : T('play');
+function updateWarpBtns() {
+  var playing = state.playing;
+  var nBtn = document.getElementById('warpNormalBtn');
+  var fBtn = document.getElementById('warpFastBtn');
+  var ffBtn = document.getElementById('warpFastestBtn');
+  nBtn.classList.toggle('active', playing && state.warpLevel === 'normal');
+  fBtn.classList.toggle('active', playing && state.warpLevel === 'fast');
+  ffBtn.classList.toggle('active', playing && state.warpLevel === 'fastest');
+  nBtn.textContent = (playing && state.warpLevel === 'normal') ? '\u25ae\u25ae' : T('warpNormal');
+  fBtn.textContent = (playing && state.warpLevel === 'fast') ? '\u25ae\u25ae' : T('warpFast');
+  ffBtn.textContent = (playing && state.warpLevel === 'fastest') ? '\u25ae\u25ae' : T('warpFastest');
 }
 
 function resetSim() {
   state.currentIndex = 0;
   stepAccum = 0;
   state.playing = false;
-  updatePlayButton();
+  updateWarpBtns();
 }
 
 // Stop button click dispatcher: single click → resetSim (animation reset),
@@ -1787,7 +1783,7 @@ function recompute() {
     state.gameLaunched = false;
     state.gameResult = null;
   }
-
+  updateWarpBtns();
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -1839,7 +1835,7 @@ function resetToDefaults() {
   cameraMode = 'auto';
   selectPlanet(state.selectedPlanet, true);
   updateViewButtons();
-  updatePlayButton();
+  updateWarpBtns();
 }
 
 document.getElementById('planetSelect').addEventListener('change', function(e) {
@@ -1851,11 +1847,6 @@ document.getElementById('planetVelSlider').addEventListener('input', function(e)
   document.getElementById('planetVelVal').textContent = e.target.value;
   initVecPosition();
   recompute();
-});
-
-document.getElementById('animSlider').addEventListener('input', function(e) {
-  state.animSpeed = +e.target.value;
-  document.getElementById('animVal').textContent = (+e.target.value).toFixed(1) + 'x';
 });
 
 // ══════════════════════════════════════════════
