@@ -118,6 +118,14 @@
   .session-id .value { color: var(--text-head); font-weight: 700; }
   .session-id .sep { color: var(--text-label); margin: 0 8px; }
 
+  .test-result {
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    padding: 8px 14px; border-radius: 6px; margin-left: 12px;
+    display: none; align-items: center; gap: 6px;
+  }
+  .test-result.pass { display: inline-flex; background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+  .test-result.fail { display: inline-flex; background: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; }
+
   .preview-wrap {
     background: var(--canvas-bg);
     flex: 1; min-height: 0;
@@ -174,6 +182,8 @@
   <div class="toolbar-row">
     <button class="action-btn" id="generateBtn" onclick="regenerate()">Generate New Sequence</button>
     <button class="action-btn secondary" id="downloadBtn" onclick="downloadPdf()">Download PDF</button>
+    <button class="action-btn secondary" id="testBtn" onclick="runLayoutTest()" title="Test layout">&#x2713;</button>
+    <span id="testResult" class="test-result"></span>
     <span class="session-id">
       <span class="label" id="sessionLabel">Sequence id</span>
       <span class="value" id="sessionIdVal">#-----</span>
@@ -425,7 +435,7 @@ function onNameChange() {
   state.senderName = document.getElementById('senderInput').value.trim();
   state.receiverName = document.getElementById('receiverInput').value.trim();
   clearTimeout(nameDebounceTimer);
-  nameDebounceTimer = setTimeout(refreshPreview, 300);
+  nameDebounceTimer = setTimeout(refreshPreview, 600);
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -439,6 +449,94 @@ function downloadPdf() {
   pdfMake.createPdf(buildDocDefinition()).download(filename, () => {
     btn.disabled = false;
     btn.textContent = originalText;
+  });
+}
+
+// ══════════════════════════════════════════════
+// LAYOUT TEST
+// ══════════════════════════════════════════════
+const CUT_LINE_Y = 421;        // absolute y position of cut line (pt from page top)
+const TOLERANCE_FOLD = 1.5;     // max acceptable offset from page midpoint (pt)
+const MIN_CLEARANCE = 15;       // min gap between cut line and nearest content (pt)
+const MAX_BALANCE_DIFF = 8;     // max allowed imbalance above vs below (pt)
+
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      res(window.pdfjsLib);
+    };
+    s.onerror = () => rej(new Error('Failed to load PDF.js'));
+    document.head.appendChild(s);
+  });
+}
+
+// eslint-disable-next-line no-unused-vars
+function runLayoutTest() {
+  const btn = document.getElementById('testBtn');
+  const result = document.getElementById('testResult');
+  btn.disabled = true;
+  btn.textContent = '\u2026';
+  result.className = 'test-result';
+  result.textContent = '';
+
+  loadPdfJs().then((lib) => {
+    const pdf = pdfMake.createPdf(buildDocDefinition());
+    pdf.getBuffer(async (buf) => {
+      try {
+        const doc = await lib.getDocument({ data: new Uint8Array(buf) }).promise;
+        const page = await doc.getPage(1);
+        const viewport = page.getViewport({ scale: 1.0 });
+        const ph = viewport.height;
+        const mid = ph / 2;
+        const textContent = await page.getTextContent();
+
+        const items = textContent.items
+          .map((t) => ({ text: t.str, y: ph - t.transform[5], fs: Math.abs(t.transform[3]) }))
+          .filter((t) => t.text.trim());
+
+        const senderLetters = items.filter((t) => t.fs > 20 && t.fs < 30);
+        const lastSender = senderLetters.reduce((a, b) => (b.y > a.y ? b : a), senderLetters[0]);
+        const firstReceiver = items.filter((t) => t.y > CUT_LINE_Y).reduce(
+          (a, b) => (b.y < a.y ? b : a),
+          { y: ph }
+        );
+
+        const foldOffset = Math.abs(CUT_LINE_Y - mid);
+        const gapAbove = CUT_LINE_Y - lastSender.y;
+        const gapBelow = firstReceiver.y - CUT_LINE_Y;
+        const balanceDiff = Math.abs(gapAbove - gapBelow);
+
+        const checks = [
+          { name: 'Single page', ok: doc.numPages === 1,
+            msg: doc.numPages === 1 ? '1 page' : doc.numPages + ' pages' },
+          { name: 'Fold alignment', ok: foldOffset <= TOLERANCE_FOLD,
+            msg: foldOffset.toFixed(1) + 'pt from midpoint (max ' + TOLERANCE_FOLD + ')' },
+          { name: 'Sender clearance', ok: gapAbove >= MIN_CLEARANCE,
+            msg: gapAbove.toFixed(1) + 'pt above (min ' + MIN_CLEARANCE + ')' },
+          { name: 'Receiver clearance', ok: gapBelow >= MIN_CLEARANCE,
+            msg: gapBelow.toFixed(1) + 'pt below (min ' + MIN_CLEARANCE + ')' },
+          { name: 'Balance', ok: balanceDiff <= MAX_BALANCE_DIFF,
+            msg: balanceDiff.toFixed(1) + 'pt diff (max ' + MAX_BALANCE_DIFF + ')' },
+        ];
+
+        const allPass = checks.every((c) => c.ok);
+        const summary = checks.map((c) => (c.ok ? '\u2713' : '\u2717') + ' ' + c.name + ': ' + c.msg);
+        result.className = 'test-result ' + (allPass ? 'pass' : 'fail');
+        result.textContent = allPass ? '\u2713 All checks passed' : '\u2717 ' + checks.find((c) => !c.ok).name;
+        result.title = summary.join('\n');
+        console.log('Layout test:\n' + summary.join('\n'));
+      } catch (e) {
+        result.className = 'test-result fail';
+        result.textContent = '\u2717 Error: ' + e.message;
+      }
+      btn.disabled = false;
+      btn.textContent = '\u2713';
+    });
   });
 }
 
