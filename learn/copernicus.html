@@ -75,7 +75,7 @@
     width: 300px; flex-shrink: 0;
     padding: 20px;
     border-left: 1px solid var(--panel-border);
-    display: flex; flex-direction: column; gap: 18px;
+    display: flex; flex-direction: column; gap: 22px;
     overflow-y: auto;
   }
 
@@ -91,7 +91,7 @@
     padding: 10px 4px; border-radius: 6px;
     border: 1.5px solid var(--panel-border);
     background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    font-family: 'Share Tech Mono', monospace; font-size: 14px;
     cursor: pointer; transition: all 0.2s; text-align: center;
     flex: 1;
     touch-action: manipulation;
@@ -111,7 +111,7 @@
   .planet-row .planet-name {
     flex: 1;
     font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; color: var(--text-dim);
+    font-size: 15px; color: var(--text-dim);
   }
   .planet-row.state-0 .planet-name { opacity: 0.35; }
   .planet-row.state-0 .planet-dot { opacity: 0.35; }
@@ -147,7 +147,7 @@
     width: 100%; padding: 8px 10px; border-radius: 6px;
     border: 1.5px solid var(--panel-border);
     background: var(--panel); color: var(--text);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    font-family: 'Share Tech Mono', monospace; font-size: 13px;
     cursor: pointer; outline: none;
   }
   .planet-select:focus { border-color: var(--accent); }
@@ -158,12 +158,14 @@
   .readout-row {
     display: flex; justify-content: space-between; align-items: center;
     font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    padding: 2px 0;
   }
   .readout-label { color: var(--text-dim); }
-  .readout-val { color: var(--text); }
+  .readout-val { color: var(--text); font-size: 13px; }
 
   .info-text {
     font-size: 12px; color: var(--text-dim); line-height: 1.6;
+    padding-top: 12px; border-top: 1px solid var(--panel-border);
   }
   .info-text b { color: var(--text); font-weight: 600; }
 
@@ -190,31 +192,36 @@
     display: flex; align-items: center; justify-content: center;
     cursor: default; z-index: 10;
   }
-  .data-source::before {
-    content: '';
+  .data-source-dot {
     width: 7px; height: 7px; border-radius: 50%;
     background: #e05030;
     box-shadow: 0 0 6px rgba(224,80,48,0.6);
     transition: background 0.4s, box-shadow 0.4s;
   }
-  .data-source.fetching::before {
+  .data-source.fetching .data-source-dot {
     background: #d29922;
     box-shadow: 0 0 6px rgba(210,153,34,0.6);
   }
-  .data-source.online::before {
+  .data-source.online .data-source-dot {
     background: #3fb950;
     box-shadow: 0 0 6px rgba(63,185,80,0.6);
   }
-  .data-source:hover::after {
-    content: attr(data-tip);
-    position: absolute; top: calc(100% + 4px); right: 0;
-    padding: 10px 12px; border-radius: 6px;
-    background: rgba(11,15,24,0.94);
-    border: 1px solid rgba(125,196,255,0.5);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; color: #c9d1d9;
-    white-space: nowrap; pointer-events: none;
+  .ds-panel {
+    position: absolute; top: calc(100% + 6px); right: 0;
+    z-index: 15; display: none;
+    background: rgba(19,24,37,0.95); border: 1px solid var(--panel-border);
+    border-radius: 8px; padding: 14px 16px;
+    width: 320px; pointer-events: none;
+    font-family: 'Share Tech Mono', monospace; font-size: 15px;
+    color: var(--text); line-height: 1.5;
   }
+  .data-source:hover .ds-panel { display: block; }
+  .ds-header { font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .ds-meta { color: var(--text-dim); font-size: 13px; margin-bottom: 10px; }
+  .ds-stats { margin-bottom: 10px; }
+  .ds-stat { display: flex; justify-content: space-between; padding: 2px 0; font-size: 13px; }
+  .ds-stat-label { color: var(--text-dim); }
+  .ds-desc { border-top: 1px solid var(--panel-border); padding-top: 8px; color: var(--text-dim); font-size: 13px; line-height: 1.5; }
 
   @media (max-width: 700px) {
     .main { flex-direction: column; }
@@ -245,7 +252,10 @@
   <div class="canvas-wrap">
     <canvas id="canvas"></canvas>
     <div class="met-clock" id="metClock">T+ 0d 00h</div>
-    <div class="data-source" id="dataSource" data-tip="COMPUTED"></div>
+    <div class="data-source" id="dataSource">
+      <span class="data-source-dot"></span>
+      <div class="ds-panel" id="dsPanel"></div>
+    </div>
   </div>
   <div class="controls">
 
@@ -385,7 +395,7 @@ var state = {
   warpLevel: 'normal',
   warpLevels: { normal: 1, fast: 4, fastest: 10 },
   speed: 1,
-  playing: true,
+  playing: false,
   simTime: epochNow,
   displayOffset: epochNow,
   trailData: { sun: [], mercury: [], venus: [], earth: [], mars: [] },
@@ -398,7 +408,7 @@ var state = {
 var I18N = {
   en: {
     title: 'Copernican Reference Frame Simulator',
-    subtitle: 'Choose a reference body to compare simple Sun-centered ellipses with more complex relative paths.',
+    subtitle: 'Choose a reference body to compare simple heliocentric orbits with more complex relative paths.',
     refFrame: 'Reference Frame',
     sun: 'Sun', mercury: 'Mercury', venus: 'Venus', earth: 'Earth', mars: 'Mars',
     planets: 'Planets',
@@ -408,12 +418,21 @@ var I18N = {
     reset: 'Reset',
     time: 'Time',
     years: 'years',
-    metY: 'yr', metD: 'd', metH: 'h',
-    srcOnline: 'Initial positions: IMCCE Paris Observatory', srcOffline: 'Initial positions: computed offline', srcFetching: 'Fetching data from IMCCE...',
+    metY: 'yr', metD: ' days ', metH: 'h',
+    dsOnlineTitle: 'IMCCE Paris Observatory',
+    dsOnlineMeta: 'Institut de m\u00e9canique c\u00e9leste',
+    dsOnlineDesc: 'Initial positions synced from the observatory. Offsets are corrections applied to the local Astronomy Engine.',
+    dsOfflineTitle: 'Offline Mode',
+    dsOfflineMeta: 'Astronomy Engine',
+    dsOfflineDesc: 'Observatory sync failed or unavailable. Positions computed locally using the Astronomy Engine library.',
+    dsFetchingTitle: 'Connecting\u2026',
+    dsFetchingMeta: 'IMCCE Paris Observatory',
+    dsFetchingDesc: 'Fetching current planet positions from the observatory.',
+    dsOffset: 'offset',
     info: '<b>What is a reference frame?</b> It is a coordinate choice: you decide which body stays at the center while the others are described relative to it. Any body can be chosen, but some choices make the motion much simpler to describe.'
       + '<br><br><b>What you are seeing:</b> This is an approximate top-down 2D model of the planets in the ecliptic plane. The planets move on independent Keplerian ellipses with fixed orbital elements. This is not a literal map of how planets move against the background stars in the sky.'
-      + '<br><br><b>Try this:</b> Start with the Sun at the center and turn on trails. You will see clean ellipses. Switch to Earth and Mars will draw looping relative paths. Those loops are not Mars literally circling Earth in space; they show the relative-motion geometry behind retrograde motion as Earth overtakes Mars.'
-      + '<br><br><b>Historical idea:</b> Ptolemy described the planets from Earth using epicycles. Copernicus moved Earth from the center and made the overall pattern easier to understand, although his own model still used circles. Kepler later showed that planetary orbits are ellipses, and that later Keplerian model is what this app uses.'
+      + '<br><br><b>Try this:</b> Start with the Sun at the center and turn on trails. You will see clean ellipses. Switch to Earth and Mars will draw looping relative paths. Those loops are not Mars literally circling Earth in space; they show the pattern of relative motion behind retrograde motion as Earth overtakes Mars.'
+      + '<br><br><b>Historical idea:</b> Ptolemy described the planets from Earth using epicycles. Copernicus treated Earth as a planet orbiting the Sun, which explained planetary order and retrograde motion more coherently, although his own model still relied on circles and epicycles. Kepler later showed that planetary orbits are ellipses with the Sun at one focus, and that later Keplerian model is what this app uses.'
       + '<br><br>Trails are cleared when you switch center because each trail only makes sense in the current reference frame.'
   },
   pl: {
@@ -428,12 +447,21 @@ var I18N = {
     reset: 'Reset',
     time: 'Czas',
     years: 'lat',
-    metY: 'lat', metD: 'dni', metH: 'h',
-    srcOnline: 'Pozycje pocz\u0105tkowe: IMCCE Obserwatorium Paryskie', srcOffline: 'Pozycje pocz\u0105tkowe: obliczone offline', srcFetching: 'Pobieranie danych z IMCCE...',
+    metY: 'lat', metD: ' dni ', metH: 'h',
+    dsOnlineTitle: 'IMCCE Obserwatorium Paryskie',
+    dsOnlineMeta: 'Institut de m\u00e9canique c\u00e9leste',
+    dsOnlineDesc: 'Pozycje pocz\u0105tkowe zsynchronizowane z obserwatorium. Offsety to korekty na\u0142o\u017cone na lokalny silnik Astronomy Engine.',
+    dsOfflineTitle: 'Tryb offline',
+    dsOfflineMeta: 'Astronomy Engine',
+    dsOfflineDesc: 'Synchronizacja z obserwatorium nie powiod\u0142a si\u0119 lub jest niedost\u0119pna. Pozycje obliczone lokalnie.',
+    dsFetchingTitle: '\u0141\u0105czenie\u2026',
+    dsFetchingMeta: 'IMCCE Obserwatorium Paryskie',
+    dsFetchingDesc: 'Pobieranie aktualnych pozycji planet z obserwatorium.',
+    dsOffset: 'offset',
     info: '<b>Czym jest uk\u0142ad odniesienia?</b> To wyb\u00f3r wsp\u00f3\u0142rz\u0119dnych: decydujesz, kt\u00f3re cia\u0142o pozostaje w centrum, a ruch pozosta\u0142ych opisujesz wzgl\u0119dem niego. Mo\u017cna wybra\u0107 dowolne cia\u0142o, ale niekt\u00f3re wybory daj\u0105 znacznie prostszy opis ruchu.'
       + '<br><br><b>Co tu wida\u0107:</b> To przybli\u017cony, dwuwymiarowy model z g\u00f3ry, w p\u0142aszczy\u017anie ekliptyki. Planety poruszaj\u0105 si\u0119 po niezale\u017cnych elipsach Keplerowskich o sta\u0142ych elementach orbitalnych. To nie jest dos\u0142owna mapa tego, jak planety przesuwaj\u0105 si\u0119 na niebie wzgl\u0119dem gwiazd t\u0142a.'
-      + '<br><br><b>Spr\u00f3buj:</b> Zacznij ze S\u0142o\u0144cem w centrum i w\u0142\u0105cz \u015blady. Zobaczysz czyste elipsy. Prze\u0142\u0105cz na Ziemi\u0119, a Mars zacznie rysowa\u0107 zap\u0119tlone tory wzgl\u0119dne. Te p\u0119tle nie oznaczaj\u0105, \u017ce Mars naprawd\u0119 kr\u0105\u017cy wok\u00f3\u0142 Ziemi; pokazuj\u0105 geometri\u0119 ruchu wzgl\u0119dnego, kt\u00f3ra prowadzi do retrogradacji, gdy Ziemia wyprzedza Marsa.'
-      + '<br><br><b>Idea historyczna:</b> Ptolemeusz opisywa\u0142 planety z perspektywy Ziemi za pomoc\u0105 epicykli. Kopernik usun\u0105\u0142 Ziemi\u0119 z centrum i dzi\u0119ki temu og\u00f3lny obraz sta\u0142 si\u0119 prostszy, cho\u0107 jego w\u0142asny model nadal u\u017cywa\u0142 okr\u0119g\u00f3w. Dopiero Kepler pokaza\u0142, \u017ce orbity planet s\u0105 elipsami, i to w\u0142a\u015bnie tego p\u00f3\u017aniejszego modelu Keplerowskiego u\u017cywa ta aplikacja.'
+      + '<br><br><b>Spr\u00f3buj:</b> Zacznij ze S\u0142o\u0144cem w centrum i w\u0142\u0105cz \u015blady. Zobaczysz czyste elipsy. Prze\u0142\u0105cz na Ziemi\u0119, a Mars zacznie rysowa\u0107 zap\u0119tlone tory wzgl\u0119dne. Te p\u0119tle nie oznaczaj\u0105, \u017ce Mars naprawd\u0119 kr\u0105\u017cy wok\u00f3\u0142 Ziemi; pokazuj\u0105 wzorzec ruchu wzgl\u0119dnego, kt\u00f3ry prowadzi do retrogradacji, gdy Ziemia wyprzedza Marsa.'
+      + '<br><br><b>Idea historyczna:</b> Ptolemeusz opisywa\u0142 planety z perspektywy Ziemi za pomoc\u0105 epicykli. Kopernik potraktowa\u0142 Ziemi\u0119 jako planet\u0119 kr\u0105\u017c\u0105c\u0105 wok\u00f3\u0142 S\u0142o\u0144ca, co pozwoli\u0142o sp\u00f3jniej wyja\u015bni\u0107 kolejno\u015b\u0107 planet i retrogradacj\u0119, cho\u0107 jego w\u0142asny model nadal opiera\u0142 si\u0119 na okr\u0119gach i epicyklach. Dopiero Kepler pokaza\u0142, \u017ce orbity planet s\u0105 elipsami ze S\u0142o\u0144cem w jednym z ognisk, i to w\u0142a\u015bnie tego p\u00f3\u017aniejszego modelu Keplerowskiego u\u017cywa ta aplikacja.'
       + '<br><br>\u015alady s\u0105 czyszczone po zmianie centrum, bo ka\u017cda \u015bcie\u017cka ma sens tylko w bie\u017c\u0105cym uk\u0142adzie odniesienia.'
   }
 };
@@ -548,9 +576,10 @@ function fetchIMCCEPositions() {
       state.imcceOffset = offsets;
     }
     state.imcceFetching = false;
+    if (!state.playing) { state.playing = true; lastTimestamp = 0; updateWarpBtns(); }
   }).catch(function() {
     state.imcceFetching = false;
-    /* Network error — Astronomy Engine runs without correction */
+    if (!state.playing) { state.playing = true; lastTimestamp = 0; updateWarpBtns(); }
   });
 }
 
@@ -728,12 +757,51 @@ function updateMETClock() {
   el.classList.toggle('paused', !state.playing);
 }
 
+function formatAU(v) {
+  var s = v.toExponential(4);
+  return (v >= 0 ? '+' : '') + s + ' AU';
+}
+
 function updateDataSource() {
-  var el = document.getElementById('dataSource');
-  el.classList.toggle('online', !!state.imcceOffset);
-  el.classList.toggle('fetching', state.imcceFetching && !state.imcceOffset);
-  var tip = state.imcceOffset ? T('srcOnline') : state.imcceFetching ? T('srcFetching') : T('srcOffline');
-  el.setAttribute('data-tip', tip);
+  var wrap = document.getElementById('dataSource');
+  var panel = document.getElementById('dsPanel');
+  var online = !!state.imcceOffset;
+  var fetching = state.imcceFetching && !online;
+  wrap.classList.toggle('online', online);
+  wrap.classList.toggle('fetching', fetching);
+
+  var title, meta, desc, color;
+  if (online) {
+    title = T('dsOnlineTitle'); meta = T('dsOnlineMeta'); desc = T('dsOnlineDesc');
+    color = '#3fb950';
+  } else if (fetching) {
+    title = T('dsFetchingTitle'); meta = T('dsFetchingMeta'); desc = T('dsFetchingDesc');
+    color = '#d29922';
+  } else {
+    title = T('dsOfflineTitle'); meta = T('dsOfflineMeta'); desc = T('dsOfflineDesc');
+    color = '#e05030';
+  }
+
+  var html = '<div class="ds-header" style="color:' + color + '">' + title + '</div>'
+    + '<div class="ds-meta">' + meta + '</div>';
+
+  if (online && state.imcceOffset) {
+    html += '<div class="ds-stats">';
+    var keys = ['mercury', 'venus', 'earth', 'mars'];
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var o = state.imcceOffset[k];
+      if (!o) continue;
+      html += '<div class="ds-stat"><span class="ds-stat-label">' + T(k) + '</span>'
+        + '<span>dx ' + formatAU(o.x) + '</span></div>'
+        + '<div class="ds-stat"><span class="ds-stat-label"></span>'
+        + '<span>dy ' + formatAU(o.y) + '</span></div>';
+    }
+    html += '</div>';
+  }
+
+  html += '<div class="ds-desc">' + desc + '</div>';
+  panel.innerHTML = html;
 }
 
 function drawScene() {
@@ -985,6 +1053,7 @@ document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'E
 applyTranslations();
 updateWarpBtns();
 updateVisUI();
+fetchIMCCEPositions();
 requestAnimationFrame(animate);
 
 </script>
