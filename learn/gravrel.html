@@ -89,18 +89,6 @@
   }
 
   .slider-row { display: flex; align-items: center; gap: 6px; }
-  .slider-row input[type=range] {
-    flex: 1; -webkit-appearance: none; appearance: none;
-    height: 6px; background: var(--panel-border); border-radius: 3px; outline: none;
-  }
-  .slider-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
-  }
-  .slider-row input[type=range]::-moz-range-thumb {
-    width: 20px; height: 20px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
-  }
   .slider-val {
     font-family: 'Share Tech Mono', monospace;
     font-size: 12px; min-width: 72px; text-align: right; color: var(--text);
@@ -154,6 +142,8 @@
     50%      { box-shadow: inset 0 0 16px rgba(255,23,68,0.6); }
   }
   .speed-bar-track.extreme .speed-bar-fill { animation: speedGlow 1.2s ease-in-out infinite; }
+  .cruise-fill { background: linear-gradient(to right, hsl(210,80%,28%), hsl(210,90%,52%)) !important; }
+  .sci-fill    { background: linear-gradient(to right, hsl(160,70%,24%), hsl(160,85%,44%)) !important; }
 
   .type-toggle { display: flex; gap: 6px; }
   .type-btn {
@@ -275,13 +265,23 @@
     width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
   }
   .name-input {
-    width: 140px; padding: 7px 10px; border-radius: 6px;
+    width: 110px; padding: 7px 10px; border-radius: 6px;
     border: 1px solid var(--panel-border); background: rgba(11,15,24,0.7);
     color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 14px;
     outline: none;
   }
   .name-input:focus { border-color: var(--accent); }
   .name-input::placeholder { color: var(--text-dim); }
+  .age-input {
+    width: 45px; padding: 7px 6px; border-radius: 6px; text-align: center;
+    border: 1px solid var(--panel-border); background: rgba(11,15,24,0.7);
+    color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 14px;
+    outline: none; -moz-appearance: textfield;
+  }
+  .age-input::-webkit-inner-spin-button,
+  .age-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .age-input:focus { border-color: var(--accent); }
+  .age-input::placeholder { color: var(--text-dim); }
 
   @media (max-width: 700px) {
     .main { flex-direction: column; height: auto; min-height: 100vh; }
@@ -313,11 +313,13 @@
         <span class="ship-dot" style="background:var(--ship-a)"></span>
         <input id="captainA" class="name-input" placeholder="Captain A" maxlength="14">
         <input id="shipNameA" class="name-input" placeholder="Ship A" maxlength="14">
+        <input id="ageA" class="age-input" type="number" min="1" max="99" value="30" placeholder="30">
       </div>
       <div class="name-row">
         <span class="ship-dot" style="background:var(--ship-b)"></span>
         <input id="captainB" class="name-input" placeholder="Captain B" maxlength="14">
         <input id="shipNameB" class="name-input" placeholder="Ship B" maxlength="14">
+        <input id="ageB" class="age-input" type="number" min="1" max="99" value="30" placeholder="30">
       </div>
     </div>
   </div>
@@ -349,11 +351,14 @@
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblCruiseTime">Cruise Time</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('cruiseSlider',-1)">&minus;</button>
-        <input type="range" id="cruiseSlider" min="1" max="20" step="0.5" value="5" oninput="handleCruiseTimeChange()">
-        <button class="step-btn" onclick="stepSlider('cruiseSlider',1)">+</button>
-        <span class="slider-val" id="cruiseVal">5.0 yr</span>
+      <div class="speed-bar" id="cruiseBar">
+        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
+        <div class="speed-bar-track">
+          <div class="speed-bar-fill cruise-fill"></div>
+          <span class="speed-bar-val" id="cruiseVal">5.0 yr</span>
+        </div>
+        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
+        <input type="hidden" id="cruiseHidden" value="211">
       </div>
     </div>
 
@@ -368,11 +373,14 @@
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblScienceTime">Science Time (Earth)</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('sciSlider',-1)">&minus;</button>
-        <input type="range" id="sciSlider" min="1" max="20" step="0.5" value="5" oninput="handleSciChange()">
-        <button class="step-btn" onclick="stepSlider('sciSlider',1)">+</button>
-        <span class="slider-val" id="sciVal">5.0 yr</span>
+      <div class="speed-bar" id="sciBar">
+        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
+        <div class="speed-bar-track">
+          <div class="speed-bar-fill sci-fill"></div>
+          <span class="speed-bar-val" id="sciVal">5.0 yr</span>
+        </div>
+        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
+        <input type="hidden" id="sciHidden" value="211">
       </div>
     </div>
 
@@ -743,6 +751,7 @@ var I18N = {
     lblCaptainAElapsedRead: 'Captain A',
     lblCaptainBElapsedRead: 'Captain B',
     lblAgeDiff: 'Age difference',
+    lblAge: 'age',
 
     lblPhysics: 'Physics',
     lblGamma: 'Cruise \u03B3',
@@ -821,6 +830,7 @@ var I18N = {
     lblCaptainAElapsedRead: 'Kapitan A',
     lblCaptainBElapsedRead: 'Kapitan B',
     lblAgeDiff: 'R\u00F3\u017Cnica wieku',
+    lblAge: 'wiek',
 
     lblPhysics: 'Fizyka',
     lblGamma: '\u03B3 przelotu',
@@ -939,6 +949,10 @@ function getShipName(which) {
   var el = document.getElementById('shipName' + which);
   var v = el ? el.value.trim() : '';
   return v || T('lblShip' + which);
+}
+function getStartAge(which) {
+  var v = parseInt(document.getElementById('age' + which).value);
+  return (v >= 1 && v <= 99) ? v : 30;
 }
 
 // ====================== CANVAS SETUP ======================
@@ -1871,6 +1885,30 @@ function drawScene() {
   drawPhaseLabel();
 }
 
+// ====================== CUSTOM BARS (speed, cruise time, science time) =====
+
+// Linear slider-to-time mapping for cruise-time and science-time bars.
+// Both use min=1, max=20 yr, step 0.5 yr.  Slider integer range is [0, 1000].
+var TIME_MIN = 1, TIME_MAX = 20;
+
+function sliderToTime(s) {
+  return TIME_MIN + (TIME_MAX - TIME_MIN) * (clamp(s, 0, 1000) / 1000);
+}
+function timeToSlider(v) {
+  return Math.round((clamp(v, TIME_MIN, TIME_MAX) - TIME_MIN) / (TIME_MAX - TIME_MIN) * 1000);
+}
+
+// Render a time bar: set fill width + value text. No JS colour override —
+// the CSS gradient on .cruise-fill / .sci-fill handles the colour.
+function updateTimeBar(barId, sliderValue, value) {
+  var bar = document.getElementById(barId);
+  if (!bar) return;
+  var fill = bar.querySelector('.speed-bar-fill');
+  var valEl = bar.querySelector('.speed-bar-val');
+  fill.style.width = (sliderValue / 1000 * 100) + '%';
+  valEl.textContent = value.toFixed(1) + ' ' + T('lblYr');
+}
+
 // ====================== SPEED BAR ======================
 
 // Split-nonlinear: linear [0.10, 0.90] on the first 2/3 of the bar, then
@@ -1948,7 +1986,11 @@ function updateSpeedBar(barId, sliderValue, beta) {
   else              track.classList.remove('extreme');
 }
 
-function initSpeedBar(barEl) {
+// Generic bar initializer shared by speed, cruise-time, and science-time bars.
+// `hiddenId` — id of the hidden input that stores the 0-1000 slider value.
+// `onChange` — handler called after every value update.
+// `stepSize` — slider-space increment per ± click (5 for speed, 26 for time bars).
+function initBar(barEl, hiddenId, onChange, stepSize) {
   var track = barEl.querySelector('.speed-bar-track');
   var minusBtn = barEl.querySelector('.speed-bar-minus');
   var plusBtn = barEl.querySelector('.speed-bar-plus');
@@ -1961,8 +2003,8 @@ function initSpeedBar(barEl) {
   }
   function applyValue(sliderVal) {
     sliderVal = clamp(sliderVal, 0, 1000);
-    document.getElementById('speedSlider').value = sliderVal;
-    handleSpeedChange();
+    document.getElementById(hiddenId).value = sliderVal;
+    onChange();
   }
   function onPointerDown(e) {
     if (barEl.classList.contains('disabled')) return;
@@ -1986,14 +2028,13 @@ function initSpeedBar(barEl) {
   document.addEventListener('touchmove', function(e) { if (dragging) onPointerMove(e); }, { passive: false });
   document.addEventListener('touchend', onPointerEnd);
 
-  var STEP_SIZE = 5;
   var holdTimer = null, holdInterval = null;
   function startHold(delta) {
     if (barEl.classList.contains('disabled')) return;
-    applyValue(parseInt(document.getElementById('speedSlider').value) + delta * STEP_SIZE);
+    applyValue(parseInt(document.getElementById(hiddenId).value) + delta * stepSize);
     holdTimer = setTimeout(function() {
       holdInterval = setInterval(function() {
-        applyValue(parseInt(document.getElementById('speedSlider').value) + delta * STEP_SIZE);
+        applyValue(parseInt(document.getElementById(hiddenId).value) + delta * stepSize);
       }, 30);
     }, 300);
   }
@@ -2012,16 +2053,6 @@ function initSpeedBar(barEl) {
 }
 
 // ====================== CONTROL HANDLERS ======================
-
-function stepSlider(id, delta) {
-  var s = document.getElementById(id);
-  var step = parseFloat(s.step) || 1;
-  var v = parseFloat(s.value) + delta * step;
-  v = Math.max(parseFloat(s.min), Math.min(parseFloat(s.max), v));
-  v = Math.round(v * 10000) / 10000;
-  s.value = v;
-  s.dispatchEvent(new Event('input'));
-}
 
 function enforceUBounds() {
   var uMin = bhUMin(state.blackHoleIndex);
@@ -2045,9 +2076,10 @@ function handleBhChange() {
 }
 
 function handleCruiseTimeChange() {
-  var v = parseFloat(document.getElementById('cruiseSlider').value);
+  var s = parseInt(document.getElementById('cruiseHidden').value);
+  var v = sliderToTime(s);
   state.cruiseTime = v;
-  document.getElementById('cruiseVal').textContent = v.toFixed(1) + ' ' + T('lblYr');
+  updateTimeBar('cruiseBar', s, v);
   rebuildTimeline();
 }
 
@@ -2147,10 +2179,11 @@ function hideFactsCard() {
 }
 
 function handleSciChange() {
-  var v = parseFloat(document.getElementById('sciSlider').value);
+  var s = parseInt(document.getElementById('sciHidden').value);
+  var v = sliderToTime(s);
   if (state.scienceTimingMode === 'earth') state.scienceDurationEarth = v;
   else state.scienceDurationLocal = v;
-  document.getElementById('sciVal').textContent = v.toFixed(1) + ' ' + T('lblYr');
+  updateTimeBar('sciBar', s, v);
   rebuildTimeline();
 }
 
@@ -2160,11 +2193,11 @@ function setTimingMode(mode) {
   document.getElementById('modeEarthBtn').classList.toggle('active', mode === 'earth');
   document.getElementById('modeLocalBtn').classList.toggle('active', mode === 'local');
 
-  // Swap the active duration value into the slider
+  // Swap the active duration value into the bar
   var active = mode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
-  var slider = document.getElementById('sciSlider');
-  slider.value = active;
-  document.getElementById('sciVal').textContent = active.toFixed(1) + ' ' + T('lblYr');
+  var s = timeToSlider(active);
+  document.getElementById('sciHidden').value = s;
+  updateTimeBar('sciBar', s, active);
 
   // Update slider label and note
   document.getElementById('lblScienceTime').textContent =
@@ -2270,8 +2303,10 @@ function updateControlStates() {
 
   document.getElementById('starSelect').disabled   = !idle;
   document.getElementById('bhSelect').disabled     = !idle;
-  document.getElementById('cruiseSlider').disabled = !idle;
-  document.getElementById('sciSlider').disabled    = !idle;
+  var cruiseBar = document.getElementById('cruiseBar');
+  var sciBar    = document.getElementById('sciBar');
+  if (idle) { cruiseBar.classList.remove('disabled'); sciBar.classList.remove('disabled'); }
+  else      { cruiseBar.classList.add('disabled');    sciBar.classList.add('disabled'); }
   document.getElementById('modeEarthBtn').disabled = !idle;
   document.getElementById('modeLocalBtn').disabled = !idle;
 }
@@ -2358,8 +2393,8 @@ function showReunionSummary() {
   // Detail block
   var detail =
     '<span style="color:var(--earth-color)">' + T('summaryLabelEarth') + '</span>: ' + tl.earthTotal.toFixed(2) + ' ' + yr + '<br>' +
-    '<span style="color:var(--ship-a)">' + T('summaryLabelCaptainA').replace('{A}', A) + '</span>: ' + tl.aTotal.toFixed(2) + ' ' + yr + '<br>' +
-    '<span style="color:var(--ship-b)">' + T('summaryLabelCaptainB').replace('{B}', B) + '</span>: ' + tl.bTotal.toFixed(2) + ' ' + yr + '<br>' +
+    '<span style="color:var(--ship-a)">' + T('summaryLabelCaptainA').replace('{A}', A) + '</span>: ' + tl.aTotal.toFixed(2) + ' ' + yr + ' \u2014 ' + T('lblAge') + ' ' + Math.round(getStartAge('A') + tl.aTotal) + '<br>' +
+    '<span style="color:var(--ship-b)">' + T('summaryLabelCaptainB').replace('{B}', B) + '</span>: ' + tl.bTotal.toFixed(2) + ' ' + yr + ' \u2014 ' + T('lblAge') + ' ' + Math.round(getStartAge('B') + tl.bTotal) + '<br>' +
     T('summaryLabelAgeDiff') + ': <b>' + formatYearsMonths(diff) + '</b>';
   if (younger) {
     var younglabel = younger === 'B' ? B : A;
@@ -2457,10 +2492,10 @@ function applyTranslations() {
   document.getElementById('shipNameA').placeholder = l.phShipA;
   document.getElementById('shipNameB').placeholder = l.phShipB;
 
-  // Slider values (re-format with locale-neutral unit labels)
-  document.getElementById('cruiseVal').textContent = state.cruiseTime.toFixed(1) + ' ' + T('lblYr');
+  // Bar values (re-format with locale unit labels)
+  updateTimeBar('cruiseBar', timeToSlider(state.cruiseTime), state.cruiseTime);
   var sci = state.scienceTimingMode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
-  document.getElementById('sciVal').textContent  = sci.toFixed(1) + ' ' + T('lblYr');
+  updateTimeBar('sciBar', timeToSlider(sci), sci);
 
   populateStarSelect();
   populateBhSelect();
@@ -2526,12 +2561,20 @@ initBgStars(NUM_BG_STARS);
 enforceUBounds();
 computeShipTrajectories();
 buildTimeline();
-initSpeedBar(document.getElementById('speedBar'));
+initBar(document.getElementById('speedBar'), 'speedSlider', handleSpeedChange, 5);
 updateSpeedBar('speedBar', parseInt(document.getElementById('speedSlider').value), state.betaCruise);
+
+initBar(document.getElementById('cruiseBar'), 'cruiseHidden', handleCruiseTimeChange, 26);
+updateTimeBar('cruiseBar', timeToSlider(state.cruiseTime), state.cruiseTime);
+
+initBar(document.getElementById('sciBar'), 'sciHidden', handleSciChange, 26);
+var sciInit = state.scienceTimingMode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
+updateTimeBar('sciBar', timeToSlider(sciInit), sciInit);
+
 applyTranslations();
 
 // Refresh live sentence and overlay when captain/ship names change
-['captainA', 'shipNameA', 'captainB', 'shipNameB'].forEach(function(id) {
+['captainA', 'shipNameA', 'ageA', 'captainB', 'shipNameB', 'ageB'].forEach(function(id) {
   document.getElementById(id).addEventListener('input', function() {
     updateReadouts();
   });

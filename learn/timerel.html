@@ -231,7 +231,7 @@
     width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
   }
   .name-input {
-    width: 170px; padding: 7px 10px; border-radius: 6px;
+    width: 110px; padding: 7px 10px; border-radius: 6px;
     border: 1px solid var(--panel-border); background: rgba(11,15,24,0.7);
     color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 14px;
     outline: none;
@@ -348,11 +348,13 @@
       <div class="name-row">
         <span class="ship-dot" style="background:var(--earth-color)"></span>
         <input id="earthTwinName" class="name-input" maxlength="14">
+        <input id="earthShipName" class="name-input" maxlength="14">
         <input id="earthTwinAge" class="age-input" type="number" min="1" max="99">
       </div>
       <div class="name-row">
         <span class="ship-dot" style="background:var(--rocket-color)"></span>
         <input id="rocketTwinName" class="name-input" maxlength="14">
+        <input id="rocketShipName" class="name-input" maxlength="14">
         <input id="rocketTwinAge" class="age-input" type="number" min="1" max="99">
       </div>
     </div>
@@ -360,11 +362,13 @@
       <div class="name-row">
         <span class="ship-dot" style="background:var(--ship-a-color)"></span>
         <input id="gameNameA" class="name-input" maxlength="14" oninput="syncGameName('A')">
+        <input id="gameShipA" class="name-input" maxlength="14">
         <input id="gameAgeA" class="age-input" type="number" min="1" max="99" readonly>
       </div>
       <div class="name-row">
         <span class="ship-dot" style="background:var(--ship-b-color)"></span>
         <input id="gameNameB" class="name-input" maxlength="14" oninput="syncGameName('B')">
+        <input id="gameShipB" class="name-input" maxlength="14">
         <input id="gameAgeB" class="age-input" type="number" min="1" max="99" readonly>
       </div>
     </div>
@@ -603,6 +607,8 @@ var I18N = {
     rocketPerson: 'Rocket person',
     phEarthTwin: 'Earth person name',
     phRocketTwin: 'Rocket person name',
+    phEarthShip: 'Home',
+    phRocketShip: 'Rocket',
     customStar: 'My Star',
     lblCustomName: 'Star Name',
     lblCustomDist: 'Distance (ly)',
@@ -667,6 +673,8 @@ var I18N = {
     rocketPerson: 'Osoba w rakiecie',
     phEarthTwin: 'Imi\u0119 osoby na Ziemi',
     phRocketTwin: 'Imi\u0119 osoby w rakiecie',
+    phEarthShip: 'Dom',
+    phRocketShip: 'Rakieta',
     customStar: 'Moja Gwiazda',
     lblCustomName: 'Nazwa gwiazdy',
     lblCustomDist: 'Odleg\u0142o\u015B\u0107 (ly)',
@@ -1126,6 +1134,18 @@ function getEarthStartAge() {
 function getRocketStartAge() {
   var v = parseInt(document.getElementById('rocketTwinAge').value);
   return (v >= 1 && v <= 99) ? v : state.defaultAge;
+}
+
+function getEarthShipName() {
+  var el = document.getElementById('earthShipName');
+  var v = el ? el.value.trim() : '';
+  return v || T('phEarthShip');
+}
+
+function getRocketShipName() {
+  var el = document.getElementById('rocketShipName');
+  var v = el ? el.value.trim() : '';
+  return v || T('phRocketShip');
 }
 
 // ====================== CANVAS SETUP ======================
@@ -2418,6 +2438,8 @@ function applyTranslations() {
   document.getElementById('resetBtn').title = T('reset');
   document.getElementById('earthTwinName').placeholder = getDefaultName(0);
   document.getElementById('rocketTwinName').placeholder = getDefaultName(1);
+  document.getElementById('earthShipName').placeholder = T('phEarthShip');
+  document.getElementById('rocketShipName').placeholder = T('phRocketShip');
   // Game mode labels
   document.getElementById('modeExploreBtn').textContent = T('explore');
   document.getElementById('modeGameBtn').textContent = T('game');
@@ -3248,6 +3270,8 @@ document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'E
 // Personalization inputs
 document.getElementById('earthTwinName').placeholder = getDefaultName(0);
 document.getElementById('rocketTwinName').placeholder = getDefaultName(1);
+document.getElementById('earthShipName').placeholder = T('phEarthShip');
+document.getElementById('rocketShipName').placeholder = T('phRocketShip');
 document.getElementById('earthTwinAge').value = state.defaultAge;
 document.getElementById('rocketTwinAge').value = state.defaultAge;
 

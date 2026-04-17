@@ -93,10 +93,10 @@
   .action-btn {
     padding: 10px 18px;
     background: var(--text-head); color: #fff;
-    border: none; border-radius: 8px;
+    border: 1.5px solid transparent; border-radius: 8px;
     font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: background 0.15s, transform 0.05s;
-    touch-action: manipulation;
+    line-height: 1; cursor: pointer; transition: background 0.15s, transform 0.05s;
+    touch-action: manipulation; min-width: 120px;
   }
   .action-btn:hover { background: #37474F; }
   .action-btn:active { transform: scale(0.97); }
@@ -118,13 +118,6 @@
   .session-id .value { color: var(--text-head); font-weight: 700; }
   .session-id .sep { color: var(--text-label); margin: 0 8px; }
 
-  .test-result {
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
-    padding: 8px 14px; border-radius: 6px; margin-left: 12px;
-    display: none; align-items: center; gap: 6px;
-  }
-  .test-result.pass { display: inline-flex; background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
-  .test-result.fail { display: inline-flex; background: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; }
 
   .preview-wrap {
     background: var(--canvas-bg);
@@ -180,10 +173,9 @@
     <input type="text" id="receiverInput" class="name-input" placeholder="Receiver name" oninput="onNameChange()" maxlength="40">
   </div>
   <div class="toolbar-row">
-    <button class="action-btn" id="generateBtn" onclick="regenerate()">Generate New Sequence</button>
-    <button class="action-btn secondary" id="downloadBtn" onclick="downloadPdf()">Download PDF</button>
+    <button class="action-btn" id="generateBtn" onclick="regenerate()">&#x1F3B2; Generate</button>
+    <button class="action-btn secondary" id="downloadBtn" onclick="downloadPdf()">&#x2B07; Download</button>
     <button class="action-btn secondary" id="testBtn" onclick="runLayoutTest()" title="Test layout">&#x2713;</button>
-    <span id="testResult" class="test-result"></span>
     <span class="session-id">
       <span class="label" id="sessionLabel">Sequence id</span>
       <span class="value" id="sessionIdVal">#-----</span>
@@ -226,9 +218,9 @@ const I18N = {
   en: {
     title: 'Morse Code Practice Sheets',
     subtitle: 'Printable A4 sheets for two-kid sender/receiver practice.',
-    generateBtn: 'Generate New Sequence',
-    downloadBtn: 'Download PDF',
-    downloadBusy: 'Preparing PDF\u2026',
+    generateBtn: '\uD83C\uDFB2 Generate',
+    downloadBtn: '\u2B07 Download',
+    downloadBusy: '\u2B07 \u2026',
     sessionLabel: 'Sequence id',
     senderLabel: 'Sender',
     receiverLabel: 'Receiver',
@@ -238,9 +230,9 @@ const I18N = {
   pl: {
     title: 'Arkusze \u0107wicze\u0144 z kodu Morse\u2019a',
     subtitle: 'Arkusze A4 do druku dla dw\u00F3jki dzieci: nadawca i odbiorca.',
-    generateBtn: 'Losuj now\u0105 sekwencj\u0119',
-    downloadBtn: 'Pobierz PDF',
-    downloadBusy: 'Przygotowuj\u0119 PDF\u2026',
+    generateBtn: '\uD83C\uDFB2 Losuj',
+    downloadBtn: '\u2B07 Pobierz',
+    downloadBusy: '\u2B07 \u2026',
     sessionLabel: 'Id sekwencji',
     senderLabel: 'Nadawca',
     receiverLabel: 'Odbiorca',
@@ -478,11 +470,11 @@ function loadPdfJs() {
 // eslint-disable-next-line no-unused-vars
 function runLayoutTest() {
   const btn = document.getElementById('testBtn');
-  const result = document.getElementById('testResult');
   btn.disabled = true;
   btn.textContent = '\u2026';
-  result.className = 'test-result';
-  result.textContent = '';
+  btn.style.background = '';
+  btn.style.borderColor = '';
+  btn.style.color = '';
 
   loadPdfJs().then((lib) => {
     const pdf = pdfMake.createPdf(buildDocDefinition());
@@ -526,16 +518,25 @@ function runLayoutTest() {
 
         const allPass = checks.every((c) => c.ok);
         const summary = checks.map((c) => (c.ok ? '\u2713' : '\u2717') + ' ' + c.name + ': ' + c.msg);
-        result.className = 'test-result ' + (allPass ? 'pass' : 'fail');
-        result.textContent = allPass ? '\u2713 All checks passed' : '\u2717 ' + checks.find((c) => !c.ok).name;
-        result.title = summary.join('\n');
+        const color = allPass ? '#4CAF50' : '#C62828';
+        btn.style.background = color;
+        btn.style.borderColor = color;
+        btn.style.color = '#fff';
+        btn.title = summary.join('\n');
         console.log('Layout test:\n' + summary.join('\n'));
       } catch (e) {
-        result.className = 'test-result fail';
-        result.textContent = '\u2717 Error: ' + e.message;
+        btn.style.background = '#C62828';
+        btn.style.borderColor = '#C62828';
+        btn.style.color = '#fff';
+        btn.title = 'Error: ' + e.message;
       }
       btn.disabled = false;
       btn.textContent = '\u2713';
+      setTimeout(() => {
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 2000);
     });
   });
 }
