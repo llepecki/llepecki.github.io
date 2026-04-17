@@ -197,6 +197,10 @@
     box-shadow: 0 0 6px rgba(224,80,48,0.6);
     transition: background 0.4s, box-shadow 0.4s;
   }
+  .data-source.fetching::before {
+    background: #d29922;
+    box-shadow: 0 0 6px rgba(210,153,34,0.6);
+  }
   .data-source.online::before {
     background: #3fb950;
     box-shadow: 0 0 6px rgba(63,185,80,0.6);
@@ -385,8 +389,8 @@ var state = {
   simTime: epochNow,
   displayOffset: epochNow,
   trailData: { sun: [], mercury: [], venus: [], earth: [], mars: [] },
-  useIMCCE: false,
-  imccePositions: null
+  imcceOffset: null,
+  imcceFetching: false
 };
 
 /* ── I18N ──────────────────────────────────────────────── */
@@ -405,7 +409,7 @@ var I18N = {
     time: 'Time',
     years: 'years',
     metY: 'yr', metD: 'd', metH: 'h',
-    srcOnline: 'Initial positions: IMCCE Paris Observatory', srcOffline: 'Initial positions: computed offline',
+    srcOnline: 'Initial positions: IMCCE Paris Observatory', srcOffline: 'Initial positions: computed offline', srcFetching: 'Fetching data from IMCCE...',
     info: '<b>What is a reference frame?</b> It is a coordinate choice: you decide which body stays at the center while the others are described relative to it. Any body can be chosen, but some choices make the motion much simpler to describe.'
       + '<br><br><b>What you are seeing:</b> This is an approximate top-down 2D model of the planets in the ecliptic plane. The planets move on independent Keplerian ellipses with fixed orbital elements. This is not a literal map of how planets move against the background stars in the sky.'
       + '<br><br><b>Try this:</b> Start with the Sun at the center and turn on trails. You will see clean ellipses. Switch to Earth and Mars will draw looping relative paths. Those loops are not Mars literally circling Earth in space; they show the relative-motion geometry behind retrograde motion as Earth overtakes Mars.'
@@ -425,7 +429,7 @@ var I18N = {
     time: 'Czas',
     years: 'lat',
     metY: 'lat', metD: 'dni', metH: 'h',
-    srcOnline: 'Pozycje pocz\u0105tkowe: IMCCE Obserwatorium Paryskie', srcOffline: 'Pozycje pocz\u0105tkowe: obliczone offline',
+    srcOnline: 'Pozycje pocz\u0105tkowe: IMCCE Obserwatorium Paryskie', srcOffline: 'Pozycje pocz\u0105tkowe: obliczone offline', srcFetching: 'Pobieranie danych z IMCCE...',
     info: '<b>Czym jest uk\u0142ad odniesienia?</b> To wyb\u00f3r wsp\u00f3\u0142rz\u0119dnych: decydujesz, kt\u00f3re cia\u0142o pozostaje w centrum, a ruch pozosta\u0142ych opisujesz wzgl\u0119dem niego. Mo\u017cna wybra\u0107 dowolne cia\u0142o, ale niekt\u00f3re wybory daj\u0105 znacznie prostszy opis ruchu.'
       + '<br><br><b>Co tu wida\u0107:</b> To przybli\u017cony, dwuwymiarowy model z g\u00f3ry, w p\u0142aszczy\u017anie ekliptyki. Planety poruszaj\u0105 si\u0119 po niezale\u017cnych elipsach Keplerowskich o sta\u0142ych elementach orbitalnych. To nie jest dos\u0142owna mapa tego, jak planety przesuwaj\u0105 si\u0119 na niebie wzgl\u0119dem gwiazd t\u0142a.'
       + '<br><br><b>Spr\u00f3buj:</b> Zacznij ze S\u0142o\u0144cem w centrum i w\u0142\u0105cz \u015blady. Zobaczysz czyste elipsy. Prze\u0142\u0105cz na Ziemi\u0119, a Mars zacznie rysowa\u0107 zap\u0119tlone tory wzgl\u0119dne. Te p\u0119tle nie oznaczaj\u0105, \u017ce Mars naprawd\u0119 kr\u0105\u017cy wok\u00f3\u0142 Ziemi; pokazuj\u0105 geometri\u0119 ruchu wzgl\u0119dnego, kt\u00f3ra prowadzi do retrogradacji, gdy Ziemia wyprzedza Marsa.'
@@ -505,7 +509,17 @@ function solveKepler(M, e) {
 var IMCCE_URL = 'https://ssp.imcce.fr/webservices/miriade/api/ephemcc.php';
 var IMCCE_PLANETS = ['Mercury', 'Venus', 'Earth', 'Mars'];
 
+function astroPosition(bodyKey, t) {
+  var date = new Date(J2000_MS + t * MS_PER_YEAR);
+  var time = Astronomy.MakeTime(date);
+  var eqj = Astronomy.HelioVector(ASTRO_BODY[bodyKey], time);
+  var ecl = Astronomy.RotateVector(EQJ_TO_ECL, eqj);
+  return { x: ecl.x, y: ecl.y };
+}
+
 function fetchIMCCEPositions() {
+  state.imcceFetching = true;
+  var t = state.simTime;
   var now = new Date();
   var ep = now.toISOString().slice(0, 19);
   var promises = IMCCE_PLANETS.map(function(name) {
@@ -520,22 +534,23 @@ function fetchIMCCEPositions() {
     return fetch(url).then(function(r) { return r.json(); });
   });
   Promise.all(promises).then(function(results) {
-    var positions = {};
+    var offsets = {};
     for (var i = 0; i < results.length; i++) {
       var d = results[i].data;
       if (d && d[0]) {
-        positions[IMCCE_PLANETS[i].toLowerCase()] = {
-          x: parseFloat(d[0].px),
-          y: parseFloat(d[0].py)
-        };
+        var key = IMCCE_PLANETS[i].toLowerCase();
+        var imcce = { x: parseFloat(d[0].px), y: parseFloat(d[0].py) };
+        var astro = astroPosition(key, t);
+        offsets[key] = { x: imcce.x - astro.x, y: imcce.y - astro.y };
       }
     }
-    if (Object.keys(positions).length === IMCCE_PLANETS.length) {
-      state.imccePositions = positions;
-      state.useIMCCE = true;
+    if (Object.keys(offsets).length === IMCCE_PLANETS.length) {
+      state.imcceOffset = offsets;
     }
+    state.imcceFetching = false;
   }).catch(function() {
-    /* Network error — Astronomy Engine fallback is already active */
+    state.imcceFetching = false;
+    /* Network error — Astronomy Engine runs without correction */
   });
 }
 
@@ -543,14 +558,12 @@ function fetchIMCCEPositions() {
 
 function helioPosition(body, t) {
   if (body.key === 'sun') return { x: 0, y: 0 };
-  if (state.useIMCCE && state.imccePositions && state.imccePositions[body.key]) {
-    return state.imccePositions[body.key];
+  var pos = astroPosition(body.key, t);
+  if (state.imcceOffset && state.imcceOffset[body.key]) {
+    pos.x += state.imcceOffset[body.key].x;
+    pos.y += state.imcceOffset[body.key].y;
   }
-  var date = new Date(J2000_MS + t * MS_PER_YEAR);
-  var time = Astronomy.MakeTime(date);
-  var eqj = Astronomy.HelioVector(ASTRO_BODY[body.key], time);
-  var ecl = Astronomy.RotateVector(EQJ_TO_ECL, eqj);
-  return { x: ecl.x, y: ecl.y };
+  return pos;
 }
 
 function displayPosition(body, centerBody, t) {
@@ -717,9 +730,10 @@ function updateMETClock() {
 
 function updateDataSource() {
   var el = document.getElementById('dataSource');
-  var online = state.useIMCCE;
-  el.classList.toggle('online', online);
-  el.setAttribute('data-tip', online ? T('srcOnline') : T('srcOffline'));
+  el.classList.toggle('online', !!state.imcceOffset);
+  el.classList.toggle('fetching', state.imcceFetching && !state.imcceOffset);
+  var tip = state.imcceOffset ? T('srcOnline') : state.imcceFetching ? T('srcFetching') : T('srcOffline');
+  el.setAttribute('data-tip', tip);
 }
 
 function drawScene() {
@@ -746,7 +760,6 @@ function animate(timestamp) {
   lastTimestamp = timestamp;
 
   if (state.playing) {
-    state.useIMCCE = false;
     var dtSim = dtReal * state.speed * SIM_RATE;
     if (anyTrailEnabled()) {
       var remaining = dtSim;
@@ -917,6 +930,8 @@ function resetSim() {
   var now = currentEpochYears();
   state.simTime = now;
   state.displayOffset = now;
+  state.imcceOffset = null;
+  state.imcceFetching = false;
   state.warpLevel = 'normal';
   state.speed = state.warpLevels.normal;
   state.playing = false;
