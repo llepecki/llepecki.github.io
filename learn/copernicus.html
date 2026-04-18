@@ -400,7 +400,8 @@ var state = {
   displayOffset: epochNow,
   trailData: { sun: [], mercury: [], venus: [], earth: [], mars: [] },
   imcceOffset: null,
-  imcceFetching: false
+  imcceFetching: false,
+  autoPlayAfterSync: true
 };
 
 /* ── I18N ──────────────────────────────────────────────── */
@@ -576,10 +577,10 @@ function fetchIMCCEPositions() {
       state.imcceOffset = offsets;
     }
     state.imcceFetching = false;
-    if (!state.playing) { state.playing = true; lastTimestamp = 0; updateWarpBtns(); }
+    if (state.autoPlayAfterSync) { state.autoPlayAfterSync = false; state.playing = true; lastTimestamp = 0; updateWarpBtns(); }
   }).catch(function() {
     state.imcceFetching = false;
-    if (!state.playing) { state.playing = true; lastTimestamp = 0; updateWarpBtns(); }
+    if (state.autoPlayAfterSync) { state.autoPlayAfterSync = false; state.playing = true; lastTimestamp = 0; updateWarpBtns(); }
   });
 }
 
