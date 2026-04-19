@@ -851,33 +851,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
     <script type="module">
       /* ── Block 1: Constants, data, state, I18N, position helpers ── */
       const TWO_PI = 2 * Math.PI;
-      const DEG2RAD = Math.PI / 180;
       const KM_PER_AU = 149597870.7;
       const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
       const MS_PER_YEAR = 365.25 * 24 * 3600 * 1000;
       const BODIES = [
-        {
-          key: "sun",
-          color: "#FFD700",
-          glow: "255,215,0",
-          radius: 12,
-          a: 0,
-          e: 0,
-          T: 0,
-          pomega: 0,
-          L0: 0,
-        },
+        { key: "sun", color: "#FFD700", glow: "255,215,0", radius: 12, T: 0 },
         {
           key: "mercury",
           group: "inner",
           color: "#A0A0A0",
           glow: "160,160,160",
           radius: 4,
-          a: 0.3871,
-          e: 0.2056,
           T: 0.2408,
-          pomega: 77.46,
-          L0: 252.25,
         },
         {
           key: "venus",
@@ -885,11 +870,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           color: "#F5DEB3",
           glow: "245,222,179",
           radius: 5,
-          a: 0.7233,
-          e: 0.0068,
           T: 0.6152,
-          pomega: 131.6,
-          L0: 181.98,
         },
         {
           key: "earth",
@@ -897,11 +878,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           color: "#4db8ff",
           glow: "77,184,255",
           radius: 6,
-          a: 1.0,
-          e: 0.0167,
           T: 1.0,
-          pomega: 102.93,
-          L0: 100.47,
         },
         {
           key: "mars",
@@ -909,11 +886,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           color: "#E05030",
           glow: "224,80,48",
           radius: 5,
-          a: 1.5237,
-          e: 0.0934,
           T: 1.8809,
-          pomega: 336.08,
-          L0: 355.43,
         },
         {
           key: "jupiter",
@@ -921,11 +894,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           color: "#c88b3a",
           glow: "200,139,58",
           radius: 9,
-          a: 5.2026,
-          e: 0.0489,
           T: 11.862,
-          pomega: 14.73,
-          L0: 34.4,
         },
         {
           key: "saturn",
@@ -933,11 +902,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           color: "#e8d191",
           glow: "232,209,145",
           radius: 8,
-          a: 9.5549,
-          e: 0.0565,
           T: 29.457,
-          pomega: 92.43,
-          L0: 49.94,
         },
         {
           key: "uranus",
@@ -945,11 +910,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           color: "#7ec8e3",
           glow: "126,200,227",
           radius: 7,
-          a: 19.2184,
-          e: 0.0464,
           T: 84.011,
-          pomega: 170.96,
-          L0: 313.23,
         },
         {
           key: "neptune",
@@ -957,23 +918,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           color: "#4b70dd",
           glow: "75,112,221",
           radius: 6,
-          a: 30.1104,
-          e: 0.0095,
           T: 164.79,
-          pomega: 44.97,
-          L0: 304.88,
         },
       ];
-      for (const b of BODIES) {
-        if (b.key === "sun") continue;
-        b.pomegaRad = b.pomega * DEG2RAD;
-        b.L0rad = b.L0 * DEG2RAD;
-        b.n = TWO_PI / b.T;
-        b.M0 = b.L0rad - b.pomegaRad;
-        b.bSemi = b.a * Math.sqrt(1 - b.e * b.e);
-        b.cosPom = Math.cos(b.pomegaRad);
-        b.sinPom = Math.sin(b.pomegaRad);
-      }
       const bodyByKey = {};
       for (const b of BODIES) bodyByKey[b.key] = b;
       function currentEpochYears() {
@@ -1041,9 +988,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           planets: "Planets",
           all: "All",
           timeWarp: "Time Warp",
-          warpNormal: "\u25b6",
-          warpFast: "\u25b6\u25b6",
-          warpFastest: "\u25b6\u25b6\u25b6",
           reset: "Reset",
           time: "Time",
           years: "years",
@@ -1084,9 +1028,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           planets: "Planety",
           all: "Wszystkie",
           timeWarp: "Przyspieszenie",
-          warpNormal: "\u25b6",
-          warpFast: "\u25b6\u25b6",
-          warpFastest: "\u25b6\u25b6\u25b6",
           reset: "Reset",
           time: "Czas",
           years: "lat",
@@ -1240,6 +1181,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         T,
         isActiveBody,
         currentEpochYears,
+        helioPosition,
         displayPosition,
         formatMET,
         formatOffsetKm,
@@ -1255,6 +1197,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         state,
         T,
         isActiveBody,
+        helioPosition,
         displayPosition,
         formatMET,
         formatOffsetKm,
@@ -1264,12 +1207,32 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       const MAX_TRAIL_POINTS = 10000;
       const MAX_DT = 0.05;
       const VIEW_SPEED = { inner: 1, outer: 11.862 };
+      const GUIDE_SAMPLES = 360;
+      function computeGuidePaths() {
+        for (const body of BODIES) {
+          if (body.key === "sun") {
+            body.maxHelioR = 0;
+            continue;
+          }
+          const path = [];
+          const dt = body.T / GUIDE_SAMPLES;
+          let maxR = 0;
+          for (let i = 0; i <= GUIDE_SAMPLES; i++) {
+            const pos = helioPosition(body, state.simTime + i * dt);
+            path.push(pos);
+            const r = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
+            if (r > maxR) maxR = r;
+          }
+          body.guidePath = path;
+          body.maxHelioR = maxR;
+        }
+      }
       function getAuMargin() {
         const center = bodyByKey[state.center];
         let maxDist = 0;
         for (const b of BODIES) {
           if (b.key === state.center || !isActiveBody(b)) continue;
-          const dist = b.a * (1 + b.e) + center.a * (1 + center.e);
+          const dist = b.maxHelioR + center.maxHelioR;
           if (dist > maxDist) maxDist = dist;
         }
         return maxDist * 1.12;
@@ -1348,20 +1311,16 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             state.bodyVis[body.key] === 0
           )
             continue;
-          const cc = toCanvas(
-            -body.a * body.e * body.cosPom,
-            -body.a * body.e * body.sinPom,
-          );
+          const path = body.guidePath;
+          if (!path || path.length < 2) continue;
           ctx.beginPath();
-          ctx.ellipse(
-            cc.cx,
-            cc.cy,
-            body.a * scale,
-            body.bSemi * scale,
-            -body.pomegaRad,
-            0,
-            TWO_PI,
-          );
+          const p0 = toCanvas(path[0].x, path[0].y);
+          ctx.moveTo(p0.cx, p0.cy);
+          for (let i = 1; i < path.length; i++) {
+            const p = toCanvas(path[i].x, path[i].y);
+            ctx.lineTo(p.cx, p.cy);
+          }
+          ctx.closePath();
           ctx.strokeStyle = "rgba(" + body.glow + ",0.18)";
           ctx.lineWidth = 1;
           ctx.stroke();
@@ -1538,6 +1497,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
       window._app.resize = resize;
       window._app.clearAllTrails = clearAllTrails;
+      window._app.computeGuidePaths = computeGuidePaths;
       window._app.updateMETClock = updateMETClock;
       window._app.animate = animate;
       window._app.updateTimeDisplay = updateTimeDisplay;
@@ -1663,17 +1623,15 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           playing && state.warpLevel === "fastest",
         );
         nBtn.textContent =
-          playing && state.warpLevel === "normal"
-            ? "\u25ae\u25ae"
-            : T("warpNormal");
+          playing && state.warpLevel === "normal" ? "\u25ae\u25ae" : "\u25b6";
         fBtn.textContent =
           playing && state.warpLevel === "fast"
             ? "\u25ae\u25ae"
-            : T("warpFast");
+            : "\u25b6\u25b6";
         ffBtn.textContent =
           playing && state.warpLevel === "fastest"
             ? "\u25ae\u25ae"
-            : T("warpFastest");
+            : "\u25b6\u25b6\u25b6";
       }
       window._app.updateWarpBtns = updateWarpBtns;
       function setWarp(level) {
@@ -1712,6 +1670,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         window._app.clearAllTrails();
         for (const k of Object.keys(state.bodyVis)) state.bodyVis[k] = 1;
         window._app.resetLastTimestamp();
+        window._app.computeGuidePaths();
         updateViewToggle();
         syncInactiveVis();
         populateRefFrameSelect();
@@ -1816,6 +1775,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         .addEventListener("click", () => setWarp("fastest"));
       document.getElementById("resetBtn").addEventListener("click", resetSim);
       /* ── Init ── */
+      window._app.computeGuidePaths();
       window._app.resize();
       document.getElementById("langBtn").textContent =
         state.lang === "en" ? "PL" : "EN";
