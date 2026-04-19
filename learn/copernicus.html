@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `cr copernicus.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+-->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -54,6 +59,10 @@
           --venus-color: #f5deb3;
           --earth-color: #4db8ff;
           --mars-color: #e05030;
+          --jupiter-color: #c88b3a;
+          --saturn-color: #e8d191;
+          --uranus-color: #7ec8e3;
+          --neptune-color: #4b70dd;
         }
         body {
           min-height: 100vh;
@@ -195,6 +204,18 @@
         }
         .planet-dot-mars {
           background: var(--mars-color);
+        }
+        .planet-dot-jupiter {
+          background: var(--jupiter-color);
+        }
+        .planet-dot-saturn {
+          background: var(--saturn-color);
+        }
+        .planet-dot-uranus {
+          background: var(--uranus-color);
+        }
+        .planet-dot-neptune {
+          background: var(--neptune-color);
         }
         .planet-list {
           display: flex;
@@ -524,6 +545,18 @@
         </div>
         <div class="controls">
           <div class="ctrl-group">
+            <span class="ctrl-label" id="lblView">View</span>
+            <div class="type-toggle">
+              <button class="type-btn active" id="viewInnerBtn" type="button">
+                Inner Planets
+              </button>
+              <button class="type-btn" id="viewOuterBtn" type="button">
+                Outer Planets
+              </button>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
             <label class="ctrl-label" id="lblRefFrame" for="refFrameSelect"
               >Reference Frame</label
             >
@@ -581,6 +614,46 @@
                   id="visMars"
                   type="button"
                   aria-label="Toggle Mars visibility"
+                ></button>
+              </div>
+              <div class="planet-row" id="rowJupiter">
+                <span class="planet-dot planet-dot-jupiter"></span>
+                <span class="planet-name" id="nameJupiter">Jupiter</span>
+                <button
+                  class="vis-btn"
+                  id="visJupiter"
+                  type="button"
+                  aria-label="Toggle Jupiter visibility"
+                ></button>
+              </div>
+              <div class="planet-row" id="rowSaturn">
+                <span class="planet-dot planet-dot-saturn"></span>
+                <span class="planet-name" id="nameSaturn">Saturn</span>
+                <button
+                  class="vis-btn"
+                  id="visSaturn"
+                  type="button"
+                  aria-label="Toggle Saturn visibility"
+                ></button>
+              </div>
+              <div class="planet-row" id="rowUranus">
+                <span class="planet-dot planet-dot-uranus"></span>
+                <span class="planet-name" id="nameUranus">Uranus</span>
+                <button
+                  class="vis-btn"
+                  id="visUranus"
+                  type="button"
+                  aria-label="Toggle Uranus visibility"
+                ></button>
+              </div>
+              <div class="planet-row" id="rowNeptune">
+                <span class="planet-dot planet-dot-neptune"></span>
+                <span class="planet-name" id="nameNeptune">Neptune</span>
+                <button
+                  class="vis-btn"
+                  id="visNeptune"
+                  type="button"
+                  aria-label="Toggle Neptune visibility"
                 ></button>
               </div>
             </div>
@@ -796,6 +869,7 @@
         },
         {
           key: "mercury",
+          group: "inner",
           color: "#A0A0A0",
           glow: "160,160,160",
           radius: 4,
@@ -807,6 +881,7 @@
         },
         {
           key: "venus",
+          group: "inner",
           color: "#F5DEB3",
           glow: "245,222,179",
           radius: 5,
@@ -818,6 +893,7 @@
         },
         {
           key: "earth",
+          group: "inner",
           color: "#4db8ff",
           glow: "77,184,255",
           radius: 6,
@@ -829,6 +905,7 @@
         },
         {
           key: "mars",
+          group: "inner",
           color: "#E05030",
           glow: "224,80,48",
           radius: 5,
@@ -837,6 +914,54 @@
           T: 1.8809,
           pomega: 336.08,
           L0: 355.43,
+        },
+        {
+          key: "jupiter",
+          group: "outer",
+          color: "#c88b3a",
+          glow: "200,139,58",
+          radius: 9,
+          a: 5.2026,
+          e: 0.0489,
+          T: 11.862,
+          pomega: 14.73,
+          L0: 34.4,
+        },
+        {
+          key: "saturn",
+          group: "outer",
+          color: "#e8d191",
+          glow: "232,209,145",
+          radius: 8,
+          a: 9.5549,
+          e: 0.0565,
+          T: 29.457,
+          pomega: 92.43,
+          L0: 49.94,
+        },
+        {
+          key: "uranus",
+          group: "outer",
+          color: "#7ec8e3",
+          glow: "126,200,227",
+          radius: 7,
+          a: 19.2184,
+          e: 0.0464,
+          T: 84.011,
+          pomega: 170.96,
+          L0: 313.23,
+        },
+        {
+          key: "neptune",
+          group: "outer",
+          color: "#4b70dd",
+          glow: "75,112,221",
+          radius: 6,
+          a: 30.1104,
+          e: 0.0095,
+          T: 164.79,
+          pomega: 44.97,
+          L0: 304.88,
         },
       ];
       for (const b of BODIES) {
@@ -857,30 +982,62 @@
       const epochNow = currentEpochYears();
       const state = {
         lang: (navigator.language || "").startsWith("pl") ? "pl" : "en",
+        view: "inner",
         center: "sun",
-        bodyVis: { sun: 1, mercury: 1, venus: 1, earth: 1, mars: 1 },
+        bodyVis: {
+          sun: 1,
+          mercury: 1,
+          venus: 1,
+          earth: 1,
+          mars: 1,
+          jupiter: 0,
+          saturn: 0,
+          uranus: 0,
+          neptune: 0,
+        },
         warpLevel: "normal",
         warpLevels: { normal: 1, fast: 4, fastest: 10 },
         speed: 1,
         playing: false,
         simTime: epochNow,
         displayOffset: epochNow,
-        trailData: { sun: [], mercury: [], venus: [], earth: [], mars: [] },
+        trailData: {
+          sun: [],
+          mercury: [],
+          venus: [],
+          earth: [],
+          mars: [],
+          jupiter: [],
+          saturn: [],
+          uranus: [],
+          neptune: [],
+        },
         imcceOffset: null,
         imcceFetching: false,
         autoPlayAfterSync: true,
       };
+      function isActiveBody(body) {
+        if (body.key === "sun") return true;
+        return body.group === state.view;
+      }
       const I18N = {
         en: {
           title: "Copernican Reference Frame Simulator",
           subtitle:
             "Choose a reference body to compare simple heliocentric orbits with more complex relative paths.",
           refFrame: "Reference Frame",
+          viewLabel: "View",
+          viewInner: "Inner Planets",
+          viewOuter: "Outer Planets",
           sun: "Sun",
           mercury: "Mercury",
           venus: "Venus",
           earth: "Earth",
           mars: "Mars",
+          jupiter: "Jupiter",
+          saturn: "Saturn",
+          uranus: "Uranus",
+          neptune: "Neptune",
           planets: "Planets",
           all: "All",
           timeWarp: "Time Warp",
@@ -896,7 +1053,7 @@
           dsOnlineTitle: "IMCCE Paris Observatory",
           dsOnlineMeta: "Institut de m\u00e9canique c\u00e9leste",
           dsOnlineDesc:
-            "Initial positions synced from the observatory. Offsets are corrections applied to the local Astronomy Engine.",
+            "Initial positions synced from the observatory. Offsets (dx / dy) are corrections applied to the local Astronomy Engine.",
           dsOfflineTitle: "Offline Mode",
           dsOfflineMeta: "Astronomy Engine",
           dsOfflineDesc:
@@ -912,13 +1069,20 @@
           subtitle:
             "Wybierz cia\u0142o odniesienia i por\u00f3wnaj proste elipsy heliocentryczne z bardziej z\u0142o\u017conymi torami wzgl\u0119dnymi.",
           refFrame: "Uk\u0142ad odniesienia",
+          viewLabel: "Widok",
+          viewInner: "Wewn\u0119trzne",
+          viewOuter: "Zewn\u0119trzne",
           sun: "S\u0142o\u0144ce",
           mercury: "Merkury",
           venus: "Wenus",
           earth: "Ziemia",
           mars: "Mars",
+          jupiter: "Jowisz",
+          saturn: "Saturn",
+          uranus: "Uran",
+          neptune: "Neptun",
           planets: "Planety",
-          all: "Wsz.",
+          all: "Wszystkie",
           timeWarp: "Przyspieszenie",
           warpNormal: "\u25b6",
           warpFast: "\u25b6\u25b6",
@@ -932,7 +1096,7 @@
           dsOnlineTitle: "IMCCE Obserwatorium Paryskie",
           dsOnlineMeta: "Institut de m\u00e9canique c\u00e9leste",
           dsOnlineDesc:
-            "Pozycje pocz\u0105tkowe zsynchronizowane z obserwatorium. Offsety to korekty na\u0142o\u017cone na lokalny silnik Astronomy Engine.",
+            "Pozycje pocz\u0105tkowe zsynchronizowane z obserwatorium. Offsety (dx / dy) to korekty na\u0142o\u017cone na lokalny silnik Astronomy Engine.",
           dsOfflineTitle: "Tryb offline",
           dsOfflineMeta: "Astronomy Engine",
           dsOfflineDesc:
@@ -952,6 +1116,10 @@
         venus: "Venus",
         earth: "Earth",
         mars: "Mars",
+        jupiter: "Jupiter",
+        saturn: "Saturn",
+        uranus: "Uranus",
+        neptune: "Neptune",
       };
       const EQJ_TO_ECL = window.Astronomy.Rotation_EQJ_ECL();
       function astroPosition(bodyKey, t) {
@@ -1004,7 +1172,16 @@
       }
       const IMCCE_URL =
         "https://ssp.imcce.fr/webservices/miriade/api/ephemcc.php";
-      const IMCCE_PLANETS = ["Mercury", "Venus", "Earth", "Mars"];
+      const IMCCE_PLANETS = [
+        "Mercury",
+        "Venus",
+        "Earth",
+        "Mars",
+        "Jupiter",
+        "Saturn",
+        "Uranus",
+        "Neptune",
+      ];
       function fetchIMCCEPositions() {
         state.imcceFetching = true;
         const t = state.simTime;
@@ -1042,8 +1219,7 @@
                 offsets[key] = { x: imcce.x - astro.x, y: imcce.y - astro.y };
               }
             }
-            if (Object.keys(offsets).length === IMCCE_PLANETS.length)
-              state.imcceOffset = offsets;
+            if (Object.keys(offsets).length > 0) state.imcceOffset = offsets;
             state.imcceFetching = false;
             afterFetch();
           })
@@ -1062,6 +1238,7 @@
         state,
         I18N,
         T,
+        isActiveBody,
         currentEpochYears,
         displayPosition,
         formatMET,
@@ -1077,6 +1254,7 @@
         bodyByKey,
         state,
         T,
+        isActiveBody,
         displayPosition,
         formatMET,
         formatOffsetKm,
@@ -1085,11 +1263,12 @@
       const TRAIL_SAMPLE_INTERVAL = 0.0005;
       const MAX_TRAIL_POINTS = 10000;
       const MAX_DT = 0.05;
+      const VIEW_SPEED = { inner: 1, outer: 11.862 };
       function getAuMargin() {
         const center = bodyByKey[state.center];
         let maxDist = 0;
         for (const b of BODIES) {
-          if (b.key === state.center) continue;
+          if (b.key === state.center || !isActiveBody(b)) continue;
           const dist = b.a * (1 + b.e) + center.a * (1 + center.e);
           if (dist > maxDist) maxDist = dist;
         }
@@ -1134,7 +1313,11 @@
       function recordTrailPoints() {
         const centerBody = bodyByKey[state.center];
         for (const body of BODIES) {
-          if (body.key === state.center || state.bodyVis[body.key] !== 2)
+          if (
+            body.key === state.center ||
+            !isActiveBody(body) ||
+            state.bodyVis[body.key] !== 2
+          )
             continue;
           const pos = displayPosition(body, centerBody, state.simTime);
           const arr = state.trailData[body.key];
@@ -1159,7 +1342,12 @@
       function drawOrbitalGuides() {
         if (state.center !== "sun") return;
         for (const body of BODIES) {
-          if (body.key === "sun" || state.bodyVis[body.key] === 0) continue;
+          if (
+            body.key === "sun" ||
+            !isActiveBody(body) ||
+            state.bodyVis[body.key] === 0
+          )
+            continue;
           const cc = toCanvas(
             -body.a * body.e * body.cosPom,
             -body.a * body.e * body.sinPom,
@@ -1181,7 +1369,11 @@
       }
       function drawTrails() {
         for (const body of BODIES) {
-          if (body.key === state.center || state.bodyVis[body.key] !== 2)
+          if (
+            body.key === state.center ||
+            !isActiveBody(body) ||
+            state.bodyVis[body.key] !== 2
+          )
             continue;
           const trail = state.trailData[body.key];
           if (trail.length < 2) continue;
@@ -1209,6 +1401,7 @@
       function drawPlanets() {
         const centerBody = bodyByKey[state.center];
         for (const body of BODIES) {
+          if (!isActiveBody(body)) continue;
           if (state.bodyVis[body.key] === 0 && body.key !== state.center)
             continue;
           const pos = displayPosition(body, centerBody, state.simTime);
@@ -1287,29 +1480,19 @@
         const statsEl = document.getElementById("dsStats");
         while (statsEl.firstChild) statsEl.removeChild(statsEl.firstChild);
         if (online && state.imcceOffset) {
-          for (const k of ["mercury", "venus", "earth", "mars"]) {
+          for (const k of Object.keys(state.imcceOffset)) {
             const o = state.imcceOffset[k];
             if (!o) continue;
-            const row1 = document.createElement("div");
-            row1.className = "ds-stat";
-            const lbl1 = document.createElement("span");
-            lbl1.className = "ds-stat-label";
-            lbl1.textContent = T(k);
-            const val1 = document.createElement("span");
-            val1.textContent = "dx " + formatOffsetKm(o.x);
-            row1.appendChild(lbl1);
-            row1.appendChild(val1);
-            statsEl.appendChild(row1);
-            const row2 = document.createElement("div");
-            row2.className = "ds-stat";
-            const lbl2 = document.createElement("span");
-            lbl2.className = "ds-stat-label";
-            lbl2.textContent = "";
-            const val2 = document.createElement("span");
-            val2.textContent = "dy " + formatOffsetKm(o.y);
-            row2.appendChild(lbl2);
-            row2.appendChild(val2);
-            statsEl.appendChild(row2);
+            const row = document.createElement("div");
+            row.className = "ds-stat";
+            const lbl = document.createElement("span");
+            lbl.className = "ds-stat-label";
+            lbl.textContent = T(k);
+            const val = document.createElement("span");
+            val.textContent = formatOffsetKm(o.x) + " / " + formatOffsetKm(o.y);
+            row.appendChild(lbl);
+            row.appendChild(val);
+            statsEl.appendChild(row);
           }
         }
       }
@@ -1331,18 +1514,17 @@
         const dtReal = Math.min((timestamp - lastTimestamp) / 1000, MAX_DT);
         lastTimestamp = timestamp;
         if (state.playing) {
-          const dtSim = dtReal * state.speed * SIM_RATE;
+          const dtSim =
+            dtReal * state.speed * SIM_RATE * VIEW_SPEED[state.view];
           if (anyTrailEnabled()) {
+            const interval = TRAIL_SAMPLE_INTERVAL * VIEW_SPEED[state.view];
             let remaining = dtSim;
             while (remaining > 1e-15) {
-              const step = Math.min(
-                remaining,
-                TRAIL_SAMPLE_INTERVAL - trailTimeAccum,
-              );
+              const step = Math.min(remaining, interval - trailTimeAccum);
               state.simTime += step;
               remaining -= step;
               trailTimeAccum += step;
-              if (trailTimeAccum >= TRAIL_SAMPLE_INTERVAL - 1e-15) {
+              if (trailTimeAccum >= interval - 1e-15) {
                 trailTimeAccum = 0;
                 recordTrailPoints();
               }
@@ -1366,7 +1548,8 @@
     </script>
     <script type="module">
       /* ── Block 3: Controls, events, localization, init ── */
-      const { BODIES, state, T, I18N, currentEpochYears } = window._app;
+      const { BODIES, state, T, I18N, isActiveBody, currentEpochYears } =
+        window._app;
       const tplEye = document.getElementById("tplEye");
       const tplEyeOff = document.getElementById("tplEyeOff");
       function capitalize(s) {
@@ -1377,6 +1560,7 @@
         const cur = sel.value || state.center;
         while (sel.firstChild) sel.removeChild(sel.firstChild);
         for (const b of BODIES) {
+          if (!isActiveBody(b)) continue;
           const opt = document.createElement("option");
           opt.value = b.key;
           opt.textContent = T(b.key);
@@ -1415,7 +1599,7 @@
           let allSame = true;
           let fst = -1;
           for (const body of BODIES) {
-            if (body.key === state.center) continue;
+            if (body.key === state.center || !isActiveBody(body)) continue;
             const vv = state.bodyVis[body.key];
             if (fst === -1) fst = vv;
             else if (vv !== fst) allSame = false;
@@ -1433,6 +1617,8 @@
         }
       }
       function cycleVis(key) {
+        const body = window._app.bodyByKey[key];
+        if (body && !isActiveBody(body)) return;
         const cur = state.bodyVis[key];
         if (key === state.center) {
           state.bodyVis[key] = cur === 2 ? 1 : 2;
@@ -1447,7 +1633,7 @@
         let allSame = true;
         let firstState = -1;
         for (const body of BODIES) {
-          if (body.key === state.center) continue;
+          if (body.key === state.center || !isActiveBody(body)) continue;
           const v = state.bodyVis[body.key];
           if (firstState === -1) firstState = v;
           else if (v !== firstState) allSame = false;
@@ -1455,7 +1641,7 @@
         }
         const target = allSame ? (maxState + 1) % 3 : maxState;
         for (const body of BODIES) {
-          if (body.key === state.center) continue;
+          if (body.key === state.center || !isActiveBody(body)) continue;
           if (target === 2 || (state.bodyVis[body.key] === 2 && target !== 2))
             state.trailData[body.key] = [];
           state.bodyVis[body.key] = target;
@@ -1508,6 +1694,7 @@
         state.center = bodyKey;
         window._app.clearAllTrails();
         for (const k of Object.keys(state.bodyVis)) state.bodyVis[k] = 1;
+        syncInactiveVis();
         document.getElementById("refFrameSelect").value = bodyKey;
         window._app.resize();
         updateVisUI();
@@ -1521,13 +1708,51 @@
         state.warpLevel = "normal";
         state.speed = state.warpLevels.normal;
         state.playing = false;
+        state.center = "sun";
         window._app.clearAllTrails();
         for (const k of Object.keys(state.bodyVis)) state.bodyVis[k] = 1;
         window._app.resetLastTimestamp();
+        updateViewToggle();
+        syncInactiveVis();
+        populateRefFrameSelect();
         updateWarpBtns();
         updateVisUI();
+        window._app.resize();
         window._app.updateMETClock();
         window._app.fetchIMCCEPositions();
+      }
+      function updateViewToggle() {
+        document
+          .getElementById("viewInnerBtn")
+          .classList.toggle("active", state.view === "inner");
+        document
+          .getElementById("viewOuterBtn")
+          .classList.toggle("active", state.view === "outer");
+      }
+      function syncInactiveVis() {
+        for (const b of BODIES) {
+          if (b.key === "sun") continue;
+          if (!isActiveBody(b)) state.bodyVis[b.key] = 0;
+        }
+      }
+      function setView(view) {
+        if (view === state.view) return;
+        state.view = view;
+        state.center = "sun";
+        window._app.clearAllTrails();
+        for (const b of BODIES) {
+          if (b.key === "sun") {
+            state.bodyVis.sun = 1;
+            continue;
+          }
+          state.bodyVis[b.key] = isActiveBody(b) ? 1 : 0;
+        }
+        updateViewToggle();
+        syncInactiveVis();
+        populateRefFrameSelect();
+        document.getElementById("refFrameSelect").value = "sun";
+        window._app.resize();
+        updateVisUI();
       }
       function applyTranslations() {
         const l = I18N[state.lang];
@@ -1535,6 +1760,9 @@
         document.documentElement.lang = state.lang;
         document.getElementById("titleText").textContent = l.title;
         document.getElementById("subtitleText").textContent = l.subtitle;
+        document.getElementById("lblView").textContent = l.viewLabel;
+        document.getElementById("viewInnerBtn").textContent = l.viewInner;
+        document.getElementById("viewOuterBtn").textContent = l.viewOuter;
         document.getElementById("lblRefFrame").textContent = l.refFrame;
         populateRefFrameSelect();
         document.getElementById("lblPlanets").textContent = l.planets;
@@ -1554,6 +1782,12 @@
         window._app.updateMETClock();
         window._app.updateDataSource();
       }
+      document
+        .getElementById("viewInnerBtn")
+        .addEventListener("click", () => setView("inner"));
+      document
+        .getElementById("viewOuterBtn")
+        .addEventListener("click", () => setView("outer"));
       document
         .getElementById("refFrameSelect")
         .addEventListener("change", (e) => setCenter(e.target.value));
@@ -1585,6 +1819,8 @@
       window._app.resize();
       document.getElementById("langBtn").textContent =
         state.lang === "en" ? "PL" : "EN";
+      updateViewToggle();
+      syncInactiveVis();
       applyTranslations();
       updateWarpBtns();
       updateVisUI();
