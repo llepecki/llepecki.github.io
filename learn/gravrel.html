@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `cr gravrel.html`.
+After making changes, and again before considering the job finished, run `npm run cr -- gravrel.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Black Hole Reunion Mission: two captains, one star lab, one black-hole lab — who is younger when they reunite on Earth?">
 <meta name="author" content="Łukasz Łepecki">
 <link rel="canonical" href="https://lepecki.com/learn/gravrel.html">
@@ -147,8 +147,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
     50%      { box-shadow: inset 0 0 16px rgba(255,23,68,0.6); }
   }
   .speed-bar-track.extreme .speed-bar-fill { animation: speedGlow 1.2s ease-in-out infinite; }
-  .cruise-fill { background: linear-gradient(to right, hsl(210,80%,28%), hsl(210,90%,52%)) !important; }
-  .sci-fill    { background: linear-gradient(to right, hsl(160,70%,24%), hsl(160,85%,44%)) !important; }
+  .speed-bar .cruise-fill { background: linear-gradient(to right, hsl(210,80%,28%), hsl(210,90%,52%)); }
+  .speed-bar .sci-fill    { background: linear-gradient(to right, hsl(160,70%,24%), hsl(160,85%,44%)); }
 
   .type-toggle { display: flex; gap: 6px; }
   .type-btn {
@@ -288,6 +288,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
   .age-input:focus { border-color: var(--accent); }
   .age-input::placeholder { color: var(--text-dim); }
 
+  .header-icon { font-size: 18px; line-height: 1; }
+  .ship-dot-a { background: var(--ship-a); }
+  .ship-dot-b { background: var(--ship-b); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   @media (max-width: 700px) {
     .main { flex-direction: column; height: auto; min-height: 100vh; }
     .canvas-wrap { min-height: 350px; flex: none; height: 50vh; }
@@ -303,28 +314,28 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
 <header>
   <div class="header-text">
-    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Black Hole Reunion Mission</span></h1>
+    <h1><a href="/learn/"><span class="header-icon">&#x1F680;</span></a> <span id="titleText">Black Hole Reunion Mission</span></h1>
     <p id="subtitleText">Two captains leave Earth together. One does research near a black hole and the other around a star. Who is younger when they reunite?</p>
   </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
+  <button class="lang-btn" id="langBtn" type="button" title="Switch language">PL</button>
 </header>
 
-<div class="main">
+<main class="main">
   <div class="canvas-wrap">
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" aria-label="Black Hole Reunion Mission animation"></canvas>
     <div id="factsOverlay" class="star-facts"></div>
     <div class="name-panel" id="namePanel">
       <div class="name-row">
-        <span class="ship-dot" style="background:var(--ship-a)"></span>
-        <input id="captainA" class="name-input" placeholder="Captain A" maxlength="14">
-        <input id="shipNameA" class="name-input" placeholder="Ship A" maxlength="14">
-        <input id="ageA" class="age-input" type="number" min="1" max="99" value="30" placeholder="30">
+        <span class="ship-dot ship-dot-a"></span>
+        <input id="captainA" class="name-input" aria-label="Captain A name" placeholder="Captain A" maxlength="14">
+        <input id="shipNameA" class="name-input" aria-label="Ship A name" placeholder="Ship A" maxlength="14">
+        <input id="ageA" class="age-input" aria-label="Captain A age" type="number" min="1" max="99" value="30" placeholder="30">
       </div>
       <div class="name-row">
-        <span class="ship-dot" style="background:var(--ship-b)"></span>
-        <input id="captainB" class="name-input" placeholder="Captain B" maxlength="14">
-        <input id="shipNameB" class="name-input" placeholder="Ship B" maxlength="14">
-        <input id="ageB" class="age-input" type="number" min="1" max="99" value="30" placeholder="30">
+        <span class="ship-dot ship-dot-b"></span>
+        <input id="captainB" class="name-input" aria-label="Captain B name" placeholder="Captain B" maxlength="14">
+        <input id="shipNameB" class="name-input" aria-label="Ship B name" placeholder="Ship B" maxlength="14">
+        <input id="ageB" class="age-input" aria-label="Captain B age" type="number" min="1" max="99" value="30" placeholder="30">
       </div>
     </div>
   </div>
@@ -332,24 +343,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblReferenceStar">Reference Star</span>
-      <select class="star-select" id="starSelect" onchange="handleStarChange()"></select>
+      <select class="star-select" id="starSelect" aria-label="Reference star"></select>
     </div>
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblBlackHole">Black Hole</span>
-      <select class="star-select" id="bhSelect" onchange="handleBhChange()"></select>
+      <select class="star-select" id="bhSelect" aria-label="Black hole"></select>
       <div class="bh-fact" id="bhFactText">&nbsp;</div>
     </div>
 
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblCruiseSpeed">Cruise Speed</span>
       <div class="speed-bar" id="speedBar">
-        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
+        <button class="speed-bar-btn speed-bar-minus" type="button" aria-label="Decrease speed">&minus;</button>
         <div class="speed-bar-track">
           <div class="speed-bar-fill" id="speedFill"></div>
           <span class="speed-bar-val" id="speedVal">0.55c</span>
         </div>
-        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
+        <button class="speed-bar-btn speed-bar-plus" type="button" aria-label="Increase speed">+</button>
         <input type="hidden" id="speedSlider" value="376">
       </div>
     </div>
@@ -357,12 +368,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblCruiseTime">Cruise Time</span>
       <div class="speed-bar" id="cruiseBar">
-        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
+        <button class="speed-bar-btn speed-bar-minus" type="button" aria-label="Decrease cruise time">&minus;</button>
         <div class="speed-bar-track">
           <div class="speed-bar-fill cruise-fill"></div>
           <span class="speed-bar-val" id="cruiseVal">5.0 yr</span>
         </div>
-        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
+        <button class="speed-bar-btn speed-bar-plus" type="button" aria-label="Increase cruise time">+</button>
         <input type="hidden" id="cruiseHidden" value="211">
       </div>
     </div>
@@ -370,8 +381,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblTimingMode">Timing Mode</span>
       <div class="type-toggle">
-        <button class="type-btn active" id="modeEarthBtn" onclick="setTimingMode('earth')">Earth</button>
-        <button class="type-btn" id="modeLocalBtn" onclick="setTimingMode('local')">Local</button>
+        <button class="type-btn active" id="modeEarthBtn" type="button">Earth</button>
+        <button class="type-btn" id="modeLocalBtn" type="button">Local</button>
       </div>
       <div class="note-text" id="timingNote">&nbsp;</div>
     </div>
@@ -379,12 +390,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblScienceTime">Science Time (Earth)</span>
       <div class="speed-bar" id="sciBar">
-        <button class="speed-bar-btn speed-bar-minus" type="button">&minus;</button>
+        <button class="speed-bar-btn speed-bar-minus" type="button" aria-label="Decrease science time">&minus;</button>
         <div class="speed-bar-track">
           <div class="speed-bar-fill sci-fill"></div>
           <span class="speed-bar-val" id="sciVal">5.0 yr</span>
         </div>
-        <button class="speed-bar-btn speed-bar-plus" type="button">+</button>
+        <button class="speed-bar-btn speed-bar-plus" type="button" aria-label="Increase science time">+</button>
         <input type="hidden" id="sciHidden" value="211">
       </div>
     </div>
@@ -392,10 +403,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
     <div class="ctrl-group">
       <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
       <div class="type-toggle">
-        <button class="type-btn" id="warpNormalBtn" onclick="setWarp('normal')">&#x25b6;</button>
-        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">&#x25b6;&#x25b6;</button>
-        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">&#x25b6;&#x25b6;&#x25b6;</button>
-        <button class="type-btn" id="resetBtn" onclick="handleReset()">&#x25a0;</button>
+        <button class="type-btn" id="warpNormalBtn" type="button" aria-label="Normal speed">&#x25b6;</button>
+        <button class="type-btn" id="warpFastBtn" type="button" aria-label="Fast speed">&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="warpFastestBtn" type="button" aria-label="Fastest speed">&#x25b6;&#x25b6;&#x25b6;</button>
+        <button class="type-btn" id="resetBtn" type="button" aria-label="Reset">&#x25a0;</button>
       </div>
     </div>
 
@@ -425,36 +436,37 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
     </div>
 
   </div>
-</div>
+</main>
 
 <script>
+"use strict";
 // ====================== CONSTANTS ======================
 
-var EPS_BETA    = 1e-10;
+const EPS_BETA    = 1e-10;
 // Full β range (matches timerel.html). β drives SR only. The earth-mode
 // age difference at reunion is Tsci·(1−g) — β-independent — so β affects
 // each captain's total proper time but not the gravity-driven age gap
 // between them. Gravity still owns the headline.
-var BETA_MIN    = 0.10;
-var BETA_MAX    = 0.9999;
-var EARTH_RADIUS = 14;
-var STAR_RADIUS  = 8;
-var BH_RADIUS    = 18;
-var NUM_BG_STARS = 200;
-var WALL_SECONDS = 10.0;
+const BETA_MIN    = 0.10;
+const BETA_MAX    = 0.9999;
+const EARTH_RADIUS = 14;
+const STAR_RADIUS  = 8;
+const BH_RADIUS    = 18;
+const NUM_BG_STARS = 200;
+const WALL_SECONDS = 10.0;
 // Wall-clock budget split between mission phases. Research gets twice the
 // transfer share so the science window is always at least 2x longer than
 // the combined cruise+wait time, regardless of how astronomical the real
 // mission-time ratio is. Together they must sum to 1.
-var WALL_RESEARCH_SHARE = 1 / 2;
-var WALL_TRANSFER_SHARE = 1 / 2;
-var WARP_LEVELS  = { normal: 0.5, fast: 1, fastest: 2 };
+const WALL_RESEARCH_SHARE = 1 / 2;
+const WALL_TRANSFER_SHARE = 1 / 2;
+const WARP_LEVELS  = { normal: 0.5, fast: 1, fastest: 2 };
 
-var SUP = ['\u2070','\u00B9','\u00B2','\u00B3','\u2074','\u2075','\u2076','\u2077','\u2078','\u2079'];
+const SUP = ['\u2070','\u00B9','\u00B2','\u00B3','\u2074','\u2075','\u2076','\u2077','\u2078','\u2079'];
 
 // ====================== STAR DATA ======================
 
-var STARS = [
+const STARS = [
   { nameEn: 'Proxima Centauri', namePl: 'Proxima Centauri', dist: 4.24,
     color: '#ff9988', glowRgb: '255,153,136', radius: 5,
     facts: {
@@ -552,7 +564,7 @@ var STARS = [
 //  cruise time — cruise is set directly by the Cruise Time
 //  slider (yr).
 // ============================================================
-var BH_CATALOG = [
+const BH_CATALOG = [
   {
     nameEn: 'V616 Monocerotis', shortEn: 'V616 Mon',
     namePl: 'V616 Monocerotis', shortPl: 'V616 Mon',
@@ -666,27 +678,27 @@ var BH_CATALOG = [
     }
   },
 ];
-var BH_DEFAULT_INDEX = 4;   // Sgr A*
-var BH_U_MAX = 10.0;
+const BH_DEFAULT_INDEX = 4;   // Sgr A*
+const BH_U_MAX = 10.0;
 
 function bhUMin(idx)      { return BH_CATALOG[idx].uMin; }
-function bhShortName(idx) { var e = BH_CATALOG[idx]; return state.lang === 'en' ? e.shortEn : e.shortPl; }
-function bhFullName(idx)  { var e = BH_CATALOG[idx]; return state.lang === 'en' ? e.nameEn  : e.namePl;  }
-function bhFact(idx)      { var e = BH_CATALOG[idx]; return state.lang === 'en' ? e.factEn  : e.factPl;  }
+function bhShortName(idx) { const e = BH_CATALOG[idx]; return state.lang === 'en' ? e.shortEn : e.shortPl; }
+function bhFullName(idx)  { const e = BH_CATALOG[idx]; return state.lang === 'en' ? e.nameEn  : e.namePl;  }
+function _bhFact(idx)     { const e = BH_CATALOG[idx]; return state.lang === 'en' ? e.factEn  : e.factPl;  }
 
 function toSuperscript(n) {
-  var s = Math.abs(n).toString();
-  var out = '';
-  for (var i = 0; i < s.length; i++) out += SUP[parseInt(s[i])];
+  const s = Math.abs(n).toString();
+  let out = '';
+  for (let i = 0; i < s.length; i++) out += SUP[parseInt(s[i])];
   return n < 0 ? '\u207B' + out : out;
 }
 
 function bhMassDisplay(idx) {
-  var logM = BH_CATALOG[idx].logMass;
-  var exp = Math.floor(logM);
-  var mantissa = Math.pow(10, logM - exp);
-  var mantStr = mantissa < 10 ? mantissa.toFixed(1) : Math.round(mantissa).toString();
-  var sup = toSuperscript(exp);
+  const logM = BH_CATALOG[idx].logMass;
+  const exp = Math.floor(logM);
+  const mantissa = Math.pow(10, logM - exp);
+  const mantStr = mantissa < 10 ? mantissa.toFixed(1) : Math.round(mantissa).toString();
+  const sup = toSuperscript(exp);
   if (mantStr === '1.0' || mantStr === '1') return '10' + sup + ' M\u2609';
   return mantStr + '\u00D7' + '10' + sup + ' M\u2609';
 }
@@ -706,17 +718,17 @@ function formatDistanceLy(n) {
 // while still exposing sub-year granularity when the difference is small.
 function pluralUnit(n, oneKey, fewKey, manyKey) {
   if (n === 1) return T(oneKey);
-  var mod10 = n % 10, mod100 = n % 100;
+  const mod10 = n % 10, mod100 = n % 100;
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return T(fewKey);
   return T(manyKey);
 }
 
 function formatYearsMonths(years) {
-  var totalMonths = Math.round(Math.abs(years) * 12);
-  var y = Math.floor(totalMonths / 12);
-  var m = totalMonths % 12;
-  var yrWord = pluralUnit(y, 'lblYearOne', 'lblYearFew', 'lblYearMany');
-  var moWord = pluralUnit(m, 'lblMonthOne', 'lblMonthFew', 'lblMonthMany');
+  const totalMonths = Math.round(Math.abs(years) * 12);
+  const y = Math.floor(totalMonths / 12);
+  const m = totalMonths % 12;
+  const yrWord = pluralUnit(y, 'lblYearOne', 'lblYearFew', 'lblYearMany');
+  const moWord = pluralUnit(m, 'lblMonthOne', 'lblMonthFew', 'lblMonthMany');
   if (y === 0) return m + ' ' + moWord;
   if (m === 0) return y + ' ' + yrWord;
   return y + ' ' + yrWord + ' ' + m + ' ' + moWord;
@@ -724,7 +736,7 @@ function formatYearsMonths(years) {
 
 // ====================== I18N ======================
 
-var I18N = {
+const I18N = {
   en: {
     title: 'Black Hole Reunion Mission',
     subtitle: 'Two captains leave Earth together. One does research near a black hole and the other around a star. Who is younger when they reunite?',
@@ -765,7 +777,6 @@ var I18N = {
     lblShipA: 'Ship A', lblShipB: 'Ship B',
     phCaptainA: 'Captain A', phCaptainB: 'Captain B',
     phShipA: 'Ship A', phShipB: 'Ship B',
-    lblPilot: 'Pilot',
     lblEarth: 'Earth',
     lblStarLab: 'Star Lab',
     lblBhLab: 'Black-Hole Lab',
@@ -844,7 +855,6 @@ var I18N = {
     lblShipA: 'Statek A', lblShipB: 'Statek B',
     phCaptainA: 'Kapitan A', phCaptainB: 'Kapitan B',
     phShipA: 'Statek A', phShipB: 'Statek B',
-    lblPilot: 'Pilot',
     lblEarth: 'Ziemia',
     lblStarLab: 'Laboratorium Gwiezdne',
     lblBhLab: 'Laboratorium Czarnodziurowe',
@@ -887,7 +897,7 @@ var I18N = {
 
 // ====================== STATE ======================
 
-var state = {
+const state = {
   lang: navigator.language && navigator.language.startsWith('pl') ? 'pl' : 'en',
   phase: 'idle',           // 'idle' | 'running' | 'paused' | 'complete'
   missionPhase: 'pre',     // 'pre' | 'outbound' | 'science' | 'return' | 'waiting' | 'reunion'
@@ -923,13 +933,17 @@ var state = {
   ringHover: false,
 
   summaryShown: false,
+  hoveredShip: '',   // '' | 'A' | 'B' — set by pointermove, read by drawScene
 };
 
 // ====================== UTILITY ======================
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function T(key) { return I18N[state.lang][key] || key; }
-function fmt(v) { return v.toFixed(2); }
+function _fmt(v) { return v.toFixed(2); }
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 // Smoothstep ease-in-out (Perlin's cubic Hermite). Zero derivative at 0 and 1,
 // peak rate at 0.5. Applied to ship-position progress fractions so every phase
@@ -946,36 +960,36 @@ function lerp(a, b, f) { return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y)
 function heading(from, to) { return Math.atan2(to.y - from.y, to.x - from.x); }
 
 function getCaptainName(which) {
-  var el = document.getElementById('captain' + which);
-  var v = el ? el.value.trim() : '';
+  const el = document.getElementById('captain' + which);
+  const v = el ? el.value.trim() : '';
   return v || T('phCaptain' + which);
 }
 function getShipName(which) {
-  var el = document.getElementById('shipName' + which);
-  var v = el ? el.value.trim() : '';
+  const el = document.getElementById('shipName' + which);
+  const v = el ? el.value.trim() : '';
   return v || T('lblShip' + which);
 }
 function getStartAge(which) {
-  var v = parseInt(document.getElementById('age' + which).value);
+  const v = parseInt(document.getElementById('age' + which).value);
   return (v >= 1 && v <= 99) ? v : 30;
 }
 
 // ====================== CANVAS SETUP ======================
 
-var canvas = document.getElementById('canvas');
-var ctx = canvas.getContext('2d');
-var W = 0, H = 0;
-var bgStars = [];
-var lastTime = 0;
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+let bgStars = [];
+let lastTime = 0;
 // Mission-years per wall-second, separately for the research window and
 // everything else (outbound, return, wait). Set when a mission starts.
-var scaleResearch = 1;
-var scaleTransfer = 1;
-var summaryTimeoutId = null;
+let scaleResearch = 1;
+let scaleTransfer = 1;
+let summaryTimeoutId = null;
 
 function resize() {
-  var rect = canvas.parentElement.getBoundingClientRect();
-  var dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
   W = rect.width;
   H = rect.height;
   canvas.width = W * dpr;
@@ -1002,7 +1016,7 @@ function resize() {
 // Star-lab dashed ring radius: large enough for the ship (glow ~18 px) to
 // visibly orbit without overlapping the star body.
 function starLabRingR(star) {
-  var r = (star && star.radius) || STAR_RADIUS;
+  const r = (star && star.radius) || STAR_RADIUS;
   return Math.max(r + 24, 34);
 }
 
@@ -1011,13 +1025,13 @@ function starLabRingR(star) {
 // travel E → T1 (outbound), arc CCW the long way from T1 around the far side
 // to T2 (science), then T2 → E (return).
 function computeTangentArc(E, C, R) {
-  var dx = C.x - E.x, dy = C.y - E.y;
-  var D = Math.sqrt(dx * dx + dy * dy) || 1;
+  const dx = C.x - E.x, dy = C.y - E.y;
+  const D = Math.sqrt(dx * dx + dy * dy) || 1;
   if (R >= D - 2) R = Math.max(1, D - 2);
-  var a = Math.acos(clamp(R / D, -1, 1));
-  var thetaCE = Math.atan2(-dy, -dx);           // direction from C toward E
-  var angEntry = thetaCE + a;
-  var angExit  = thetaCE - a;
+  const a = Math.acos(clamp(R / D, -1, 1));
+  const thetaCE = Math.atan2(-dy, -dx);           // direction from C toward E
+  const angEntry = thetaCE + a;
+  const angExit  = thetaCE - a;
   return {
     E: { x: E.x, y: E.y }, C: { x: C.x, y: C.y }, R: R,
     T1: { x: C.x + R * Math.cos(angEntry), y: C.y + R * Math.sin(angEntry) },
@@ -1031,27 +1045,27 @@ function computeTangentArc(E, C, R) {
 // changes Earth/target positions or the ring radii: resize, star/BH change,
 // u change.
 function computeShipTrajectories() {
-  var star = STARS[state.starIndex];
-  var rStarRing = starLabRingR(star);
-  var rBhRing   = stationRadius(state.uBh);
+  const star = STARS[state.starIndex];
+  const rStarRing = starLabRingR(star);
+  const rBhRing   = stationRadius(state.uBh);
   state.shipA.trajectory = computeTangentArc(state.earthPos, state.starLabPos, rStarRing);
   state.shipB.trajectory = computeTangentArc(state.earthPos, state.bhLabPos,   rBhRing);
 }
 
 // Position and heading on the science-phase arc at parameter fSci ∈ [0,1].
 function arcPosAt(traj, fSci) {
-  var ang = traj.angEntry + traj.arcSweep * fSci;
+  const ang = traj.angEntry + traj.arcSweep * fSci;
   return { x: traj.C.x + traj.R * Math.cos(ang), y: traj.C.y + traj.R * Math.sin(ang) };
 }
 function arcHeadAt(traj, fSci) {
-  var ang = traj.angEntry + traj.arcSweep * fSci;
+  const ang = traj.angEntry + traj.arcSweep * fSci;
   // CCW motion velocity = R*(-sin ang, cos ang); heading = atan2(vy, vx).
   return Math.atan2(Math.cos(ang), -Math.sin(ang));
 }
 
 function initBgStars(n) {
   bgStars = [];
-  for (var i = 0; i < n; i++) {
+  for (let i = 0; i < n; i++) {
     bgStars.push({
       x: Math.random(), y: Math.random(),
       r: Math.random() * 1.2 + 0.3,
@@ -1063,15 +1077,15 @@ function initBgStars(n) {
 // ====================== TIMELINE ======================
 
 function buildTimeline() {
-  var b = clamp(state.betaCruise, BETA_MIN, BETA_MAX);
-  var u = Math.max(state.uBh, 1.01);
+  const b = clamp(state.betaCruise, BETA_MIN, BETA_MAX);
+  const u = Math.max(state.uBh, 1.01);
 
-  var gamma     = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - b * b));
-  var tCruise   = state.cruiseTime;            // Earth-frame yr, UI-driven
-  var tauCruise = tCruise / gamma;
-  var gBh       = Math.sqrt(Math.max(0, 1 - 1 / u));
+  const gamma     = 1 / Math.sqrt(Math.max(EPS_BETA, 1 - b * b));
+  const tCruise   = state.cruiseTime;            // Earth-frame yr, UI-driven
+  const tauCruise = tCruise / gamma;
+  const gBh       = Math.sqrt(Math.max(0, 1 - 1 / u));
 
-  var tl = {
+  const tl = {
     gamma: gamma, gBh: gBh,
     tCruise: tCruise, tauCruise: tauCruise,
     outboundEnd: tCruise,
@@ -1082,7 +1096,7 @@ function buildTimeline() {
   };
 
   if (state.scienceTimingMode === 'earth') {
-    var Tsci = state.scienceDurationEarth;
+    const Tsci = state.scienceDurationEarth;
     tl.scienceEnd  = tCruise + Tsci;
     tl.returnEnd   = 2 * tCruise + Tsci;
     tl.earthTotal  = tl.returnEnd;
@@ -1090,9 +1104,9 @@ function buildTimeline() {
     tl.bTotal      = 2 * tauCruise + Tsci * gBh;
     tl.ageDiff     = tl.aTotal - tl.bTotal;
   } else {
-    var Tloc  = state.scienceDurationLocal;
-    var tAsci = Tloc;
-    var tBsci = gBh > 0 ? Tloc / gBh : Tloc;
+    const Tloc  = state.scienceDurationLocal;
+    const tAsci = Tloc;
+    const tBsci = gBh > 0 ? Tloc / gBh : Tloc;
     tl.scienceEnd      = tCruise + tBsci;
     tl.aReturnArrival  = 2 * tCruise + tAsci;
     tl.returnEnd       = 2 * tCruise + tBsci;
@@ -1120,7 +1134,7 @@ function rebuildTimeline() {
 // ====================== MISSION ANIMATION ======================
 
 function advanceMission(rawDt) {
-  var tl = state.timeline;
+  const tl = state.timeline;
   if (!tl || tl.earthTotal <= 0) return;
 
   // Advance earthElapsed with a phase-aware time scale. Without this, a
@@ -1132,21 +1146,21 @@ function advanceMission(rawDt) {
   // gets its allotted wall-clock budget exactly. The iteration cap is a
   // pure safety net — in practice we cross at most 3 boundaries
   // (outbound->research, research->return, return->end).
-  var warp = WARP_LEVELS[state.warpLevel] || 1;
-  var wallLeft = rawDt * warp;
-  var iter = 0;
+  const warp = WARP_LEVELS[state.warpLevel] || 1;
+  let wallLeft = rawDt * warp;
+  let iter = 0;
   while (wallLeft > 1e-9 && state.earthElapsed < tl.earthTotal && iter++ < 8) {
-    var tCur = state.earthElapsed;
-    var inResearch = tCur >= tl.outboundEnd && tCur < tl.scienceEnd;
-    var scale = inResearch ? scaleResearch : scaleTransfer;
+    const tCur = state.earthElapsed;
+    const inResearch = tCur >= tl.outboundEnd && tCur < tl.scienceEnd;
+    const scale = inResearch ? scaleResearch : scaleTransfer;
 
-    var boundary;
+    let boundary;
     if (tCur < tl.outboundEnd)      boundary = tl.outboundEnd;      // enters research
     else if (inResearch)            boundary = tl.scienceEnd;        // leaves research
     else                             boundary = tl.earthTotal;        // returns home
 
-    var missionLeft = boundary - tCur;
-    var wallToBoundary = missionLeft / Math.max(scale, 1e-30);
+    const missionLeft = boundary - tCur;
+    const wallToBoundary = missionLeft / Math.max(scale, 1e-30);
 
     if (wallToBoundary <= wallLeft) {
       state.earthElapsed = boundary;
@@ -1158,17 +1172,17 @@ function advanceMission(rawDt) {
   }
   state.earthElapsed = Math.min(state.earthElapsed, tl.earthTotal);
 
-  var t = state.earthElapsed;
-  var gamma = tl.gamma, gBh = tl.gBh;
+  const t = state.earthElapsed;
+  const gamma = tl.gamma, gBh = tl.gBh;
 
-  var tA = state.shipA.trajectory, tB = state.shipB.trajectory;
-  var parkA = shipParkingPos(tA), parkB = shipParkingPos(tB);
+  const tA = state.shipA.trajectory, tB = state.shipB.trajectory;
+  const parkA = shipParkingPos(tA), parkB = shipParkingPos(tB);
 
   if (tl.mode === 'earth') {
     if (t < tl.outboundEnd) {
       state.missionPhase = 'outbound';
-      var f = tl.tCruise > 0 ? t / tl.tCruise : 1;
-      var fE = easeInOut(f);
+      const f = tl.tCruise > 0 ? t / tl.tCruise : 1;
+      const fE = easeInOut(f);
       state.shipA.pos = lerp(parkA, tA.T1, fE);
       state.shipB.pos = lerp(parkB, tB.T1, fE);
       state.shipA.heading = heading(state.earthPos, tA.T1);
@@ -1177,9 +1191,9 @@ function advanceMission(rawDt) {
       state.captainBElapsed = t / gamma;
     } else if (t < tl.scienceEnd) {
       state.missionPhase = 'science';
-      var Tsci = state.scienceDurationEarth;
-      var fS = Tsci > 0 ? (t - tl.tCruise) / Tsci : 1;
-      var fSE = easeInOut(fS);
+      const Tsci = state.scienceDurationEarth;
+      const fS = Tsci > 0 ? (t - tl.tCruise) / Tsci : 1;
+      const fSE = easeInOut(fS);
       state.shipA.pos = arcPosAt(tA, fSE);
       state.shipB.pos = arcPosAt(tB, fSE);
       state.shipA.heading = arcHeadAt(tA, fSE);
@@ -1188,8 +1202,8 @@ function advanceMission(rawDt) {
       state.captainBElapsed = tl.tauCruise + (t - tl.tCruise) * gBh;
     } else if (t < tl.returnEnd) {
       state.missionPhase = 'return';
-      var fr = tl.tCruise > 0 ? (t - tl.scienceEnd) / tl.tCruise : 1;
-      var frE = easeInOut(fr);
+      const fr = tl.tCruise > 0 ? (t - tl.scienceEnd) / tl.tCruise : 1;
+      const frE = easeInOut(fr);
       state.shipA.pos = lerp(tA.T2, shipLandingPos(tA), frE);
       state.shipB.pos = lerp(tB.T2, shipLandingPos(tB), frE);
       state.shipA.heading = heading(tA.T2, state.earthPos);
@@ -1206,27 +1220,27 @@ function advanceMission(rawDt) {
     }
   } else {
     // Advanced: Fixed Local Experiment Time — ships have independent schedules.
-    var Tloc = state.scienceDurationLocal;
-    var tAsciEnd = tl.tCruise + Tloc;
-    var tAarrive = tl.aReturnArrival;
-    var tBsciEnd = tl.scienceEnd;
-    var tBarrive = tl.returnEnd;
-    var TBsci    = tBsciEnd - tl.tCruise;   // === Tloc / gBh in Earth time
+    const Tloc = state.scienceDurationLocal;
+    const tAsciEnd = tl.tCruise + Tloc;
+    const tAarrive = tl.aReturnArrival;
+    const tBsciEnd = tl.scienceEnd;
+    const tBarrive = tl.returnEnd;
+    const TBsci    = tBsciEnd - tl.tCruise;   // === Tloc / gBh in Earth time
 
     // -------- Ship A: tangent → arc (Tloc) → tangent --------
     if (t < tl.outboundEnd) {
-      var fA = tl.tCruise > 0 ? t / tl.tCruise : 1;
+      const fA = tl.tCruise > 0 ? t / tl.tCruise : 1;
       state.shipA.pos = lerp(parkA, tA.T1, easeInOut(fA));
       state.shipA.heading = heading(state.earthPos, tA.T1);
       state.captainAElapsed = t / gamma;
     } else if (t < tAsciEnd) {
-      var fAS = Tloc > 0 ? (t - tl.tCruise) / Tloc : 1;
-      var fASe = easeInOut(fAS);
+      const fAS = Tloc > 0 ? (t - tl.tCruise) / Tloc : 1;
+      const fASe = easeInOut(fAS);
       state.shipA.pos = arcPosAt(tA, fASe);
       state.shipA.heading = arcHeadAt(tA, fASe);
       state.captainAElapsed = tl.tauCruise + (t - tl.tCruise);
     } else if (t < tAarrive) {
-      var fAR = tl.tCruise > 0 ? (t - tAsciEnd) / tl.tCruise : 1;
+      const fAR = tl.tCruise > 0 ? (t - tAsciEnd) / tl.tCruise : 1;
       state.shipA.pos = lerp(tA.T2, shipLandingPos(tA), easeInOut(fAR));
       state.shipA.heading = heading(tA.T2, state.earthPos);
       state.captainAElapsed = tl.tauCruise + Tloc + (t - tAsciEnd) / gamma;
@@ -1237,18 +1251,18 @@ function advanceMission(rawDt) {
 
     // -------- Ship B: tangent → arc (TBsci) → tangent --------
     if (t < tl.outboundEnd) {
-      var fB = tl.tCruise > 0 ? t / tl.tCruise : 1;
+      const fB = tl.tCruise > 0 ? t / tl.tCruise : 1;
       state.shipB.pos = lerp(parkB, tB.T1, easeInOut(fB));
       state.shipB.heading = heading(state.earthPos, tB.T1);
       state.captainBElapsed = t / gamma;
     } else if (t < tBsciEnd) {
-      var fBS = TBsci > 0 ? (t - tl.tCruise) / TBsci : 1;
-      var fBSe = easeInOut(fBS);
+      const fBS = TBsci > 0 ? (t - tl.tCruise) / TBsci : 1;
+      const fBSe = easeInOut(fBS);
       state.shipB.pos = arcPosAt(tB, fBSe);
       state.shipB.heading = arcHeadAt(tB, fBSe);
       state.captainBElapsed = tl.tauCruise + (t - tl.tCruise) * gBh;
     } else if (t < tBarrive) {
-      var fBR = tl.tCruise > 0 ? (t - tBsciEnd) / tl.tCruise : 1;
+      const fBR = tl.tCruise > 0 ? (t - tBsciEnd) / tl.tCruise : 1;
       state.shipB.pos = lerp(tB.T2, shipLandingPos(tB), easeInOut(fBR));
       state.shipB.heading = heading(tB.T2, state.earthPos);
       state.captainBElapsed = tl.tauCruise + Tloc + (t - tBsciEnd) / gamma;
@@ -1289,8 +1303,8 @@ function completeMission() {
 // ====================== DRAWING ======================
 
 function drawStarfield() {
-  for (var i = 0; i < bgStars.length; i++) {
-    var s = bgStars[i];
+  for (let i = 0; i < bgStars.length; i++) {
+    const s = bgStars[i];
     ctx.beginPath();
     ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(200,210,220,' + (s.b * 0.3) + ')';
@@ -1301,68 +1315,68 @@ function drawStarfield() {
 // Progress fractions within outbound / science / return phases for a given
 // ship in the current timeline state. Values are clamped to [0, 1].
 function shipPhaseProgress(which) {
-  var tl = state.timeline;
+  const tl = state.timeline;
   if (!tl || tl.earthTotal <= 0) return { out: 0, sci: 0, ret: 0 };
-  var t = state.earthElapsed;
-  var tC = tl.tCruise;
-  var Tsci, sciEnd;
+  const t = state.earthElapsed;
+  const tC = tl.tCruise;
+  let Tsci, sciEnd;
   if (tl.mode === 'earth') {
     Tsci = state.scienceDurationEarth;
     sciEnd = tl.scienceEnd;
   } else {
-    var Tloc = state.scienceDurationLocal;
+    const Tloc = state.scienceDurationLocal;
     if (which === 'A') { Tsci = Tloc; sciEnd = tC + Tloc; }
     else               { sciEnd = tl.scienceEnd; Tsci = sciEnd - tC; }
   }
-  var out = tC > 0    ? clamp(t / tC, 0, 1)              : 0;
-  var sci = Tsci > 0  ? clamp((t - tC) / Tsci, 0, 1)     : 0;
-  var ret = tC > 0    ? clamp((t - sciEnd) / tC, 0, 1)   : 0;
+  const out = tC > 0    ? clamp(t / tC, 0, 1)              : 0;
+  const sci = Tsci > 0  ? clamp((t - tC) / Tsci, 0, 1)     : 0;
+  const ret = tC > 0    ? clamp((t - sciEnd) / tC, 0, 1)   : 0;
   return { out: out, sci: sci, ret: ret };
 }
 
 // Comet-tail trail behind the ship: grows as the ship moves, and each segment
 // fades with distance behind the head. No trail shown in the idle phase; after
 // the mission ends, the tail drifts to nothing as no new segments are emitted.
-var TRAIL_TAIL_LEN = 480;   // pixels — length of the visible fade window
-var TRAIL_SAMPLE   = 4;     // pixels — spacing between sampled points
+const TRAIL_TAIL_LEN = 480;   // pixels — length of the visible fade window
+const TRAIL_SAMPLE   = 4;     // pixels — spacing between sampled points
 
 function drawShipTrail(traj, which, rgb) {
   if (!traj || state.phase === 'idle') return;
-  var p = shipPhaseProgress(which);
+  const p = shipPhaseProgress(which);
   if (p.out <= 0) return;
 
   // Sample points along the traveled path, tracking cumulative path length.
-  var pts = [];
+  const pts = [];
   function pushPt(x, y) {
-    var prev = pts.length > 0 ? pts[pts.length - 1] : null;
-    var d = prev ? Math.hypot(x - prev.x, y - prev.y) : 0;
+    const prev = pts.length > 0 ? pts[pts.length - 1] : null;
+    const d = prev ? Math.hypot(x - prev.x, y - prev.y) : 0;
     pts.push({ x: x, y: y, cum: prev ? prev.cum + d : 0 });
   }
 
   // Ease raw phase fractions once — trail samples must walk to the ship's
   // eased position, not the raw linear position, or the trail head drifts
   // ahead of / behind the hull around phase boundaries.
-  var eOut = easeInOut(p.out);
-  var eSci = easeInOut(p.sci);
-  var eRet = easeInOut(p.ret);
+  const eOut = easeInOut(p.out);
+  const eSci = easeInOut(p.sci);
+  const eRet = easeInOut(p.ret);
 
-  var park = shipParkingPos(traj);
+  const park = shipParkingPos(traj);
   // Outbound
-  var outEnd = lerp(park, traj.T1, eOut);
-  var outLen = Math.hypot(outEnd.x - park.x, outEnd.y - park.y);
-  var outN = Math.max(1, Math.ceil(outLen / TRAIL_SAMPLE));
-  for (var i = 0; i <= outN; i++) {
-    var f = (i / outN) * eOut;
-    var pt = lerp(park, traj.T1, f);
+  const outEnd = lerp(park, traj.T1, eOut);
+  const outLen = Math.hypot(outEnd.x - park.x, outEnd.y - park.y);
+  const outN = Math.max(1, Math.ceil(outLen / TRAIL_SAMPLE));
+  for (let i = 0; i <= outN; i++) {
+    const f = (i / outN) * eOut;
+    const pt = lerp(park, traj.T1, f);
     pushPt(pt.x, pt.y);
   }
   // Arc
   if (p.sci > 0) {
-    var arcLen = traj.arcSweep * traj.R * eSci;
-    var arcN = Math.max(1, Math.ceil(arcLen / TRAIL_SAMPLE));
-    for (var j = 1; j <= arcN; j++) {
-      var fS = (j / arcN) * eSci;
-      var ang = traj.angEntry + traj.arcSweep * fS;
+    const arcLen = traj.arcSweep * traj.R * eSci;
+    const arcN = Math.max(1, Math.ceil(arcLen / TRAIL_SAMPLE));
+    for (let j = 1; j <= arcN; j++) {
+      const fS = (j / arcN) * eSci;
+      const ang = traj.angEntry + traj.arcSweep * fS;
       pushPt(traj.C.x + traj.R * Math.cos(ang), traj.C.y + traj.R * Math.sin(ang));
     }
   }
@@ -1371,30 +1385,30 @@ function drawShipTrail(traj, which, rgb) {
   // interpolates toward in advanceMission() — so the trail head stays
   // attached to the hull instead of overshooting toward Earth's centre.
   if (p.ret > 0) {
-    var land = shipLandingPos(traj);
-    var retEnd = lerp(traj.T2, land, eRet);
-    var retLen = Math.hypot(retEnd.x - traj.T2.x, retEnd.y - traj.T2.y);
-    var retN = Math.max(1, Math.ceil(retLen / TRAIL_SAMPLE));
-    for (var k = 1; k <= retN; k++) {
-      var fR = (k / retN) * eRet;
-      var pt = lerp(traj.T2, land, fR);
+    const land = shipLandingPos(traj);
+    const retEnd = lerp(traj.T2, land, eRet);
+    const retLen = Math.hypot(retEnd.x - traj.T2.x, retEnd.y - traj.T2.y);
+    const retN = Math.max(1, Math.ceil(retLen / TRAIL_SAMPLE));
+    for (let k = 1; k <= retN; k++) {
+      const fR = (k / retN) * eRet;
+      const pt = lerp(traj.T2, land, fR);
       pushPt(pt.x, pt.y);
     }
   }
 
-  var headCum = pts[pts.length - 1].cum;
+  const headCum = pts[pts.length - 1].cum;
 
   // Stroke each segment with alpha that falls off quadratically with distance
   // behind the ship. Segments beyond the tail window are skipped outright.
   ctx.save();
   ctx.lineWidth = 1.5;
   ctx.lineCap = 'round';
-  for (var m = pts.length - 2; m >= 0; m--) {
-    var segMidCum = (pts[m].cum + pts[m + 1].cum) * 0.5;
-    var distBehind = headCum - segMidCum;
+  for (let m = pts.length - 2; m >= 0; m--) {
+    const segMidCum = (pts[m].cum + pts[m + 1].cum) * 0.5;
+    const distBehind = headCum - segMidCum;
     if (distBehind > TRAIL_TAIL_LEN) break;            // we walk backward, the rest is farther
-    var t01 = 1 - distBehind / TRAIL_TAIL_LEN;         // 1 at head, 0 at tail end
-    var alpha = 0.55 * t01 * t01;
+    const t01 = 1 - distBehind / TRAIL_TAIL_LEN;         // 1 at head, 0 at tail end
+    const alpha = 0.55 * t01 * t01;
     if (alpha < 0.01) continue;
     ctx.strokeStyle = 'rgba(' + rgb + ',' + alpha.toFixed(3) + ')';
     ctx.beginPath();
@@ -1409,10 +1423,10 @@ function drawShipTrail(traj, which, rgb) {
 // surface along its outbound tangent, so the ship is visible and already
 // aligned with the path it will fly.
 function shipParkingPos(traj) {
-  var dx = traj.T1.x - state.earthPos.x;
-  var dy = traj.T1.y - state.earthPos.y;
-  var d = Math.sqrt(dx * dx + dy * dy) || 1;
-  var off = EARTH_RADIUS + 10;
+  const dx = traj.T1.x - state.earthPos.x;
+  const dy = traj.T1.y - state.earthPos.y;
+  const d = Math.sqrt(dx * dx + dy * dy) || 1;
+  const off = EARTH_RADIUS + 10;
   return {
     x: state.earthPos.x + (dx / d) * off,
     y: state.earthPos.y + (dy / d) * off,
@@ -1424,11 +1438,11 @@ function shipParkingPos(traj) {
 // 12 px ahead of pos (see drawShip moveTo(12,0)), so we sit the centre back
 // by EARTH_RADIUS + 12 + 1 along the approach direction.
 function shipLandingPos(traj) {
-  var dx = state.earthPos.x - traj.T2.x;
-  var dy = state.earthPos.y - traj.T2.y;
-  var d = Math.sqrt(dx * dx + dy * dy) || 1;
-  var ux = dx / d, uy = dy / d;
-  var back = EARTH_RADIUS + 13;
+  const dx = state.earthPos.x - traj.T2.x;
+  const dy = state.earthPos.y - traj.T2.y;
+  const d = Math.sqrt(dx * dx + dy * dy) || 1;
+  const ux = dx / d, uy = dy / d;
+  const back = EARTH_RADIUS + 13;
   return {
     x: state.earthPos.x - ux * back,
     y: state.earthPos.y - uy * back,
@@ -1436,14 +1450,14 @@ function shipLandingPos(traj) {
 }
 
 function drawEarth() {
-  var ep = state.earthPos, r = EARTH_RADIUS;
-  var glow = ctx.createRadialGradient(ep.x, ep.y, r * 0.5, ep.x, ep.y, r * 2.5);
+  const ep = state.earthPos, r = EARTH_RADIUS;
+  const glow = ctx.createRadialGradient(ep.x, ep.y, r * 0.5, ep.x, ep.y, r * 2.5);
   glow.addColorStop(0, 'rgba(77,184,255,0.25)');
   glow.addColorStop(1, 'rgba(77,184,255,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(ep.x - r * 3, ep.y - r * 3, r * 6, r * 6);
 
-  var grad = ctx.createRadialGradient(ep.x - r * 0.3, ep.y - r * 0.3, r * 0.1, ep.x, ep.y, r);
+  const grad = ctx.createRadialGradient(ep.x - r * 0.3, ep.y - r * 0.3, r * 0.1, ep.x, ep.y, r);
   grad.addColorStop(0, '#7ed6f7');
   grad.addColorStop(0.5, '#4db8ff');
   grad.addColorStop(1, '#1a6e8e');
@@ -1459,14 +1473,14 @@ function drawEarth() {
 }
 
 function drawStarLab() {
-  var sp = state.starLabPos;
-  var star = STARS[state.starIndex];
-  var r = star.radius || STAR_RADIUS;
-  var rgb = star.glowRgb || '255,241,168';
-  var bodyColor = star.color || '#fff1a8';
+  const sp = state.starLabPos;
+  const star = STARS[state.starIndex];
+  const r = star.radius || STAR_RADIUS;
+  const rgb = star.glowRgb || '255,241,168';
+  const bodyColor = star.color || '#fff1a8';
 
   // Outer glow (3-stop radial gradient, extent r*4)
-  var glow = ctx.createRadialGradient(sp.x, sp.y, r * 0.2, sp.x, sp.y, r * 4);
+  const glow = ctx.createRadialGradient(sp.x, sp.y, r * 0.2, sp.x, sp.y, r * 4);
   glow.addColorStop(0,   'rgba(' + rgb + ',0.40)');
   glow.addColorStop(0.4, 'rgba(' + rgb + ',0.10)');
   glow.addColorStop(1,   'rgba(' + rgb + ',0.00)');
@@ -1481,7 +1495,7 @@ function drawStarLab() {
 
   // Lab ring accent (dashed ring around the star, denotes research station).
   // Enlarged so the ship can orbit visibly during the science-phase arc.
-  var ringR = starLabRingR(star);
+  const ringR = starLabRingR(star);
   ctx.save();
   ctx.strokeStyle = 'rgba(' + rgb + ',0.45)';
   ctx.lineWidth = 1;
@@ -1494,7 +1508,7 @@ function drawStarLab() {
   // Store hit radius for hover detection
   state.starLabHitR = ringR + 10;
 
-  var name = state.lang === 'en' ? star.nameEn : star.namePl;
+  const name = state.lang === 'en' ? star.nameEn : star.namePl;
   ctx.font = '15px "Share Tech Mono", monospace';
   ctx.fillStyle = 'rgba(' + rgb + ',0.85)';
   ctx.textAlign = 'center';
@@ -1508,20 +1522,20 @@ function drawStarLab() {
 // Global anchors UMIN=1.0 / UMAX=BH_U_MAX so same u yields same ring size for all
 // Schwarzschild BHs (the invariance holds — selector only changes reachable u range).
 function stationRadius(u) {
-  var bh = BH_CATALOG[state.blackHoleIndex];
-  var coreR = (bh && bh.coreRadius) || BH_RADIUS;
-  var UMIN = 1.0, UMAX = BH_U_MAX;
+  const bh = BH_CATALOG[state.blackHoleIndex];
+  const coreR = (bh && bh.coreRadius) || BH_RADIUS;
+  const UMIN = 1.0, UMAX = BH_U_MAX;
   // RMIN leaves ship glow (~18 px) room outside the core.
-  var RMIN = coreR + 22;
+  const RMIN = coreR + 22;
   // BH is at (0.85W, 0.78H), so available space to canvas edge is 0.15W right
   // and 0.22H below. Use the tighter bound minus a small margin to keep the
   // ring on-canvas at all viewport sizes.
-  var RMAX = Math.min(0.13 * W, 0.20 * H);
+  let RMAX = Math.min(0.13 * W, 0.20 * H);
   if (RMAX < RMIN + 4) RMAX = RMIN + 4;
-  var a = Math.pow(UMIN, 0.7);
-  var b = Math.pow(UMAX, 0.7);
-  var uc = clamp(u, UMIN, UMAX);
-  var x = (Math.pow(uc, 0.7) - a) / (b - a);
+  const a = Math.pow(UMIN, 0.7);
+  const b = Math.pow(UMAX, 0.7);
+  const uc = clamp(u, UMIN, UMAX);
+  const x = (Math.pow(uc, 0.7) - a) / (b - a);
   return RMIN + x * (RMAX - RMIN);
 }
 
@@ -1529,28 +1543,28 @@ function stationRadius(u) {
 // that would render the ring at that radius. Clamps to the global [UMIN, UMAX]
 // band; per-BH uMin is enforced separately at the call site.
 function inverseStationRadius(R) {
-  var bh = BH_CATALOG[state.blackHoleIndex];
-  var coreR = (bh && bh.coreRadius) || BH_RADIUS;
-  var UMIN = 1.0, UMAX = BH_U_MAX;
-  var RMIN = coreR + 22;
-  var RMAX = Math.min(0.13 * W, 0.20 * H);
+  const bh = BH_CATALOG[state.blackHoleIndex];
+  const coreR = (bh && bh.coreRadius) || BH_RADIUS;
+  const UMIN = 1.0, UMAX = BH_U_MAX;
+  const RMIN = coreR + 22;
+  let RMAX = Math.min(0.13 * W, 0.20 * H);
   if (RMAX < RMIN + 4) RMAX = RMIN + 4;
-  var a = Math.pow(UMIN, 0.7);
-  var b = Math.pow(UMAX, 0.7);
-  var x = clamp((R - RMIN) / (RMAX - RMIN), 0, 1);
-  var uPow = a + x * (b - a);
+  const a = Math.pow(UMIN, 0.7);
+  const b = Math.pow(UMAX, 0.7);
+  const x = clamp((R - RMIN) / (RMAX - RMIN), 0, 1);
+  const uPow = a + x * (b - a);
   return Math.pow(uPow, 1 / 0.7);
 }
 
 function drawBhLab() {
-  var bp = state.bhLabPos;
-  var bh = BH_CATALOG[state.blackHoleIndex];
-  var r = bh.coreRadius || BH_RADIUS;
-  var rgb = bh.glowRgb || '255,122,89';
-  var ringColor = bh.ringColor || '#ff7a59';
+  const bp = state.bhLabPos;
+  const bh = BH_CATALOG[state.blackHoleIndex];
+  const r = bh.coreRadius || BH_RADIUS;
+  const rgb = bh.glowRgb || '255,122,89';
+  const ringColor = bh.ringColor || '#ff7a59';
 
   // Outer glow
-  var glow = ctx.createRadialGradient(bp.x, bp.y, r * 0.5, bp.x, bp.y, r * 3);
+  const glow = ctx.createRadialGradient(bp.x, bp.y, r * 0.5, bp.x, bp.y, r * 3);
   glow.addColorStop(0,   'rgba(' + rgb + ',0.35)');
   glow.addColorStop(0.5, 'rgba(' + rgb + ',0.10)');
   glow.addColorStop(1,   'rgba(' + rgb + ',0.00)');
@@ -1565,7 +1579,7 @@ function drawBhLab() {
   ctx.stroke();
 
   // Dark core with per-BH rim tint
-  var coreGrad = ctx.createRadialGradient(bp.x, bp.y, 0, bp.x, bp.y, r);
+  const coreGrad = ctx.createRadialGradient(bp.x, bp.y, 0, bp.x, bp.y, r);
   coreGrad.addColorStop(0, '#05070c');
   coreGrad.addColorStop(0.8, '#05070c');
   coreGrad.addColorStop(1, 'rgba(' + rgb + ',0.25)');
@@ -1578,9 +1592,9 @@ function drawBhLab() {
   // compressed mapping of the current u = r/r_s. Scene is schematic (see note).
   // The ring is draggable during idle phase — visual brightens/thickens when
   // the pointer is over it, and further during an active drag.
-  var stationR = stationRadius(state.uBh);
-  var ringActive = state.draggingU;
-  var ringHot    = ringActive || state.ringHover;
+  const stationR = stationRadius(state.uBh);
+  const ringActive = state.draggingU;
+  const ringHot    = ringActive || state.ringHover;
   ctx.save();
   ctx.strokeStyle = ringActive ? 'rgba(170,245,220,0.95)'
                    : ringHot  ? 'rgba(140,230,205,0.80)'
@@ -1597,13 +1611,13 @@ function drawBhLab() {
   if (ringActive) {
     ctx.save();
     ctx.font = '14px "Share Tech Mono", monospace';
-    var txt = state.uBh.toFixed(2) + ' ' + T('lblRsUnit');
-    var tw = ctx.measureText(txt).width;
-    var pad = 6;
-    var boxH = 22;
-    var boxW = tw + 2 * pad;
-    var boxX = bp.x - stationR - 12 - boxW;
-    var boxY = bp.y - boxH / 2;
+    const txt = state.uBh.toFixed(2) + ' ' + T('lblRsUnit');
+    const tw = ctx.measureText(txt).width;
+    const pad = 6;
+    const boxH = 22;
+    const boxW = tw + 2 * pad;
+    let boxX = bp.x - stationR - 12 - boxW;
+    const boxY = bp.y - boxH / 2;
     if (boxX < 6) boxX = 6;
     ctx.fillStyle   = 'rgba(8,18,28,0.85)';
     ctx.strokeStyle = 'rgba(170,245,220,0.8)';
@@ -1632,9 +1646,9 @@ function drawBhLab() {
 
 function drawSciencePulse(pos, color, baseR) {
   // A single expanding ring whose phase is tied to wall-clock time.
-  var t = (Date.now() % 2000) / 2000;  // 0..1 over 2s
-  var rad = baseR + t * 30;
-  var alpha = (1 - t) * 0.4;
+  const t = (Date.now() % 2000) / 2000;  // 0..1 over 2s
+  const rad = baseR + t * 30;
+  const alpha = (1 - t) * 0.4;
   ctx.save();
   ctx.strokeStyle = color;
   ctx.globalAlpha = alpha;
@@ -1649,13 +1663,13 @@ function drawSciencePulse(pos, color, baseR) {
 // centre (same spot the hover facts card appears). Covered by the card
 // on hover, which is intentional — card takes precedence.
 function drawTelescopeCentre() {
-  var cx = W / 2, cy = H / 2;
-  var period = 1600;                             // ms
-  var t = (Date.now() % period) / period;        // 0..1
-  var pulse = 0.5 - 0.5 * Math.cos(t * 2 * Math.PI);  // 0..1..0 smooth breathe
-  var scale = 1.0 + 0.18 * pulse;
-  var alpha = 0.45 + 0.40 * pulse;
-  var size  = 80;
+  const cx = W / 2, cy = H / 2;
+  const period = 1600;                             // ms
+  const t = (Date.now() % period) / period;        // 0..1
+  const pulse = 0.5 - 0.5 * Math.cos(t * 2 * Math.PI);  // 0..1..0 smooth breathe
+  const scale = 1.0 + 0.18 * pulse;
+  const alpha = 0.45 + 0.40 * pulse;
+  const size  = 80;
 
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -1676,7 +1690,7 @@ function isResearching() {
   if (state.phase !== 'running') return false;
   if (state.missionPhase === 'science') return true;
   if (state.timeline && state.timeline.mode === 'local') {
-    var t = state.earthElapsed;
+    const t = state.earthElapsed;
     return t >= state.timeline.outboundEnd && t < state.timeline.scienceEnd;
   }
   return false;
@@ -1685,24 +1699,24 @@ function isResearching() {
 function hexToRgbStr(hex) {
   // Accepts '#RRGGBB' or '#RGB'; returns 'r,g,b'.
   if (!hex || hex.charAt(0) !== '#') return '255,255,255';
-  var h = hex.slice(1);
+  let h = hex.slice(1);
   if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-  var r = parseInt(h.slice(0, 2), 16);
-  var g = parseInt(h.slice(2, 4), 16);
-  var b = parseInt(h.slice(4, 6), 16);
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
   return r + ',' + g + ',' + b;
 }
 
-function drawShip(ship, color, label, captainLabel, clockValue) {
-  var pos = ship.pos;
-  var rgb = hexToRgbStr(color);
+function drawShip(ship, color) {
+  const pos = ship.pos;
+  const rgb = hexToRgbStr(color);
 
   ctx.save();
   ctx.translate(pos.x, pos.y);
   ctx.rotate(ship.heading || 0);
 
   // Colored radial glow halo around the hull
-  var glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 18);
+  const glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 18);
   glow.addColorStop(0, 'rgba(' + rgb + ',0.45)');
   glow.addColorStop(1, 'rgba(' + rgb + ',0.00)');
   ctx.fillStyle = glow;
@@ -1718,13 +1732,53 @@ function drawShip(ship, color, label, captainLabel, clockValue) {
   ctx.fill();
 
   ctx.restore();
+}
 
-  // Label: ship name (the captain's name lives on the sidebar clock label).
-  var offsetY = label === 'A' ? -18 : 20;
-  ctx.font = '14px "Share Tech Mono", monospace';
+// Ship hover tooltip — drawn when the pointer hovers near a ship during
+// the mission. Shows both the ship's name and its captain's name.
+function drawShipTooltip() {
+  const which = state.hoveredShip;
+  if (!which) return;
+  const ship = which === 'A' ? state.shipA : state.shipB;
+  const color = which === 'A' ? '#ffb347' : '#66d9c2';
+  const shipName = getShipName(which);
+  const captainName = getCaptainName(which);
+  const px = ship.pos.x, py = ship.pos.y;
+
+  // Position the tooltip to the upper-right of the ship, offset to avoid overlap.
+  let tx = px + 22, ty = py - 14;
+
+  // Measure text to draw a background panel.
+  ctx.font = '13px "Share Tech Mono", monospace';
+  const line1 = shipName;
+  const line2 = captainName;
+  const w1 = ctx.measureText(line1).width;
+  const w2 = ctx.measureText(line2).width;
+  const boxW = Math.max(w1, w2) + 16;
+  const boxH = 38;
+
+  // If tooltip would overflow the right canvas edge, flip to the left of the ship.
+  if (tx + boxW > W - 10) tx = px - boxW - 10;
+  // If it would overflow the top, push down.
+  if (ty - 4 < 0) ty = 4;
+
+  // Background panel
+  ctx.fillStyle = 'rgba(19,24,37,0.90)';
+  ctx.beginPath();
+  ctx.roundRect(tx - 8, ty - 16, boxW, boxH, 5);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Ship name (brighter)
   ctx.fillStyle = color;
   ctx.textAlign = 'left';
-  ctx.fillText(getShipName(label), pos.x + 16, pos.y + offsetY);
+  ctx.fillText(line1, tx, ty);
+
+  // Captain name (dimmer)
+  ctx.fillStyle = 'rgba(201,209,217,0.7)';
+  ctx.fillText(line2, tx, ty + 16);
 }
 
 // ====================== SIDEBAR CLOCKS ======================
@@ -1741,7 +1795,7 @@ function computeYearsPerRev(total) {
 // Generic analog clock. Ported from timerel.html drawAnalogClock().
 // `g` is the 2D context of the clocks canvas (not the main mission canvas).
 function drawAnalogClock(g, cx, cy, radius, elapsed, color, label, digitalText, yearsPerRev) {
-  var angle = ((elapsed / yearsPerRev) % 1) * Math.PI * 2 - Math.PI / 2;
+  const angle = ((elapsed / yearsPerRev) % 1) * Math.PI * 2 - Math.PI / 2;
 
   // Face
   g.beginPath();
@@ -1753,10 +1807,10 @@ function drawAnalogClock(g, cx, cy, radius, elapsed, color, label, digitalText, 
   g.stroke();
 
   // 12 ticks — every third is thicker and longer
-  for (var i = 0; i < 12; i++) {
-    var tickAngle = (i / 12) * Math.PI * 2 - Math.PI / 2;
-    var inner = radius * (i % 3 === 0 ? 0.75 : 0.82);
-    var outer = radius * 0.95;
+  for (let i = 0; i < 12; i++) {
+    const tickAngle = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    const inner = radius * (i % 3 === 0 ? 0.75 : 0.82);
+    const outer = radius * 0.95;
     g.beginPath();
     g.moveTo(cx + Math.cos(tickAngle) * inner, cy + Math.sin(tickAngle) * inner);
     g.lineTo(cx + Math.cos(tickAngle) * outer, cy + Math.sin(tickAngle) * outer);
@@ -1796,11 +1850,11 @@ function drawAnalogClock(g, cx, cy, radius, elapsed, color, label, digitalText, 
 // Draws three analog clocks on the main mission canvas, anchored to each actor.
 // Called from drawScene() so hands stay synchronized with the animation loop.
 function drawClocks() {
-  var tl = state.timeline;
-  var total = tl ? tl.earthTotal : 0;
-  var yrPerRev = computeYearsPerRev(total);
-  var yr = T('lblYr');
-  var R = 24;  // tighter than timerel's 28 — main canvas is busier
+  const tl = state.timeline;
+  const total = tl ? tl.earthTotal : 0;
+  const yrPerRev = computeYearsPerRev(total);
+  const yr = T('lblYr');
+  const R = 24;  // tighter than timerel's 28 — main canvas is busier
 
   // Earth clock: floats above the Earth body (70 px clearance, matching the
   // edge offset used for Captain A/B). No label above the dial — the Earth
@@ -1815,8 +1869,8 @@ function drawClocks() {
   // above the star row / below the BH row so the BH ship trajectory (tangent
   // → arc → tangent at max u) can't cross them. Clock A sits 50 px above
   // star.y; Clock B sits 50 px below BH.y.
-  var clockColX = W / 2;
-  var edgeOffset = 70;
+  const clockColX = W / 2;
+  const edgeOffset = 70;
 
   drawAnalogClock(ctx,
     clockColX, state.starLabPos.y - edgeOffset, R,
@@ -1832,7 +1886,7 @@ function drawClocks() {
 }
 
 function drawPhaseLabel() {
-  var text = T('lblPhase') + ': ' + T('phase' + capitalize(state.missionPhase));
+  const text = T('lblPhase') + ': ' + T('phase' + capitalize(state.missionPhase));
   ctx.font = '13px "Share Tech Mono", monospace';
   ctx.fillStyle = 'rgba(201,209,217,0.55)';
   ctx.textAlign = 'left';
@@ -1865,26 +1919,27 @@ function drawScene() {
     // Per-lab expanding-ring pulse. Earth-mode → both captains research
     // together. Local-mode → A's pulse only during her own science window;
     // B's pulse across the longer B-science window.
-    var tl = state.timeline;
-    var t  = state.earthElapsed;
-    var bh = BH_CATALOG[state.blackHoleIndex];
-    var star = STARS[state.starIndex];
-    var bhRgb   = bh.glowRgb   || '255,122,89';
-    var starRgb = star.glowRgb || '255,241,168';
-    var bhR     = (bh && bh.coreRadius) || BH_RADIUS;
-    var starR   = star.radius || STAR_RADIUS;
+    const tl = state.timeline;
+    const t  = state.earthElapsed;
+    const bh = BH_CATALOG[state.blackHoleIndex];
+    const star = STARS[state.starIndex];
+    const bhRgb   = bh.glowRgb   || '255,122,89';
+    const starRgb = star.glowRgb || '255,241,168';
+    const bhR     = (bh && bh.coreRadius) || BH_RADIUS;
+    const starR   = star.radius || STAR_RADIUS;
 
-    var aStillAtLab = state.missionPhase === 'science' ||
+    const aStillAtLab = state.missionPhase === 'science' ||
                       (tl.mode === 'local' && t < tl.tCruise + state.scienceDurationLocal);
-    var bStillAtLab = state.missionPhase === 'science' ||
+    const bStillAtLab = state.missionPhase === 'science' ||
                       (tl.mode === 'local' && t < tl.scienceEnd);
     if (aStillAtLab) drawSciencePulse(state.starLabPos, 'rgba(' + starRgb + ',0.9)', starR + 14);
     if (bStillAtLab) drawSciencePulse(state.bhLabPos,   'rgba(' + bhRgb   + ',0.9)', bhR   + 14);
   }
 
   if (state.phase !== 'idle') {
-    drawShip(state.shipA, '#ffb347', 'A', null, state.captainAElapsed);
-    drawShip(state.shipB, '#66d9c2', 'B', null, state.captainBElapsed);
+    drawShip(state.shipA, '#ffb347');
+    drawShip(state.shipB, '#66d9c2');
+    drawShipTooltip();
   }
 
   drawPhaseLabel();
@@ -1894,7 +1949,7 @@ function drawScene() {
 
 // Linear slider-to-time mapping for cruise-time and science-time bars.
 // Both use min=1, max=20 yr, step 0.5 yr.  Slider integer range is [0, 1000].
-var TIME_MIN = 1, TIME_MAX = 20;
+const TIME_MIN = 1, TIME_MAX = 20;
 
 function sliderToTime(s) {
   return TIME_MIN + (TIME_MAX - TIME_MIN) * (clamp(s, 0, 1000) / 1000);
@@ -1906,10 +1961,10 @@ function timeToSlider(v) {
 // Render a time bar: set fill width + value text. No JS colour override —
 // the CSS gradient on .cruise-fill / .sci-fill handles the colour.
 function updateTimeBar(barId, sliderValue, value) {
-  var bar = document.getElementById(barId);
+  const bar = document.getElementById(barId);
   if (!bar) return;
-  var fill = bar.querySelector('.speed-bar-fill');
-  var valEl = bar.querySelector('.speed-bar-val');
+  const fill = bar.querySelector('.speed-bar-fill');
+  const valEl = bar.querySelector('.speed-bar-val');
   fill.style.width = (sliderValue / 1000 * 100) + '%';
   valEl.textContent = value.toFixed(1) + ' ' + T('lblYr');
 }
@@ -1923,49 +1978,49 @@ function updateTimeBar(barId, sliderValue, value) {
 function sliderToBeta(s) {
   s = clamp(s, 0, 1000);
   if (s <= 667) return BETA_MIN + (0.90 - BETA_MIN) * (s / 667);
-  var t = (s - 667) / 333;
+  const t = (s - 667) / 333;
   return 1 - 0.10 * Math.exp(-t * Math.log(10));
 }
-function betaToSlider(beta) {
+function _betaToSlider(beta) {
   beta = clamp(beta, BETA_MIN, BETA_MAX);
   if (beta <= 0.90) return Math.round((beta - BETA_MIN) / (0.90 - BETA_MIN) * 667);
-  var t = -Math.log((1 - beta) / 0.10) / Math.log(10);
+  const t = -Math.log((1 - beta) / 0.10) / Math.log(10);
   return Math.round(667 + t * 333);
 }
 
 // Sci-fi dashboard gradient: cyan (cruise) → amber (relativistic) → red (near-c).
-var SPEED_COLOR_STOPS = [
+const SPEED_COLOR_STOPS = [
   [0.10, 200, 100, 50],
   [0.70,  34, 100, 50],
   [0.999, 349, 100, 55]
 ];
 
 function speedBarColor(beta) {
-  var stops = SPEED_COLOR_STOPS;
+  const stops = SPEED_COLOR_STOPS;
   if (beta <= stops[0][0]) return 'hsl(' + stops[0][1] + ',' + stops[0][2] + '%,' + stops[0][3] + '%)';
   if (beta >= stops[stops.length - 1][0]) return 'hsl(' + stops[stops.length - 1][1] + ',' + stops[stops.length - 1][2] + '%,' + stops[stops.length - 1][3] + '%)';
-  for (var i = 0; i < stops.length - 1; i++) {
+  for (let i = 0; i < stops.length - 1; i++) {
     if (beta >= stops[i][0] && beta <= stops[i + 1][0]) {
-      var t = (beta - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
-      var h0 = stops[i][1], h1 = stops[i + 1][1];
-      var dh = h1 - h0;
+      const t = (beta - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      const h0 = stops[i][1], h1 = stops[i + 1][1];
+      let dh = h1 - h0;
       if (dh > 180) dh -= 360;
       if (dh < -180) dh += 360;
-      var h = ((h0 + dh * t) % 360 + 360) % 360;
-      var s = stops[i][2] + (stops[i + 1][2] - stops[i][2]) * t;
-      var l = stops[i][3] + (stops[i + 1][3] - stops[i][3]) * t;
+      const h = ((h0 + dh * t) % 360 + 360) % 360;
+      const s = stops[i][2] + (stops[i + 1][2] - stops[i][2]) * t;
+      const l = stops[i][3] + (stops[i + 1][3] - stops[i][3]) * t;
       return 'hsl(' + Math.round(h) + ',' + Math.round(s) + '%,' + Math.round(l) + '%)';
     }
   }
   return 'hsl(212,100%,67%)';
 }
 function speedBarLightness(beta) {
-  var stops = SPEED_COLOR_STOPS;
+  const stops = SPEED_COLOR_STOPS;
   if (beta <= stops[0][0]) return stops[0][3];
   if (beta >= stops[stops.length - 1][0]) return stops[stops.length - 1][3];
-  for (var i = 0; i < stops.length - 1; i++) {
+  for (let i = 0; i < stops.length - 1; i++) {
     if (beta >= stops[i][0] && beta <= stops[i + 1][0]) {
-      var t = (beta - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      const t = (beta - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
       return stops[i][3] + (stops[i + 1][3] - stops[i][3]) * t;
     }
   }
@@ -1973,15 +2028,15 @@ function speedBarLightness(beta) {
 }
 
 function updateSpeedBar(barId, sliderValue, beta) {
-  var bar = document.getElementById(barId);
+  const bar = document.getElementById(barId);
   if (!bar) return;
-  var fill = bar.querySelector('.speed-bar-fill');
-  var valEl = bar.querySelector('.speed-bar-val');
-  var track = bar.querySelector('.speed-bar-track');
-  var pct = (sliderValue / 1000) * 100;
+  const fill = bar.querySelector('.speed-bar-fill');
+  const valEl = bar.querySelector('.speed-bar-val');
+  const track = bar.querySelector('.speed-bar-track');
+  const pct = (sliderValue / 1000) * 100;
   fill.style.width = pct + '%';
   fill.style.backgroundColor = speedBarColor(beta);
-  var fillL = speedBarLightness(beta);
+  const fillL = speedBarLightness(beta);
   valEl.style.color = fillL > 60 ? '#1a1a2e' : '#fff';
   valEl.style.textShadow = fillL > 60
     ? '0 1px 3px rgba(255,255,255,0.3)'
@@ -1996,14 +2051,14 @@ function updateSpeedBar(barId, sliderValue, beta) {
 // `onChange` — handler called after every value update.
 // `stepSize` — slider-space increment per ± click (5 for speed, 26 for time bars).
 function initBar(barEl, hiddenId, onChange, stepSize) {
-  var track = barEl.querySelector('.speed-bar-track');
-  var minusBtn = barEl.querySelector('.speed-bar-minus');
-  var plusBtn = barEl.querySelector('.speed-bar-plus');
-  var dragging = false;
+  const track = barEl.querySelector('.speed-bar-track');
+  const minusBtn = barEl.querySelector('.speed-bar-minus');
+  const plusBtn = barEl.querySelector('.speed-bar-plus');
+  let dragging = false;
 
   function getSliderFromX(clientX) {
-    var rect = track.getBoundingClientRect();
-    var pct = (clientX - rect.left) / rect.width;
+    const rect = track.getBoundingClientRect();
+    const pct = (clientX - rect.left) / rect.width;
     return Math.round(clamp(pct, 0, 1) * 1000);
   }
   function applyValue(sliderVal) {
@@ -2015,13 +2070,13 @@ function initBar(barEl, hiddenId, onChange, stepSize) {
     if (barEl.classList.contains('disabled')) return;
     e.preventDefault();
     dragging = true;
-    var t = e.touches ? e.touches[0] : e;
+    const t = e.touches ? e.touches[0] : e;
     applyValue(getSliderFromX(t.clientX));
   }
   function onPointerMove(e) {
     if (!dragging) return;
     e.preventDefault();
-    var t = e.touches ? e.touches[0] : e;
+    const t = e.touches ? e.touches[0] : e;
     applyValue(getSliderFromX(t.clientX));
   }
   function onPointerEnd() { dragging = false; }
@@ -2033,7 +2088,7 @@ function initBar(barEl, hiddenId, onChange, stepSize) {
   document.addEventListener('touchmove', function(e) { if (dragging) onPointerMove(e); }, { passive: false });
   document.addEventListener('touchend', onPointerEnd);
 
-  var holdTimer = null, holdInterval = null;
+  let holdTimer = null, holdInterval = null;
   function startHold(delta) {
     if (barEl.classList.contains('disabled')) return;
     applyValue(parseInt(document.getElementById(hiddenId).value) + delta * stepSize);
@@ -2060,7 +2115,7 @@ function initBar(barEl, hiddenId, onChange, stepSize) {
 // ====================== CONTROL HANDLERS ======================
 
 function enforceUBounds() {
-  var uMin = bhUMin(state.blackHoleIndex);
+  const uMin = bhUMin(state.blackHoleIndex);
   state.uBh = clamp(state.uBh, uMin, BH_U_MAX);
 }
 
@@ -2081,26 +2136,26 @@ function handleBhChange() {
 }
 
 function handleCruiseTimeChange() {
-  var s = parseInt(document.getElementById('cruiseHidden').value);
-  var v = sliderToTime(s);
+  const s = parseInt(document.getElementById('cruiseHidden').value);
+  const v = sliderToTime(s);
   state.cruiseTime = v;
   updateTimeBar('cruiseBar', s, v);
   rebuildTimeline();
 }
 
 function updateBhFact() {
-  var el = document.getElementById('bhFactText');
+  const el = document.getElementById('bhFactText');
   if (!el) return;
-  var uMin = bhUMin(state.blackHoleIndex);
-  var hover = T('fmtBhClosestHover').replace('{u}', uMin.toFixed(2));
+  const uMin = bhUMin(state.blackHoleIndex);
+  const hover = T('fmtBhClosestHover').replace('{u}', uMin.toFixed(2));
   el.textContent = bhMassDisplay(state.blackHoleIndex) + ' \u2014 ' + formatDistanceLy(BH_CATALOG[state.blackHoleIndex].distanceLy) + ' \u00B7 ' + hover + ' ' + T('hoverHint');
 }
 
 // ============ Facts hover card (stars and black holes) ============
 
-var factsOverlayEl = null;
-var factsVisible = false;
-var factsCurrentKey = '';  // identifies what's currently shown to skip rerender
+let factsOverlayEl = null;
+let factsVisible = false;
+let factsCurrentKey = '';  // identifies what's currently shown to skip rerender
 
 function sfRow(label, value) {
   return '<div class="sf-stat"><span class="sf-stat-label">' + label +
@@ -2109,10 +2164,10 @@ function sfRow(label, value) {
 
 function showStarFactsCard(star) {
   if (!factsOverlayEl) return;
-  var key = 'star:' + state.starIndex + ':' + state.lang;
+  const key = 'star:' + state.starIndex + ':' + state.lang;
   if (key !== factsCurrentKey) {
-    var f = star.facts[state.lang];
-    var name = state.lang === 'en' ? star.nameEn : star.namePl;
+    const f = star.facts[state.lang];
+    const name = state.lang === 'en' ? star.nameEn : star.namePl;
     factsOverlayEl.innerHTML =
       '<div class="sf-header" style="color:' + star.color + '">' + name + '</div>' +
       '<div class="sf-meta">' + f.type + ' \u00B7 ' + f.constellation + '</div>' +
@@ -2132,10 +2187,10 @@ function showStarFactsCard(star) {
 
 function showBhFactsCard(bh) {
   if (!factsOverlayEl) return;
-  var key = 'bh:' + state.blackHoleIndex + ':' + state.lang;
+  const key = 'bh:' + state.blackHoleIndex + ':' + state.lang;
   if (key !== factsCurrentKey) {
-    var f = bh.facts[state.lang];
-    var name = state.lang === 'en' ? bh.nameEn : bh.namePl;
+    const f = bh.facts[state.lang];
+    const name = state.lang === 'en' ? bh.nameEn : bh.namePl;
     factsOverlayEl.innerHTML =
       '<div class="sf-header" style="color:' + bh.ringColor + '">' + name + '</div>' +
       '<div class="sf-meta">' + f.type + ' \u00B7 ' + f.constellation + '</div>' +
@@ -2154,7 +2209,7 @@ function showBhFactsCard(bh) {
 }
 
 function placeFactsCard() {
-  var wrap = factsOverlayEl.parentElement;
+  const wrap = factsOverlayEl.parentElement;
   if (!wrap) return;
 
   // Lay out first (so we can measure), then centre on the canvas. The card
@@ -2162,10 +2217,10 @@ function placeFactsCard() {
   // is no flash at the origin before positioning.
   factsOverlayEl.style.display = 'block';
 
-  var cw = factsOverlayEl.offsetWidth  || 340;
-  var ch = factsOverlayEl.offsetHeight || 260;
-  var left = Math.max(10, (wrap.clientWidth  - cw) / 2);
-  var top  = Math.max(10, (wrap.clientHeight - ch) / 2);
+  const cw = factsOverlayEl.offsetWidth  || 340;
+  const ch = factsOverlayEl.offsetHeight || 260;
+  const left = Math.max(10, (wrap.clientWidth  - cw) / 2);
+  const top  = Math.max(10, (wrap.clientHeight - ch) / 2);
 
   factsOverlayEl.style.left = left + 'px';
   factsOverlayEl.style.top  = top  + 'px';
@@ -2184,8 +2239,8 @@ function hideFactsCard() {
 }
 
 function handleSciChange() {
-  var s = parseInt(document.getElementById('sciHidden').value);
-  var v = sliderToTime(s);
+  const s = parseInt(document.getElementById('sciHidden').value);
+  const v = sliderToTime(s);
   if (state.scienceTimingMode === 'earth') state.scienceDurationEarth = v;
   else state.scienceDurationLocal = v;
   updateTimeBar('sciBar', s, v);
@@ -2199,8 +2254,8 @@ function setTimingMode(mode) {
   document.getElementById('modeLocalBtn').classList.toggle('active', mode === 'local');
 
   // Swap the active duration value into the bar
-  var active = mode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
-  var s = timeToSlider(active);
+  const active = mode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
+  const s = timeToSlider(active);
   document.getElementById('sciHidden').value = s;
   updateTimeBar('sciBar', s, active);
 
@@ -2214,7 +2269,7 @@ function setTimingMode(mode) {
 }
 
 function handleSpeedChange() {
-  var s = parseInt(document.getElementById('speedSlider').value);
+  const s = parseInt(document.getElementById('speedSlider').value);
   state.betaCruise = sliderToBeta(s);
   updateSpeedBar('speedBar', s, state.betaCruise);
   rebuildTimeline();
@@ -2236,9 +2291,9 @@ function setWarp(level) {
     // is the "isResearching()" mission-time window [outboundEnd, scienceEnd];
     // transfer is everything else (outbound + return, plus the Earth-wait
     // in advanced local-mode).
-    var tl = state.timeline;
-    var researchYrs = Math.max(0, tl.scienceEnd - tl.outboundEnd);
-    var transferYrs = Math.max(1e-9, tl.earthTotal - researchYrs);
+    const tl = state.timeline;
+    const researchYrs = Math.max(0, tl.scienceEnd - tl.outboundEnd);
+    const transferYrs = Math.max(1e-9, tl.earthTotal - researchYrs);
     scaleResearch = researchYrs / (WALL_SECONDS * WALL_RESEARCH_SHARE);
     scaleTransfer = transferYrs / (WALL_SECONDS * WALL_TRANSFER_SHARE);
     lastTime = 0;
@@ -2257,10 +2312,10 @@ function setWarp(level) {
 }
 
 function updateWarpBtns() {
-  var running = state.phase === 'running';
-  var nBtn = document.getElementById('warpNormalBtn');
-  var fBtn = document.getElementById('warpFastBtn');
-  var ffBtn = document.getElementById('warpFastestBtn');
+  const running = state.phase === 'running';
+  const nBtn = document.getElementById('warpNormalBtn');
+  const fBtn = document.getElementById('warpFastBtn');
+  const ffBtn = document.getElementById('warpFastestBtn');
   nBtn.classList.toggle('active', running && state.warpLevel === 'normal');
   fBtn.classList.toggle('active', running && state.warpLevel === 'fast');
   ffBtn.classList.toggle('active', running && state.warpLevel === 'fastest');
@@ -2283,7 +2338,7 @@ function handleReset() {
   state.shipB.heading = heading(state.earthPos, state.shipB.trajectory.T1);
   state.summaryShown = false;
   lastTime = 0;
-  var overlay = document.querySelector('.result-overlay');
+  const overlay = document.querySelector('.result-overlay');
   if (overlay) overlay.remove();
   updateWarpBtns();
   updateControlStates();
@@ -2291,8 +2346,8 @@ function handleReset() {
 }
 
 function updateControlStates() {
-  var idle = state.phase === 'idle';
-  var complete = state.phase === 'complete';
+  const idle = state.phase === 'idle';
+  const complete = state.phase === 'complete';
 
   // Warp buttons: disabled only on complete
   document.getElementById('warpNormalBtn').disabled = complete;
@@ -2302,14 +2357,14 @@ function updateControlStates() {
   document.getElementById('resetBtn').disabled = idle;
 
   // Parameter inputs: editable only when idle
-  var speedBar = document.getElementById('speedBar');
+  const speedBar = document.getElementById('speedBar');
   if (idle) speedBar.classList.remove('disabled');
   else      speedBar.classList.add('disabled');
 
   document.getElementById('starSelect').disabled   = !idle;
   document.getElementById('bhSelect').disabled     = !idle;
-  var cruiseBar = document.getElementById('cruiseBar');
-  var sciBar    = document.getElementById('sciBar');
+  const cruiseBar = document.getElementById('cruiseBar');
+  const sciBar    = document.getElementById('sciBar');
   if (idle) { cruiseBar.classList.remove('disabled'); sciBar.classList.remove('disabled'); }
   else      { cruiseBar.classList.add('disabled');    sciBar.classList.add('disabled'); }
   document.getElementById('modeEarthBtn').disabled = !idle;
@@ -2319,16 +2374,16 @@ function updateControlStates() {
 // ====================== READOUTS ======================
 
 function updateReadouts() {
-  var tl = state.timeline;
-  var yr = T('lblYr');
+  const tl = state.timeline;
+  const yr = T('lblYr');
   if (!tl) return;
 
   // Phase
   document.getElementById('readPhase').textContent = phaseText();
 
   // Age diff (live)
-  var diff = state.captainAElapsed - state.captainBElapsed;
-  var diffEl = document.getElementById('readAgeDiff');
+  const diff = state.captainAElapsed - state.captainBElapsed;
+  const diffEl = document.getElementById('readAgeDiff');
   diffEl.textContent = diff.toFixed(2) + ' ' + yr;
   if (Math.abs(diff) < 0.005)      diffEl.style.color = 'var(--text-dim)';
   else if (diff > 0)               diffEl.style.color = 'var(--ship-b)'; // B younger
@@ -2339,8 +2394,8 @@ function updateReadouts() {
   document.getElementById('readGBh').textContent   = tl.gBh.toFixed(3);
 
   // Live sentence
-  var liveEl = document.getElementById('liveSentence');
-  var B = getCaptainName('B');
+  const liveEl = document.getElementById('liveSentence');
+  const B = getCaptainName('B');
   liveEl.textContent = T('fmtLiveSentence')
     .replace('{B}', B)
     .replace('{g}', tl.gBh.toFixed(2));
@@ -2369,7 +2424,7 @@ function phaseText() {
 }
 
 function updateInfo() {
-  var text;
+  let text;
   if      (state.phase === 'complete') text = T('infoComplete');
   else if (state.phase === 'running')  text = T('infoRunning');
   else if (state.phase === 'paused')   text = T('infoPaused');
@@ -2380,46 +2435,46 @@ function updateInfo() {
 // ====================== REUNION SUMMARY OVERLAY ======================
 
 function showReunionSummary() {
-  var existing = document.querySelector('.result-overlay');
+  const existing = document.querySelector('.result-overlay');
   if (existing) existing.remove();
 
-  var tl = state.timeline;
-  var yr = T('lblYr');
-  var A = getCaptainName('A');
-  var B = getCaptainName('B');
+  const tl = state.timeline;
+  const yr = T('lblYr');
+  const A = escapeHtml(getCaptainName('A'));
+  const B = escapeHtml(getCaptainName('B'));
 
   // Determine younger
-  var diff = tl.aTotal - tl.bTotal;
-  var younger = null;
+  const diff = tl.aTotal - tl.bTotal;
+  let younger = null;
   if (Math.abs(diff) < 0.005) younger = null;
   else if (diff > 0) younger = 'B';
   else               younger = 'A';
 
   // Detail block
-  var detail =
+  let detail =
     '<span style="color:var(--earth-color)">' + T('summaryLabelEarth') + '</span>: ' + tl.earthTotal.toFixed(2) + ' ' + yr + '<br>' +
     '<span style="color:var(--ship-a)">' + T('summaryLabelCaptainA').replace('{A}', A) + '</span>: ' + tl.aTotal.toFixed(2) + ' ' + yr + ' \u2014 ' + T('lblAge') + ' ' + Math.round(getStartAge('A') + tl.aTotal) + '<br>' +
     '<span style="color:var(--ship-b)">' + T('summaryLabelCaptainB').replace('{B}', B) + '</span>: ' + tl.bTotal.toFixed(2) + ' ' + yr + ' \u2014 ' + T('lblAge') + ' ' + Math.round(getStartAge('B') + tl.bTotal) + '<br>' +
     T('summaryLabelAgeDiff') + ': <b>' + formatYearsMonths(diff) + '</b>';
   if (younger) {
-    var younglabel = younger === 'B' ? B : A;
+    const younglabel = younger === 'B' ? B : A;
     detail += ' \u2014 ' + T('summaryYounger').replace('{B}', younglabel);
   }
 
   // Conclusion — use global regex because placeholders like {A} may appear more than once
   function fmtReplace(tpl, map) {
-    var out = tpl;
-    for (var k in map) out = out.split('{' + k + '}').join(map[k]);
+    let out = tpl;
+    for (const k in map) out = out.split('{' + k + '}').join(map[k]);
     return out;
   }
-  var conclusion;
+  let conclusion;
   if (younger === null) {
     conclusion = T('summaryEqual');
   } else if (tl.mode === 'earth') {
     conclusion = fmtReplace(T('summaryConclusionEarth'), {
       A: A, B: B,
       T: state.scienceDurationEarth.toFixed(2),
-      bh: bhFullName(state.blackHoleIndex),
+      bh: escapeHtml(bhFullName(state.blackHoleIndex)),
       u: state.uBh.toFixed(2),
       g: tl.gBh.toFixed(2),
     });
@@ -2431,7 +2486,7 @@ function showReunionSummary() {
     });
   }
 
-  var overlay = document.createElement('div');
+  const overlay = document.createElement('div');
   overlay.className = 'result-overlay';
   overlay.innerHTML =
     '<div class="overlay-title">' + T('summaryTitle') + '</div>' +
@@ -2444,7 +2499,7 @@ function showReunionSummary() {
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    var overlay = document.querySelector('.result-overlay');
+    const overlay = document.querySelector('.result-overlay');
     if (overlay) overlay.remove();
   }
 });
@@ -2452,11 +2507,11 @@ document.addEventListener('keydown', function(e) {
 // ====================== I18N APPLY ======================
 
 function applyTranslations() {
-  var l = I18N[state.lang];
+  const l = I18N[state.lang];
   document.title = l.title;
   document.documentElement.lang = state.lang;
 
-  var ids = {
+  const ids = {
     titleText: 'title', subtitleText: 'subtitle',
     lblReferenceStar: 'lblReferenceStar',
     lblBlackHole: 'lblBlackHole',
@@ -2471,8 +2526,8 @@ function applyTranslations() {
     lblGammaLabel: 'lblGamma',
     lblGBhLabel: 'lblGBh',
   };
-  for (var id in ids) {
-    var el = document.getElementById(id);
+  for (const id in ids) {
+    const el = document.getElementById(id);
     if (el) el.textContent = l[ids[id]];
   }
 
@@ -2499,7 +2554,7 @@ function applyTranslations() {
 
   // Bar values (re-format with locale unit labels)
   updateTimeBar('cruiseBar', timeToSlider(state.cruiseTime), state.cruiseTime);
-  var sci = state.scienceTimingMode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
+  const sci = state.scienceTimingMode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
   updateTimeBar('sciBar', timeToSlider(sci), sci);
 
   populateStarSelect();
@@ -2515,12 +2570,12 @@ function toggleLang() {
 }
 
 function populateStarSelect() {
-  var sel = document.getElementById('starSelect');
+  const sel = document.getElementById('starSelect');
   sel.innerHTML = '';
-  for (var i = 0; i < STARS.length; i++) {
-    var s = STARS[i];
-    var name = state.lang === 'en' ? s.nameEn : s.namePl;
-    var opt = document.createElement('option');
+  for (let i = 0; i < STARS.length; i++) {
+    const s = STARS[i];
+    const name = state.lang === 'en' ? s.nameEn : s.namePl;
+    const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = name;
     if (i === state.starIndex) opt.selected = true;
@@ -2529,11 +2584,11 @@ function populateStarSelect() {
 }
 
 function populateBhSelect() {
-  var sel = document.getElementById('bhSelect');
+  const sel = document.getElementById('bhSelect');
   sel.innerHTML = '';
-  for (var i = 0; i < BH_CATALOG.length; i++) {
-    var name = bhFullName(i);
-    var opt = document.createElement('option');
+  for (let i = 0; i < BH_CATALOG.length; i++) {
+    const name = bhFullName(i);
+    const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = name;
     if (i === state.blackHoleIndex) opt.selected = true;
@@ -2545,7 +2600,7 @@ function populateBhSelect() {
 
 function animate(timestamp) {
   if (!lastTime) lastTime = timestamp;
-  var rawDt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  const rawDt = Math.min((timestamp - lastTime) / 1000, 0.05);
   lastTime = timestamp;
 
   if (state.phase === 'running') {
@@ -2573,10 +2628,21 @@ initBar(document.getElementById('cruiseBar'), 'cruiseHidden', handleCruiseTimeCh
 updateTimeBar('cruiseBar', timeToSlider(state.cruiseTime), state.cruiseTime);
 
 initBar(document.getElementById('sciBar'), 'sciHidden', handleSciChange, 26);
-var sciInit = state.scienceTimingMode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
+const sciInit = state.scienceTimingMode === 'earth' ? state.scienceDurationEarth : state.scienceDurationLocal;
 updateTimeBar('sciBar', timeToSlider(sciInit), sciInit);
 
 applyTranslations();
+
+// Wire control-panel event handlers
+document.getElementById('langBtn').addEventListener('click', toggleLang);
+document.getElementById('starSelect').addEventListener('change', handleStarChange);
+document.getElementById('bhSelect').addEventListener('change', handleBhChange);
+document.getElementById('modeEarthBtn').addEventListener('click', function() { setTimingMode('earth'); });
+document.getElementById('modeLocalBtn').addEventListener('click', function() { setTimingMode('local'); });
+document.getElementById('warpNormalBtn').addEventListener('click', function() { setWarp('normal'); });
+document.getElementById('warpFastBtn').addEventListener('click', function() { setWarp('fast'); });
+document.getElementById('warpFastestBtn').addEventListener('click', function() { setWarp('fastest'); });
+document.getElementById('resetBtn').addEventListener('click', handleReset);
 
 // Refresh live sentence and overlay when captain/ship names change
 ['captainA', 'shipNameA', 'ageA', 'captainB', 'shipNameB', 'ageB'].forEach(function(id) {
@@ -2590,33 +2656,33 @@ applyTranslations();
 // mouse + touch + pen on all modern browsers. Idle-phase gate applies to both.
 factsOverlayEl = document.getElementById('factsOverlay');
 
-var RING_HIT_TOLERANCE_PX = 12;
+const RING_HIT_TOLERANCE_PX = 12;
 
 function canvasPointerXY(e) {
-  var rect = canvas.getBoundingClientRect();
+  const rect = canvas.getBoundingClientRect();
   return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
 function isOverBhRing(px, py) {
   if (state.phase !== 'idle') return false;
-  var bp = state.bhLabPos;
-  var d = Math.hypot(px - bp.x, py - bp.y);
-  var stationR = stationRadius(state.uBh);
+  const bp = state.bhLabPos;
+  const d = Math.hypot(px - bp.x, py - bp.y);
+  const stationR = stationRadius(state.uBh);
   return Math.abs(d - stationR) <= RING_HIT_TOLERANCE_PX;
 }
 
 function updateUFromPointer(px, py) {
-  var bp = state.bhLabPos;
-  var d = Math.hypot(px - bp.x, py - bp.y);
-  var u = inverseStationRadius(d);
-  var uMin = bhUMin(state.blackHoleIndex);
+  const bp = state.bhLabPos;
+  const d = Math.hypot(px - bp.x, py - bp.y);
+  const u = inverseStationRadius(d);
+  const uMin = bhUMin(state.blackHoleIndex);
   state.uBh = clamp(u, uMin, BH_U_MAX);
   computeShipTrajectories();
   rebuildTimeline();
 }
 
 canvas.addEventListener('pointerdown', function(e) {
-  var p = canvasPointerXY(e);
+  const p = canvasPointerXY(e);
   if (isOverBhRing(p.x, p.y)) {
     state.draggingU = true;
     state.ringHover = true;
@@ -2629,7 +2695,7 @@ canvas.addEventListener('pointerdown', function(e) {
 });
 
 canvas.addEventListener('pointermove', function(e) {
-  var p = canvasPointerXY(e);
+  const p = canvasPointerXY(e);
 
   // Active drag wins over all other interactions.
   if (state.draggingU) {
@@ -2644,18 +2710,26 @@ canvas.addEventListener('pointermove', function(e) {
     return;
   }
 
-  // Non-idle phase: no hover interactions at all.
+  // Non-idle phase: only ship hover is active (no ring drag, no facts card).
   if (state.phase !== 'idle') {
     if (state.ringHover) {
       state.ringHover = false;
       canvas.style.cursor = '';
     }
     hideFactsCard();
+    // Ship hover — check proximity to each ship's current position.
+    const SHIP_HIT = 25;
+    const dA = Math.hypot(p.x - state.shipA.pos.x, p.y - state.shipA.pos.y);
+    const dB = Math.hypot(p.x - state.shipB.pos.x, p.y - state.shipB.pos.y);
+    if (dA < SHIP_HIT && dA <= dB) state.hoveredShip = 'A';
+    else if (dB < SHIP_HIT)        state.hoveredShip = 'B';
+    else                            state.hoveredShip = '';
     return;
   }
+  state.hoveredShip = '';  // clear ship hover when idle
 
   // Ring hover takes precedence over facts card.
-  var overRing = isOverBhRing(p.x, p.y);
+  const overRing = isOverBhRing(p.x, p.y);
   if (overRing !== state.ringHover) {
     state.ringHover = overRing;
     canvas.style.cursor = overRing ? 'grab' : '';
@@ -2663,17 +2737,17 @@ canvas.addEventListener('pointermove', function(e) {
   if (overRing) { hideFactsCard(); return; }
 
   // Star lab hover
-  var star = STARS[state.starIndex];
-  var sp = state.starLabPos;
-  var dStar = Math.hypot(p.x - sp.x, p.y - sp.y);
-  var starHit = state.starLabHitR || ((star.radius || STAR_RADIUS) + 30);
+  const star = STARS[state.starIndex];
+  const sp = state.starLabPos;
+  const dStar = Math.hypot(p.x - sp.x, p.y - sp.y);
+  const starHit = state.starLabHitR || ((star.radius || STAR_RADIUS) + 30);
   if (dStar < starHit) { showStarFactsCard(star); return; }
 
   // BH lab hover (everything inside the glow halo minus the ring band)
-  var bh = BH_CATALOG[state.blackHoleIndex];
-  var bp = state.bhLabPos;
-  var dBh = Math.hypot(p.x - bp.x, p.y - bp.y);
-  var bhHit = state.bhLabHitR || ((bh.coreRadius || BH_RADIUS) * 3);
+  const bh = BH_CATALOG[state.blackHoleIndex];
+  const bp = state.bhLabPos;
+  const dBh = Math.hypot(p.x - bp.x, p.y - bp.y);
+  const bhHit = state.bhLabHitR || ((bh.coreRadius || BH_RADIUS) * 3);
   if (dBh < bhHit) { showBhFactsCard(bh); return; }
 
   hideFactsCard();
@@ -2683,7 +2757,7 @@ canvas.addEventListener('pointerup', function(e) {
   if (state.draggingU) {
     state.draggingU = false;
     try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
-    var p = canvasPointerXY(e);
+    const p = canvasPointerXY(e);
     state.ringHover = isOverBhRing(p.x, p.y);
     canvas.style.cursor = state.ringHover ? 'grab' : '';
   }
@@ -2700,6 +2774,7 @@ canvas.addEventListener('pointercancel', function() {
 canvas.addEventListener('pointerleave', function() {
   if (!state.draggingU) {
     state.ringHover = false;
+    state.hoveredShip = '';
     canvas.style.cursor = '';
     hideFactsCard();
   }

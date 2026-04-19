@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `cr copernicus.html`.
+After making changes, and again before considering the job finished, run `npm run cr -- copernicus.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -744,25 +744,22 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                   >What you are seeing:</b
                 >
                 This is an approximate top-down 2D model of the planets in the
-                ecliptic plane. The planets move on independent Keplerian
-                ellipses with fixed orbital elements. This is not a literal map
-                of how planets move against the background stars in the sky.<br /><br /><b
-                  >Try this:</b
-                >
-                Start with the Sun at the center and turn on trails. You will
-                see clean ellipses. Switch to Earth and Mars will draw looping
-                relative paths. Those loops are not Mars literally circling
-                Earth in space; they show the pattern of relative motion behind
-                retrograde motion as Earth overtakes Mars.<br /><br /><b
-                  >Historical idea:</b
-                >
-                Ptolemy described the planets from Earth using epicycles.
-                Copernicus treated Earth as a planet orbiting the Sun, which
-                explained planetary order and retrograde motion more coherently,
-                although his own model still relied on circles and epicycles.
-                Kepler later showed that planetary orbits are ellipses with the
-                Sun at one focus, and that later Keplerian model is what this
-                app uses.<br /><br />Trails are cleared when you switch center
+                ecliptic plane. Positions are computed using the Astronomy
+                Engine library with full planetary ephemerides. This is not a
+                literal map of how planets move against the background stars in
+                the sky.<br /><br /><b>Try this:</b> Start with the Sun at the
+                center and turn on trails. You will see clean ellipses. Switch
+                to Earth and Mars will draw looping relative paths. Those loops
+                are not Mars literally circling Earth in space; they show the
+                pattern of relative motion behind retrograde motion as Earth
+                overtakes Mars.<br /><br /><b>Historical idea:</b> Ptolemy
+                described the planets from Earth using epicycles. Copernicus
+                treated Earth as a planet orbiting the Sun, which explained
+                planetary order and retrograde motion more coherently, although
+                his own model still relied on circles and epicycles. Kepler
+                later showed that planetary orbits are ellipses with the Sun at
+                one focus, and that later Keplerian model is what this app
+                uses.<br /><br />Trails are cleared when you switch center
                 because each trail only makes sense in the current reference
                 frame.
               </div>
@@ -774,20 +771,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 cia&#x142;o, ale niekt&#xf3;re wybory daj&#x105; znacznie
                 prostszy opis ruchu.<br /><br /><b>Co tu wida&#x107;:</b> To
                 przybli&#x17c;ony, dwuwymiarowy model z g&#xf3;ry, w
-                p&#x142;aszczy&#x17a;nie ekliptyki. Planety poruszaj&#x105;
-                si&#x119; po niezale&#x17c;nych elipsach Keplerowskich o
-                sta&#x142;ych elementach orbitalnych. To nie jest dos&#x142;owna
-                mapa tego, jak planety przesuwaj&#x105; si&#x119; na niebie
-                wzgl&#x119;dem gwiazd t&#x142;a.<br /><br /><b>Spr&#xf3;buj:</b>
-                Zacznij ze S&#x142;o&#x144;cem w centrum i w&#x142;&#x105;cz
-                &#x15b;lady. Zobaczysz czyste elipsy. Prze&#x142;&#x105;cz na
-                Ziemi&#x119;, a Mars zacznie rysowa&#x107; zap&#x119;tlone tory
-                wzgl&#x119;dne. Te p&#x119;tle nie oznaczaj&#x105;, &#x17c;e
-                Mars naprawd&#x119; kr&#x105;&#x17c;y wok&#xf3;&#x142; Ziemi;
-                pokazuj&#x105; wzorzec ruchu wzgl&#x119;dnego, kt&#xf3;ry
-                prowadzi do retrogradacji, gdy Ziemia wyprzedza Marsa.<br /><br /><b
-                  >Idea historyczna:</b
-                >
+                p&#x142;aszczy&#x17a;nie ekliptyki. Pozycje s&#x105; obliczane
+                za pomoc&#x105; biblioteki Astronomy Engine z pe&#x142;nymi
+                efemerydy planetarnymi. To nie jest dos&#x142;owna mapa tego,
+                jak planety przesuwaj&#x105; si&#x119; na niebie wzgl&#x119;dem
+                gwiazd t&#x142;a.<br /><br /><b>Spr&#xf3;buj:</b> Zacznij ze
+                S&#x142;o&#x144;cem w centrum i w&#x142;&#x105;cz &#x15b;lady.
+                Zobaczysz czyste elipsy. Prze&#x142;&#x105;cz na Ziemi&#x119;, a
+                Mars zacznie rysowa&#x107; zap&#x119;tlone tory wzgl&#x119;dne.
+                Te p&#x119;tle nie oznaczaj&#x105;, &#x17c;e Mars naprawd&#x119;
+                kr&#x105;&#x17c;y wok&#xf3;&#x142; Ziemi; pokazuj&#x105; wzorzec
+                ruchu wzgl&#x119;dnego, kt&#xf3;ry prowadzi do retrogradacji,
+                gdy Ziemia wyprzedza Marsa.<br /><br /><b>Idea historyczna:</b>
                 Ptolemeusz opisywa&#x142; planety z perspektywy Ziemi za
                 pomoc&#x105; epicykli. Kopernik potraktowa&#x142; Ziemi&#x119;
                 jako planet&#x119; kr&#x105;&#x17c;&#x105;c&#x105;
@@ -1006,7 +1001,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           dsFetchingMeta: "IMCCE Paris Observatory",
           dsFetchingDesc:
             "Fetching current planet positions from the observatory.",
-          dsOffset: "offset",
         },
         pl: {
           title: "Symulator Uk\u0142adu Odniesienia Kopernika",
@@ -1046,7 +1040,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           dsFetchingMeta: "IMCCE Obserwatorium Paryskie",
           dsFetchingDesc:
             "Pobieranie aktualnych pozycji planet z obserwatorium.",
-          dsOffset: "offset",
         },
       };
       function T(key) {
@@ -1138,6 +1131,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           return fetch(url).then((r) => r.json());
         });
         function afterFetch() {
+          window._app.computeGuidePaths();
           if (state.autoPlayAfterSync) {
             state.autoPlayAfterSync = false;
             state.playing = true;
@@ -1171,9 +1165,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
       window._app = {
         TWO_PI,
-        KM_PER_AU,
-        J2000_MS,
-        MS_PER_YEAR,
         BODIES,
         bodyByKey,
         state,
@@ -1268,8 +1259,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         return { cx: W / 2 + auX * scale, cy: H / 2 - auY * scale };
       }
       function anyTrailEnabled() {
-        for (const k of Object.keys(state.bodyVis)) {
-          if (state.bodyVis[k] === 2) return true;
+        for (const body of BODIES) {
+          if (isActiveBody(body) && state.bodyVis[body.key] === 2) return true;
         }
         return false;
       }
@@ -1670,7 +1661,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         window._app.clearAllTrails();
         for (const k of Object.keys(state.bodyVis)) state.bodyVis[k] = 1;
         window._app.resetLastTimestamp();
-        window._app.computeGuidePaths();
         updateViewToggle();
         syncInactiveVis();
         populateRefFrameSelect();
@@ -1707,7 +1697,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.bodyVis[b.key] = isActiveBody(b) ? 1 : 0;
         }
         updateViewToggle();
-        syncInactiveVis();
         populateRefFrameSelect();
         document.getElementById("refFrameSelect").value = "sun";
         window._app.resize();

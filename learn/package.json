@@ -1,0 +1,16 @@
+{
+  "name": "learn-app-code-review",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cr": "node tools/cr.mjs"
+  },
+  "dependencies": {
+    "eslint": "10.2.0",
+    "espree": "11.2.0",
+    "globals": "16.5.0",
+    "parse5": "8.0.0",
+    "postcss": "8.5.10",
+    "prettier": "3.8.3"
+  }
+}
