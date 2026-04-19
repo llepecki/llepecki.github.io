@@ -1,203 +1,375 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode.">
-<meta name="author" content="Łukasz Łepecki">
-<link rel="canonical" href="https://lepecki.com/learn/morsegen.html">
-<meta property="og:title" content="Morse Code Practice Sheets">
-<meta property="og:description" content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://lepecki.com/learn/morsegen.html">
-<meta property="og:site_name" content="Łukasz Łepecki">
-<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Morse Code Practice Sheets">
-<meta name="twitter:description" content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode.">
-<title>Morse Code Practice Sheets</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.js"></script>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/morsegen.html" />
+    <meta property="og:title" content="Morse Code Practice Sheets" />
+    <meta
+      property="og:description"
+      content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/morsegen.html" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Morse Code Practice Sheets" />
+    <meta
+      name="twitter:description"
+      content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode."
+    />
+    <title>Morse Code Practice Sheets</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js"
+      defer="defer"
+      integrity="sha512-axXaF5grZBaYl7qiM6OMHgsgVXdSLxqq0w7F4CQxuFyrcPmn0JfnqsOtYHUun80g6mRRdvJDrTCyL8LQqBOt/Q=="
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.js"
+      defer="defer"
+      integrity="sha512-nNkHPz+lD0Wf0eFGO0ZDxr+lWiFalFutgVeGkPdVgrG4eXDYUnhfEj9Zmg1QkrJFLC0tGs8ZExyU/1mjs4j93w=="
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-  :root {
-    --bg: #FAFAF7;
-    --panel: #ffffff;
-    --panel-border: #E0DDD6;
-    --text: #37474F;
-    --text-head: #263238;
-    --text-dim: #78909C;
-    --text-label: #90A4AE;
-    --accent: #455A64;
-    --accent-light: #ECEFF1;
-    --canvas-bg: #f5f3ee;
-  }
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+      }
 
-  body {
-    min-height: 100vh;
-    background: linear-gradient(160deg, #FAFAF7 0%, #F0EDE6 100%);
-    font-family: 'Outfit', sans-serif;
-    color: var(--text);
-    -webkit-tap-highlight-color: transparent;
-    display: flex; flex-direction: column;
-  }
+      body {
+        min-height: 100vh;
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+        -webkit-tap-highlight-color: transparent;
+        display: flex;
+        flex-direction: column;
+      }
 
-  header {
-    padding: 6px 28px 5px;
-    border-bottom: 1px solid var(--panel-border);
-    display: flex; align-items: center; gap: 12px;
-  }
-  header h1 { font-size: 18px; font-weight: 700; color: var(--text-head); display: flex; align-items: center; gap: 8px; }
-  header h1 a { color: inherit; text-decoration: none; }
-  header h1 a:hover { opacity: .7; }
-  header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
-  .header-text { flex: 1; }
+      main {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
 
-  .lang-btn {
-    background: none; border: 1px solid var(--panel-border);
-    border-radius: 4px; padding: 3px 8px;
-    cursor: pointer; flex-shrink: 0;
-    color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; font-weight: 700; letter-spacing: 1px;
-    transition: border-color 0.15s, color 0.15s;
-  }
-  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .header-text {
+        flex: 1;
+      }
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
 
-  .toolbar {
-    padding: 12px 28px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--panel-border);
-    display: flex; flex-direction: column; gap: 10px;
-  }
-  .toolbar-row {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  }
+      .lang-btn {
+        background: transparent;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
 
-  .name-input {
-    flex: 1; min-width: 180px;
-    padding: 8px 12px;
-    border: 1.5px solid var(--panel-border);
-    border-radius: 6px;
-    background: var(--panel);
-    font-family: 'Outfit', sans-serif;
-    font-size: 14px;
-    color: var(--text-head);
-    transition: border-color 0.15s;
-  }
-  .name-input:focus { outline: none; border-color: var(--accent); }
-  .name-input::placeholder { color: var(--text-label); }
+      .toolbar {
+        padding: 12px 28px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .toolbar-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
 
-  .action-btn {
-    padding: 10px 18px;
-    background: var(--text-head); color: #fff;
-    border: 1.5px solid transparent; border-radius: 8px;
-    font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;
-    line-height: 1; cursor: pointer; transition: background 0.15s, transform 0.05s;
-    touch-action: manipulation; min-width: 120px;
-  }
-  .action-btn:hover { background: #37474F; }
-  .action-btn:active { transform: scale(0.97); }
-  .action-btn:disabled { background: #B0BEC5; cursor: wait; }
+      .name-input {
+        flex: 1;
+        min-width: 180px;
+        padding: 8px 12px;
+        border: 1.5px solid var(--panel-border);
+        border-radius: 6px;
+        background: var(--panel);
+        font-family: "Outfit", sans-serif;
+        font-size: 14px;
+        color: var(--text-head);
+        transition: border-color 0.15s;
+      }
+      .name-input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .name-input::placeholder {
+        color: var(--text-label);
+      }
 
-  .action-btn.secondary {
-    background: var(--panel); color: var(--accent);
-    border: 1.5px solid var(--panel-border);
-  }
-  .action-btn.secondary:hover { border-color: var(--accent); background: var(--accent-light); }
+      .action-btn {
+        padding: 10px 18px;
+        background: var(--text-head);
+        color: #fff;
+        border: 1.5px solid transparent;
+        border-radius: 8px;
+        font-family: "Outfit", sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          transform 0.05s;
+        touch-action: manipulation;
+        min-width: 120px;
+      }
+      .action-btn:hover {
+        background: #37474f;
+      }
+      .action-btn:active {
+        transform: scale(0.97);
+      }
+      .action-btn:disabled {
+        background: #b0bec5;
+        cursor: wait;
+      }
 
-  .session-id {
-    margin-left: auto;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; color: var(--text-dim);
-    letter-spacing: 1px;
-  }
-  .session-id .label { color: var(--text-label); margin-right: 6px; text-transform: uppercase; font-size: 11px; }
-  .session-id .value { color: var(--text-head); font-weight: 700; }
-  .session-id .sep { color: var(--text-label); margin: 0 8px; }
+      .action-btn.secondary {
+        background: var(--panel);
+        color: var(--accent);
+        border: 1.5px solid var(--panel-border);
+      }
+      .action-btn.secondary:hover {
+        border-color: var(--accent);
+        background: var(--accent-light);
+      }
 
+      .session-id {
+        margin-left: auto;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        color: var(--text-dim);
+        letter-spacing: 1px;
+      }
+      .session-id .label {
+        color: var(--text-label);
+        margin-right: 6px;
+        text-transform: uppercase;
+        font-size: 11px;
+      }
+      .session-id .value {
+        color: var(--text-head);
+        font-weight: 700;
+      }
+      .session-id .sep {
+        color: var(--text-label);
+        margin: 0 8px;
+      }
 
-  .preview-wrap {
-    background: var(--canvas-bg);
-    flex: 1; min-height: 0;
-    padding: 24px;
-    display: flex; justify-content: center; align-items: stretch;
-  }
+      .preview-wrap {
+        background: var(--canvas-bg);
+        flex: 1;
+        min-height: 0;
+        padding: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: stretch;
+      }
 
-  .preview-frame {
-    width: 100%;
-    max-width: 900px;
-    background: #fff;
-    border: 1px solid var(--panel-border);
-    border-radius: 4px;
-    box-shadow: 0 4px 16px rgba(38, 50, 56, 0.08);
-    overflow: hidden;
-  }
-  .preview-frame iframe {
-    width: 100%; height: 100%;
-    border: none; display: block;
-    background: #fff;
-  }
+      .preview-frame {
+        width: 100%;
+        max-width: 900px;
+        background: #fff;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        box-shadow: 0 4px 16px rgba(38, 50, 56, 0.08);
+        overflow: hidden;
+      }
+      .preview-frame iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+        background: #fff;
+      }
 
-  .empty-state {
-    color: var(--text-dim); font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; text-align: center;
-    display: flex; align-items: center; justify-content: center; height: 100%;
-  }
+      @media (max-width: 700px) {
+        .toolbar {
+          padding: 10px 16px;
+          gap: 8px;
+        }
+        .action-btn {
+          padding: 8px 12px;
+          font-size: 13px;
+        }
+        .session-id {
+          width: 100%;
+          margin-left: 0;
+          order: 99;
+          text-align: center;
+        }
+        .name-input {
+          min-width: 140px;
+          font-size: 13px;
+          padding: 7px 10px;
+        }
+        .preview-wrap {
+          padding: 12px;
+          min-height: 60vh;
+        }
+        .preview-frame {
+          min-height: 60vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-icon">&#x1F4E1;</span></a>
+          <span id="titleText">Morse Code Practice Sheets</span>
+        </h1>
+        <p id="subtitleText">
+          Printable A4 sheets for two-kid sender/receiver practice.
+        </p>
+      </div>
+      <button
+        class="lang-btn"
+        type="button"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
 
-  @media (max-width: 700px) {
-    .toolbar { padding: 10px 16px; gap: 8px; }
-    .action-btn { padding: 8px 12px; font-size: 13px; }
-    .session-id { width: 100%; margin-left: 0; order: 99; text-align: center; }
-    .name-input { min-width: 140px; font-size: 13px; padding: 7px 10px; }
-    .preview-wrap { padding: 12px; min-height: 60vh; }
-    .preview-frame { min-height: 60vh; }
-  }
-</style>
-</head>
-<body>
+    <main>
+      <div class="toolbar">
+        <div class="toolbar-row">
+          <input
+            type="text"
+            id="senderInput"
+            class="name-input"
+            placeholder="Sender name"
+            aria-label="Sender name"
+            maxlength="40"
+          />
+          <input
+            type="text"
+            id="receiverInput"
+            class="name-input"
+            placeholder="Receiver name"
+            aria-label="Receiver name"
+            maxlength="40"
+          />
+        </div>
+        <div class="toolbar-row">
+          <button class="action-btn" type="button" id="generateBtn">
+            &#x1F3B2; Generate
+          </button>
+          <button class="action-btn secondary" type="button" id="downloadBtn">
+            &#x2B07; Download
+          </button>
+          <button class="action-btn secondary" type="button" id="printBtn">
+            &#x1F5A8; Print
+          </button>
+          <button
+            class="action-btn secondary"
+            type="button"
+            id="testBtn"
+            title="Test layout"
+          >
+            &#x2713;
+          </button>
+          <span class="session-id">
+            <span class="label" id="sessionLabel">Sequence id</span>
+            <span class="value" id="sessionIdVal">#-----</span>
+            <span class="sep">&middot;</span>
+            <span class="value" id="dateVal">----/--/--</span>
+          </span>
+        </div>
+      </div>
 
-<header>
-  <div class="header-text">
-    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F4E1;</span></a> <span id="titleText">Morse Code Practice Sheets</span></h1>
-    <p id="subtitleText">Printable A4 sheets for two-kid sender/receiver practice.</p>
-  </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
-</header>
+      <div class="preview-wrap">
+        <div class="preview-frame">
+          <iframe id="previewFrame" title="PDF preview"></iframe>
+        </div>
+      </div>
+    </main>
 
-<div class="toolbar">
-  <div class="toolbar-row">
-    <input type="text" id="senderInput" class="name-input" placeholder="Sender name" oninput="onNameChange()" maxlength="40">
-    <input type="text" id="receiverInput" class="name-input" placeholder="Receiver name" oninput="onNameChange()" maxlength="40">
-  </div>
-  <div class="toolbar-row">
-    <button class="action-btn" id="generateBtn" onclick="regenerate()">&#x1F3B2; Generate</button>
-    <button class="action-btn secondary" id="downloadBtn" onclick="downloadPdf()">&#x2B07; Download</button>
-    <button class="action-btn secondary" id="testBtn" onclick="runLayoutTest()" title="Test layout">&#x2713;</button>
-    <span class="session-id">
-      <span class="label" id="sessionLabel">Sequence id</span>
-      <span class="value" id="sessionIdVal">#-----</span>
-      <span class="sep">&middot;</span>
-      <span class="value" id="dateVal">----/--/--</span>
-    </span>
-  </div>
-</div>
-
-<div class="preview-wrap">
-  <div class="preview-frame">
-    <iframe id="previewFrame" title="PDF preview"></iframe>
-  </div>
-</div>
-
-<script>
-/* global pdfMake */
-'use strict';
-
-// ══════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════
+    <!-- prettier-ignore -->
+    <script type="module">
 const state = {
   lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
   sequence: [],
@@ -211,9 +383,6 @@ const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const COLS = 4;
 const ROWS = 7;
 
-// ══════════════════════════════════════════════
-// I18N
-// ══════════════════════════════════════════════
 const I18N = {
   en: {
     title: 'Morse Code Practice Sheets',
@@ -221,6 +390,7 @@ const I18N = {
     generateBtn: '\uD83C\uDFB2 Generate',
     downloadBtn: '\u2B07 Download',
     downloadBusy: '\u2B07 \u2026',
+    printBtn: '\uD83D\uDDA8 Print',
     sessionLabel: 'Sequence id',
     senderLabel: 'Sender',
     receiverLabel: 'Receiver',
@@ -233,6 +403,7 @@ const I18N = {
     generateBtn: '\uD83C\uDFB2 Losuj',
     downloadBtn: '\u2B07 Pobierz',
     downloadBusy: '\u2B07 \u2026',
+    printBtn: '\uD83D\uDDA8 Drukuj',
     sessionLabel: 'Id sekwencji',
     senderLabel: 'Nadawca',
     receiverLabel: 'Odbiorca',
@@ -251,12 +422,16 @@ function applyTranslations() {
   document.getElementById('subtitleText').textContent = l.subtitle;
   document.getElementById('generateBtn').textContent = l.generateBtn;
   document.getElementById('downloadBtn').textContent = l.downloadBtn;
+  document.getElementById('printBtn').textContent = l.printBtn;
   document.getElementById('sessionLabel').textContent = l.sessionLabel;
-  document.getElementById('senderInput').placeholder = l.senderPlaceholder;
-  document.getElementById('receiverInput').placeholder = l.receiverPlaceholder;
+  const senderInput = document.getElementById('senderInput');
+  const receiverInput = document.getElementById('receiverInput');
+  senderInput.placeholder = l.senderPlaceholder;
+  senderInput.setAttribute('aria-label', l.senderPlaceholder);
+  receiverInput.placeholder = l.receiverPlaceholder;
+  receiverInput.setAttribute('aria-label', l.receiverPlaceholder);
 }
 
-// eslint-disable-next-line no-unused-vars
 function toggleLang() {
   state.lang = state.lang === 'en' ? 'pl' : 'en';
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
@@ -264,9 +439,6 @@ function toggleLang() {
   refreshPreview();
 }
 
-// ══════════════════════════════════════════════
-// SHUFFLE & SESSION
-// ══════════════════════════════════════════════
 function fisherYates(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -295,9 +467,6 @@ function todayStr() {
     String(d.getDate()).padStart(2, '0');
 }
 
-// ══════════════════════════════════════════════
-// PDF DOCUMENT DEFINITION
-// ══════════════════════════════════════════════
 function buildSenderCell(letter, idx) {
   return {
     stack: [
@@ -339,28 +508,20 @@ function buildGridBody(cellBuilder) {
 
 function gridLayout() {
   return {
-    hLineWidth: () => 0.6,
-    vLineWidth: () => 0.6,
-    hLineColor: () => '#B0BEC5',
-    vLineColor: () => '#B0BEC5',
-    paddingLeft: () => 4,
-    paddingRight: () => 4,
-    paddingTop: () => 2,
-    paddingBottom: () => 2,
+    hLineWidth: () => 0.6, vLineWidth: () => 0.6,
+    hLineColor: () => '#B0BEC5', vLineColor: () => '#B0BEC5',
+    paddingLeft: () => 4, paddingRight: () => 4,
+    paddingTop: () => 2, paddingBottom: () => 2,
   };
 }
 
 function buildDocDefinition() {
   const senderBody = buildGridBody((idx) => buildSenderCell(state.sequence[idx], idx));
   const receiverBody = buildGridBody((idx) => buildReceiverCell(idx));
-
   const headerBand = (labelKey, name) => {
     const label = T(labelKey);
     const titleParts = name
-      ? [
-          { text: label + ' \u2014 ', color: '#90A4AE' },
-          { text: name, bold: true, color: '#263238' },
-        ]
+      ? [{ text: label + ' \u2014 ', color: '#90A4AE' }, { text: name, bold: true, color: '#263238' }]
       : [{ text: label, bold: true, color: '#455A64' }];
     return {
       columns: [
@@ -370,40 +531,20 @@ function buildDocDefinition() {
       margin: [0, 0, 0, 6],
     };
   };
-
   return {
-    pageSize: 'A4',
-    pageOrientation: 'portrait',
-    pageMargins: [40, 36, 40, 24],
+    pageSize: 'A4', pageOrientation: 'portrait', pageMargins: [40, 36, 40, 24],
     content: [
       headerBand('senderLabel', state.senderName),
-      {
-        table: {
-          widths: ['*', '*', '*', '*'],
-          heights: () => 42,
-          body: senderBody,
-        },
-        layout: gridLayout(),
-      },
+      { table: { widths: ['*', '*', '*', '*'], heights: () => 42, body: senderBody }, layout: gridLayout() },
       { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.6, dash: { length: 3, space: 3 }, lineColor: '#90A4AE' }], absolutePosition: { x: 40, y: 421 } },
       { text: '\u00A0', fontSize: 1, margin: [0, 16, 0, 16] },
       headerBand('receiverLabel', state.receiverName),
-      {
-        table: {
-          widths: ['*', '*', '*', '*'],
-          heights: () => 42,
-          body: receiverBody,
-        },
-        layout: gridLayout(),
-      },
+      { table: { widths: ['*', '*', '*', '*'], heights: () => 42, body: receiverBody }, layout: gridLayout() },
     ],
     defaultStyle: { font: 'Roboto', fontSize: 10, color: '#263238' },
   };
 }
 
-// ══════════════════════════════════════════════
-// PREVIEW & DOWNLOAD
-// ══════════════════════════════════════════════
 function refreshPreview() {
   if (typeof pdfMake === 'undefined') return;
   const pdf = pdfMake.createPdf(buildDocDefinition());
@@ -422,7 +563,6 @@ function regenerate() {
 }
 
 let nameDebounceTimer = null;
-// eslint-disable-next-line no-unused-vars
 function onNameChange() {
   state.senderName = document.getElementById('senderInput').value.trim();
   state.receiverName = document.getElementById('receiverInput').value.trim();
@@ -430,7 +570,6 @@ function onNameChange() {
   nameDebounceTimer = setTimeout(refreshPreview, 600);
 }
 
-// eslint-disable-next-line no-unused-vars
 function downloadPdf() {
   if (typeof pdfMake === 'undefined') return;
   const btn = document.getElementById('downloadBtn');
@@ -444,13 +583,15 @@ function downloadPdf() {
   });
 }
 
-// ══════════════════════════════════════════════
-// LAYOUT TEST
-// ══════════════════════════════════════════════
-const CUT_LINE_Y = 421;        // absolute y position of cut line (pt from page top)
-const TOLERANCE_FOLD = 1.5;     // max acceptable offset from page midpoint (pt)
-const MIN_CLEARANCE = 15;       // min gap between cut line and nearest content (pt)
-const MAX_BALANCE_DIFF = 8;     // max allowed imbalance above vs below (pt)
+function printPdf() {
+  if (typeof pdfMake === 'undefined') return;
+  pdfMake.createPdf(buildDocDefinition()).print();
+}
+
+const CUT_LINE_Y = 421;
+const TOLERANCE_FOLD = 1.5;
+const MIN_CLEARANCE = 15;
+const MAX_BALANCE_DIFF = 8;
 
 function loadPdfJs() {
   if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
@@ -467,7 +608,6 @@ function loadPdfJs() {
   });
 }
 
-// eslint-disable-next-line no-unused-vars
 function runLayoutTest() {
   const btn = document.getElementById('testBtn');
   btn.disabled = true;
@@ -475,7 +615,6 @@ function runLayoutTest() {
   btn.style.background = '';
   btn.style.borderColor = '';
   btn.style.color = '';
-
   loadPdfJs().then((lib) => {
     const pdf = pdfMake.createPdf(buildDocDefinition());
     pdf.getBuffer(async (buf) => {
@@ -486,36 +625,23 @@ function runLayoutTest() {
         const ph = viewport.height;
         const mid = ph / 2;
         const textContent = await page.getTextContent();
-
         const items = textContent.items
           .map((t) => ({ text: t.str, y: ph - t.transform[5], fs: Math.abs(t.transform[3]) }))
           .filter((t) => t.text.trim());
-
         const senderLetters = items.filter((t) => t.fs > 20 && t.fs < 30);
         const lastSender = senderLetters.reduce((a, b) => (b.y > a.y ? b : a), senderLetters[0]);
-        const firstReceiver = items.filter((t) => t.y > CUT_LINE_Y).reduce(
-          (a, b) => (b.y < a.y ? b : a),
-          { y: ph }
-        );
-
+        const firstReceiver = items.filter((t) => t.y > CUT_LINE_Y).reduce((a, b) => (b.y < a.y ? b : a), { y: ph });
         const foldOffset = Math.abs(CUT_LINE_Y - mid);
         const gapAbove = CUT_LINE_Y - lastSender.y;
         const gapBelow = firstReceiver.y - CUT_LINE_Y;
         const balanceDiff = Math.abs(gapAbove - gapBelow);
-
         const checks = [
-          { name: 'Single page', ok: doc.numPages === 1,
-            msg: doc.numPages === 1 ? '1 page' : doc.numPages + ' pages' },
-          { name: 'Fold alignment', ok: foldOffset <= TOLERANCE_FOLD,
-            msg: foldOffset.toFixed(1) + 'pt from midpoint (max ' + TOLERANCE_FOLD + ')' },
-          { name: 'Sender clearance', ok: gapAbove >= MIN_CLEARANCE,
-            msg: gapAbove.toFixed(1) + 'pt above (min ' + MIN_CLEARANCE + ')' },
-          { name: 'Receiver clearance', ok: gapBelow >= MIN_CLEARANCE,
-            msg: gapBelow.toFixed(1) + 'pt below (min ' + MIN_CLEARANCE + ')' },
-          { name: 'Balance', ok: balanceDiff <= MAX_BALANCE_DIFF,
-            msg: balanceDiff.toFixed(1) + 'pt diff (max ' + MAX_BALANCE_DIFF + ')' },
+          { name: 'Single page', ok: doc.numPages === 1, msg: doc.numPages === 1 ? '1 page' : doc.numPages + ' pages' },
+          { name: 'Fold alignment', ok: foldOffset <= TOLERANCE_FOLD, msg: foldOffset.toFixed(1) + 'pt from midpoint (max ' + TOLERANCE_FOLD + ')' },
+          { name: 'Sender clearance', ok: gapAbove >= MIN_CLEARANCE, msg: gapAbove.toFixed(1) + 'pt above (min ' + MIN_CLEARANCE + ')' },
+          { name: 'Receiver clearance', ok: gapBelow >= MIN_CLEARANCE, msg: gapBelow.toFixed(1) + 'pt below (min ' + MIN_CLEARANCE + ')' },
+          { name: 'Balance', ok: balanceDiff <= MAX_BALANCE_DIFF, msg: balanceDiff.toFixed(1) + 'pt diff (max ' + MAX_BALANCE_DIFF + ')' },
         ];
-
         const allPass = checks.every((c) => c.ok);
         const summary = checks.map((c) => (c.ok ? '\u2713' : '\u2717') + ' ' + c.name + ': ' + c.msg);
         const color = allPass ? '#4CAF50' : '#C62828';
@@ -541,21 +667,20 @@ function runLayoutTest() {
   });
 }
 
-// ══════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════
 function init() {
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
+  document.getElementById('langBtn').addEventListener('click', toggleLang);
+  document.getElementById('senderInput').addEventListener('input', onNameChange);
+  document.getElementById('receiverInput').addEventListener('input', onNameChange);
+  document.getElementById('generateBtn').addEventListener('click', regenerate);
+  document.getElementById('downloadBtn').addEventListener('click', downloadPdf);
+  document.getElementById('printBtn').addEventListener('click', printPdf);
+  document.getElementById('testBtn').addEventListener('click', runLayoutTest);
   applyTranslations();
   regenerate();
 }
 
-if (typeof pdfMake !== 'undefined') {
-  init();
-} else {
-  window.addEventListener('load', init);
-}
+init();
 </script>
-
-</body>
+  </body>
 </html>
