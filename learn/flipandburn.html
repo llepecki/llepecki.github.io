@@ -1,2452 +1,3324 @@
-<!DOCTYPE html>
+<!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run cr -- flipandburn.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- flipandburn.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="description" content="Flip and Burn Transfer Game — time your launch and flip to transfer between neighboring planets on a straight-line Epstein drive trajectory.">
-<meta name="author" content="Łukasz Łepecki">
-<link rel="canonical" href="https://lepecki.com/learn/flipandburn.html">
-<meta property="og:title" content="Flip and Burn Transfer Game">
-<meta property="og:description" content="Flip and Burn Transfer Game — time your launch and flip to transfer between neighboring planets on a straight-line Epstein drive trajectory.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://lepecki.com/learn/flipandburn.html">
-<meta property="og:site_name" content="Łukasz Łepecki">
-<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Flip and Burn Transfer Game">
-<meta name="twitter:description" content="Flip and Burn Transfer Game — time your launch and flip to transfer between neighboring planets on a straight-line Epstein drive trajectory.">
-<title>Flip and Burn Transfer Game</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Flip and Burn Transfer Game — time your launch and flip to transfer between neighboring planets on a straight-line Epstein drive trajectory."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/flipandburn.html" />
+    <meta property="og:title" content="Flip and Burn Transfer Game" />
+    <meta
+      property="og:description"
+      content="Flip and Burn Transfer Game — time your launch and flip to transfer between neighboring planets on a straight-line Epstein drive trajectory."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://lepecki.com/learn/flipandburn.html"
+    />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Flip and Burn Transfer Game" />
+    <meta
+      name="twitter:description"
+      content="Flip and Burn Transfer Game — time your launch and flip to transfer between neighboring planets on a straight-line Epstein drive trajectory."
+    />
+    <title>Flip and Burn Transfer Game</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-  :root {
-    --bg: #0b0f18;
-    --panel: #131825;
-    --panel-border: #1e2a3a;
-    --text: #c9d1d9;
-    --text-dim: #6e7a8a;
-    --accent: #58a6ff;
-    --gain: #3fb950;
-    --loss: #f97583;
-  }
+      :root {
+        --bg: #0b0f18;
+        --panel: #131825;
+        --panel-border: #1e2a3a;
+        --text: #c9d1d9;
+        --text-dim: #6e7a8a;
+        --accent: #58a6ff;
+        --gain: #3fb950;
+        --loss: #f97583;
+      }
 
-  body {
-    min-height: 100vh;
-    background: var(--bg);
-    font-family: 'Outfit', sans-serif;
-    color: var(--text);
-  }
+      body {
+        min-height: 100vh;
+        background: var(--bg);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+      }
 
-  header {
-    padding: 20px 28px 16px;
-    border-bottom: 1px solid var(--panel-border);
-    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  }
-  .header-text { flex: 1; }
-  header h1 { font-size: 22px; font-weight: 700; }
-  header h1 a { color: inherit; text-decoration: none; }
-  header h1 a:hover { opacity: .7; }
-  header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
+      header {
+        padding: 20px 28px 16px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
 
-  .lang-btn {
-    background: none; border: 1px solid var(--panel-border);
-    border-radius: 4px; padding: 3px 8px;
-    cursor: pointer; flex-shrink: 0;
-    color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; font-weight: 700; letter-spacing: 1px;
-    transition: border-color 0.15s, color 0.15s;
-  }
-  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
 
-  .main { display: flex; height: calc(100vh - 80px); }
+      .main {
+        display: flex;
+        height: calc(100vh - 80px);
+      }
 
-  .canvas-wrap {
-    flex: 1; position: relative;
-    background: #080c14; min-width: 0;
-  }
-  .canvas-wrap canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+      .canvas-wrap {
+        flex: 1;
+        position: relative;
+        background: #080c14;
+        min-width: 0;
+      }
+      .canvas-wrap canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+      }
 
-  .controls {
-    width: 300px; flex-shrink: 0;
-    padding: 20px;
-    border-left: 1px solid var(--panel-border);
-    display: flex; flex-direction: column; gap: 18px;
-    overflow-y: auto;
-  }
+      .controls {
+        width: 300px;
+        flex-shrink: 0;
+        padding: 20px;
+        border-left: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        overflow-y: auto;
+      }
 
-  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
-  .ctrl-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--text-dim);
-  }
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .ctrl-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
 
-  .type-toggle { display: flex; gap: 6px; }
-  .type-btn {
-    padding: 10px 4px; border-radius: 6px;
-    border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 14px;
-    cursor: pointer; transition: all 0.2s; text-align: center;
-    flex: 1;
-  }
-  .type-btn:hover:not(:disabled) { border-color: var(--accent); }
-  .type-btn.active { border-color: var(--accent); color: var(--accent); }
-  .type-btn:disabled { opacity: 0.3; pointer-events: none; }
-  .type-btn.full-width { flex: none; width: 100%; }
+      .type-toggle {
+        display: flex;
+        gap: 6px;
+      }
+      .type-btn {
+        padding: 10px 4px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        flex: 1;
+      }
+      .type-btn:hover:not(:disabled) {
+        border-color: var(--accent);
+      }
+      .type-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .type-btn:disabled {
+        opacity: 0.3;
+        pointer-events: none;
+      }
+      .type-btn.full-width {
+        flex: none;
+        width: 100%;
+      }
 
-  .planet-select {
-    width: 100%; padding: 8px 10px; border-radius: 6px;
-    border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
-    cursor: pointer; outline: none;
-  }
-  .planet-select:focus { border-color: var(--accent); }
-  .planet-select option { background: var(--panel); color: var(--text); }
+      .planet-select {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        cursor: pointer;
+        outline: none;
+      }
+      .planet-select:focus {
+        border-color: var(--accent);
+      }
+      .planet-select option {
+        background: var(--panel);
+        color: var(--text);
+      }
 
-  .readouts { gap: 6px; }
-  .readout-row {
-    display: flex; justify-content: space-between; align-items: center;
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
-  }
-  .readout-label { color: var(--text-dim); }
-  .readout-val { color: var(--text); }
+      .readouts {
+        gap: 6px;
+      }
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+      }
+      .readout-label {
+        color: var(--text-dim);
+      }
+      .readout-val {
+        color: var(--text);
+      }
 
-  /* Engine button */
-  .engine-btn {
-    width: 100px; height: 100px; border-radius: 20px;
-    border: none; outline: none;
-    background:
-      radial-gradient(circle at 38% 32%, rgba(255,255,255,0.25), transparent 45%),
-      radial-gradient(circle, #e53935 0%, #d32f2f 50%, #b71c1c 100%);
-    color: transparent; font-size: 0;
-    cursor: pointer; transition: all 0.2s;
-    user-select: none; -webkit-user-select: none;
-    touch-action: manipulation;
-    box-shadow:
-      inset 0 -4px 6px rgba(0,0,0,0.3),
-      0 0 0 3px rgba(180,220,220,0.5),
-      0 0 0 14px #9e9e9e,
-      0 0 0 16px #757575,
-      0 6px 20px rgba(0,0,0,0.5);
-    margin: 28px auto 8px;
-    display: block;
-  }
-  .engine-btn.armed {
-    box-shadow:
-      inset 0 -4px 6px rgba(0,0,0,0.3),
-      0 0 0 3px rgba(88,166,255,0.7),
-      0 0 0 14px #9e9e9e,
-      0 0 0 16px #757575,
-      0 0 20px rgba(88,166,255,0.3);
-    animation: pulseEngine 1.5s ease-in-out infinite;
-  }
-  .engine-btn.firing {
-    background:
-      radial-gradient(circle at 38% 32%, rgba(255,255,255,0.35), transparent 45%),
-      radial-gradient(circle, #ff7043 0%, #f4511e 50%, #e64a19 100%);
-    box-shadow:
-      inset 0 -4px 6px rgba(0,0,0,0.2),
-      0 0 0 3px rgba(63,185,80,0.7),
-      0 0 0 14px #9e9e9e,
-      0 0 0 16px #757575,
-      0 0 24px rgba(255,87,34,0.5);
-    animation: none;
-  }
-  .engine-btn:disabled {
-    opacity: 0.3; cursor: not-allowed;
-    animation: none;
-  }
-  .engine-btn:active:not(:disabled) {
-    transform: scale(0.96);
-  }
-  @keyframes pulseEngine {
-    0%, 100% {
-      box-shadow:
-        inset 0 -4px 6px rgba(0,0,0,0.3),
-        0 0 0 3px rgba(88,166,255,0.7),
-        0 0 0 14px #9e9e9e,
-        0 0 0 16px #757575,
-        0 0 0 0 rgba(88,166,255,0);
-    }
-    50% {
-      box-shadow:
-        inset 0 -4px 6px rgba(0,0,0,0.3),
-        0 0 0 3px rgba(88,166,255,0.9),
-        0 0 0 14px #9e9e9e,
-        0 0 0 16px #757575,
-        0 0 20px 6px rgba(88,166,255,0.35);
-    }
-  }
+      /* Engine button */
+      .engine-btn {
+        width: 100px;
+        height: 100px;
+        border-radius: 20px;
+        border: none;
+        outline: none;
+        background:
+          radial-gradient(
+            circle at 38% 32%,
+            rgba(255, 255, 255, 0.25),
+            transparent 45%
+          ),
+          radial-gradient(circle, #e53935 0%, #d32f2f 50%, #b71c1c 100%);
+        color: transparent;
+        font-size: 0;
+        cursor: pointer;
+        transition: all 0.2s;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+        box-shadow:
+          inset 0 -4px 6px rgba(0, 0, 0, 0.3),
+          0 0 0 3px rgba(180, 220, 220, 0.5),
+          0 0 0 14px #9e9e9e,
+          0 0 0 16px #757575,
+          0 6px 20px rgba(0, 0, 0, 0.5);
+        margin: 28px auto 8px;
+        display: block;
+      }
+      .engine-btn.armed {
+        box-shadow:
+          inset 0 -4px 6px rgba(0, 0, 0, 0.3),
+          0 0 0 3px rgba(88, 166, 255, 0.7),
+          0 0 0 14px #9e9e9e,
+          0 0 0 16px #757575,
+          0 0 20px rgba(88, 166, 255, 0.3);
+        animation: pulseEngine 1.5s ease-in-out infinite;
+      }
+      .engine-btn.firing {
+        background:
+          radial-gradient(
+            circle at 38% 32%,
+            rgba(255, 255, 255, 0.35),
+            transparent 45%
+          ),
+          radial-gradient(circle, #ff7043 0%, #f4511e 50%, #e64a19 100%);
+        box-shadow:
+          inset 0 -4px 6px rgba(0, 0, 0, 0.2),
+          0 0 0 3px rgba(63, 185, 80, 0.7),
+          0 0 0 14px #9e9e9e,
+          0 0 0 16px #757575,
+          0 0 24px rgba(255, 87, 34, 0.5);
+        animation: none;
+      }
+      .engine-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        animation: none;
+      }
+      .engine-btn:active:not(:disabled) {
+        transform: scale(0.96);
+      }
+      @keyframes pulseEngine {
+        0%,
+        100% {
+          box-shadow:
+            inset 0 -4px 6px rgba(0, 0, 0, 0.3),
+            0 0 0 3px rgba(88, 166, 255, 0.7),
+            0 0 0 14px #9e9e9e,
+            0 0 0 16px #757575,
+            0 0 0 0 rgba(88, 166, 255, 0);
+        }
+        50% {
+          box-shadow:
+            inset 0 -4px 6px rgba(0, 0, 0, 0.3),
+            0 0 0 3px rgba(88, 166, 255, 0.9),
+            0 0 0 14px #9e9e9e,
+            0 0 0 16px #757575,
+            0 0 20px 6px rgba(88, 166, 255, 0.35);
+        }
+      }
 
-  /* Burn meter */
-  .burn-meter-wrap { position: relative; width: 100%; height: 40px; }
-  .burn-meter {
-    width: 100%; height: 36px; margin-top: 0;
-    background: var(--panel-border); border-radius: 4px; overflow: hidden;
-    position: relative;
-  }
-  .burn-fill {
-    height: 100%; width: 0%;
-    background: var(--accent); border-radius: 4px;
-    transition: background 0.15s;
-  }
-  .burn-fill.over { background: var(--loss); }
-  .burn-fill.good { background: var(--gain); }
-  .burn-fill.fatal { background: #8b0000; }
-  .burn-target {
-    position: absolute; top: 0; height: 100%;
-    border-left: 3px solid #1a7f37;
-    border-right: 3px solid #1a7f37;
-    background: rgba(63,185,80,0.15);
-    pointer-events: none;
-  }
+      /* Burn meter */
+      .burn-meter-wrap {
+        position: relative;
+        width: 100%;
+        height: 40px;
+      }
+      .burn-meter {
+        width: 100%;
+        height: 36px;
+        margin-top: 0;
+        background: var(--panel-border);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+      .burn-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--accent);
+        border-radius: 4px;
+        transition: background 0.15s;
+      }
+      .burn-fill.over {
+        background: var(--loss);
+      }
+      .burn-fill.good {
+        background: var(--gain);
+      }
+      .burn-fill.fatal {
+        background: #8b0000;
+      }
+      .burn-target {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        border-left: 3px solid #1a7f37;
+        border-right: 3px solid #1a7f37;
+        background: rgba(63, 185, 80, 0.15);
+        pointer-events: none;
+      }
 
+      .info-text {
+        font-size: 12px;
+        color: var(--text-dim);
+        line-height: 1.6;
+      }
 
-  .info-text {
-    font-size: 12px; color: var(--text-dim); line-height: 1.6;
-  }
+      /* Canvas prompt overlay */
+      .canvas-prompt {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 20px;
+        border-radius: 8px;
+        background: rgba(11, 15, 24, 0.85);
+        border: 1px solid var(--panel-border);
+        font-family: "Outfit", sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-dim);
+        text-align: center;
+        pointer-events: none;
+        transition:
+          color 0.3s,
+          border-color 0.3s;
+        white-space: nowrap;
+        z-index: 10;
+      }
+      .canvas-prompt.highlight {
+        color: var(--gain);
+        border-color: var(--gain);
+        animation: promptPulse 1s ease-in-out infinite;
+      }
+      .canvas-prompt.active {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+      .canvas-prompt.cruise {
+        color: var(--text-dim);
+        border-color: var(--panel-border);
+      }
+      @keyframes promptPulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(63, 185, 80, 0);
+        }
+        50% {
+          box-shadow: 0 0 14px 3px rgba(63, 185, 80, 0.3);
+        }
+      }
 
-  /* Canvas prompt overlay */
-  .canvas-prompt {
-    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
-    padding: 8px 20px; border-radius: 8px;
-    background: rgba(11,15,24,0.85);
-    border: 1px solid var(--panel-border);
-    font-family: 'Outfit', sans-serif;
-    font-size: 15px; font-weight: 600;
-    color: var(--text-dim);
-    text-align: center;
-    pointer-events: none;
-    transition: color 0.3s, border-color 0.3s;
-    white-space: nowrap;
-    z-index: 10;
-  }
-  .canvas-prompt.highlight {
-    color: var(--gain);
-    border-color: var(--gain);
-    animation: promptPulse 1s ease-in-out infinite;
-  }
-  .canvas-prompt.active {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-  .canvas-prompt.cruise {
-    color: var(--text-dim);
-    border-color: var(--panel-border);
-  }
-  @keyframes promptPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(63,185,80,0); }
-    50% { box-shadow: 0 0 14px 3px rgba(63,185,80,0.3); }
-  }
+      /* HUD group (top-left overlay) */
+      .hud-group {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        pointer-events: none;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .met-clock {
+        padding: 8px 18px;
+        background: rgba(11, 15, 24, 0.88);
+        border: 1px solid var(--panel-border);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: var(--gain);
+        text-shadow: 0 0 10px rgba(63, 185, 80, 0.4);
+        transition:
+          color 0.3s,
+          text-shadow 0.3s,
+          opacity 0.3s;
+        min-width: 110px;
+        text-align: center;
+      }
+      .met-clock.is-top {
+        border-radius: 8px 8px 0 0;
+        border-bottom: none;
+      }
+      .met-clock.is-bottom {
+        border-radius: 0 0 8px 8px;
+        border-top: none;
+      }
+      .hud-group.paused {
+        opacity: 0.7;
+      }
 
-  /* HUD group (top-left overlay) */
-  .hud-group {
-    position: absolute;
-    top: 16px; left: 16px;
-    pointer-events: none; z-index: 10;
-    display: flex; flex-direction: column; gap: 0;
-  }
-  .met-clock {
-    padding: 8px 18px;
-    background: rgba(11,15,24,0.88);
-    border: 1px solid var(--panel-border);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 18px; font-weight: 700; letter-spacing: 2px;
-    color: var(--gain);
-    text-shadow: 0 0 10px rgba(63,185,80,0.4);
-    transition: color 0.3s, text-shadow 0.3s, opacity 0.3s;
-    min-width: 110px; text-align: center;
-  }
-  .met-clock.is-top    { border-radius: 8px 8px 0 0; border-bottom: none; }
-  .met-clock.is-bottom { border-radius: 0 0 8px 8px; border-top: none; }
-  .hud-group.paused { opacity: 0.7; }
+      /* Step indicator */
+      .step-indicator {
+        position: absolute;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        pointer-events: none;
+        z-index: 10;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+      }
+      .step-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 1.5px solid var(--text-dim);
+        background: transparent;
+        transition: all 0.3s;
+      }
+      .step-dot.done {
+        background: var(--gain);
+        border-color: var(--gain);
+      }
+      .step-dot.current {
+        border-color: var(--accent);
+        box-shadow: 0 0 6px rgba(88, 166, 255, 0.5);
+      }
+      .step-label {
+        color: var(--text-dim);
+        margin: 0 2px;
+      }
+      .step-label.current {
+        color: var(--accent);
+      }
 
-  /* Step indicator */
-  .step-indicator {
-    position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 8px; align-items: center;
-    pointer-events: none; z-index: 10;
-    font-family: 'Share Tech Mono', monospace; font-size: 11px;
-  }
-  .step-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    border: 1.5px solid var(--text-dim);
-    background: transparent;
-    transition: all 0.3s;
-  }
-  .step-dot.done { background: var(--gain); border-color: var(--gain); }
-  .step-dot.current { border-color: var(--accent); box-shadow: 0 0 6px rgba(88,166,255,0.5); }
-  .step-label { color: var(--text-dim); margin: 0 2px; }
-  .step-label.current { color: var(--accent); }
+      /* Inset */
+      .inset-wrap {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        width: 150px;
+        height: 150px;
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .inset-wrap canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
 
-  /* Inset */
-  .inset-wrap {
-    position: absolute; left: 12px; bottom: 12px;
-    width: 150px; height: 150px;
-    border: 1px solid var(--panel-border);
-    border-radius: 8px; overflow: hidden;
-    pointer-events: none;
-  }
-  .inset-wrap canvas { width: 100%; height: 100%; display: block; }
+      /* Result overlay */
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        font-family: "Outfit", sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 16px;
+        color: #fff;
+      }
+      .overlay-sub {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .overlay-hint {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        margin-top: 12px;
+        color: rgba(255, 255, 255, 0.5);
+      }
 
-  /* Result overlay */
-  .result-overlay {
-    position: fixed; inset: 0; z-index: 9999;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    cursor: pointer;
-    animation: overlayFadeIn 0.3s ease;
-  }
-  .overlay-emoji { font-size: 72px; animation: overlayPop 0.4s ease; }
-  .overlay-msg {
-    font-family: 'Outfit', sans-serif;
-    font-size: 24px; font-weight: 700;
-    margin-top: 16px; color: #fff;
-  }
-  .overlay-sub {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 14px; margin-top: 8px; color: rgba(255,255,255,0.85);
-  }
-  .overlay-hint {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; margin-top: 12px; color: rgba(255,255,255,0.5);
-  }
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
 
-  @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes overlayPop {
-    0% { transform: scale(0.3); }
-    70% { transform: scale(1.15); }
-    100% { transform: scale(1); }
-  }
+      @media (max-width: 700px) {
+        .main {
+          flex-direction: column;
+        }
+        .canvas-wrap {
+          min-height: 350px;
+          flex: 1;
+        }
+        .controls {
+          width: 100%;
+          flex-direction: row;
+          flex-wrap: wrap;
+          border-left: none;
+          border-top: 1px solid var(--panel-border);
+          padding: 12px 16px;
+          gap: 12px;
+        }
+        .ctrl-group {
+          min-width: 140px;
+          flex: 1;
+        }
+        .hud-group {
+          top: 10px;
+          left: 10px;
+        }
+        .met-clock {
+          font-size: 14px;
+          padding: 6px 14px;
+          min-width: 90px;
+        }
+      }
 
-  @media (max-width: 700px) {
-    .main { flex-direction: column; }
-    .canvas-wrap { min-height: 350px; flex: 1; }
-    .controls {
-      width: 100%; flex-direction: row; flex-wrap: wrap;
-      border-left: none; border-top: 1px solid var(--panel-border);
-      padding: 12px 16px; gap: 12px;
-    }
-    .ctrl-group { min-width: 140px; flex: 1; }
-    .hud-group { top: 10px; left: 10px; }
-    .met-clock { font-size: 14px; padding: 6px 14px; min-width: 90px; }
-  }
-</style>
-</head>
-<body>
+      @media (prefers-reduced-motion: reduce) {
+        .engine-btn.armed {
+          animation: none;
+        }
+        .canvas-prompt.highlight {
+          animation: none;
+        }
+        .overlay-emoji {
+          animation: none;
+        }
+        .result-overlay {
+          animation: none;
+        }
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms;
+        }
+      }
 
-<header>
-  <div class="header-text">
-    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Flip and Burn</span></h1>
-    <p id="subtitleText">Time your launch and flip to transfer between planets on a straight-line Epstein drive trajectory.</p>
-  </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
-</header>
-
-<div class="main">
-  <div class="canvas-wrap">
-    <canvas id="canvas"></canvas>
-    <div class="hud-group">
-      <div class="met-clock is-top" id="accelDisplay">0 g</div>
-      <div class="met-clock is-bottom" id="transferTimeDisplay"></div>
-    </div>
-    <div class="canvas-prompt" id="canvasPrompt"></div>
-    <div class="step-indicator" id="stepIndicator">
-      <span class="step-label current" id="stepLbl1">1 Launch</span>
-      <div class="step-dot current" id="stepDot1"></div>
-      <span class="step-label" id="stepLbl2">2 Flip</span>
-      <div class="step-dot" id="stepDot2"></div>
-      <span class="step-label" id="stepLbl3">3 Arrive</span>
-      <div class="step-dot" id="stepDot3"></div>
-    </div>
-    <div class="inset-wrap">
-      <canvas id="insetCanvas"></canvas>
-    </div>
-  </div>
-
-  <div class="controls">
-    <div class="ctrl-group">
-      <span class="ctrl-label" id="lblHome">Home</span>
-      <select class="planet-select" id="homeSelect"></select>
-    </div>
-
-    <div class="ctrl-group">
-      <span class="ctrl-label" id="lblDest">Destination</span>
-      <select class="planet-select" id="destSelect"></select>
-    </div>
-
-    <div class="ctrl-group">
-      <span class="ctrl-label" id="lblDifficulty">Difficulty</span>
-      <div class="type-toggle">
-        <button class="type-btn active" id="diffEasyBtn" onclick="setDifficulty('easy')">&#x2605;</button>
-        <button class="type-btn" id="diffMediumBtn" onclick="setDifficulty('medium')">&#x2605;&#x2605;</button>
-        <button class="type-btn" id="diffHardBtn" onclick="setDifficulty('hard')">&#x2605;&#x2605;&#x2605;</button>
+      .header-emoji {
+        font-size: 18px;
+        line-height: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-emoji">&#x1F680;</span></a>
+          <span id="titleText">Flip and Burn</span>
+        </h1>
+        <p id="subtitleText">
+          Time your launch and flip to transfer between planets on a
+          straight-line Epstein drive trajectory.
+        </p>
       </div>
-    </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        aria-label="Switch language"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
 
-    <div class="ctrl-group">
-      <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
-      <div class="type-toggle">
-        <button class="type-btn active" id="warpNormalBtn" onclick="setWarp('normal')">&#x25b6;</button>
-        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">&#x25b6;&#x25b6;</button>
-        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">&#x25b6;&#x25b6;&#x25b6;</button>
-        <button class="type-btn" id="resetBtn" onclick="resetMission()">&#x25a0;</button>
-      </div>
-    </div>
-
-    <div class="ctrl-group">
-      <button class="engine-btn" id="engineBtn"></button>
-    </div>
-
-    <div class="ctrl-group" id="grpBurnMeter">
-      <span class="ctrl-label" id="lblBurn">Burn</span>
-      <div class="burn-meter-wrap">
-        <div class="burn-meter">
-          <div class="burn-target" id="burnTarget"></div>
-          <div class="burn-fill" id="burnFill"></div>
+    <main class="main">
+      <div class="canvas-wrap">
+        <canvas
+          id="canvas"
+          aria-label="Flip and burn transfer simulation"
+        ></canvas>
+        <div class="hud-group">
+          <div class="met-clock is-top" id="accelDisplay">0 g</div>
+          <div class="met-clock is-bottom" id="transferTimeDisplay"></div>
+        </div>
+        <div class="canvas-prompt" id="canvasPrompt"></div>
+        <div class="step-indicator" id="stepIndicator">
+          <span class="step-label current" id="stepLbl1">1 Launch</span>
+          <div class="step-dot current" id="stepDot1"></div>
+          <span class="step-label" id="stepLbl2">2 Flip</span>
+          <div class="step-dot" id="stepDot2"></div>
+          <span class="step-label" id="stepLbl3">3 Arrive</span>
+          <div class="step-dot" id="stepDot3"></div>
+        </div>
+        <div class="inset-wrap">
+          <canvas
+            id="insetCanvas"
+            aria-label="Inset planet approach view"
+          ></canvas>
         </div>
       </div>
-    </div>
 
-    <div class="ctrl-group readouts" id="grpReadouts">
-      <div class="readout-row">
-        <span class="readout-label" id="lblMission">Mission</span>
-        <span class="readout-val" id="missionVal">&mdash;</span>
+      <div class="controls">
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblHome">Home</span>
+          <select
+            class="planet-select"
+            id="homeSelect"
+            aria-label="Home planet"
+          ></select>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblDest">Destination</span>
+          <select
+            class="planet-select"
+            id="destSelect"
+            aria-label="Destination planet"
+          ></select>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblDifficulty">Difficulty</span>
+          <div class="type-toggle">
+            <button
+              type="button"
+              class="type-btn active"
+              id="diffEasyBtn"
+              aria-label="Easy difficulty"
+            >
+              &#x2605;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="diffMediumBtn"
+              aria-label="Medium difficulty"
+            >
+              &#x2605;&#x2605;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="diffHardBtn"
+              aria-label="Hard difficulty"
+            >
+              &#x2605;&#x2605;&#x2605;
+            </button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
+          <div class="type-toggle">
+            <button
+              type="button"
+              class="type-btn active"
+              id="warpNormalBtn"
+              aria-label="Normal speed"
+            >
+              &#x25b6;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="warpFastBtn"
+              aria-label="Fast speed"
+            >
+              &#x25b6;&#x25b6;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="warpFastestBtn"
+              aria-label="Fastest speed"
+            >
+              &#x25b6;&#x25b6;&#x25b6;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="resetBtn"
+              aria-label="Reset mission"
+            >
+              &#x25a0;
+            </button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <button
+            type="button"
+            class="engine-btn"
+            id="engineBtn"
+            aria-label="Engine control"
+          ></button>
+        </div>
+
+        <div class="ctrl-group" id="grpBurnMeter">
+          <span class="ctrl-label" id="lblBurn">Burn</span>
+          <div class="burn-meter-wrap">
+            <div class="burn-meter">
+              <div class="burn-target" id="burnTarget"></div>
+              <div class="burn-fill" id="burnFill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ctrl-group readouts" id="grpReadouts">
+          <div class="readout-row">
+            <span class="readout-label" id="lblMission">Mission</span>
+            <span class="readout-val" id="missionVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblBraking">Braking</span>
+            <span class="readout-val" id="brakingVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblDv1">Departure &Delta;v</span>
+            <span class="readout-val" id="dv1Val">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblDv2">Arrival &Delta;v</span>
+            <span class="readout-val" id="dv2Val">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblPhase">Phase angle</span>
+            <span class="readout-val" id="phaseVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblStatus">Status</span>
+            <span class="readout-val" id="statusVal">&mdash;</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group info-text">
+          <span id="infoText"></span>
+        </div>
       </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblBraking">Braking</span>
-        <span class="readout-val" id="brakingVal">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblDv1">Departure &Delta;v</span>
-        <span class="readout-val" id="dv1Val">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblDv2">Arrival &Delta;v</span>
-        <span class="readout-val" id="dv2Val">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblPhase">Phase angle</span>
-        <span class="readout-val" id="phaseVal">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblStatus">Status</span>
-        <span class="readout-val" id="statusVal">&mdash;</span>
-      </div>
-    </div>
-
-    <div class="ctrl-group info-text">
-      <span id="infoText"></span>
-    </div>
-  </div>
-</div>
-
-<script>
-'use strict';
-
-/* ══════════════════════════════════════════════ */
-/* Constants                                      */
-/* ══════════════════════════════════════════════ */
-
-var TWO_PI = 2 * Math.PI;
-var DEG2RAD = Math.PI / 180;
-var SIM_RATE = 1 / 15;      // years per real-second at x1
-var MAX_DT = 0.05;           // cap real dt at 50 ms
-var AU_TO_KMS = 4.7405;      // 1 AU/yr in km/s (approx)
-
-var G_TO_AUYR2 = 65283.465095;
-var A_REF = 1.5 * G_TO_AUYR2;           // 1.5 g — comfortable Earther cruise
-var CREW_SAFE_G = 1.0;                  // below this: 0% death
-var CREW_DEAD_G = 10.0;                 // above this: 100% death (sustained)
-var GREEN_LOW_G = 1.0;                  // green zone lower bound (g)
-var GREEN_HIGH_G = 3.0;                 // green zone upper bound (g)
-var METER_MIN_G = 0.3;                  // meter bottom (g)
-var METER_MAX_G = 20.0;                 // meter top (g)
-var A_CREW_DEAD = CREW_DEAD_G * G_TO_AUYR2;
-var SOLAR_KILL_RADIUS = 0.18;           // AU
-var SOLAR_SAFE_RADIUS = 0.22;           // AU
-var FLIP_ANIM_MS = 400;                 // ms
-
-var DIFFICULTY = {
-  easy:   { BURN_SHRINK_SEC: Infinity, BOUNCE_AMP: 0,    BOUNCE_FREQ: 0,   PHASE_TOL_DEG: 30 },
-  medium: { BURN_SHRINK_SEC: 5,        BOUNCE_AMP: 0,    BOUNCE_FREQ: 0,   PHASE_TOL_DEG: 15 },
-  hard:   { BURN_SHRINK_SEC: 3,        BOUNCE_AMP: 0.15, BOUNCE_FREQ: 0.8, PHASE_TOL_DEG: 8 }
-};
-
-/* ══════════════════════════════════════════════ */
-/* Orbital Data                                   */
-/* ══════════════════════════════════════════════ */
-
-var BODIES = [
-  { key: 'sun',     color: '#FFD700', glow: '255,215,0',   radius: 14, a: 0,       e: 0,      T: 0,       pomega: 0,      L0: 0 },
-  { key: 'mercury', color: '#A0A0A0', glow: '160,160,160', radius: 3,  a: 0.3871,  e: 0.2056, T: 0.2408,  pomega: 77.46,  L0: 252.25 },
-  { key: 'venus',   color: '#F5DEB3', glow: '245,222,179', radius: 4,  a: 0.7233,  e: 0.0068, T: 0.6152,  pomega: 131.60, L0: 181.98 },
-  { key: 'earth',   color: '#4db8ff', glow: '77,184,255',  radius: 5,  a: 1.0000,  e: 0.0167, T: 1.0000,  pomega: 102.93, L0: 100.47 },
-  { key: 'mars',    color: '#E05030', glow: '224,80,48',   radius: 4,  a: 1.5237,  e: 0.0934, T: 1.8809,  pomega: 336.08, L0: 355.43 },
-  { key: 'jupiter', color: '#D4944A', glow: '212,148,74',  radius: 8,  a: 5.2034,  e: 0.0484, T: 11.862,  pomega: 14.33,  L0: 34.40 },
-  { key: 'saturn',  color: '#C8A84C', glow: '200,168,76',  radius: 7,  a: 9.5371,  e: 0.0542, T: 29.457,  pomega: 93.06,  L0: 49.94 },
-  { key: 'uranus',  color: '#7CC8D8', glow: '124,200,216', radius: 5,  a: 19.1913, e: 0.0472, T: 84.021,  pomega: 173.00, L0: 313.23 },
-  { key: 'neptune', color: '#4060C0', glow: '64,96,192',   radius: 5,  a: 30.0690, e: 0.0086, T: 164.8,   pomega: 48.12,  L0: 304.88 }
-];
-
-BODIES.forEach(function(b) {
-  if (b.key === 'sun') return;
-  b.pomegaRad = b.pomega * DEG2RAD;
-  b.L0rad = b.L0 * DEG2RAD;
-  b.n = TWO_PI / b.T;
-  b.M0 = b.L0rad - b.pomegaRad;
-  b.bSemi = b.a * Math.sqrt(1 - b.e * b.e);
-  b.cosPom = Math.cos(b.pomegaRad);
-  b.sinPom = Math.sin(b.pomegaRad);
-});
-
-var bodyByKey = {};
-BODIES.forEach(function(b) { bodyByKey[b.key] = b; });
-
-var PLANET_KEYS = ['mercury','venus','earth','mars','jupiter','saturn','uranus','neptune'];
-
-/* ══════════════════════════════════════════════ */
-/* I18N                                           */
-/* ══════════════════════════════════════════════ */
-
-var I18N = {
-  en: {
-    title: 'Flip and Burn',
-    subtitle: 'Time your launch and flip to transfer between planets on a straight-line Epstein drive trajectory.',
-    home: 'Home',
-    destination: 'Destination',
-    difficulty: 'Difficulty',
-    easy: '\u2605', medium: '\u2605\u2605', hard: '\u2605\u2605\u2605',
-    timeWarp: 'Time Warp',
-    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
-    engine: 'ENGINE',
-    burn: 'Burn',
-    mission: 'Mission',
-    braking: 'Braking',
-    dv1: 'Departure \u0394v',
-    dv2: 'Arrival \u0394v',
-    phase: 'Phase angle',
-    status: 'Status',
-    reset: '\u25a0',
-    mercury: 'Mercury', venus: 'Venus', earth: 'Earth', mars: 'Mars',
-    jupiter: 'Jupiter', saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune',
-    waiting: 'Waiting for window',
-    goodWindow: 'Window open \u2014 fire!',
-    burning: 'Burning...',
-    flipping: 'Flipping...',
-    brakingStatus: 'Braking',
-    coastingStatus: 'Coasting',
-    missed: 'Missed',
-    tooEarly: 'Too early',
-    tooLate: 'Too late',
-    promptReady: 'Hold ENGINE to launch!',
-    promptFlip: 'Hold ENGINE \u2014 release in the green zone to flip',
-    promptBrake: 'Braking to destination...',
-    promptCoast: 'Coasting \u2014 engines off...',
-    engineWait: 'WAIT...',
-    engineLaunch: 'HOLD TO LAUNCH',
-    engineHold: 'HOLDING...',
-    launchZone: 'Launch zone',
-    stepLaunch: 'Launch',
-    stepFlip: 'Flip',
-    stepArrive: 'Arrive',
-    resultSuccess: 'Perfect Transfer!',
-    resultInjured: 'Crew Injured!',
-    resultSlow: 'Snail Transfer!',
-    resultMiss: 'Missed',
-    resultFatal: 'Crew Lost',
-    hintEarlyLaunch: 'You launched too early \u2014 wait for the planets to align.',
-    hintLateLaunch: 'You launched too late \u2014 the window passed.',
-    hintHighG: 'Acceleration too high \u2014 crew couldn\u2019t survive the g-forces.',
-    hintInjured: 'The crew survived but sustained injuries from the high g-forces.',
-    hintSlowTransfer: 'Transfer completed but acceleration was far from optimal.',
-    hintSolarFatal: 'Too close to the Sun \u2014 crew cooked.',
-    clickDismiss: 'Click to try again',
-    info: 'This is a simplified 2D teaching model. Planets follow approximate eccentric Keplerian orbits. The spacecraft follows a straight-line constant-acceleration "flip and burn" profile between departure and predicted intercept positions.<br><br>An <b>Epstein drive flip-and-burn</b> accelerates halfway, rotates 180\u00b0, then decelerates the rest of the way. Hold ENGINE to choose your acceleration. Higher acceleration means a faster transfer but more g-force on the crew. Too high and they don\u2019t survive.',
-    years: 'yr', days: 'd', hours: 'h',
-    promptStart: 'Press \u25b6 to begin'
-  },
-  pl: {
-    title: 'Flip and Burn',
-    subtitle: 'Wybierz moment startu i flipu, aby przelecie\u0107 mi\u0119dzy planetami na nap\u0119dzie Epsteina.',
-    home: 'Start',
-    destination: 'Cel',
-    difficulty: 'Trudno\u015b\u0107',
-    easy: '\u2605', medium: '\u2605\u2605', hard: '\u2605\u2605\u2605',
-    timeWarp: 'Przyspieszenie',
-    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
-    engine: 'SILNIK',
-    burn: 'Ci\u0105g',
-    mission: 'Misja',
-    braking: 'Hamowanie',
-    dv1: '\u0394v startowe',
-    dv2: '\u0394v hamuj\u0105ce',
-    phase: 'K\u0105t fazowy',
-    status: 'Status',
-    reset: '\u25a0',
-    mercury: 'Merkury', venus: 'Wenus', earth: 'Ziemia', mars: 'Mars',
-    jupiter: 'Jowisz', saturn: 'Saturn', uranus: 'Uran', neptune: 'Neptun',
-    waiting: 'Czekanie na okno',
-    goodWindow: 'Okno otwarte \u2014 odpal!',
-    burning: 'Ci\u0105g...',
-    flipping: 'Flip...',
-    brakingStatus: 'Hamowanie',
-    coastingStatus: 'Dryf',
-    missed: 'Nietrafiony',
-    tooEarly: 'Za wcze\u015bnie',
-    tooLate: 'Za p\u00f3\u017ano',
-    promptReady: 'Przytrzymaj SILNIK aby wystartowa\u0107!',
-    promptFlip: 'Trzymaj SILNIK \u2014 pu\u015b\u0107 w zielonej strefie by flipowa\u0107',
-    promptBrake: 'Hamowanie do celu...',
-    promptCoast: 'Dryf \u2014 silniki wy\u0142\u0105czone...',
-    engineWait: 'CZEKAJ...',
-    engineLaunch: 'TRZYMAJ: START',
-    engineHold: 'TRZYMAM...',
-    launchZone: 'Strefa startu',
-    stepLaunch: 'Start',
-    stepFlip: 'Flip',
-    stepArrive: 'Cel',
-    resultSuccess: 'Idealny transfer!',
-    resultInjured: 'Za\u0142oga ranna!',
-    resultSlow: '\u015alimacze tempo!',
-    resultMiss: 'Nietrafiony',
-    resultFatal: 'Za\u0142oga nie prze\u017cy\u0142a',
-    hintEarlyLaunch: 'Start za wcze\u015bnie \u2014 poczekaj na ustawienie planet.',
-    hintLateLaunch: 'Start za p\u00f3\u017ano \u2014 okno min\u0119\u0142o.',
-    hintHighG: 'Przyspieszenie za wysokie \u2014 za\u0142oga nie prze\u017cy\u0142a przeci\u0105\u017ce\u0144.',
-    hintInjured: 'Za\u0142oga prze\u017cy\u0142a, ale odnios\u0142a obra\u017cenia z powodu przeci\u0105\u017ce\u0144.',
-    hintSlowTransfer: 'Transfer uko\u0144czony, ale przyspieszenie dalekie od optymalnego.',
-    hintSolarFatal: 'Za blisko S\u0142o\u0144ca \u2014 za\u0142oga si\u0119 usma\u017cy\u0142a.',
-    clickDismiss: 'Kliknij, aby spr\u00f3bowa\u0107 ponownie',
-    info: 'To uproszczony dwuwymiarowy model dydaktyczny. Planety poruszaj\u0105 si\u0119 po przybli\u017conych elipsach Keplerowskich. Statek leci po linii prostej ze sta\u0142ym przyspieszeniem nap\u0119du Epsteina.<br><br><b>Flip-and-burn</b> to manewr, w kt\u00f3rym statek przyspiesza do po\u0142owy drogi, obraca si\u0119 o 180\u00b0 i hamuje reszt\u0119 drogi. Przytrzymaj SILNIK, aby wybra\u0107 przyspieszenie. Wy\u017csze przyspieszenie = szybszy transfer, ale wi\u0119ksze przeci\u0105\u017cenie. Za du\u017co \u2014 za\u0142oga ginie.',
-    years: 'lat', days: 'dni', hours: 'h',
-    promptStart: 'Naci\u015bnij \u25b6 aby rozpocz\u0105\u0107'
-  }
-};
-
-function T(key) { return I18N[state.lang][key] || key; }
-
-function formatMET(simYears) {
-  var totalDays = simYears * 365.25;
-  var years = Math.floor(simYears);
-  var daysInYear = totalDays - years * 365.25;
-  var days = Math.floor(daysInYear);
-  var hours = Math.floor((daysInYear - days) * 24);
-  var hStr = (hours < 10 ? '0' : '') + hours;
-  if (years >= 1) {
-    return 'T+ ' + years + T('years') + ' ' + days + T('days') + ' ' + hStr + T('hours');
-  }
-  return 'T+ ' + days + T('days') + ' ' + hStr + T('hours');
-}
-
-/* ══════════════════════════════════════════════ */
-/* State                                          */
-/* ══════════════════════════════════════════════ */
-
-var state = {
-  lang: (navigator.language || '').startsWith('pl') ? 'pl' : 'en',
-  homeKey: 'earth',
-  destKey: 'mars',
-  homeM0Offset: 0,
-  destM0Offset: 0,
-  draggingKey: null,
-  dragHoverKey: null,
-  difficulty: 'easy',
-  phase: 'prelaunch',          // prelaunch | burn | flipping | braking | coasting | result
-  simTime: 0,
-  timeWarp: 1,
-  warpLevel: 'normal',
-  warpLevels: { normal: 1, fast: 10, fastest: 50, decel: 1 },
-  playing: false,
-  missionStarted: false,
-  ref: null,                   // preview reference for readouts
-
-  // Burn interaction — player sets acceleration
-  burn: { holding: false, holdStart: 0, holdDuration: 0, accel: 0, meterFrac: 0, committed: false },
-
-  // Spacecraft
-  sc: { x: 0, y: 0, launched: false, trail: [] },
-
-  // Transfer line (locked at launch)
-  transfer: null,
-
-  // Burn meter zones
-  burnZones: null,
-
-  // Flip timing
-  tauFlip: 0,
-  tauSim: 0,
-  launchSimTime: 0,
-  flipTrailIdx: 0,
-
-  // Transfer physics
-  accelFinal: 0,
-  tActual: 0,
-
-  // Flip animation
-  flipStartWall: 0,
-  flipAngle: 0,
-  flipDurMs: 0,
-
-  // Capture animation
-  captureStart: 0,
-  captureAlpha: 1,
-
-  // Results
-  resultType: null,
-  resultSubtype: null,
-  solarClearance: Infinity,
-  solarDeathStart: 0,
-
-  // Camera
-  camera: { cx: 0, cy: 0, scale: 100, targetScale: 100 },
-
-  // Inset
-  insetScAngle: 0,
-
-  // UI
-  overlayDismissed: false,
-  postResultStart: 0,
-  windowOpenSimTime: 0,
-  windowWasOpen: false,
-  warpLocked: false,
-  phaseAtLaunch: 0,
-  coastStart: 0
-};
-
-/* ══════════════════════════════════════════════ */
-/* Physics — Kepler Solver                        */
-/* ══════════════════════════════════════════════ */
-
-function wrapAngle(a) {
-  a = a % TWO_PI;
-  if (a > Math.PI) a -= TWO_PI;
-  if (a < -Math.PI) a += TWO_PI;
-  return a;
-}
-
-function solveKepler(M, e) {
-  var m = M % TWO_PI;
-  if (m > Math.PI) m -= TWO_PI;
-  if (m < -Math.PI) m += TWO_PI;
-  var E = m;
-  for (var i = 0; i < 15; i++) {
-    var dE = (E - e * Math.sin(E) - m) / (1 - e * Math.cos(E));
-    E -= dE;
-    if (Math.abs(dE) < 1e-12) break;
-  }
-  if (isNaN(E) || !isFinite(E)) E = m;
-  return E;
-}
-
-function helioPosition(body, t) {
-  if (body.key === 'sun') return { x: 0, y: 0 };
-  var M = body.M0 + body.n * t;
-  if (body.key === state.homeKey) M += state.homeM0Offset;
-  else if (body.key === state.destKey) M += state.destM0Offset;
-  var E = solveKepler(M, body.e);
-  var xp = body.a * (Math.cos(E) - body.e);
-  var yp = body.bSemi * Math.sin(E);
-  return {
-    x: xp * body.cosPom - yp * body.sinPom,
-    y: xp * body.sinPom + yp * body.cosPom
-  };
-}
-
-function orbitRadiusAtAngle(body, alpha) {
-  var p = body.a * (1 - body.e * body.e);
-  return p / (1 + body.e * Math.cos(alpha - body.pomegaRad));
-}
-
-function helioVelocity(body, t) {
-  if (body.key === 'sun') return { vx: 0, vy: 0 };
-  var M = body.M0 + body.n * t;
-  if (body.key === state.homeKey) M += state.homeM0Offset;
-  else if (body.key === state.destKey) M += state.destM0Offset;
-  var E = solveKepler(M, body.e);
-  var sinE = Math.sin(E);
-  var cosE = Math.cos(E);
-  var denom = 1 - body.e * cosE;
-  var factor = body.n * body.a / denom;
-  var vxp = -factor * sinE;
-  var vyp = factor * (body.bSemi / body.a) * cosE;
-  return {
-    vx: vxp * body.cosPom - vyp * body.sinPom,
-    vy: vxp * body.sinPom + vyp * body.cosPom
-  };
-}
-
-/* ══════════════════════════════════════════════ */
-/* Flip-and-Burn Reference Solver                 */
-/* ══════════════════════════════════════════════ */
-
-function computeFlipBurnRef(homeKey, destKey, t0) {
-  var home = bodyByKey[homeKey];
-  var dest = bodyByKey[destKey];
-  var r0 = helioPosition(home, t0);
-
-  var rd0 = helioPosition(dest, t0);
-  var dx0 = rd0.x - r0.x, dy0 = rd0.y - r0.y;
-  var dist0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
-
-  // Bisection root-finder: f(T) = L(T) - A_REF * T^2 / 4 = 0
-  var T_guess = 2 * Math.sqrt(dist0 / A_REF);
-  var T_lo = 0;
-  var T_hi = Math.max(2 * T_guess, 1 / 365.25);
-
-  function f(T) {
-    var rd = helioPosition(dest, t0 + T);
-    var dx = rd.x - r0.x, dy = rd.y - r0.y;
-    var L = Math.sqrt(dx * dx + dy * dy);
-    return L - A_REF * T * T / 4;
-  }
-
-  while (f(T_hi) > 0) { T_hi *= 2; if (T_hi > 1000) break; }
-
-  var T_ref = T_guess;
-  for (var i = 0; i < 40; i++) {
-    T_ref = (T_lo + T_hi) / 2;
-    var fVal = f(T_ref);
-    if (Math.abs(fVal) < 1e-6) break;
-    if (fVal > 0) T_lo = T_ref;
-    else T_hi = T_ref;
-  }
-
-  var rdRef = helioPosition(dest, t0 + T_ref);
-  var lineX = rdRef.x - r0.x, lineY = rdRef.y - r0.y;
-  var L = Math.sqrt(lineX * lineX + lineY * lineY);
-  if (L < 1e-10) L = 1e-10;
-  var ux = lineX / L, uy = lineY / L;
-
-  var tFlipRef = T_ref / 2;
-  var vPeakRef = A_REF * tFlipRef;
-
-  // Solar clearance (spec 16.7)
-  var dotR0Seg = r0.x * lineX + r0.y * lineY;
-  var dotSegSeg = lineX * lineX + lineY * lineY;
-  var q = Math.max(0, Math.min(1, -dotR0Seg / dotSegSeg));
-  var closestX = r0.x + q * lineX;
-  var closestY = r0.y + q * lineY;
-  var solarClearance = Math.sqrt(closestX * closestX + closestY * closestY);
-
-  // Phase angle data
-  var thetaHome = Math.atan2(r0.y, r0.x);
-  var thetaDest = Math.atan2(rd0.y, rd0.x);
-  var thetaDestHit = Math.atan2(rdRef.y, rdRef.x);
-  var phaseCurrent = wrapAngle(thetaDest - thetaHome);
-  var phaseRequired = wrapAngle(thetaDestHit - thetaHome);
-  var phaseError = wrapAngle(phaseCurrent - phaseRequired);
-
-  return {
-    T_ref: T_ref,
-    r0: r0,
-    rdRef: rdRef,
-    line: { x: lineX, y: lineY },
-    u: { x: ux, y: uy },
-    L: L,
-    tFlipRef: tFlipRef,
-    vPeakRef: vPeakRef,
-    dvDepart: vPeakRef,
-    dvArrive: vPeakRef,
-    solarClearance: solarClearance,
-    outward: dest.a > home.a,
-    phaseCurrent: phaseCurrent,
-    phaseRequired: phaseRequired,
-    phaseError: phaseError
-  };
-}
-
-function computeWarpLevels(homeKey, destKey) {
-  var home = bodyByKey[homeKey];
-  var dest = bodyByKey[destKey];
-  var synodicRate = Math.abs(home.n - dest.n);
-  var synodic = TWO_PI / synodicRate;
-  var phaseTolDeg = DIFFICULTY[state.difficulty].PHASE_TOL_DEG;
-  var windowDur = 2 * phaseTolDeg * DEG2RAD / synodicRate;
-
-  var MAX_WINDOW_SEC = 8;
-  var baseDecel = (state.difficulty === 'easy') ? 0.5 : 1;
-  var windowRealSec = windowDur / (baseDecel * SIM_RATE);
-  var decel = (windowRealSec > MAX_WINDOW_SEC)
-    ? Math.ceil(windowDur / (MAX_WINDOW_SEC * SIM_RATE))
-    : baseDecel;
-
-  return {
-    normal: Math.max(1, Math.round(synodic * 0.75)),
-    fast: Math.max(2, Math.round(synodic * 2.5)),
-    fastest: Math.max(5, Math.round(synodic * 7.5)),
-    decel: decel,
-    windowDur: windowDur
-  };
-}
-
-var BURN_FILL_SEC = 4;  // seconds to fill burn meter from 0% to 100%
-
-// Piecewise log-linear burn meter curve
-// Three segments join at green zone edges p and q:
-//   [0, p] → METER_MIN_G to GREEN_LOW_G  (snail zone)
-//   [p, q] → GREEN_LOW_G  to GREEN_HIGH_G (green zone)
-//   [q, 1] → GREEN_HIGH_G to METER_MAX_G  (death zone)
-// As the green zone shrinks (p→0.5, q→0.5), snail and death zones expand.
-function meterToAccelG(t, p, q) {
-  if (q - p < 0.001) {
-    // Green zone collapsed — split at midpoint
-    if (t <= 0.5) {
-      return METER_MIN_G * Math.pow(GREEN_LOW_G / METER_MIN_G, t / 0.5);
-    }
-    return GREEN_HIGH_G * Math.pow(METER_MAX_G / GREEN_HIGH_G, (t - 0.5) / 0.5);
-  }
-  if (t <= p) {
-    return METER_MIN_G * Math.pow(GREEN_LOW_G / METER_MIN_G, t / p);
-  }
-  if (t <= q) {
-    return GREEN_LOW_G * Math.pow(GREEN_HIGH_G / GREEN_LOW_G, (t - p) / (q - p));
-  }
-  return GREEN_HIGH_G * Math.pow(METER_MAX_G / GREEN_HIGH_G, (t - q) / (1 - q));
-}
-
-// Current green zone edges on the meter [0,1], shrinking and bouncing over time
-function getGreenZoneEdges() {
-  var diff = DIFFICULTY[state.difficulty];
-  if (diff.BURN_SHRINK_SEC === Infinity) return { p: 0.25, q: 0.75 };
-
-  var elapsed = 0;
-  if (state.phase === 'burn' && state.burn.holding) {
-    elapsed = (performance.now() - state.burn.holdStart) / 1000;
-  }
-  var halfWidth = 0.25 * Math.max(0, 1 - elapsed / diff.BURN_SHRINK_SEC);
-
-  // Bounce: center oscillates left-right (hard mode)
-  var center = 0.5;
-  if (diff.BOUNCE_AMP > 0 && diff.BOUNCE_FREQ > 0) {
-    center += diff.BOUNCE_AMP * Math.sin(TWO_PI * diff.BOUNCE_FREQ * elapsed);
-    // Clamp so edges stay within [0, 1]
-    center = Math.max(halfWidth + 0.01, Math.min(1 - halfWidth - 0.01, center));
-  }
-
-  return { p: center - halfWidth, q: center + halfWidth };
-}
-
-function computeBurnMeterZones() {
-  var aLow = GREEN_LOW_G * G_TO_AUYR2;
-  var aHigh = GREEN_HIGH_G * G_TO_AUYR2;
-  var aFatal = CREW_DEAD_G * G_TO_AUYR2;
-  return { aLow: aLow, aHigh: aHigh, aFatal: aFatal };
-}
-
-function crewSurvivalChance(aReq) {
-  var a_g = aReq / G_TO_AUYR2;
-  if (a_g <= CREW_SAFE_G) return 1.0;
-  if (a_g >= CREW_DEAD_G) return 0.0;
-  var x = (a_g - CREW_SAFE_G) / (CREW_DEAD_G - CREW_SAFE_G);
-  return 1 - x * x * x;
-}
-
-/* ══════════════════════════════════════════════ */
-/* Launch Ready Check                             */
-/* ══════════════════════════════════════════════ */
-
-function isLaunchReady() {
-  return state.ref != null && state.missionStarted;
-}
-
-/* ══════════════════════════════════════════════ */
-/* Transfer Line Geometry                         */
-/* ══════════════════════════════════════════════ */
-
-function getTransferLinePosition(tau) {
-  var ref = state.transfer;
-  if (!ref) return { x: 0, y: 0, s: 0 };
-
-  var accel = state.burn.committed ? state.accelFinal : A_REF;
-  var T = state.burn.committed ? state.tActual : ref.T_ref;
-  var tFlip = T / 2;
-
-  var s;
-  if (tau <= tFlip) {
-    s = 0.5 * accel * tau * tau;
-  } else {
-    var dt = T - tau;
-    s = ref.L - 0.5 * accel * dt * dt;
-  }
-  s = Math.max(0, Math.min(ref.L, s));
-
-  return {
-    x: ref.r0.x + ref.u.x * s,
-    y: ref.r0.y + ref.u.y * s,
-    s: s
-  };
-}
-
-/* ══════════════════════════════════════════════ */
-/* Result Evaluation                              */
-/* ══════════════════════════════════════════════ */
-
-function evaluateAccelResult(accel) {
-  var zones = state.burnZones;
-  var a_g = accel / G_TO_AUYR2;
-
-  // Within green zone → success
-  if (accel >= zones.aLow && accel <= zones.aHigh) {
-    return { type: 'success' };
-  }
-
-  // Above 20g → certain death
-  if (a_g >= CREW_DEAD_G) {
-    return { type: 'fatal' };
-  }
-
-  // Between 1g and 20g → roll dice
-  if (a_g >= CREW_SAFE_G) {
-    var survival = crewSurvivalChance(accel);
-    if (Math.random() < survival) {
-      return { type: 'close' };
-    } else {
-      return { type: 'fatal' };
-    }
-  }
-
-  // Below green zone — safe but painfully slow
-  if (accel < zones.aLow) {
-    return { type: 'slow' };
-  }
-
-  return { type: 'close' };
-}
-
-function getResultHint() {
-  if (state.resultSubtype === 'solar') return T('hintSolarFatal');
-  if (state.resultType === 'fatal') return T('hintHighG');
-  if (state.resultType === 'close') return T('hintInjured');
-  if (state.resultType === 'slow') return T('hintSlowTransfer');
-  return '';
-}
-
-function showResultOverlay() {
-  var existing = document.querySelector('.result-overlay');
-  if (existing) existing.remove();
-
-  var overlay = document.createElement('div');
-  overlay.className = 'result-overlay';
-
-  var emoji, msg, bg;
-  var result = state.resultType;
-  if (result === 'success') {
-    emoji = '\uD83C\uDF89'; msg = T('resultSuccess'); bg = 'rgba(63,185,80,0.88)';
-  } else if (result === 'close') {
-    emoji = '\uD83E\uDD15'; msg = T('resultInjured'); bg = 'rgba(240,180,60,0.92)';
-  } else if (result === 'slow') {
-    emoji = '\uD83D\uDC0C'; msg = T('resultSlow'); bg = 'rgba(88,166,255,0.88)';
-  } else if (result === 'fatal') {
-    emoji = '\u2620\uFE0F'; msg = T('resultFatal'); bg = 'rgba(120,10,10,0.95)';
-  } else {
-    emoji = '\uD83D\uDC4E\uD83C\uDFFB'; msg = T('resultMiss'); bg = 'rgba(240,180,60,0.92)';
-  }
-
-  var hint = getResultHint();
-  overlay.style.background = bg;
-  overlay.innerHTML =
-    '<div class="overlay-emoji">' + emoji + '</div>' +
-    '<div class="overlay-msg">' + msg + '</div>' +
-    (hint ? '<div class="overlay-sub">' + hint + '</div>' : '') +
-    '<div class="overlay-hint">' + T('clickDismiss') + '</div>';
-
-  overlay.addEventListener('click', function() {
-    overlay.remove();
-    state.overlayDismissed = true;
-    state.postResultStart = performance.now();
-  });
-  document.body.appendChild(overlay);
-}
-
-/* ══════════════════════════════════════════════ */
-/* Canvas Setup                                   */
-/* ══════════════════════════════════════════════ */
-
-var canvas = document.getElementById('canvas');
-var ctx = canvas.getContext('2d');
-var W = 0, H = 0;
-
-var insetCanvas = document.getElementById('insetCanvas');
-var ictx = insetCanvas.getContext('2d');
-var iW = 150, iH = 150;
-
-function resize() {
-  var rect = canvas.parentElement.getBoundingClientRect();
-  var dpr = window.devicePixelRatio || 1;
-  W = rect.width;
-  H = rect.height;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  var iRect = insetCanvas.parentElement.getBoundingClientRect();
-  iW = iRect.width;
-  iH = iRect.height;
-  insetCanvas.width = iW * dpr;
-  insetCanvas.height = iH * dpr;
-  insetCanvas.style.width = iW + 'px';
-  insetCanvas.style.height = iH + 'px';
-  ictx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-window.addEventListener('resize', resize);
-
-/* ══════════════════════════════════════════════ */
-/* Starfield                                      */
-/* ══════════════════════════════════════════════ */
-
-var bgStars = [];
-function initBgStars(n) {
-  bgStars = [];
-  for (var i = 0; i < n; i++) {
-    bgStars.push({
-      x: Math.random(), y: Math.random(),
-      r: Math.random() * 1.2 + 0.3,
-      b: Math.random() * 0.4 + 0.2
-    });
-  }
-}
-initBgStars(200);
-
-/* ══════════════════════════════════════════════ */
-/* Camera                                         */
-/* ══════════════════════════════════════════════ */
-
-function computeAutoCamera() {
-  var home = bodyByKey[state.homeKey];
-  var dest = bodyByKey[state.destKey];
-  var maxR = Math.max(home.a * (1 + home.e), dest.a * (1 + dest.e));
-  var margin = maxR * 1.2;
-  return { cx: 0, cy: 0, scale: Math.min(W, H) / 2 / margin };
-}
-
-function toCanvas(auX, auY) {
-  return {
-    cx: W / 2 + (auX - state.camera.cx) * state.camera.scale,
-    cy: H / 2 - (auY - state.camera.cy) * state.camera.scale
-  };
-}
-
-function fromCanvas(cx, cy) {
-  return {
-    x: (cx - W / 2) / state.camera.scale + state.camera.cx,
-    y: -(cy - H / 2) / state.camera.scale + state.camera.cy
-  };
-}
-
-function getCanvasPos(e) {
-  var rect = canvas.getBoundingClientRect();
-  if (e.touches && e.touches.length > 0) {
-    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-  }
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-}
-
-function getNearPlanetKey(canvasPos) {
-  var keys = [state.homeKey, state.destKey];
-  var bestKey = null;
-  var bestDist2 = Infinity;
-  for (var i = 0; i < keys.length; i++) {
-    var body = bodyByKey[keys[i]];
-    var pos = helioPosition(body, state.simTime);
-    var cc = toCanvas(pos.x, pos.y);
-    var dx = canvasPos.x - cc.cx;
-    var dy = canvasPos.y - cc.cy;
-    var d2 = dx * dx + dy * dy;
-    var hitRadius = Math.max(body.radius + 8, 20);
-    if (d2 <= hitRadius * hitRadius && d2 < bestDist2) {
-      bestDist2 = d2;
-      bestKey = keys[i];
-    }
-  }
-  return bestKey;
-}
-
-function computeM0OffsetFromCanvasPos(canvasPos, planetKey) {
-  var body = bodyByKey[planetKey];
-  var world = fromCanvas(canvasPos.x, canvasPos.y);
-  var theta = Math.atan2(world.y, world.x);
-  var nu = theta - body.pomegaRad;
-  var E = 2 * Math.atan2(
-    Math.sqrt(1 - body.e) * Math.sin(nu / 2),
-    Math.sqrt(1 + body.e) * Math.cos(nu / 2)
-  );
-  var M_target = E - body.e * Math.sin(E);
-  return M_target - body.M0 - body.n * state.simTime;
-}
-
-function applyDragOffset(planetKey, offset) {
-  if (planetKey === state.homeKey) state.homeM0Offset = offset;
-  else if (planetKey === state.destKey) state.destM0Offset = offset;
-}
-
-/* ══════════════════════════════════════════════ */
-/* Drawing                                        */
-/* ══════════════════════════════════════════════ */
-
-function drawStarfield() {
-  for (var i = 0; i < bgStars.length; i++) {
-    var s = bgStars[i];
-    ctx.beginPath();
-    ctx.arc(s.x * W, s.y * H, s.r, 0, TWO_PI);
-    ctx.fillStyle = 'rgba(200,210,220,' + (s.b * 0.3) + ')';
-    ctx.fill();
-  }
-}
-
-function drawOrbitEllipse(body, alpha) {
-  if (body.key === 'sun') return;
-  var cxAu = -body.a * body.e * body.cosPom;
-  var cyAu = -body.a * body.e * body.sinPom;
-  var cc = toCanvas(cxAu, cyAu);
-  ctx.beginPath();
-  ctx.ellipse(cc.cx, cc.cy, body.a * state.camera.scale, body.bSemi * state.camera.scale, -body.pomegaRad, 0, TWO_PI);
-  ctx.strokeStyle = 'rgba(' + body.glow + ',' + alpha + ')';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-}
-
-function drawBody(body, t) {
-  var pos = helioPosition(body, t);
-  var cc = toCanvas(pos.x, pos.y);
-  var r = body.radius;
-  if (body.key === 'sun') {
-    var grad = ctx.createRadialGradient(cc.cx, cc.cy, 0, cc.cx, cc.cy, r * 2.5);
-    grad.addColorStop(0, 'rgba(' + body.glow + ',0.6)');
-    grad.addColorStop(1, 'rgba(' + body.glow + ',0)');
-    ctx.beginPath();
-    ctx.arc(cc.cx, cc.cy, r * 2.5, 0, TWO_PI);
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Solar danger zone ring (easy mode)
-    if (state.difficulty === 'easy' && state.ref) {
-      var killR = SOLAR_KILL_RADIUS * state.camera.scale;
-      ctx.beginPath();
-      ctx.arc(cc.cx, cc.cy, killR, 0, TWO_PI);
-      ctx.strokeStyle = 'rgba(255,60,30,0.25)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-  }
-  ctx.beginPath();
-  ctx.arc(cc.cx, cc.cy, r, 0, TWO_PI);
-  ctx.fillStyle = body.color;
-  ctx.fill();
-
-  if (state.phase === 'prelaunch' && (body.key === state.draggingKey || body.key === state.dragHoverKey)) {
-    ctx.beginPath();
-    ctx.arc(cc.cx, cc.cy, r + 4, 0, TWO_PI);
-    ctx.strokeStyle = (body.key === state.draggingKey) ? 'rgba(88,166,255,0.9)' : 'rgba(88,166,255,0.5)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  if (body.key !== 'sun') {
-    var label = T(body.key);
-    ctx.font = '15px "Share Tech Mono", monospace';
-    ctx.fillStyle = 'rgba(' + body.glow + ',0.7)';
-    ctx.textAlign = 'center';
-    ctx.fillText(label, cc.cx, cc.cy - r - 5);
-  }
-}
-
-function drawTransferLine() {
-  if (!state.transfer) return;
-  if (state.phase === 'prelaunch') return;
-
-  var ref = state.transfer;
-  var p0 = toCanvas(ref.r0.x, ref.r0.y);
-  var p1 = toCanvas(ref.rdRef.x, ref.rdRef.y);
-
-  ctx.beginPath();
-  ctx.setLineDash([4, 4]);
-  ctx.moveTo(p0.cx, p0.cy);
-  ctx.lineTo(p1.cx, p1.cy);
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.setLineDash([]);
-}
-
-function getScAngle() {
-  var ref = state.transfer;
-  if (!ref) {
-    var hv = helioVelocity(bodyByKey[state.homeKey], state.simTime);
-    return Math.atan2(-hv.vy, hv.vx);
-  }
-
-  var baseAngle = Math.atan2(-ref.u.y, ref.u.x);
-
-  if (state.phase === 'transit' || state.phase === 'captured' || (state.phase === 'result' && state.burn.committed)) {
-    if (state.flipStartWall === 0) {
-      return baseAngle;  // before flip: pointing forward
-    }
-    var flipProgress = Math.min(1, (performance.now() - state.flipStartWall) / (state.flipDurMs || FLIP_ANIM_MS));
-    if (flipProgress < 1) {
-      return baseAngle + Math.PI * flipProgress;  // during flip: rotating
-    }
-    return baseAngle + Math.PI;  // after flip: pointing backward
-  }
-  if (state.phase === 'coasting') {
-    return baseAngle + Math.PI;
-  }
-
-  return baseAngle;  // burn phase: pointing forward
-}
-
-function drawSpacecraft() {
-  if (!state.sc.launched) return;
-
-  // Solar dissolve — ship burning up
-  var dissolveProgress = 0;
-  if (state.solarDeathStart > 0) {
-    dissolveProgress = Math.min(1, (performance.now() - state.solarDeathStart) / 1600);
-    if (dissolveProgress >= 1) return; // fully dissolved
-  }
-
-  var cc = toCanvas(state.sc.x, state.sc.y);
-  var angle = getScAngle();
-
-  ctx.save();
-  ctx.translate(cc.cx, cc.cy);
-  ctx.rotate(angle);
-
-  if (dissolveProgress > 0) {
-    ctx.globalAlpha = 1 - dissolveProgress;
-    // Expanding fire glow
-    var fireR = 20 + 35 * dissolveProgress;
-    var fireGlow = ctx.createRadialGradient(0, 0, 2, 0, 0, fireR);
-    fireGlow.addColorStop(0, 'rgba(255,100,30,' + (0.7 * dissolveProgress) + ')');
-    fireGlow.addColorStop(0.5, 'rgba(255,60,10,' + (0.4 * dissolveProgress) + ')');
-    fireGlow.addColorStop(1, 'rgba(255,30,0,0)');
-    ctx.fillStyle = fireGlow;
-    ctx.beginPath();
-    ctx.arc(0, 0, fireR, 0, TWO_PI);
-    ctx.fill();
-  }
-
-  // Capture dissolve — stay hidden through result phase
-  if (state.phase === 'captured' || (state.phase === 'result' && state.captureAlpha <= 0)) {
-    if (state.captureAlpha <= 0) { ctx.restore(); return; }
-    ctx.globalAlpha = state.captureAlpha;
-  }
-
-  // Glow
-  var glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 20);
-  glow.addColorStop(0, 'rgba(255,224,102,0.45)');
-  glow.addColorStop(1, 'rgba(255,224,102,0.0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(0, 0, 20, 0, TWO_PI);
-  ctx.fill();
-
-  // Triangle wedge
-  ctx.fillStyle = '#ffe066';
-  ctx.beginPath();
-  ctx.moveTo(13, 0);
-  ctx.lineTo(-7, -6.5);
-  ctx.lineTo(-7, 6.5);
-  ctx.closePath();
-  ctx.fill();
-
-  // Determine flip state for engine/RCS logic
-  var isFlipping = false;
-  var flipDone = false;
-  if (state.phase === 'transit' && state.flipStartWall > 0) {
-    var fProg = Math.min(1, (performance.now() - state.flipStartWall) / (state.flipDurMs || FLIP_ANIM_MS));
-    isFlipping = fProg < 1;
-    flipDone = fProg >= 1;
-  }
-
-  // Engine flame: during burn, or during transit when NOT mid-flip
-  if (state.phase === 'burn' || (state.phase === 'transit' && !isFlipping && state.solarDeathStart === 0)) {
-    var fl = 6 + 4 * Math.sin(Date.now() / 60);
-    ctx.fillStyle = 'rgba(255,140,30,0.6)';
-    ctx.beginPath();
-    ctx.moveTo(-7, -4);
-    ctx.lineTo(-7 - fl, 0);
-    ctx.lineTo(-7, 4);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  // RCS thrusters during flip rotation
-  if (state.phase === 'transit' && isFlipping) {
-    var rcsLen = 3 + 2 * Math.sin(Date.now() / 40);
-    ctx.fillStyle = 'rgba(100,180,255,0.5)';
-    ctx.beginPath();
-    ctx.moveTo(5, -6.5);
-    ctx.lineTo(5, -6.5 - rcsLen);
-    ctx.lineTo(2, -6.5);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-5, 6.5);
-    ctx.lineTo(-5, 6.5 + rcsLen);
-    ctx.lineTo(-2, 6.5);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  // Flash at flip completion
-  if (state.phase === 'transit' && flipDone && state.flipStartWall > 0) {
-    var flashAge = performance.now() - (state.flipStartWall + (state.flipDurMs || FLIP_ANIM_MS));
-    if (flashAge >= 0 && flashAge < 300) {
-      var flashAlpha = 0.6 * (1 - flashAge / 300);
-      ctx.beginPath();
-      ctx.arc(0, 0, 25, 0, TWO_PI);
-      ctx.fillStyle = 'rgba(255,255,255,' + flashAlpha + ')';
-      ctx.fill();
-    }
-  }
-
-  ctx.restore();
-}
-
-function drawTrail() {
-  var trail = state.sc.trail;
-  if (trail.length < 2) return;
-
-  var flipIdx = state.flipTrailIdx || trail.length;
-  var step = Math.max(1, Math.floor(trail.length / 2000));
-
-  // Warm segment (acceleration)
-  ctx.beginPath();
-  var p0 = toCanvas(trail[0].x, trail[0].y);
-  ctx.moveTo(p0.cx, p0.cy);
-  for (var i = step; i < Math.min(flipIdx, trail.length); i += step) {
-    var p = toCanvas(trail[i].x, trail[i].y);
-    ctx.lineTo(p.cx, p.cy);
-  }
-  ctx.strokeStyle = 'rgba(255,180,80,0.55)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Cool segment (braking)
-  if (flipIdx < trail.length) {
-    ctx.beginPath();
-    var pf = toCanvas(trail[flipIdx].x, trail[flipIdx].y);
-    ctx.moveTo(pf.cx, pf.cy);
-    for (var j = flipIdx + step; j < trail.length; j += step) {
-      var pc = toCanvas(trail[j].x, trail[j].y);
-      ctx.lineTo(pc.cx, pc.cy);
-    }
-    ctx.strokeStyle = 'rgba(100,180,255,0.55)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
-}
-
-function drawScene() {
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#080c14';
-  ctx.fillRect(0, 0, W, H);
-
-  drawStarfield();
-
-  var home = bodyByKey[state.homeKey];
-  var dest = bodyByKey[state.destKey];
-
-  drawOrbitEllipse(home, 0.25);
-  drawOrbitEllipse(dest, 0.25);
-
-  drawTransferLine();
-  drawTrail();
-
-  drawBody(bodyByKey['sun'], state.simTime);
-  drawBody(home, state.simTime);
-  drawBody(dest, state.simTime);
-
-  drawSpacecraft();
-}
-
-/* ══════════════════════════════════════════════ */
-/* Inset Drawing                                  */
-/* ══════════════════════════════════════════════ */
-
-function drawInset() {
-  ictx.clearRect(0, 0, iW, iH);
-  ictx.fillStyle = 'rgba(8,12,20,0.9)';
-  ictx.fillRect(0, 0, iW, iH);
-
-  var cx = iW / 2, cy = iH / 2;
-  var bodyKey = (state.phase === 'transit' || state.phase === 'captured' || state.phase === 'coasting' || (state.phase === 'result' && state.burn.committed)) ? state.destKey : state.homeKey;
-  var body = bodyByKey[bodyKey];
-
-  ictx.beginPath();
-  var grad = ictx.createRadialGradient(cx, cy, 0, cx, cy, 16);
-  grad.addColorStop(0, body.color);
-  grad.addColorStop(1, 'rgba(' + body.glow + ',0.1)');
-  ictx.arc(cx, cy, 14, 0, TWO_PI);
-  ictx.fillStyle = grad;
-  ictx.fill();
-
-  ictx.beginPath();
-  ictx.arc(cx, cy, 14, 0, TWO_PI);
-  ictx.fillStyle = body.color;
-  ictx.fill();
-
-  var orbitR = 40;
-  ictx.beginPath();
-  ictx.arc(cx, cy, orbitR, 0, TWO_PI);
-  ictx.strokeStyle = 'rgba(255,255,255,0.2)';
-  ictx.lineWidth = 1;
-  ictx.stroke();
-
-  var scAngle = state.insetScAngle;
-  var scX = cx + orbitR * Math.cos(scAngle);
-  var scY = cy - orbitR * Math.sin(scAngle);
-
-  // Engine glow during burn/transit
-  if (state.phase === 'burn' || state.phase === 'transit') {
-    var flR = 5 + 2 * Math.sin(Date.now() / 80);
-    ictx.beginPath();
-    ictx.arc(scX, scY, flR, 0, TWO_PI);
-    ictx.fillStyle = 'rgba(255,180,50,0.4)';
-    ictx.fill();
-  }
-
-  // RCS glow during mid-transit flip
-  if (state.phase === 'transit' && state.flipStartWall > 0 && (performance.now() - state.flipStartWall) < (state.flipDurMs || FLIP_ANIM_MS)) {
-    var rcsR = 4 + 2 * Math.sin(Date.now() / 40);
-    ictx.beginPath();
-    ictx.arc(scX, scY, rcsR, 0, TWO_PI);
-    ictx.fillStyle = 'rgba(100,180,255,0.4)';
-    ictx.fill();
-  }
-
-  // Spacecraft wedge on inset — always tangent to orbit direction
-  var insetAngle = -(scAngle + Math.PI / 2);
-
-  ictx.save();
-  ictx.translate(scX, scY);
-  ictx.rotate(insetAngle);
-  ictx.fillStyle = '#ffe066';
-  ictx.beginPath();
-  ictx.moveTo(10, 0);
-  ictx.lineTo(-5, -5);
-  ictx.lineTo(-5, 5);
-  ictx.closePath();
-  ictx.fill();
-  ictx.restore();
-
-  ictx.font = '12px "Share Tech Mono", monospace';
-  ictx.fillStyle = 'rgba(255,255,255,0.5)';
-  ictx.textAlign = 'center';
-  ictx.fillText(T(bodyKey), cx, iH - 6);
-}
-
-/* ══════════════════════════════════════════════ */
-/* Burn Interaction                               */
-/* ══════════════════════════════════════════════ */
-
-function startBurn() {
-  if (state.phase !== 'prelaunch') return;
-  if (!isLaunchReady()) return;
-
-  // Lock reference at launch time
-  var ref = computeFlipBurnRef(state.homeKey, state.destKey, state.simTime);
-  state.transfer = ref;
-  state.ref = ref;
-  state.solarClearance = ref.solarClearance;
-  state.launchSimTime = state.simTime;
-  state.tauSim = 0;
-
-  // Compute burn meter zones
-  state.burnZones = computeBurnMeterZones();
-
-  // Place spacecraft at home planet position
-  var hp = helioPosition(bodyByKey[state.homeKey], state.simTime);
-  state.sc.x = hp.x;
-  state.sc.y = hp.y;
-  state.sc.launched = true;
-  state.sc.trail = [{ x: hp.x, y: hp.y }];
-
-  // Start burn phase
-  state.phase = 'burn';
-  state.burn.holding = true;
-  state.burn.holdStart = performance.now();
-  state.burn.holdDuration = 0;
-  state.burn.accel = 0;
-  state.burn.meterFrac = 0;
-
-  updateEngineBtn();
-  updateBurnMeter();
-}
-
-function endBurn() {
-  if (state.phase !== 'burn' || !state.burn.holding) return;
-
-  state.burn.holding = false;
-  state.burn.committed = true;
-
-  var ref = state.transfer;
-  var accel = state.burn.accel;
-  if (accel < 1) accel = 1; // floor to prevent division by zero
-  state.accelFinal = accel;
-
-  // Re-solve intercept for player's chosen acceleration
-  // The reference was computed at A_REF — different accel means different
-  // transfer time, so the destination planet will be at a different position.
-  var r0 = ref.r0;
-  var dest = bodyByKey[state.destKey];
-  var t0 = state.launchSimTime;
-
-  var T_guess = 2 * Math.sqrt(ref.L / accel);
-  var T_lo = 0;
-  var T_hi = Math.max(2 * T_guess, 1 / 365.25);
-
-  function fIntercept(T) {
-    var rd = helioPosition(dest, t0 + T);
-    var dx = rd.x - r0.x, dy = rd.y - r0.y;
-    var Ld = Math.sqrt(dx * dx + dy * dy);
-    return Ld - accel * T * T / 4;
-  }
-
-  while (fIntercept(T_hi) > 0) { T_hi *= 2; if (T_hi > 1000) break; }
-
-  var T_actual = T_guess;
-  for (var i = 0; i < 40; i++) {
-    T_actual = (T_lo + T_hi) / 2;
-    var fVal = fIntercept(T_actual);
-    if (Math.abs(fVal) < 1e-6) break;
-    if (fVal > 0) T_lo = T_actual;
-    else T_hi = T_actual;
-  }
-
-  // Update transfer geometry to actual intercept point
-  var rdActual = helioPosition(dest, t0 + T_actual);
-  var lineX = rdActual.x - r0.x, lineY = rdActual.y - r0.y;
-  var L_actual = Math.sqrt(lineX * lineX + lineY * lineY);
-  if (L_actual < 1e-10) L_actual = 1e-10;
-
-  ref.rdRef = rdActual;
-  ref.line = { x: lineX, y: lineY };
-  ref.L = L_actual;
-  ref.u = { x: lineX / L_actual, y: lineY / L_actual };
-
-  // Recheck solar clearance with new transfer line
-  var dotR0Seg = r0.x * lineX + r0.y * lineY;
-  var dotSegSeg = lineX * lineX + lineY * lineY;
-  var q = Math.max(0, Math.min(1, -dotR0Seg / dotSegSeg));
-  var closestX = r0.x + q * lineX;
-  var closestY = r0.y + q * lineY;
-  ref.solarClearance = Math.sqrt(closestX * closestX + closestY * closestY);
-  state.solarClearance = ref.solarClearance;
-
-  state.tauFlip = T_actual / 2;
-  state.tActual = T_actual;
-
-  // Evaluate result based on acceleration
-  var result = evaluateAccelResult(accel);
-  state.resultType = result.type;
-  state.resultSubtype = null;
-
-  // Transition to transit — flip happens mid-flight
-  state.phase = 'transit';
-  state.flipStartWall = 0;  // flip not started yet
-  state.flipAngle = 0;
-  state.flipTrailIdx = 0;
-
-  if (state.warpLocked) {
-    state.warpLocked = false;
-  }
-
-  updateEngineBtn();
-}
-
-var engineBtn = document.getElementById('engineBtn');
-
-engineBtn.addEventListener('mousedown', function(e) {
-  e.preventDefault();
-  startBurn();
-});
-engineBtn.addEventListener('mouseup', function(e) {
-  e.preventDefault();
-  endBurn();
-});
-engineBtn.addEventListener('mouseleave', function() {
-  if (state.burn.holding) endBurn();
-});
-engineBtn.addEventListener('touchstart', function(e) {
-  e.preventDefault();
-  startBurn();
-}, { passive: false });
-engineBtn.addEventListener('touchend', function(e) {
-  e.preventDefault();
-  endBurn();
-}, { passive: false });
-engineBtn.addEventListener('touchcancel', function() {
-  if (state.burn.holding) endBurn();
-});
-window.addEventListener('blur', function() {
-  if (state.burn.holding) endBurn();
-});
-window.addEventListener('keydown', function(e) {
-  if (e.code === 'Space' && !e.repeat) { e.preventDefault(); startBurn(); }
-});
-window.addEventListener('keyup', function(e) {
-  if (e.code === 'Space') { e.preventDefault(); endBurn(); }
-});
-
-// --- Planet drag (home or destination) ---
-canvas.addEventListener('mousedown', function(e) {
-  if (state.phase !== 'prelaunch') return;
-  var pos = getCanvasPos(e);
-  var key = getNearPlanetKey(pos);
-  if (key) {
-    state.draggingKey = key;
-    canvas.style.cursor = 'grabbing';
-    e.preventDefault();
-  }
-});
-canvas.addEventListener('mousemove', function(e) {
-  var pos = getCanvasPos(e);
-  if (state.draggingKey) {
-    applyDragOffset(state.draggingKey, computeM0OffsetFromCanvasPos(pos, state.draggingKey));
-    e.preventDefault();
-  } else if (state.phase === 'prelaunch') {
-    var hoverKey = getNearPlanetKey(pos);
-    if (hoverKey) {
-      canvas.style.cursor = 'grab';
-      state.dragHoverKey = hoverKey;
-    } else if (state.dragHoverKey) {
-      canvas.style.cursor = 'default';
-      state.dragHoverKey = null;
-    }
-  }
-});
-canvas.addEventListener('mouseup', function() {
-  if (state.draggingKey) { state.draggingKey = null; canvas.style.cursor = 'default'; }
-});
-canvas.addEventListener('mouseleave', function() {
-  if (state.draggingKey) { state.draggingKey = null; canvas.style.cursor = 'default'; }
-  state.dragHoverKey = null;
-});
-canvas.addEventListener('touchstart', function(e) {
-  if (state.phase !== 'prelaunch') return;
-  var pos = getCanvasPos(e);
-  var key = getNearPlanetKey(pos);
-  if (key) { state.draggingKey = key; e.preventDefault(); }
-}, { passive: false });
-canvas.addEventListener('touchmove', function(e) {
-  if (state.draggingKey) {
-    applyDragOffset(state.draggingKey, computeM0OffsetFromCanvasPos(getCanvasPos(e), state.draggingKey));
-    e.preventDefault();
-  }
-}, { passive: false });
-canvas.addEventListener('touchend', function() { if (state.draggingKey) state.draggingKey = null; });
-canvas.addEventListener('touchcancel', function() { if (state.draggingKey) state.draggingKey = null;
-});
-
-/* ══════════════════════════════════════════════ */
-/* UI Updates                                     */
-/* ══════════════════════════════════════════════ */
-
-function updateEngineBtn() {
-  var btn = document.getElementById('engineBtn');
-  btn.classList.remove('armed', 'firing');
-  btn.disabled = false;
-
-  if (state.phase === 'prelaunch') {
-    if (isLaunchReady()) {
-      btn.classList.add('armed');
-    }
-  } else if (state.phase === 'burn') {
-    btn.classList.add('firing');
-  } else {
-    btn.disabled = true;
-  }
-}
-
-function updatePrompt() {
-  var el = document.getElementById('canvasPrompt');
-  el.classList.remove('highlight', 'active', 'cruise');
-  var text = '';
-
-  switch (state.phase) {
-    case 'prelaunch':
-      if (!state.missionStarted) {
-        text = T('promptStart');
-      } else {
-        text = T('promptReady');
-        el.classList.add('highlight');
-      }
-      break;
-    case 'burn':
-      text = T('promptFlip');
-      el.classList.add('active');
-      break;
-    case 'transit':
-      if (state.flipStartWall === 0) {
-        text = T('burning');
-        el.classList.add('active');
-      } else if ((performance.now() - state.flipStartWall) < (state.flipDurMs || FLIP_ANIM_MS)) {
-        text = T('flipping');
-        el.classList.add('active');
-      } else {
-        text = T('promptBrake');
-        el.classList.add('cruise');
-      }
-      break;
-    case 'captured':
-      text = '';
-      break;
-    case 'coasting':
-      text = T('promptCoast');
-      el.classList.add('cruise');
-      break;
-    case 'result':
-      if (state.overlayDismissed) text = T('clickDismiss');
-      else text = '';
-      break;
-  }
-  el.textContent = text;
-  el.style.display = text ? '' : 'none';
-}
-
-function updateStepIndicator() {
-  var dots = [
-    document.getElementById('stepDot1'),
-    document.getElementById('stepDot2'),
-    document.getElementById('stepDot3')
-  ];
-  var labels = [
-    document.getElementById('stepLbl1'),
-    document.getElementById('stepLbl2'),
-    document.getElementById('stepLbl3')
-  ];
-
-  var step = 0;
-  if (state.phase === 'prelaunch' || state.phase === 'burn') step = 0;
-  else if (state.phase === 'transit' || state.phase === 'coasting') step = 1;
-  else if (state.phase === 'captured') step = 3;
-  else if (state.phase === 'result' && state.resultType === 'success') step = 3;
-  else step = 2;
-
-  for (var i = 0; i < 3; i++) {
-    dots[i].classList.remove('done', 'current');
-    labels[i].classList.remove('current');
-    if (i < step) dots[i].classList.add('done');
-    else if (i === step && step < 3) {
-      dots[i].classList.add('current');
-      labels[i].classList.add('current');
-    } else if (step === 3) {
-      dots[i].classList.add('done');
-    }
-  }
-
-  document.getElementById('stepIndicator').style.display =
-    state.phase === 'result' ? 'none' : 'flex';
-}
-
-function updateBurnMeter() {
-  var fillEl = document.getElementById('burnFill');
-  var targetEl = document.getElementById('burnTarget');
-
-  if (!state.burnZones) {
-    targetEl.style.display = 'none';
-    fillEl.style.width = '0%';
-    return;
-  }
-
-  var zones = state.burnZones;
-  var accel = state.burn.accel;
-
-  var pct = Math.min(100, state.burn.meterFrac * 100);
-  fillEl.style.width = pct + '%';
-
-  // Coloring
-  fillEl.classList.remove('good', 'over', 'fatal');
-  if (accel >= zones.aLow && accel <= zones.aHigh) {
-    fillEl.classList.add('good');
-  } else if (accel > zones.aHigh && accel <= zones.aFatal) {
-    fillEl.classList.add('over');
-  } else if (accel > zones.aFatal) {
-    fillEl.classList.add('fatal');
-  }
-
-  // Green zone — edges come from the piecewise curve parameterization
-  var edges = getGreenZoneEdges();
-  if (edges.q - edges.p < 0.005) {
-    targetEl.style.display = 'none';
-  } else {
-    targetEl.style.display = '';
-    targetEl.style.left = (edges.p * 100) + '%';
-    targetEl.style.width = ((edges.q - edges.p) * 100) + '%';
-  }
-}
-
-function updateReadouts() {
-  var ref = state.ref;
-  if (!ref) return;
-
-  document.getElementById('missionVal').textContent = T(state.homeKey) + ' \u2192 ' + T(state.destKey);
-
-  // Acceleration readout
-  var brakingEl = document.getElementById('brakingVal');
-  var a_g;
-  if (state.phase === 'burn' && state.burn.holding) {
-    a_g = state.burn.accel / G_TO_AUYR2;
-  } else if (state.burn.committed) {
-    a_g = state.accelFinal / G_TO_AUYR2;
-  } else {
-    a_g = A_REF / G_TO_AUYR2;
-  }
-  brakingEl.textContent = a_g.toFixed(2) + ' g';
-  var bc = accelColor(a_g);
-  brakingEl.style.color = 'rgb(' + bc.r + ',' + bc.g + ',' + bc.b + ')';
-
-  document.getElementById('dv1Val').textContent = (ref.dvDepart * AU_TO_KMS).toFixed(2) + ' km/s';
-  document.getElementById('dv2Val').textContent = (ref.dvArrive * AU_TO_KMS).toFixed(2) + ' km/s';
-
-  if (state.difficulty !== 'hard') {
-    var pDeg = (ref.phaseCurrent / DEG2RAD).toFixed(1);
-    var idealDeg = (ref.phaseRequired / DEG2RAD).toFixed(1);
-    document.getElementById('phaseVal').textContent = pDeg + '\u00b0 / ' + idealDeg + '\u00b0';
-  } else {
-    document.getElementById('phaseVal').textContent = '\u2014';
-  }
-
-  var statusText;
-  switch (state.phase) {
-    case 'prelaunch':
-      statusText = state.missionStarted ? T('goodWindow') : T('waiting');
-      break;
-    case 'burn': statusText = T('burning'); break;
-    case 'transit':
-      if (state.flipStartWall > 0 && (performance.now() - state.flipStartWall) >= (state.flipDurMs || FLIP_ANIM_MS)) {
-        statusText = T('brakingStatus');
-      } else {
-        statusText = T('burning');
-      }
-      break;
-    case 'coasting': statusText = T('coastingStatus'); break;
-    case 'result':
-      if (state.resultType === 'success') statusText = T('resultSuccess');
-      else if (state.resultType === 'slow') statusText = T('resultSlow');
-      else if (state.resultType === 'fatal') statusText = T('resultFatal');
-      else statusText = T('missed');
-      break;
-    default: statusText = '';
-  }
-  document.getElementById('statusVal').textContent = statusText;
-}
-
-
-function accelColor(a_g) {
-  // Smooth gradient: green (0g) → yellow (5g) → orange (10g) → red (20g)
-  var t = Math.min(1, Math.max(0, a_g / CREW_DEAD_G));
-  var r, g, b, u;
-  if (t < 0.25) {
-    u = t / 0.25;
-    r = Math.round(63 + (200 - 63) * u);
-    g = Math.round(185 + (200 - 185) * u);
-    b = Math.round(80 * (1 - u));
-  } else if (t < 0.5) {
-    u = (t - 0.25) / 0.25;
-    r = Math.round(200 + (255 - 200) * u);
-    g = Math.round(200 - (200 - 140) * u);
-    b = 0;
-  } else {
-    u = (t - 0.5) / 0.5;
-    r = 255;
-    g = Math.round(140 * (1 - u));
-    b = 0;
-  }
-  return { r: r, g: g, b: b };
-}
-
-function formatTransferTime(simYears) {
-  var totalDays = simYears * 365.25;
-  var days = Math.floor(totalDays);
-  var hours = Math.floor((totalDays - days) * 24);
-  var hStr = (hours < 10 ? '0' : '') + hours;
-  if (days >= 365) {
-    var yrs = (totalDays / 365.25).toFixed(1);
-    return yrs + 'yr';
-  }
-  return days + 'd ' + hStr + 'h';
-}
-
-function updateAccelDisplay() {
-  var accelEl = document.getElementById('accelDisplay');
-  var timeEl = document.getElementById('transferTimeDisplay');
-  var hudGroup = accelEl.parentElement;
-  var a_g, accelText, timeText;
-
-  if (state.phase === 'burn' && state.burn.holding && state.transfer) {
-    // Live: player is choosing acceleration
-    a_g = state.burn.accel / G_TO_AUYR2;
-    accelText = a_g.toFixed(2) + ' g';
-    // Projected transfer time decreases as accel increases
-    if (state.burn.accel > 0) {
-      var projT = 2 * Math.sqrt(state.transfer.L / state.burn.accel);
-      timeText = formatTransferTime(projT);
-    } else {
-      timeText = state.ref ? formatTransferTime(state.ref.T_ref) : '';
-    }
-  } else if (state.phase === 'transit') {
-    // Constant acceleration throughout (symmetric)
-    a_g = state.accelFinal / G_TO_AUYR2;
-    accelText = a_g.toFixed(2) + ' g';
-    timeText = formatTransferTime(state.tauSim) + ' / ' + formatTransferTime(state.tActual);
-  } else if (state.phase === 'captured') {
-    a_g = 0;
-    accelText = '0 g';
-    timeText = formatTransferTime(state.tActual);
-  } else if (state.phase === 'result' && state.burn.committed) {
-    a_g = state.accelFinal / G_TO_AUYR2;
-    accelText = a_g.toFixed(2) + ' g';
-    timeText = formatTransferTime(state.tActual);
-  } else {
-    // Prelaunch
-    a_g = 0;
-    accelText = '0 g';
-    timeText = state.ref ? formatTransferTime(state.ref.T_ref) : '';
-  }
-
-  accelEl.textContent = accelText;
-  timeEl.textContent = timeText;
-
-  var c = accelColor(a_g);
-  accelEl.style.color = 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')';
-  accelEl.style.textShadow = '0 0 10px rgba(' + c.r + ',' + c.g + ',' + c.b + ',0.4)';
-
-  hudGroup.classList.toggle('paused', !state.playing);
-}
-
-function updateWarpBtns() {
-  var locked = state.warpLocked;
-  var playing = state.playing;
-  var nBtn = document.getElementById('warpNormalBtn');
-  var fBtn = document.getElementById('warpFastBtn');
-  var ffBtn = document.getElementById('warpFastestBtn');
-  nBtn.classList.toggle('active', playing && !locked && state.warpLevel === 'normal');
-  fBtn.classList.toggle('active', playing && !locked && state.warpLevel === 'fast');
-  ffBtn.classList.toggle('active', playing && !locked && state.warpLevel === 'fastest');
-  nBtn.textContent = (playing && state.warpLevel === 'normal') ? '\u25ae\u25ae' : T('warpNormal');
-  fBtn.textContent = (playing && state.warpLevel === 'fast') ? '\u25ae\u25ae' : T('warpFast');
-  ffBtn.textContent = (playing && state.warpLevel === 'fastest') ? '\u25ae\u25ae' : T('warpFastest');
-  nBtn.disabled = locked;
-  fBtn.disabled = locked;
-  ffBtn.disabled = locked;
-}
-
-/* ══════════════════════════════════════════════ */
-/* Controls                                       */
-/* ══════════════════════════════════════════════ */
-
-function populateHomeSelect() {
-  var sel = document.getElementById('homeSelect');
-  sel.innerHTML = '';
-  for (var i = 0; i < PLANET_KEYS.length; i++) {
-    var opt = document.createElement('option');
-    opt.value = PLANET_KEYS[i];
-    opt.textContent = T(PLANET_KEYS[i]);
-    if (PLANET_KEYS[i] === state.homeKey) opt.selected = true;
-    sel.appendChild(opt);
-  }
-}
-
-function getReachablePlanets(homeKey) {
-  var idx = PLANET_KEYS.indexOf(homeKey);
-  var lo = Math.max(0, idx - 3);
-  var hi = Math.min(PLANET_KEYS.length - 1, idx + 3);
-  var result = [];
-  for (var i = lo; i <= hi; i++) {
-    if (i !== idx) result.push(PLANET_KEYS[i]);
-  }
-  return result;
-}
-
-function populateDestSelect() {
-  var sel = document.getElementById('destSelect');
-  sel.innerHTML = '';
-  var reachable = getReachablePlanets(state.homeKey);
-  for (var i = 0; i < reachable.length; i++) {
-    var opt = document.createElement('option');
-    opt.value = reachable[i];
-    opt.textContent = T(reachable[i]);
-    if (reachable[i] === state.destKey) opt.selected = true;
-    sel.appendChild(opt);
-  }
-  if (reachable.indexOf(state.destKey) === -1) {
-    state.destKey = reachable[0];
-    sel.value = state.destKey;
-  }
-}
-
-document.getElementById('homeSelect').addEventListener('change', function(e) {
-  state.homeKey = e.target.value;
-  state.homeM0Offset = 0;
-  state.destM0Offset = 0;
-  populateDestSelect();
-  recalcMission();
-  resetMission();
-});
-
-document.getElementById('destSelect').addEventListener('change', function(e) {
-  state.destKey = e.target.value;
-  state.destM0Offset = 0;
-  recalcMission();
-  resetMission();
-});
-
-function setDifficulty(d) {
-  state.difficulty = d;
-  document.getElementById('diffEasyBtn').classList.toggle('active', d === 'easy');
-  document.getElementById('diffMediumBtn').classList.toggle('active', d === 'medium');
-  document.getElementById('diffHardBtn').classList.toggle('active', d === 'hard');
-
-  state.warpLevels = computeWarpLevels(state.homeKey, state.destKey);
-  state.timeWarp = state.warpLevels[state.warpLevel] || state.warpLevels.normal;
-  updateBurnMeter();
-  updateReadouts();
-}
-
-function setWarp(level) {
-  if (state.warpLocked) return;
-  if (state.playing && state.warpLevel === level) {
-    state.playing = false;
-  } else {
-    state.warpLevel = level;
-    state.timeWarp = state.warpLevels[level] || state.warpLevels.normal;
-    if (!state.playing) {
-      state.playing = true;
-      if (!state.missionStarted) state.missionStarted = true;
-    }
-  }
-  updateWarpBtns();
-  updateAccelDisplay();
-}
-
-function resetMission() {
-  state.simTime = 0;
-  state.homeM0Offset = 0;
-  state.destM0Offset = 0;
-  state.phase = 'prelaunch';
-  state.burn = { holding: false, holdStart: 0, holdDuration: 0, accel: 0, meterFrac: 0, committed: false };
-  state.sc = { x: 0, y: 0, launched: false, trail: [] };
-  state.transfer = null;
-  state.burnZones = null;
-  state.tauFlip = 0;
-  state.tauSim = 0;
-  state.launchSimTime = 0;
-  state.flipTrailIdx = 0;
-  state.accelFinal = 0;
-  state.tActual = 0;
-  state.flipStartWall = 0;
-  state.flipAngle = 0;
-  state.flipDurMs = 0;
-  state.captureStart = 0;
-  state.captureAlpha = 1;
-  state.resultType = null;
-  state.resultSubtype = null;
-  state.solarClearance = Infinity;
-  state.solarDeathStart = 0;
-  state.insetScAngle = 0;
-  state.overlayDismissed = false;
-  state.postResultStart = 0;
-  state.windowOpenSimTime = 0;
-  state.windowWasOpen = false;
-  state.warpLocked = false;
-  state.phaseAtLaunch = 0;
-  state.coastStart = 0;
-  state.playing = false;
-  state.missionStarted = false;
-  state.warpLevel = 'normal';
-  state.timeWarp = state.warpLevels.normal;
-  trailAccum = 0;
-
-  var existing = document.querySelector('.result-overlay');
-  if (existing) existing.remove();
-
-  updateEngineBtn();
-  updateBurnMeter();
-  updateWarpBtns();
-  updateReadouts();
-  updateAccelDisplay();
-
-  document.getElementById('burnFill').style.width = '0%';
-  document.getElementById('burnFill').classList.remove('good', 'over', 'fatal');
-  document.getElementById('burnTarget').style.display = 'none';
-}
-
-function recalcMission() {
-  state.ref = computeFlipBurnRef(state.homeKey, state.destKey, state.simTime);
-  state.warpLevels = computeWarpLevels(state.homeKey, state.destKey);
-  state.timeWarp = state.warpLevels.normal;
-  state.warpLevel = 'normal';
-  var auto = computeAutoCamera();
-  state.camera.targetScale = auto.scale;
-  state.camera.cx = auto.cx;
-  state.camera.cy = auto.cy;
-  state.camera.scale = auto.scale;
-  updateReadouts();
-  updateBurnMeter();
-  updateWarpBtns();
-}
-
-/* ══════════════════════════════════════════════ */
-/* Localization                                   */
-/* ══════════════════════════════════════════════ */
-
-function applyTranslations() {
-  document.title = T('title');
-  document.documentElement.lang = state.lang;
-  document.getElementById('titleText').textContent = T('title');
-  document.getElementById('subtitleText').textContent = T('subtitle');
-  document.getElementById('lblHome').textContent = T('home');
-  document.getElementById('lblDest').textContent = T('destination');
-  document.getElementById('lblDifficulty').textContent = T('difficulty');
-  document.getElementById('diffEasyBtn').textContent = T('easy');
-  document.getElementById('diffMediumBtn').textContent = T('medium');
-  document.getElementById('diffHardBtn').textContent = T('hard');
-  document.getElementById('lblTimeWarp').textContent = T('timeWarp');
-  document.getElementById('warpNormalBtn').textContent = T('warpNormal');
-  document.getElementById('warpFastBtn').textContent = T('warpFast');
-  document.getElementById('warpFastestBtn').textContent = T('warpFastest');
-  document.getElementById('lblBurn').textContent = T('burn');
-  updateEngineBtn();
-  document.getElementById('lblMission').textContent = T('mission');
-  document.getElementById('lblBraking').textContent = T('braking');
-  document.getElementById('lblDv1').textContent = T('dv1');
-  document.getElementById('lblDv2').textContent = T('dv2');
-  document.getElementById('lblPhase').textContent = T('phase');
-  document.getElementById('lblStatus').textContent = T('status');
-  document.getElementById('resetBtn').textContent = T('reset');
-  document.getElementById('infoText').innerHTML = T('info');
-  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
-
-  document.getElementById('stepLbl1').textContent = '1 ' + T('stepLaunch');
-  document.getElementById('stepLbl2').textContent = '2 ' + T('stepFlip');
-  document.getElementById('stepLbl3').textContent = '3 ' + T('stepArrive');
-
-  populateHomeSelect();
-  populateDestSelect();
-  updateReadouts();
-  updateAccelDisplay();
-}
-
-function toggleLang() {
-  state.lang = state.lang === 'en' ? 'pl' : 'en';
-  applyTranslations();
-}
-
-/* ══════════════════════════════════════════════ */
-/* Animation Loop                                 */
-/* ══════════════════════════════════════════════ */
-
-var lastTimestamp = 0;
-var trailAccum = 0;
-
-function animate(timestamp) {
-  if (!lastTimestamp) lastTimestamp = timestamp;
-  var dtReal = Math.min((timestamp - lastTimestamp) / 1000, MAX_DT);
-  lastTimestamp = timestamp;
-
-  if (state.playing && state.phase !== 'result') {
-    var dtSim;
-
-    switch (state.phase) {
-      case 'prelaunch':
-        if (!state.draggingKey) {
-          dtSim = dtReal * state.timeWarp * SIM_RATE;
-          state.simTime += dtSim;
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        /* ══════════════════════════════════════════════ */
+        /* Constants                                      */
+        /* ══════════════════════════════════════════════ */
+
+        const TWO_PI = 2 * Math.PI;
+        const DEG2RAD = Math.PI / 180;
+        const SIM_RATE = 1 / 15; // years per real-second at x1
+        const MAX_DT = 0.05; // cap real dt at 50 ms
+        const AU_TO_KMS = 4.7405; // 1 AU/yr in km/s (approx)
+
+        const G_TO_AUYR2 = 65283.465095;
+        const A_REF = 1.5 * G_TO_AUYR2; // 1.5 g — comfortable Earther cruise
+        const CREW_SAFE_G = 1.0; // below this: 0% death
+        const CREW_DEAD_G = 10.0; // above this: 100% death (sustained)
+        const GREEN_LOW_G = 1.0; // green zone lower bound (g)
+        const GREEN_HIGH_G = 3.0; // green zone upper bound (g)
+        const METER_MIN_G = 0.3; // meter bottom (g)
+        const METER_MAX_G = 20.0; // meter top (g)
+        const _A_CREW_DEAD = CREW_DEAD_G * G_TO_AUYR2;
+        const SOLAR_KILL_RADIUS = 0.18; // AU
+        const _SOLAR_SAFE_RADIUS = 0.22; // AU
+        const FLIP_ANIM_MS = 400; // ms
+
+        const DIFFICULTY = {
+          easy: {
+            BURN_SHRINK_SEC: Infinity,
+            BOUNCE_AMP: 0,
+            BOUNCE_FREQ: 0,
+            PHASE_TOL_DEG: 30,
+          },
+          medium: {
+            BURN_SHRINK_SEC: 5,
+            BOUNCE_AMP: 0,
+            BOUNCE_FREQ: 0,
+            PHASE_TOL_DEG: 15,
+          },
+          hard: {
+            BURN_SHRINK_SEC: 3,
+            BOUNCE_AMP: 0.15,
+            BOUNCE_FREQ: 0.8,
+            PHASE_TOL_DEG: 8,
+          },
+        };
+
+        /* ══════════════════════════════════════════════ */
+        /* Orbital Data                                   */
+        /* ══════════════════════════════════════════════ */
+
+        const BODIES = [
+          {
+            key: "sun",
+            color: "#FFD700",
+            glow: "255,215,0",
+            radius: 14,
+            a: 0,
+            e: 0,
+            T: 0,
+            pomega: 0,
+            L0: 0,
+          },
+          {
+            key: "mercury",
+            color: "#A0A0A0",
+            glow: "160,160,160",
+            radius: 3,
+            a: 0.3871,
+            e: 0.2056,
+            T: 0.2408,
+            pomega: 77.46,
+            L0: 252.25,
+          },
+          {
+            key: "venus",
+            color: "#F5DEB3",
+            glow: "245,222,179",
+            radius: 4,
+            a: 0.7233,
+            e: 0.0068,
+            T: 0.6152,
+            pomega: 131.6,
+            L0: 181.98,
+          },
+          {
+            key: "earth",
+            color: "#4db8ff",
+            glow: "77,184,255",
+            radius: 5,
+            a: 1.0,
+            e: 0.0167,
+            T: 1.0,
+            pomega: 102.93,
+            L0: 100.47,
+          },
+          {
+            key: "mars",
+            color: "#E05030",
+            glow: "224,80,48",
+            radius: 4,
+            a: 1.5237,
+            e: 0.0934,
+            T: 1.8809,
+            pomega: 336.08,
+            L0: 355.43,
+          },
+          {
+            key: "jupiter",
+            color: "#D4944A",
+            glow: "212,148,74",
+            radius: 8,
+            a: 5.2034,
+            e: 0.0484,
+            T: 11.862,
+            pomega: 14.33,
+            L0: 34.4,
+          },
+          {
+            key: "saturn",
+            color: "#C8A84C",
+            glow: "200,168,76",
+            radius: 7,
+            a: 9.5371,
+            e: 0.0542,
+            T: 29.457,
+            pomega: 93.06,
+            L0: 49.94,
+          },
+          {
+            key: "uranus",
+            color: "#7CC8D8",
+            glow: "124,200,216",
+            radius: 5,
+            a: 19.1913,
+            e: 0.0472,
+            T: 84.021,
+            pomega: 173.0,
+            L0: 313.23,
+          },
+          {
+            key: "neptune",
+            color: "#4060C0",
+            glow: "64,96,192",
+            radius: 5,
+            a: 30.069,
+            e: 0.0086,
+            T: 164.8,
+            pomega: 48.12,
+            L0: 304.88,
+          },
+        ];
+
+        BODIES.forEach(function (b) {
+          if (b.key === "sun") return;
+          b.pomegaRad = b.pomega * DEG2RAD;
+          b.L0rad = b.L0 * DEG2RAD;
+          b.n = TWO_PI / b.T;
+          b.M0 = b.L0rad - b.pomegaRad;
+          b.bSemi = b.a * Math.sqrt(1 - b.e * b.e);
+          b.cosPom = Math.cos(b.pomegaRad);
+          b.sinPom = Math.sin(b.pomegaRad);
+        });
+
+        const bodyByKey = {};
+        BODIES.forEach(function (b) {
+          bodyByKey[b.key] = b;
+        });
+
+        const PLANET_KEYS = [
+          "mercury",
+          "venus",
+          "earth",
+          "mars",
+          "jupiter",
+          "saturn",
+          "uranus",
+          "neptune",
+        ];
+
+        /* ══════════════════════════════════════════════ */
+        /* I18N                                           */
+        /* ══════════════════════════════════════════════ */
+
+        const I18N = {
+          en: {
+            title: "Flip and Burn",
+            subtitle:
+              "Time your launch and flip to transfer between planets on a straight-line Epstein drive trajectory.",
+            home: "Home",
+            destination: "Destination",
+            difficulty: "Difficulty",
+            easy: "\u2605",
+            medium: "\u2605\u2605",
+            hard: "\u2605\u2605\u2605",
+            timeWarp: "Time Warp",
+            warpNormal: "\u25b6",
+            warpFast: "\u25b6\u25b6",
+            warpFastest: "\u25b6\u25b6\u25b6",
+            engine: "ENGINE",
+            burn: "Burn",
+            mission: "Mission",
+            braking: "Braking",
+            dv1: "Departure \u0394v",
+            dv2: "Arrival \u0394v",
+            phase: "Phase angle",
+            status: "Status",
+            reset: "\u25a0",
+            mercury: "Mercury",
+            venus: "Venus",
+            earth: "Earth",
+            mars: "Mars",
+            jupiter: "Jupiter",
+            saturn: "Saturn",
+            uranus: "Uranus",
+            neptune: "Neptune",
+            waiting: "Waiting for window",
+            goodWindow: "Window open \u2014 fire!",
+            burning: "Burning...",
+            flipping: "Flipping...",
+            brakingStatus: "Braking",
+            coastingStatus: "Coasting",
+            missed: "Missed",
+            tooEarly: "Too early",
+            tooLate: "Too late",
+            promptReady: "Hold ENGINE to launch!",
+            promptFlip: "Hold ENGINE \u2014 release in the green zone to flip",
+            promptBrake: "Braking to destination...",
+            promptCoast: "Coasting \u2014 engines off...",
+            engineWait: "WAIT...",
+            engineLaunch: "HOLD TO LAUNCH",
+            engineHold: "HOLDING...",
+            launchZone: "Launch zone",
+            stepLaunch: "Launch",
+            stepFlip: "Flip",
+            stepArrive: "Arrive",
+            resultSuccess: "Perfect Transfer!",
+            resultInjured: "Crew Injured!",
+            resultSlow: "Snail Transfer!",
+            resultMiss: "Missed",
+            resultFatal: "Crew Lost",
+            hintEarlyLaunch:
+              "You launched too early \u2014 wait for the planets to align.",
+            hintLateLaunch: "You launched too late \u2014 the window passed.",
+            hintHighG:
+              "Acceleration too high \u2014 crew couldn\u2019t survive the g-forces.",
+            hintInjured:
+              "The crew survived but sustained injuries from the high g-forces.",
+            hintSlowTransfer:
+              "Transfer completed but acceleration was far from optimal.",
+            hintSolarFatal: "Too close to the Sun \u2014 crew cooked.",
+            clickDismiss: "Click to try again",
+            info: 'This is a simplified 2D teaching model. Planets follow approximate eccentric Keplerian orbits. The spacecraft follows a straight-line constant-acceleration "flip and burn" profile between departure and predicted intercept positions.<br><br>An <b>Epstein drive flip-and-burn</b> accelerates halfway, rotates 180\u00b0, then decelerates the rest of the way. Hold ENGINE to choose your acceleration. Higher acceleration means a faster transfer but more g-force on the crew. Too high and they don\u2019t survive.',
+            years: "yr",
+            days: "d",
+            hours: "h",
+            promptStart: "Press \u25b6 to begin",
+          },
+          pl: {
+            title: "Flip and Burn",
+            subtitle:
+              "Wybierz moment startu i flipu, aby przelecie\u0107 mi\u0119dzy planetami na nap\u0119dzie Epsteina.",
+            home: "Start",
+            destination: "Cel",
+            difficulty: "Trudno\u015b\u0107",
+            easy: "\u2605",
+            medium: "\u2605\u2605",
+            hard: "\u2605\u2605\u2605",
+            timeWarp: "Przyspieszenie",
+            warpNormal: "\u25b6",
+            warpFast: "\u25b6\u25b6",
+            warpFastest: "\u25b6\u25b6\u25b6",
+            engine: "SILNIK",
+            burn: "Ci\u0105g",
+            mission: "Misja",
+            braking: "Hamowanie",
+            dv1: "\u0394v startowe",
+            dv2: "\u0394v hamuj\u0105ce",
+            phase: "K\u0105t fazowy",
+            status: "Status",
+            reset: "\u25a0",
+            mercury: "Merkury",
+            venus: "Wenus",
+            earth: "Ziemia",
+            mars: "Mars",
+            jupiter: "Jowisz",
+            saturn: "Saturn",
+            uranus: "Uran",
+            neptune: "Neptun",
+            waiting: "Czekanie na okno",
+            goodWindow: "Okno otwarte \u2014 odpal!",
+            burning: "Ci\u0105g...",
+            flipping: "Flip...",
+            brakingStatus: "Hamowanie",
+            coastingStatus: "Dryf",
+            missed: "Nietrafiony",
+            tooEarly: "Za wcze\u015bnie",
+            tooLate: "Za p\u00f3\u017ano",
+            promptReady: "Przytrzymaj SILNIK aby wystartowa\u0107!",
+            promptFlip:
+              "Trzymaj SILNIK \u2014 pu\u015b\u0107 w zielonej strefie by flipowa\u0107",
+            promptBrake: "Hamowanie do celu...",
+            promptCoast: "Dryf \u2014 silniki wy\u0142\u0105czone...",
+            engineWait: "CZEKAJ...",
+            engineLaunch: "TRZYMAJ: START",
+            engineHold: "TRZYMAM...",
+            launchZone: "Strefa startu",
+            stepLaunch: "Start",
+            stepFlip: "Flip",
+            stepArrive: "Cel",
+            resultSuccess: "Idealny transfer!",
+            resultInjured: "Za\u0142oga ranna!",
+            resultSlow: "\u015alimacze tempo!",
+            resultMiss: "Nietrafiony",
+            resultFatal: "Za\u0142oga nie prze\u017cy\u0142a",
+            hintEarlyLaunch:
+              "Start za wcze\u015bnie \u2014 poczekaj na ustawienie planet.",
+            hintLateLaunch:
+              "Start za p\u00f3\u017ano \u2014 okno min\u0119\u0142o.",
+            hintHighG:
+              "Przyspieszenie za wysokie \u2014 za\u0142oga nie prze\u017cy\u0142a przeci\u0105\u017ce\u0144.",
+            hintInjured:
+              "Za\u0142oga prze\u017cy\u0142a, ale odnios\u0142a obra\u017cenia z powodu przeci\u0105\u017ce\u0144.",
+            hintSlowTransfer:
+              "Transfer uko\u0144czony, ale przyspieszenie dalekie od optymalnego.",
+            hintSolarFatal:
+              "Za blisko S\u0142o\u0144ca \u2014 za\u0142oga si\u0119 usma\u017cy\u0142a.",
+            clickDismiss: "Kliknij, aby spr\u00f3bowa\u0107 ponownie",
+            info: "To uproszczony dwuwymiarowy model dydaktyczny. Planety poruszaj\u0105 si\u0119 po przybli\u017conych elipsach Keplerowskich. Statek leci po linii prostej ze sta\u0142ym przyspieszeniem nap\u0119du Epsteina.<br><br><b>Flip-and-burn</b> to manewr, w kt\u00f3rym statek przyspiesza do po\u0142owy drogi, obraca si\u0119 o 180\u00b0 i hamuje reszt\u0119 drogi. Przytrzymaj SILNIK, aby wybra\u0107 przyspieszenie. Wy\u017csze przyspieszenie = szybszy transfer, ale wi\u0119ksze przeci\u0105\u017cenie. Za du\u017co \u2014 za\u0142oga ginie.",
+            years: "lat",
+            days: "dni",
+            hours: "h",
+            promptStart: "Naci\u015bnij \u25b6 aby rozpocz\u0105\u0107",
+          },
+        };
+
+        function T(key) {
+          return I18N[state.lang][key] || key;
         }
-        state.insetScAngle += dtReal * 2.0;
 
-        // Continuously update reference for readouts
-        state.ref = computeFlipBurnRef(state.homeKey, state.destKey, state.simTime);
+        function _formatMET(simYears) {
+          const totalDays = simYears * 365.25;
+          const years = Math.floor(simYears);
+          const daysInYear = totalDays - years * 365.25;
+          const days = Math.floor(daysInYear);
+          const hours = Math.floor((daysInYear - days) * 24);
+          const hStr = (hours < 10 ? "0" : "") + hours;
+          if (years >= 1) {
+            return (
+              "T+ " +
+              years +
+              T("years") +
+              " " +
+              days +
+              T("days") +
+              " " +
+              hStr +
+              T("hours")
+            );
+          }
+          return "T+ " + days + T("days") + " " + hStr + T("hours");
+        }
 
-        updateEngineBtn();
-        break;
+        /* ══════════════════════════════════════════════ */
+        /* State                                          */
+        /* ══════════════════════════════════════════════ */
 
-      case 'burn':
-        // simTime frozen. Accumulate acceleration from wall-clock.
-        if (state.burn.holding) {
-          state.burn.holdDuration = (performance.now() - state.burn.holdStart) / 1000;
-          state.burn.meterFrac = Math.min(1, state.burn.holdDuration / BURN_FILL_SEC);
-          var edges = getGreenZoneEdges();
-          state.burn.accel = meterToAccelG(state.burn.meterFrac, edges.p, edges.q) * G_TO_AUYR2;
+        const state = {
+          lang: (navigator.language || "").startsWith("pl") ? "pl" : "en",
+          homeKey: "earth",
+          destKey: "mars",
+          homeM0Offset: 0,
+          destM0Offset: 0,
+          draggingKey: null,
+          dragHoverKey: null,
+          difficulty: "easy",
+          phase: "prelaunch", // prelaunch | burn | flipping | braking | coasting | result
+          simTime: 0,
+          timeWarp: 1,
+          warpLevel: "normal",
+          warpLevels: { normal: 1, fast: 10, fastest: 50, decel: 1 },
+          playing: false,
+          missionStarted: false,
+          ref: null, // preview reference for readouts
+
+          // Burn interaction — player sets acceleration
+          burn: {
+            holding: false,
+            holdStart: 0,
+            holdDuration: 0,
+            accel: 0,
+            meterFrac: 0,
+            committed: false,
+          },
+
+          // Spacecraft
+          sc: { x: 0, y: 0, launched: false, trail: [] },
+
+          // Transfer line (locked at launch)
+          transfer: null,
+
+          // Burn meter zones
+          burnZones: null,
+
+          // Flip timing
+          tauFlip: 0,
+          tauSim: 0,
+          launchSimTime: 0,
+          flipTrailIdx: 0,
+
+          // Transfer physics
+          accelFinal: 0,
+          tActual: 0,
+
+          // Flip animation
+          flipStartWall: 0,
+          flipAngle: 0,
+          flipDurMs: 0,
+
+          // Capture animation
+          captureStart: 0,
+          captureAlpha: 1,
+
+          // Results
+          resultType: null,
+          resultSubtype: null,
+          solarClearance: Infinity,
+          solarDeathStart: 0,
+
+          // Camera
+          camera: { cx: 0, cy: 0, scale: 100, targetScale: 100 },
+
+          // Inset
+          insetScAngle: 0,
+
+          // UI
+          overlayDismissed: false,
+          postResultStart: 0,
+          windowOpenSimTime: 0,
+          windowWasOpen: false,
+          warpLocked: false,
+          phaseAtLaunch: 0,
+          coastStart: 0,
+        };
+
+        /* ══════════════════════════════════════════════ */
+        /* Physics — Kepler Solver                        */
+        /* ══════════════════════════════════════════════ */
+
+        function wrapAngle(a) {
+          a = a % TWO_PI;
+          if (a > Math.PI) a -= TWO_PI;
+          if (a < -Math.PI) a += TWO_PI;
+          return a;
+        }
+
+        function solveKepler(M, e) {
+          let m = M % TWO_PI;
+          if (m > Math.PI) m -= TWO_PI;
+          if (m < -Math.PI) m += TWO_PI;
+          let E = m;
+          for (let i = 0; i < 15; i++) {
+            const dE = (E - e * Math.sin(E) - m) / (1 - e * Math.cos(E));
+            E -= dE;
+            if (Math.abs(dE) < 1e-12) break;
+          }
+          if (isNaN(E) || !isFinite(E)) E = m;
+          return E;
+        }
+
+        function helioPosition(body, t) {
+          if (body.key === "sun") return { x: 0, y: 0 };
+          let M = body.M0 + body.n * t;
+          if (body.key === state.homeKey) M += state.homeM0Offset;
+          else if (body.key === state.destKey) M += state.destM0Offset;
+          const E = solveKepler(M, body.e);
+          const xp = body.a * (Math.cos(E) - body.e);
+          const yp = body.bSemi * Math.sin(E);
+          return {
+            x: xp * body.cosPom - yp * body.sinPom,
+            y: xp * body.sinPom + yp * body.cosPom,
+          };
+        }
+
+        function _orbitRadiusAtAngle(body, alpha) {
+          const p = body.a * (1 - body.e * body.e);
+          return p / (1 + body.e * Math.cos(alpha - body.pomegaRad));
+        }
+
+        function helioVelocity(body, t) {
+          if (body.key === "sun") return { vx: 0, vy: 0 };
+          let M = body.M0 + body.n * t;
+          if (body.key === state.homeKey) M += state.homeM0Offset;
+          else if (body.key === state.destKey) M += state.destM0Offset;
+          const E = solveKepler(M, body.e);
+          const sinE = Math.sin(E);
+          const cosE = Math.cos(E);
+          const denom = 1 - body.e * cosE;
+          const factor = (body.n * body.a) / denom;
+          const vxp = -factor * sinE;
+          const vyp = factor * (body.bSemi / body.a) * cosE;
+          return {
+            vx: vxp * body.cosPom - vyp * body.sinPom,
+            vy: vxp * body.sinPom + vyp * body.cosPom,
+          };
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Flip-and-Burn Reference Solver                 */
+        /* ══════════════════════════════════════════════ */
+
+        function computeFlipBurnRef(homeKey, destKey, t0) {
+          const home = bodyByKey[homeKey];
+          const dest = bodyByKey[destKey];
+          const r0 = helioPosition(home, t0);
+
+          const rd0 = helioPosition(dest, t0);
+          const dx0 = rd0.x - r0.x,
+            dy0 = rd0.y - r0.y;
+          const dist0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
+
+          // Bisection root-finder: f(T) = L(T) - A_REF * T^2 / 4 = 0
+          const T_guess = 2 * Math.sqrt(dist0 / A_REF);
+          let T_lo = 0;
+          let T_hi = Math.max(2 * T_guess, 1 / 365.25);
+
+          function f(T) {
+            const rd = helioPosition(dest, t0 + T);
+            const dx = rd.x - r0.x,
+              dy = rd.y - r0.y;
+            const L = Math.sqrt(dx * dx + dy * dy);
+            return L - (A_REF * T * T) / 4;
+          }
+
+          while (f(T_hi) > 0) {
+            T_hi *= 2;
+            if (T_hi > 1000) break;
+          }
+
+          let T_ref = T_guess;
+          for (let i = 0; i < 40; i++) {
+            T_ref = (T_lo + T_hi) / 2;
+            const fVal = f(T_ref);
+            if (Math.abs(fVal) < 1e-6) break;
+            if (fVal > 0) T_lo = T_ref;
+            else T_hi = T_ref;
+          }
+
+          const rdRef = helioPosition(dest, t0 + T_ref);
+          const lineX = rdRef.x - r0.x,
+            lineY = rdRef.y - r0.y;
+          let L = Math.sqrt(lineX * lineX + lineY * lineY);
+          if (L < 1e-10) L = 1e-10;
+          const ux = lineX / L,
+            uy = lineY / L;
+
+          const tFlipRef = T_ref / 2;
+          const vPeakRef = A_REF * tFlipRef;
+
+          // Solar clearance (spec 16.7)
+          const dotR0Seg = r0.x * lineX + r0.y * lineY;
+          const dotSegSeg = lineX * lineX + lineY * lineY;
+          const q = Math.max(0, Math.min(1, -dotR0Seg / dotSegSeg));
+          const closestX = r0.x + q * lineX;
+          const closestY = r0.y + q * lineY;
+          const solarClearance = Math.sqrt(
+            closestX * closestX + closestY * closestY,
+          );
+
+          // Phase angle data
+          const thetaHome = Math.atan2(r0.y, r0.x);
+          const thetaDest = Math.atan2(rd0.y, rd0.x);
+          const thetaDestHit = Math.atan2(rdRef.y, rdRef.x);
+          const phaseCurrent = wrapAngle(thetaDest - thetaHome);
+          const phaseRequired = wrapAngle(thetaDestHit - thetaHome);
+          const phaseError = wrapAngle(phaseCurrent - phaseRequired);
+
+          return {
+            T_ref: T_ref,
+            r0: r0,
+            rdRef: rdRef,
+            line: { x: lineX, y: lineY },
+            u: { x: ux, y: uy },
+            L: L,
+            tFlipRef: tFlipRef,
+            vPeakRef: vPeakRef,
+            dvDepart: vPeakRef,
+            dvArrive: vPeakRef,
+            solarClearance: solarClearance,
+            outward: dest.a > home.a,
+            phaseCurrent: phaseCurrent,
+            phaseRequired: phaseRequired,
+            phaseError: phaseError,
+          };
+        }
+
+        function computeWarpLevels(homeKey, destKey) {
+          const home = bodyByKey[homeKey];
+          const dest = bodyByKey[destKey];
+          const synodicRate = Math.abs(home.n - dest.n);
+          const synodic = TWO_PI / synodicRate;
+          const phaseTolDeg = DIFFICULTY[state.difficulty].PHASE_TOL_DEG;
+          const windowDur = (2 * phaseTolDeg * DEG2RAD) / synodicRate;
+
+          const MAX_WINDOW_SEC = 8;
+          const baseDecel = state.difficulty === "easy" ? 0.5 : 1;
+          const windowRealSec = windowDur / (baseDecel * SIM_RATE);
+          const decel =
+            windowRealSec > MAX_WINDOW_SEC
+              ? Math.ceil(windowDur / (MAX_WINDOW_SEC * SIM_RATE))
+              : baseDecel;
+
+          return {
+            normal: Math.max(1, Math.round(synodic * 0.75)),
+            fast: Math.max(2, Math.round(synodic * 2.5)),
+            fastest: Math.max(5, Math.round(synodic * 7.5)),
+            decel: decel,
+            windowDur: windowDur,
+          };
+        }
+
+        const BURN_FILL_SEC = 4; // seconds to fill burn meter from 0% to 100%
+
+        // Piecewise log-linear burn meter curve
+        // Three segments join at green zone edges p and q:
+        //   [0, p] → METER_MIN_G to GREEN_LOW_G  (snail zone)
+        //   [p, q] → GREEN_LOW_G  to GREEN_HIGH_G (green zone)
+        //   [q, 1] → GREEN_HIGH_G to METER_MAX_G  (death zone)
+        // As the green zone shrinks (p→0.5, q→0.5), snail and death zones expand.
+        function meterToAccelG(t, p, q) {
+          if (q - p < 0.001) {
+            // Green zone collapsed — split at midpoint
+            if (t <= 0.5) {
+              return METER_MIN_G * Math.pow(GREEN_LOW_G / METER_MIN_G, t / 0.5);
+            }
+            return (
+              GREEN_HIGH_G *
+              Math.pow(METER_MAX_G / GREEN_HIGH_G, (t - 0.5) / 0.5)
+            );
+          }
+          if (t <= p) {
+            return METER_MIN_G * Math.pow(GREEN_LOW_G / METER_MIN_G, t / p);
+          }
+          if (t <= q) {
+            return (
+              GREEN_LOW_G *
+              Math.pow(GREEN_HIGH_G / GREEN_LOW_G, (t - p) / (q - p))
+            );
+          }
+          return (
+            GREEN_HIGH_G *
+            Math.pow(METER_MAX_G / GREEN_HIGH_G, (t - q) / (1 - q))
+          );
+        }
+
+        // Current green zone edges on the meter [0,1], shrinking and bouncing over time
+        function getGreenZoneEdges() {
+          const diff = DIFFICULTY[state.difficulty];
+          if (diff.BURN_SHRINK_SEC === Infinity) return { p: 0.25, q: 0.75 };
+
+          let elapsed = 0;
+          if (state.phase === "burn" && state.burn.holding) {
+            elapsed = (performance.now() - state.burn.holdStart) / 1000;
+          }
+          const halfWidth =
+            0.25 * Math.max(0, 1 - elapsed / diff.BURN_SHRINK_SEC);
+
+          // Bounce: center oscillates left-right (hard mode)
+          let center = 0.5;
+          if (diff.BOUNCE_AMP > 0 && diff.BOUNCE_FREQ > 0) {
+            center +=
+              diff.BOUNCE_AMP * Math.sin(TWO_PI * diff.BOUNCE_FREQ * elapsed);
+            // Clamp so edges stay within [0, 1]
+            center = Math.max(
+              halfWidth + 0.01,
+              Math.min(1 - halfWidth - 0.01, center),
+            );
+          }
+
+          return { p: center - halfWidth, q: center + halfWidth };
+        }
+
+        function computeBurnMeterZones() {
+          const aLow = GREEN_LOW_G * G_TO_AUYR2;
+          const aHigh = GREEN_HIGH_G * G_TO_AUYR2;
+          const aFatal = CREW_DEAD_G * G_TO_AUYR2;
+          return { aLow: aLow, aHigh: aHigh, aFatal: aFatal };
+        }
+
+        function crewSurvivalChance(aReq) {
+          const a_g = aReq / G_TO_AUYR2;
+          if (a_g <= CREW_SAFE_G) return 1.0;
+          if (a_g >= CREW_DEAD_G) return 0.0;
+          const x = (a_g - CREW_SAFE_G) / (CREW_DEAD_G - CREW_SAFE_G);
+          return 1 - x * x * x;
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Launch Ready Check                             */
+        /* ══════════════════════════════════════════════ */
+
+        function isLaunchReady() {
+          return state.ref != null && state.missionStarted;
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Transfer Line Geometry                         */
+        /* ══════════════════════════════════════════════ */
+
+        function getTransferLinePosition(tau) {
+          const ref = state.transfer;
+          if (!ref) return { x: 0, y: 0, s: 0 };
+
+          const accel = state.burn.committed ? state.accelFinal : A_REF;
+          const T = state.burn.committed ? state.tActual : ref.T_ref;
+          const tFlip = T / 2;
+
+          let s;
+          if (tau <= tFlip) {
+            s = 0.5 * accel * tau * tau;
+          } else {
+            const dt = T - tau;
+            s = ref.L - 0.5 * accel * dt * dt;
+          }
+          s = Math.max(0, Math.min(ref.L, s));
+
+          return {
+            x: ref.r0.x + ref.u.x * s,
+            y: ref.r0.y + ref.u.y * s,
+            s: s,
+          };
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Result Evaluation                              */
+        /* ══════════════════════════════════════════════ */
+
+        function evaluateAccelResult(accel) {
+          const zones = state.burnZones;
+          const a_g = accel / G_TO_AUYR2;
+
+          // Within green zone → success
+          if (accel >= zones.aLow && accel <= zones.aHigh) {
+            return { type: "success" };
+          }
+
+          // Above 20g → certain death
+          if (a_g >= CREW_DEAD_G) {
+            return { type: "fatal" };
+          }
+
+          // Between 1g and 20g → roll dice
+          if (a_g >= CREW_SAFE_G) {
+            const survival = crewSurvivalChance(accel);
+            if (Math.random() < survival) {
+              return { type: "close" };
+            } else {
+              return { type: "fatal" };
+            }
+          }
+
+          // Below green zone — safe but painfully slow
+          if (accel < zones.aLow) {
+            return { type: "slow" };
+          }
+
+          return { type: "close" };
+        }
+
+        function getResultHint() {
+          if (state.resultSubtype === "solar") return T("hintSolarFatal");
+          if (state.resultType === "fatal") return T("hintHighG");
+          if (state.resultType === "close") return T("hintInjured");
+          if (state.resultType === "slow") return T("hintSlowTransfer");
+          return "";
+        }
+
+        function showResultOverlay() {
+          const existing = document.querySelector(".result-overlay");
+          if (existing) existing.remove();
+
+          const overlay = document.createElement("div");
+          overlay.className = "result-overlay";
+
+          let emoji, msg, bg;
+          const result = state.resultType;
+          if (result === "success") {
+            emoji = "\uD83C\uDF89";
+            msg = T("resultSuccess");
+            bg = "rgba(63,185,80,0.88)";
+          } else if (result === "close") {
+            emoji = "\uD83E\uDD15";
+            msg = T("resultInjured");
+            bg = "rgba(240,180,60,0.92)";
+          } else if (result === "slow") {
+            emoji = "\uD83D\uDC0C";
+            msg = T("resultSlow");
+            bg = "rgba(88,166,255,0.88)";
+          } else if (result === "fatal") {
+            emoji = "\u2620\uFE0F";
+            msg = T("resultFatal");
+            bg = "rgba(120,10,10,0.95)";
+          } else {
+            emoji = "\uD83D\uDC4E\uD83C\uDFFB";
+            msg = T("resultMiss");
+            bg = "rgba(240,180,60,0.92)";
+          }
+
+          const hint = getResultHint();
+          overlay.style.background = bg;
+
+          const emojiEl = document.createElement("div");
+          emojiEl.className = "overlay-emoji";
+          emojiEl.textContent = emoji;
+          overlay.appendChild(emojiEl);
+
+          const msgEl = document.createElement("div");
+          msgEl.className = "overlay-msg";
+          msgEl.textContent = msg;
+          overlay.appendChild(msgEl);
+
+          if (hint) {
+            const subEl = document.createElement("div");
+            subEl.className = "overlay-sub";
+            subEl.textContent = hint;
+            overlay.appendChild(subEl);
+          }
+
+          const hintEl = document.createElement("div");
+          hintEl.className = "overlay-hint";
+          hintEl.textContent = T("clickDismiss");
+          overlay.appendChild(hintEl);
+
+          overlay.addEventListener("click", function () {
+            overlay.remove();
+            state.overlayDismissed = true;
+            state.postResultStart = performance.now();
+          });
+          document.body.appendChild(overlay);
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Canvas Setup                                   */
+        /* ══════════════════════════════════════════════ */
+
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        let W = 0,
+          H = 0;
+
+        const insetCanvas = document.getElementById("insetCanvas");
+        const ictx = insetCanvas.getContext("2d");
+        let iW = 150,
+          iH = 150;
+
+        function resize() {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          W = rect.width;
+          H = rect.height;
+          canvas.width = W * dpr;
+          canvas.height = H * dpr;
+          canvas.style.width = W + "px";
+          canvas.style.height = H + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          const iRect = insetCanvas.parentElement.getBoundingClientRect();
+          iW = iRect.width;
+          iH = iRect.height;
+          insetCanvas.width = iW * dpr;
+          insetCanvas.height = iH * dpr;
+          insetCanvas.style.width = iW + "px";
+          insetCanvas.style.height = iH + "px";
+          ictx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener("resize", resize);
+
+        /* ══════════════════════════════════════════════ */
+        /* Starfield                                      */
+        /* ══════════════════════════════════════════════ */
+
+        let bgStars = [];
+        function initBgStars(n) {
+          bgStars = [];
+          for (let i = 0; i < n; i++) {
+            bgStars.push({
+              x: Math.random(),
+              y: Math.random(),
+              r: Math.random() * 1.2 + 0.3,
+              b: Math.random() * 0.4 + 0.2,
+            });
+          }
+        }
+        initBgStars(200);
+
+        /* ══════════════════════════════════════════════ */
+        /* Camera                                         */
+        /* ══════════════════════════════════════════════ */
+
+        function computeAutoCamera() {
+          const home = bodyByKey[state.homeKey];
+          const dest = bodyByKey[state.destKey];
+          const maxR = Math.max(home.a * (1 + home.e), dest.a * (1 + dest.e));
+          const margin = maxR * 1.2;
+          return { cx: 0, cy: 0, scale: Math.min(W, H) / 2 / margin };
+        }
+
+        function toCanvas(auX, auY) {
+          return {
+            cx: W / 2 + (auX - state.camera.cx) * state.camera.scale,
+            cy: H / 2 - (auY - state.camera.cy) * state.camera.scale,
+          };
+        }
+
+        function fromCanvas(cx, cy) {
+          return {
+            x: (cx - W / 2) / state.camera.scale + state.camera.cx,
+            y: -(cy - H / 2) / state.camera.scale + state.camera.cy,
+          };
+        }
+
+        function getCanvasPos(e) {
+          const rect = canvas.getBoundingClientRect();
+          if (e.touches && e.touches.length > 0) {
+            return {
+              x: e.touches[0].clientX - rect.left,
+              y: e.touches[0].clientY - rect.top,
+            };
+          }
+          return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function getNearPlanetKey(canvasPos) {
+          const keys = [state.homeKey, state.destKey];
+          let bestKey = null;
+          let bestDist2 = Infinity;
+          for (let i = 0; i < keys.length; i++) {
+            const body = bodyByKey[keys[i]];
+            const pos = helioPosition(body, state.simTime);
+            const cc = toCanvas(pos.x, pos.y);
+            const dx = canvasPos.x - cc.cx;
+            const dy = canvasPos.y - cc.cy;
+            const d2 = dx * dx + dy * dy;
+            const hitRadius = Math.max(body.radius + 8, 20);
+            if (d2 <= hitRadius * hitRadius && d2 < bestDist2) {
+              bestDist2 = d2;
+              bestKey = keys[i];
+            }
+          }
+          return bestKey;
+        }
+
+        function computeM0OffsetFromCanvasPos(canvasPos, planetKey) {
+          const body = bodyByKey[planetKey];
+          const world = fromCanvas(canvasPos.x, canvasPos.y);
+          const theta = Math.atan2(world.y, world.x);
+          const nu = theta - body.pomegaRad;
+          const E =
+            2 *
+            Math.atan2(
+              Math.sqrt(1 - body.e) * Math.sin(nu / 2),
+              Math.sqrt(1 + body.e) * Math.cos(nu / 2),
+            );
+          const M_target = E - body.e * Math.sin(E);
+          return M_target - body.M0 - body.n * state.simTime;
+        }
+
+        function applyDragOffset(planetKey, offset) {
+          if (planetKey === state.homeKey) state.homeM0Offset = offset;
+          else if (planetKey === state.destKey) state.destM0Offset = offset;
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Drawing                                        */
+        /* ══════════════════════════════════════════════ */
+
+        function drawStarfield() {
+          for (let i = 0; i < bgStars.length; i++) {
+            const s = bgStars[i];
+            ctx.beginPath();
+            ctx.arc(s.x * W, s.y * H, s.r, 0, TWO_PI);
+            ctx.fillStyle = "rgba(200,210,220," + s.b * 0.3 + ")";
+            ctx.fill();
+          }
+        }
+
+        function drawOrbitEllipse(body, alpha) {
+          if (body.key === "sun") return;
+          const cxAu = -body.a * body.e * body.cosPom;
+          const cyAu = -body.a * body.e * body.sinPom;
+          const cc = toCanvas(cxAu, cyAu);
+          ctx.beginPath();
+          ctx.ellipse(
+            cc.cx,
+            cc.cy,
+            body.a * state.camera.scale,
+            body.bSemi * state.camera.scale,
+            -body.pomegaRad,
+            0,
+            TWO_PI,
+          );
+          ctx.strokeStyle = "rgba(" + body.glow + "," + alpha + ")";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+
+        function drawBody(body, t) {
+          const pos = helioPosition(body, t);
+          const cc = toCanvas(pos.x, pos.y);
+          const r = body.radius;
+          if (body.key === "sun") {
+            const grad = ctx.createRadialGradient(
+              cc.cx,
+              cc.cy,
+              0,
+              cc.cx,
+              cc.cy,
+              r * 2.5,
+            );
+            grad.addColorStop(0, "rgba(" + body.glow + ",0.6)");
+            grad.addColorStop(1, "rgba(" + body.glow + ",0)");
+            ctx.beginPath();
+            ctx.arc(cc.cx, cc.cy, r * 2.5, 0, TWO_PI);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Solar danger zone ring (easy mode)
+            if (state.difficulty === "easy" && state.ref) {
+              const killR = SOLAR_KILL_RADIUS * state.camera.scale;
+              ctx.beginPath();
+              ctx.arc(cc.cx, cc.cy, killR, 0, TWO_PI);
+              ctx.strokeStyle = "rgba(255,60,30,0.25)";
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+          ctx.beginPath();
+          ctx.arc(cc.cx, cc.cy, r, 0, TWO_PI);
+          ctx.fillStyle = body.color;
+          ctx.fill();
+
+          if (
+            state.phase === "prelaunch" &&
+            (body.key === state.draggingKey || body.key === state.dragHoverKey)
+          ) {
+            ctx.beginPath();
+            ctx.arc(cc.cx, cc.cy, r + 4, 0, TWO_PI);
+            ctx.strokeStyle =
+              body.key === state.draggingKey
+                ? "rgba(88,166,255,0.9)"
+                : "rgba(88,166,255,0.5)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+
+          if (body.key !== "sun") {
+            const label = T(body.key);
+            ctx.font = '15px "Share Tech Mono", monospace';
+            ctx.fillStyle = "rgba(" + body.glow + ",0.7)";
+            ctx.textAlign = "center";
+            ctx.fillText(label, cc.cx, cc.cy - r - 5);
+          }
+        }
+
+        function drawTransferLine() {
+          if (!state.transfer) return;
+          if (state.phase === "prelaunch") return;
+
+          const ref = state.transfer;
+          const p0 = toCanvas(ref.r0.x, ref.r0.y);
+          const p1 = toCanvas(ref.rdRef.x, ref.rdRef.y);
+
+          ctx.beginPath();
+          ctx.setLineDash([4, 4]);
+          ctx.moveTo(p0.cx, p0.cy);
+          ctx.lineTo(p1.cx, p1.cy);
+          ctx.strokeStyle = "rgba(255,255,255,0.15)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        function getScAngle() {
+          const ref = state.transfer;
+          if (!ref) {
+            const hv = helioVelocity(bodyByKey[state.homeKey], state.simTime);
+            return Math.atan2(-hv.vy, hv.vx);
+          }
+
+          const baseAngle = Math.atan2(-ref.u.y, ref.u.x);
+
+          if (
+            state.phase === "transit" ||
+            state.phase === "captured" ||
+            (state.phase === "result" && state.burn.committed)
+          ) {
+            if (state.flipStartWall === 0) {
+              return baseAngle; // before flip: pointing forward
+            }
+            const flipProgress = Math.min(
+              1,
+              (performance.now() - state.flipStartWall) /
+                (state.flipDurMs || FLIP_ANIM_MS),
+            );
+            if (flipProgress < 1) {
+              return baseAngle + Math.PI * flipProgress; // during flip: rotating
+            }
+            return baseAngle + Math.PI; // after flip: pointing backward
+          }
+          if (state.phase === "coasting") {
+            return baseAngle + Math.PI;
+          }
+
+          return baseAngle; // burn phase: pointing forward
+        }
+
+        function drawSpacecraft() {
+          if (!state.sc.launched) return;
+
+          // Solar dissolve — ship burning up
+          let dissolveProgress = 0;
+          if (state.solarDeathStart > 0) {
+            dissolveProgress = Math.min(
+              1,
+              (performance.now() - state.solarDeathStart) / 1600,
+            );
+            if (dissolveProgress >= 1) return; // fully dissolved
+          }
+
+          const cc = toCanvas(state.sc.x, state.sc.y);
+          const angle = getScAngle();
+
+          ctx.save();
+          ctx.translate(cc.cx, cc.cy);
+          ctx.rotate(angle);
+
+          if (dissolveProgress > 0) {
+            ctx.globalAlpha = 1 - dissolveProgress;
+            // Expanding fire glow
+            const fireR = 22 + 38.5 * dissolveProgress;
+            const fireGlow = ctx.createRadialGradient(0, 0, 2, 0, 0, fireR);
+            fireGlow.addColorStop(
+              0,
+              "rgba(255,100,30," + 0.7 * dissolveProgress + ")",
+            );
+            fireGlow.addColorStop(
+              0.5,
+              "rgba(255,60,10," + 0.4 * dissolveProgress + ")",
+            );
+            fireGlow.addColorStop(1, "rgba(255,30,0,0)");
+            ctx.fillStyle = fireGlow;
+            ctx.beginPath();
+            ctx.arc(0, 0, fireR, 0, TWO_PI);
+            ctx.fill();
+          }
+
+          // Capture dissolve — stay hidden through result phase
+          if (
+            state.phase === "captured" ||
+            (state.phase === "result" && state.captureAlpha <= 0)
+          ) {
+            if (state.captureAlpha <= 0) {
+              ctx.restore();
+              return;
+            }
+            ctx.globalAlpha = state.captureAlpha;
+          }
+
+          // Glow
+          const glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 16);
+          glow.addColorStop(0, "rgba(255,224,102,0.36)");
+          glow.addColorStop(1, "rgba(255,224,102,0.0)");
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(0, 0, 16, 0, TWO_PI);
+          ctx.fill();
+
+          // Triangle wedge
+          ctx.fillStyle = "#ffe066";
+          ctx.beginPath();
+          ctx.moveTo(14.3, 0);
+          ctx.lineTo(-7.7, -7.15);
+          ctx.lineTo(-7.7, 7.15);
+          ctx.closePath();
+          ctx.fill();
+
+          // Determine flip state for engine/RCS logic
+          let isFlipping = false;
+          let flipDone = false;
+          if (state.phase === "transit" && state.flipStartWall > 0) {
+            const fProg = Math.min(
+              1,
+              (performance.now() - state.flipStartWall) /
+                (state.flipDurMs || FLIP_ANIM_MS),
+            );
+            isFlipping = fProg < 1;
+            flipDone = fProg >= 1;
+          }
+
+          // Engine flame: during burn, or during transit when NOT mid-flip
+          if (
+            state.phase === "burn" ||
+            (state.phase === "transit" &&
+              !isFlipping &&
+              state.solarDeathStart === 0)
+          ) {
+            const fl = 6.6 + 4.4 * Math.sin(Date.now() / 60);
+            ctx.fillStyle = "rgba(255,140,30,0.6)";
+            ctx.beginPath();
+            ctx.moveTo(-7.7, -4.4);
+            ctx.lineTo(-7.7 - fl, 0);
+            ctx.lineTo(-7.7, 4.4);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          // RCS thrusters during flip rotation
+          if (state.phase === "transit" && isFlipping) {
+            const rcsLen = 3.3 + 2.2 * Math.sin(Date.now() / 40);
+            ctx.fillStyle = "rgba(100,180,255,0.5)";
+            ctx.beginPath();
+            ctx.moveTo(5.5, -7.15);
+            ctx.lineTo(5.5, -7.15 - rcsLen);
+            ctx.lineTo(2.2, -7.15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(-5.5, 7.15);
+            ctx.lineTo(-5.5, 7.15 + rcsLen);
+            ctx.lineTo(-2.2, 7.15);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          // Flash at flip completion
+          if (
+            state.phase === "transit" &&
+            flipDone &&
+            state.flipStartWall > 0
+          ) {
+            const flashAge =
+              performance.now() -
+              (state.flipStartWall + (state.flipDurMs || FLIP_ANIM_MS));
+            if (flashAge >= 0 && flashAge < 300) {
+              const flashAlpha = 0.6 * (1 - flashAge / 300);
+              ctx.beginPath();
+              ctx.arc(0, 0, 27.5, 0, TWO_PI);
+              ctx.fillStyle = "rgba(255,255,255," + flashAlpha + ")";
+              ctx.fill();
+            }
+          }
+
+          ctx.restore();
+        }
+
+        function drawTrail() {
+          const trail = state.sc.trail;
+          if (trail.length < 2) return;
+
+          const flipIdx = state.flipTrailIdx || trail.length;
+          const step = Math.max(1, Math.floor(trail.length / 2000));
+
+          // Warm segment (acceleration)
+          ctx.beginPath();
+          const p0 = toCanvas(trail[0].x, trail[0].y);
+          ctx.moveTo(p0.cx, p0.cy);
+          for (let i = step; i < Math.min(flipIdx, trail.length); i += step) {
+            const p = toCanvas(trail[i].x, trail[i].y);
+            ctx.lineTo(p.cx, p.cy);
+          }
+          ctx.strokeStyle = "rgba(255,180,80,0.55)";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Cool segment (braking)
+          if (flipIdx < trail.length) {
+            ctx.beginPath();
+            const pf = toCanvas(trail[flipIdx].x, trail[flipIdx].y);
+            ctx.moveTo(pf.cx, pf.cy);
+            for (let j = flipIdx + step; j < trail.length; j += step) {
+              const pc = toCanvas(trail[j].x, trail[j].y);
+              ctx.lineTo(pc.cx, pc.cy);
+            }
+            ctx.strokeStyle = "rgba(100,180,255,0.55)";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+        }
+
+        function drawScene() {
+          ctx.clearRect(0, 0, W, H);
+          ctx.fillStyle = "#080c14";
+          ctx.fillRect(0, 0, W, H);
+
+          drawStarfield();
+
+          const home = bodyByKey[state.homeKey];
+          const dest = bodyByKey[state.destKey];
+
+          drawOrbitEllipse(home, 0.25);
+          drawOrbitEllipse(dest, 0.25);
+
+          drawTransferLine();
+          drawTrail();
+
+          drawBody(bodyByKey["sun"], state.simTime);
+          drawBody(home, state.simTime);
+          drawBody(dest, state.simTime);
+
+          drawSpacecraft();
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Inset Drawing                                  */
+        /* ══════════════════════════════════════════════ */
+
+        function drawInset() {
+          ictx.clearRect(0, 0, iW, iH);
+          ictx.fillStyle = "rgba(8,12,20,0.9)";
+          ictx.fillRect(0, 0, iW, iH);
+
+          const cx = iW / 2,
+            cy = iH / 2;
+          const bodyKey =
+            state.phase === "transit" ||
+            state.phase === "captured" ||
+            state.phase === "coasting" ||
+            (state.phase === "result" && state.burn.committed)
+              ? state.destKey
+              : state.homeKey;
+          const body = bodyByKey[bodyKey];
+
+          ictx.beginPath();
+          const grad = ictx.createRadialGradient(cx, cy, 0, cx, cy, 16);
+          grad.addColorStop(0, body.color);
+          grad.addColorStop(1, "rgba(" + body.glow + ",0.1)");
+          ictx.arc(cx, cy, 14, 0, TWO_PI);
+          ictx.fillStyle = grad;
+          ictx.fill();
+
+          ictx.beginPath();
+          ictx.arc(cx, cy, 14, 0, TWO_PI);
+          ictx.fillStyle = body.color;
+          ictx.fill();
+
+          const orbitR = 40;
+          ictx.beginPath();
+          ictx.arc(cx, cy, orbitR, 0, TWO_PI);
+          ictx.strokeStyle = "rgba(255,255,255,0.2)";
+          ictx.lineWidth = 1;
+          ictx.stroke();
+
+          const scAngle = state.insetScAngle;
+          const scX = cx + orbitR * Math.cos(scAngle);
+          const scY = cy - orbitR * Math.sin(scAngle);
+
+          // Engine glow during burn/transit
+          if (state.phase === "burn" || state.phase === "transit") {
+            const flR = 5.5 + 2.2 * Math.sin(Date.now() / 80);
+            ictx.beginPath();
+            ictx.arc(scX, scY, flR, 0, TWO_PI);
+            ictx.fillStyle = "rgba(255,180,50,0.4)";
+            ictx.fill();
+          }
+
+          // RCS glow during mid-transit flip
+          if (
+            state.phase === "transit" &&
+            state.flipStartWall > 0 &&
+            performance.now() - state.flipStartWall <
+              (state.flipDurMs || FLIP_ANIM_MS)
+          ) {
+            const rcsR = 4.4 + 2.2 * Math.sin(Date.now() / 40);
+            ictx.beginPath();
+            ictx.arc(scX, scY, rcsR, 0, TWO_PI);
+            ictx.fillStyle = "rgba(100,180,255,0.4)";
+            ictx.fill();
+          }
+
+          // Spacecraft wedge on inset — always tangent to orbit direction
+          const insetAngle = -(scAngle + Math.PI / 2);
+
+          ictx.save();
+          ictx.translate(scX, scY);
+          ictx.rotate(insetAngle);
+          ictx.fillStyle = "#ffe066";
+          ictx.beginPath();
+          ictx.moveTo(11, 0);
+          ictx.lineTo(-5.5, -5.5);
+          ictx.lineTo(-5.5, 5.5);
+          ictx.closePath();
+          ictx.fill();
+          ictx.restore();
+
+          ictx.font = '12px "Share Tech Mono", monospace';
+          ictx.fillStyle = "rgba(255,255,255,0.5)";
+          ictx.textAlign = "center";
+          ictx.fillText(T(bodyKey), cx, iH - 6);
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Burn Interaction                               */
+        /* ══════════════════════════════════════════════ */
+
+        function startBurn() {
+          if (state.phase !== "prelaunch") return;
+          if (!isLaunchReady()) return;
+
+          // Lock reference at launch time
+          const ref = computeFlipBurnRef(
+            state.homeKey,
+            state.destKey,
+            state.simTime,
+          );
+          state.transfer = ref;
+          state.ref = ref;
+          state.solarClearance = ref.solarClearance;
+          state.launchSimTime = state.simTime;
+          state.tauSim = 0;
+
+          // Compute burn meter zones
+          state.burnZones = computeBurnMeterZones();
+
+          // Place spacecraft at home planet position
+          const hp = helioPosition(bodyByKey[state.homeKey], state.simTime);
+          state.sc.x = hp.x;
+          state.sc.y = hp.y;
+          state.sc.launched = true;
+          state.sc.trail = [{ x: hp.x, y: hp.y }];
+
+          // Start burn phase
+          state.phase = "burn";
+          state.burn.holding = true;
+          state.burn.holdStart = performance.now();
+          state.burn.holdDuration = 0;
+          state.burn.accel = 0;
+          state.burn.meterFrac = 0;
+
+          updateEngineBtn();
           updateBurnMeter();
         }
-        break;
 
-      case 'transit':
-        // Solar death freeze — ship frozen, dissolving
-        if (state.solarDeathStart > 0) {
-          var deathElapsed = (performance.now() - state.solarDeathStart) / 1000;
-          if (deathElapsed >= 2.0) {
-            state.phase = 'result';
-            showResultOverlay();
+        function endBurn() {
+          if (state.phase !== "burn" || !state.burn.holding) return;
+
+          state.burn.holding = false;
+          state.burn.committed = true;
+
+          const ref = state.transfer;
+          let accel = state.burn.accel;
+          if (accel < 1) accel = 1; // floor to prevent division by zero
+          state.accelFinal = accel;
+
+          // Re-solve intercept for player's chosen acceleration
+          // The reference was computed at A_REF — different accel means different
+          // transfer time, so the destination planet will be at a different position.
+          const r0 = ref.r0;
+          const dest = bodyByKey[state.destKey];
+          const t0 = state.launchSimTime;
+
+          const T_guess = 2 * Math.sqrt(ref.L / accel);
+          let T_lo = 0;
+          let T_hi = Math.max(2 * T_guess, 1 / 365.25);
+
+          function fIntercept(T) {
+            const rd = helioPosition(dest, t0 + T);
+            const dx = rd.x - r0.x,
+              dy = rd.y - r0.y;
+            const Ld = Math.sqrt(dx * dx + dy * dy);
+            return Ld - (accel * T * T) / 4;
           }
-          break;
+
+          while (fIntercept(T_hi) > 0) {
+            T_hi *= 2;
+            if (T_hi > 1000) break;
+          }
+
+          let T_actual = T_guess;
+          for (let i = 0; i < 40; i++) {
+            T_actual = (T_lo + T_hi) / 2;
+            const fVal = fIntercept(T_actual);
+            if (Math.abs(fVal) < 1e-6) break;
+            if (fVal > 0) T_lo = T_actual;
+            else T_hi = T_actual;
+          }
+
+          // Update transfer geometry to actual intercept point
+          const rdActual = helioPosition(dest, t0 + T_actual);
+          const lineX = rdActual.x - r0.x,
+            lineY = rdActual.y - r0.y;
+          let L_actual = Math.sqrt(lineX * lineX + lineY * lineY);
+          if (L_actual < 1e-10) L_actual = 1e-10;
+
+          ref.rdRef = rdActual;
+          ref.line = { x: lineX, y: lineY };
+          ref.L = L_actual;
+          ref.u = { x: lineX / L_actual, y: lineY / L_actual };
+
+          // Recheck solar clearance with new transfer line
+          const dotR0Seg = r0.x * lineX + r0.y * lineY;
+          const dotSegSeg = lineX * lineX + lineY * lineY;
+          const q = Math.max(0, Math.min(1, -dotR0Seg / dotSegSeg));
+          const closestX = r0.x + q * lineX;
+          const closestY = r0.y + q * lineY;
+          ref.solarClearance = Math.sqrt(
+            closestX * closestX + closestY * closestY,
+          );
+          state.solarClearance = ref.solarClearance;
+
+          state.tauFlip = T_actual / 2;
+          state.tActual = T_actual;
+
+          // Evaluate result based on acceleration
+          const result = evaluateAccelResult(accel);
+          state.resultType = result.type;
+          state.resultSubtype = null;
+
+          // Transition to transit — flip happens mid-flight
+          state.phase = "transit";
+          state.flipStartWall = 0; // flip not started yet
+          state.flipAngle = 0;
+          state.flipTrailIdx = 0;
+
+          if (state.warpLocked) {
+            state.warpLocked = false;
+          }
+
+          updateEngineBtn();
         }
 
-        // Animate transit: 10s at 0.3g (snail), 4s at 20g (deadly)
-        var accelG = state.accelFinal / G_TO_AUYR2;
-        var transitSec = 10 - 6 * (accelG - METER_MIN_G) / (METER_MAX_G - METER_MIN_G);
-        var cruiseWarp = state.tActual / (transitSec * SIM_RATE);
-        dtSim = dtReal * cruiseWarp * SIM_RATE;
-        state.tauSim += dtSim;
-        state.simTime += dtSim;
+        const engineBtn = document.getElementById("engineBtn");
 
-        var pos = getTransferLinePosition(state.tauSim);
-        state.sc.x = pos.x;
-        state.sc.y = pos.y;
+        engineBtn.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          startBurn();
+        });
+        engineBtn.addEventListener("mouseup", function (e) {
+          e.preventDefault();
+          endBurn();
+        });
+        engineBtn.addEventListener("mouseleave", function () {
+          if (state.burn.holding) endBurn();
+        });
+        engineBtn.addEventListener(
+          "touchstart",
+          function (e) {
+            e.preventDefault();
+            startBurn();
+          },
+          { passive: false },
+        );
+        engineBtn.addEventListener(
+          "touchend",
+          function (e) {
+            e.preventDefault();
+            endBurn();
+          },
+          { passive: false },
+        );
+        engineBtn.addEventListener("touchcancel", function () {
+          if (state.burn.holding) endBurn();
+        });
+        window.addEventListener("blur", function () {
+          if (state.burn.holding) endBurn();
+        });
+        window.addEventListener("keydown", function (e) {
+          if (e.code === "Space" && !e.repeat) {
+            e.preventDefault();
+            startBurn();
+          }
+        });
+        window.addEventListener("keyup", function (e) {
+          if (e.code === "Space") {
+            e.preventDefault();
+            endBurn();
+          }
+        });
 
-        // Trail
-        trailAccum += dtSim;
-        var trailInterval = state.tActual / 500;
-        if (trailInterval < 0.0001) trailInterval = 0.0001;
-        while (trailAccum >= trailInterval) {
-          trailAccum -= trailInterval;
-          state.sc.trail.push({ x: pos.x, y: pos.y });
-          if (state.sc.trail.length > 5000) state.sc.trail.splice(0, 1);
-        }
+        // --- Planet drag (home or destination) ---
+        canvas.addEventListener("mousedown", function (e) {
+          if (state.phase !== "prelaunch") return;
+          const pos = getCanvasPos(e);
+          const key = getNearPlanetKey(pos);
+          if (key) {
+            state.draggingKey = key;
+            canvas.style.cursor = "grabbing";
+            e.preventDefault();
+          }
+        });
+        canvas.addEventListener("mousemove", function (e) {
+          const pos = getCanvasPos(e);
+          if (state.draggingKey) {
+            applyDragOffset(
+              state.draggingKey,
+              computeM0OffsetFromCanvasPos(pos, state.draggingKey),
+            );
+            e.preventDefault();
+          } else if (state.phase === "prelaunch") {
+            const hoverKey = getNearPlanetKey(pos);
+            if (hoverKey) {
+              canvas.style.cursor = "grab";
+              state.dragHoverKey = hoverKey;
+            } else if (state.dragHoverKey) {
+              canvas.style.cursor = "default";
+              state.dragHoverKey = null;
+            }
+          }
+        });
+        canvas.addEventListener("mouseup", function () {
+          if (state.draggingKey) {
+            state.draggingKey = null;
+            canvas.style.cursor = "default";
+          }
+        });
+        canvas.addEventListener("mouseleave", function () {
+          if (state.draggingKey) {
+            state.draggingKey = null;
+            canvas.style.cursor = "default";
+          }
+          state.dragHoverKey = null;
+        });
+        canvas.addEventListener(
+          "touchstart",
+          function (e) {
+            if (state.phase !== "prelaunch") return;
+            const pos = getCanvasPos(e);
+            const key = getNearPlanetKey(pos);
+            if (key) {
+              state.draggingKey = key;
+              e.preventDefault();
+            }
+          },
+          { passive: false },
+        );
+        canvas.addEventListener(
+          "touchmove",
+          function (e) {
+            if (state.draggingKey) {
+              applyDragOffset(
+                state.draggingKey,
+                computeM0OffsetFromCanvasPos(
+                  getCanvasPos(e),
+                  state.draggingKey,
+                ),
+              );
+              e.preventDefault();
+            }
+          },
+          { passive: false },
+        );
+        canvas.addEventListener("touchend", function () {
+          if (state.draggingKey) state.draggingKey = null;
+        });
+        canvas.addEventListener("touchcancel", function () {
+          if (state.draggingKey) state.draggingKey = null;
+        });
 
-        state.insetScAngle += dtReal * 1.5;
+        /* ══════════════════════════════════════════════ */
+        /* UI Updates                                     */
+        /* ══════════════════════════════════════════════ */
 
-        // Trigger flip animation when reaching the flip point
-        if (state.tauSim >= state.tauFlip && state.flipStartWall === 0) {
-          state.flipStartWall = performance.now();
-          state.flipTrailIdx = state.sc.trail.length;
-          // Flip must finish well before arrival — cap at 1/6 of remaining wall-clock time
-          var remainingWallMs = (state.tActual - state.tauFlip) / (cruiseWarp * SIM_RATE) * 1000;
-          state.flipDurMs = Math.min(FLIP_ANIM_MS, remainingWallMs / 6);
-          state.flipDurMs = Math.max(state.flipDurMs, 100); // floor at 100ms
-        }
+        function updateEngineBtn() {
+          const btn = document.getElementById("engineBtn");
+          btn.classList.remove("armed", "firing");
+          btn.disabled = false;
 
-        // Update flip angle (wall-clock driven within transit)
-        if (state.flipStartWall > 0) {
-          var flipElapsed = performance.now() - state.flipStartWall;
-          var flipDur = state.flipDurMs || FLIP_ANIM_MS;
-          state.flipAngle = Math.PI * Math.min(1, flipElapsed / flipDur);
-        }
-
-        // Solar proximity check — freeze and dissolve
-        var sunDist = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
-        if (sunDist < SOLAR_KILL_RADIUS && state.solarDeathStart === 0) {
-          state.solarDeathStart = performance.now();
-          state.resultType = 'fatal';
-          state.resultSubtype = 'solar';
-          break;
-        }
-
-        // Check completion — ship always reaches destination (symmetric transfer)
-        if (state.tauSim >= state.tActual) {
-          if (state.resultType === 'success' || state.resultType === 'close' || state.resultType === 'slow') {
-            state.phase = 'captured';
-            state.captureStart = performance.now();
-            state.captureAlpha = 1;
+          if (state.phase === "prelaunch") {
+            if (isLaunchReady()) {
+              btn.classList.add("armed");
+            }
+          } else if (state.phase === "burn") {
+            btn.classList.add("firing");
           } else {
-            // Fatal from g-force — ship arrives but crew is dead
-            state.phase = 'result';
-            showResultOverlay();
+            btn.disabled = true;
           }
         }
-        break;
 
-      case 'captured':
-        var captureElapsed = (performance.now() - state.captureStart) / 1000;
-        var DISSOLVE_DUR = 0.5;
-        var POST_CAPTURE_DUR = 2.0;
+        function updatePrompt() {
+          const el = document.getElementById("canvasPrompt");
+          el.classList.remove("highlight", "active", "cruise");
+          let text = "";
 
-        if (captureElapsed < DISSOLVE_DUR) {
-          var ct = captureElapsed / DISSOLVE_DUR;
-          if (ct > 0.4) {
-            state.captureAlpha = 1 - (ct - 0.4) / 0.6;
+          switch (state.phase) {
+            case "prelaunch":
+              if (!state.missionStarted) {
+                text = T("promptStart");
+              } else {
+                text = T("promptReady");
+                el.classList.add("highlight");
+              }
+              break;
+            case "burn":
+              text = T("promptFlip");
+              el.classList.add("active");
+              break;
+            case "transit":
+              if (state.flipStartWall === 0) {
+                text = T("burning");
+                el.classList.add("active");
+              } else if (
+                performance.now() - state.flipStartWall <
+                (state.flipDurMs || FLIP_ANIM_MS)
+              ) {
+                text = T("flipping");
+                el.classList.add("active");
+              } else {
+                text = T("promptBrake");
+                el.classList.add("cruise");
+              }
+              break;
+            case "captured":
+              text = "";
+              break;
+            case "coasting":
+              text = T("promptCoast");
+              el.classList.add("cruise");
+              break;
+            case "result":
+              if (state.overlayDismissed) text = T("clickDismiss");
+              else text = "";
+              break;
           }
-        } else {
-          state.captureAlpha = 0;
-          state.simTime += dtReal * SIM_RATE;
+          el.textContent = text;
+          el.style.display = text ? "" : "none";
         }
 
-        state.insetScAngle += dtReal * 2.0;
+        function updateStepIndicator() {
+          const dots = [
+            document.getElementById("stepDot1"),
+            document.getElementById("stepDot2"),
+            document.getElementById("stepDot3"),
+          ];
+          const labels = [
+            document.getElementById("stepLbl1"),
+            document.getElementById("stepLbl2"),
+            document.getElementById("stepLbl3"),
+          ];
 
-        if (captureElapsed >= DISSOLVE_DUR + POST_CAPTURE_DUR) {
-          state.phase = 'result';
-          showResultOverlay();
+          let step = 0;
+          if (state.phase === "prelaunch" || state.phase === "burn") step = 0;
+          else if (state.phase === "transit" || state.phase === "coasting")
+            step = 1;
+          else if (state.phase === "captured") step = 3;
+          else if (state.phase === "result" && state.resultType === "success")
+            step = 3;
+          else step = 2;
+
+          for (let i = 0; i < 3; i++) {
+            dots[i].classList.remove("done", "current");
+            labels[i].classList.remove("current");
+            if (i < step) dots[i].classList.add("done");
+            else if (i === step && step < 3) {
+              dots[i].classList.add("current");
+              labels[i].classList.add("current");
+            } else if (step === 3) {
+              dots[i].classList.add("done");
+            }
+          }
+
+          document.getElementById("stepIndicator").style.display =
+            state.phase === "result" ? "none" : "flex";
         }
-        break;
 
-      case 'coasting':
-        // Ship stopped, destination moves away
-        state.simTime += dtReal * SIM_RATE;
-        state.insetScAngle += dtReal * 0.5;
-        if ((performance.now() - state.coastStart) / 1000 > 4.0) {
-          state.phase = 'result';
-          showResultOverlay();
+        function updateBurnMeter() {
+          const fillEl = document.getElementById("burnFill");
+          const targetEl = document.getElementById("burnTarget");
+
+          if (!state.burnZones) {
+            targetEl.style.display = "none";
+            fillEl.style.width = "0%";
+            return;
+          }
+
+          const zones = state.burnZones;
+          const accel = state.burn.accel;
+
+          const pct = Math.min(100, state.burn.meterFrac * 100);
+          fillEl.style.width = pct + "%";
+
+          // Coloring
+          fillEl.classList.remove("good", "over", "fatal");
+          if (accel >= zones.aLow && accel <= zones.aHigh) {
+            fillEl.classList.add("good");
+          } else if (accel > zones.aHigh && accel <= zones.aFatal) {
+            fillEl.classList.add("over");
+          } else if (accel > zones.aFatal) {
+            fillEl.classList.add("fatal");
+          }
+
+          // Green zone — edges come from the piecewise curve parameterization
+          const edges = getGreenZoneEdges();
+          if (edges.q - edges.p < 0.005) {
+            targetEl.style.display = "none";
+          } else {
+            targetEl.style.display = "";
+            targetEl.style.left = edges.p * 100 + "%";
+            targetEl.style.width = (edges.q - edges.p) * 100 + "%";
+          }
         }
-        break;
-    }
-  }
 
-  // Keep sim running during result
-  if (state.phase === 'result') {
-    state.simTime += dtReal * SIM_RATE;
-  }
+        function updateReadouts() {
+          const ref = state.ref;
+          if (!ref) return;
 
-  // Auto-reset
-  if (state.phase === 'result' && state.overlayDismissed) {
-    if ((performance.now() - state.postResultStart) / 1000 > 3.0) {
-      resetMission();
-    }
-  }
+          document.getElementById("missionVal").textContent =
+            T(state.homeKey) + " \u2192 " + T(state.destKey);
 
-  var auto = computeAutoCamera();
-  state.camera.cx = 0;
-  state.camera.cy = 0;
-  state.camera.scale = auto.scale;
+          // Acceleration readout
+          const brakingEl = document.getElementById("brakingVal");
+          let a_g;
+          if (state.phase === "burn" && state.burn.holding) {
+            a_g = state.burn.accel / G_TO_AUYR2;
+          } else if (state.burn.committed) {
+            a_g = state.accelFinal / G_TO_AUYR2;
+          } else {
+            a_g = A_REF / G_TO_AUYR2;
+          }
+          brakingEl.textContent = a_g.toFixed(2) + " g";
+          const bc = accelColor(a_g);
+          brakingEl.style.color = "rgb(" + bc.r + "," + bc.g + "," + bc.b + ")";
 
-  drawScene();
-  drawInset();
-  updateReadouts();
-  updatePrompt();
-  updateStepIndicator();
-  updateAccelDisplay();
+          document.getElementById("dv1Val").textContent =
+            (ref.dvDepart * AU_TO_KMS).toFixed(2) + " km/s";
+          document.getElementById("dv2Val").textContent =
+            (ref.dvArrive * AU_TO_KMS).toFixed(2) + " km/s";
 
-  requestAnimationFrame(animate);
-}
+          if (state.difficulty !== "hard") {
+            const pDeg = (ref.phaseCurrent / DEG2RAD).toFixed(1);
+            const idealDeg = (ref.phaseRequired / DEG2RAD).toFixed(1);
+            document.getElementById("phaseVal").textContent =
+              pDeg + "\u00b0 / " + idealDeg + "\u00b0";
+          } else {
+            document.getElementById("phaseVal").textContent = "\u2014";
+          }
 
-/* ══════════════════════════════════════════════ */
-/* Init                                           */
-/* ══════════════════════════════════════════════ */
+          let statusText;
+          switch (state.phase) {
+            case "prelaunch":
+              statusText = state.missionStarted
+                ? T("goodWindow")
+                : T("waiting");
+              break;
+            case "burn":
+              statusText = T("burning");
+              break;
+            case "transit":
+              if (
+                state.flipStartWall > 0 &&
+                performance.now() - state.flipStartWall >=
+                  (state.flipDurMs || FLIP_ANIM_MS)
+              ) {
+                statusText = T("brakingStatus");
+              } else {
+                statusText = T("burning");
+              }
+              break;
+            case "coasting":
+              statusText = T("coastingStatus");
+              break;
+            case "result":
+              if (state.resultType === "success")
+                statusText = T("resultSuccess");
+              else if (state.resultType === "slow")
+                statusText = T("resultSlow");
+              else if (state.resultType === "fatal")
+                statusText = T("resultFatal");
+              else statusText = T("missed");
+              break;
+            default:
+              statusText = "";
+          }
+          document.getElementById("statusVal").textContent = statusText;
+        }
 
-document.getElementById('canvas').addEventListener('click', function() {
-  if (state.phase === 'result' && state.overlayDismissed) {
-    resetMission();
-  }
-});
+        function accelColor(a_g) {
+          // Smooth gradient: green (0g) → yellow (5g) → orange (10g) → red (20g)
+          const t = Math.min(1, Math.max(0, a_g / CREW_DEAD_G));
+          let r, g, b, u;
+          if (t < 0.25) {
+            u = t / 0.25;
+            r = Math.round(63 + (200 - 63) * u);
+            g = Math.round(185 + (200 - 185) * u);
+            b = Math.round(80 * (1 - u));
+          } else if (t < 0.5) {
+            u = (t - 0.25) / 0.25;
+            r = Math.round(200 + (255 - 200) * u);
+            g = Math.round(200 - (200 - 140) * u);
+            b = 0;
+          } else {
+            u = (t - 0.5) / 0.5;
+            r = 255;
+            g = Math.round(140 * (1 - u));
+            b = 0;
+          }
+          return { r: r, g: g, b: b };
+        }
 
-function init() {
-  resize();
-  recalcMission();
-  applyTranslations();
-  setDifficulty('easy');
-  updateWarpBtns();
-  updateEngineBtn();
-  updatePrompt();
-  updateStepIndicator();
-  updateAccelDisplay();
-  requestAnimationFrame(animate);
-}
+        function formatTransferTime(simYears) {
+          const totalDays = simYears * 365.25;
+          const days = Math.floor(totalDays);
+          const hours = Math.floor((totalDays - days) * 24);
+          const hStr = (hours < 10 ? "0" : "") + hours;
+          if (days >= 365) {
+            const yrs = (totalDays / 365.25).toFixed(1);
+            return yrs + "yr";
+          }
+          return days + "d " + hStr + "h";
+        }
 
-init();
-</script>
-</body>
+        function updateAccelDisplay() {
+          const accelEl = document.getElementById("accelDisplay");
+          const timeEl = document.getElementById("transferTimeDisplay");
+          const hudGroup = accelEl.parentElement;
+          let a_g, accelText, timeText;
+
+          if (state.phase === "burn" && state.burn.holding && state.transfer) {
+            // Live: player is choosing acceleration
+            a_g = state.burn.accel / G_TO_AUYR2;
+            accelText = a_g.toFixed(2) + " g";
+            // Projected transfer time decreases as accel increases
+            if (state.burn.accel > 0) {
+              const projT = 2 * Math.sqrt(state.transfer.L / state.burn.accel);
+              timeText = formatTransferTime(projT);
+            } else {
+              timeText = state.ref ? formatTransferTime(state.ref.T_ref) : "";
+            }
+          } else if (state.phase === "transit") {
+            // Constant acceleration throughout (symmetric)
+            a_g = state.accelFinal / G_TO_AUYR2;
+            accelText = a_g.toFixed(2) + " g";
+            timeText =
+              formatTransferTime(state.tauSim) +
+              " / " +
+              formatTransferTime(state.tActual);
+          } else if (state.phase === "captured") {
+            a_g = 0;
+            accelText = "0 g";
+            timeText = formatTransferTime(state.tActual);
+          } else if (state.phase === "result" && state.burn.committed) {
+            a_g = state.accelFinal / G_TO_AUYR2;
+            accelText = a_g.toFixed(2) + " g";
+            timeText = formatTransferTime(state.tActual);
+          } else {
+            // Prelaunch
+            a_g = 0;
+            accelText = "0 g";
+            timeText = state.ref ? formatTransferTime(state.ref.T_ref) : "";
+          }
+
+          accelEl.textContent = accelText;
+          timeEl.textContent = timeText;
+
+          const c = accelColor(a_g);
+          accelEl.style.color = "rgb(" + c.r + "," + c.g + "," + c.b + ")";
+          accelEl.style.textShadow =
+            "0 0 10px rgba(" + c.r + "," + c.g + "," + c.b + ",0.4)";
+
+          hudGroup.classList.toggle("paused", !state.playing);
+        }
+
+        function updateWarpBtns() {
+          const locked = state.warpLocked;
+          const playing = state.playing;
+          const nBtn = document.getElementById("warpNormalBtn");
+          const fBtn = document.getElementById("warpFastBtn");
+          const ffBtn = document.getElementById("warpFastestBtn");
+          nBtn.classList.toggle(
+            "active",
+            playing && !locked && state.warpLevel === "normal",
+          );
+          fBtn.classList.toggle(
+            "active",
+            playing && !locked && state.warpLevel === "fast",
+          );
+          ffBtn.classList.toggle(
+            "active",
+            playing && !locked && state.warpLevel === "fastest",
+          );
+          nBtn.textContent =
+            playing && state.warpLevel === "normal"
+              ? "\u25ae\u25ae"
+              : T("warpNormal");
+          fBtn.textContent =
+            playing && state.warpLevel === "fast"
+              ? "\u25ae\u25ae"
+              : T("warpFast");
+          ffBtn.textContent =
+            playing && state.warpLevel === "fastest"
+              ? "\u25ae\u25ae"
+              : T("warpFastest");
+          nBtn.disabled = locked;
+          fBtn.disabled = locked;
+          ffBtn.disabled = locked;
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Controls                                       */
+        /* ══════════════════════════════════════════════ */
+
+        function populateHomeSelect() {
+          const sel = document.getElementById("homeSelect");
+          sel.textContent = "";
+          for (let i = 0; i < PLANET_KEYS.length; i++) {
+            const opt = document.createElement("option");
+            opt.value = PLANET_KEYS[i];
+            opt.textContent = T(PLANET_KEYS[i]);
+            if (PLANET_KEYS[i] === state.homeKey) opt.selected = true;
+            sel.appendChild(opt);
+          }
+        }
+
+        function getReachablePlanets(homeKey) {
+          const idx = PLANET_KEYS.indexOf(homeKey);
+          const lo = Math.max(0, idx - 3);
+          const hi = Math.min(PLANET_KEYS.length - 1, idx + 3);
+          const result = [];
+          for (let i = lo; i <= hi; i++) {
+            if (i !== idx) result.push(PLANET_KEYS[i]);
+          }
+          return result;
+        }
+
+        function populateDestSelect() {
+          const sel = document.getElementById("destSelect");
+          sel.textContent = "";
+          const reachable = getReachablePlanets(state.homeKey);
+          for (let i = 0; i < reachable.length; i++) {
+            const opt = document.createElement("option");
+            opt.value = reachable[i];
+            opt.textContent = T(reachable[i]);
+            if (reachable[i] === state.destKey) opt.selected = true;
+            sel.appendChild(opt);
+          }
+          if (reachable.indexOf(state.destKey) === -1) {
+            state.destKey = reachable[0];
+            sel.value = state.destKey;
+          }
+        }
+
+        document
+          .getElementById("homeSelect")
+          .addEventListener("change", function (e) {
+            state.homeKey = e.target.value;
+            state.homeM0Offset = 0;
+            state.destM0Offset = 0;
+            populateDestSelect();
+            recalcMission();
+            resetMission();
+          });
+
+        document
+          .getElementById("destSelect")
+          .addEventListener("change", function (e) {
+            state.destKey = e.target.value;
+            state.destM0Offset = 0;
+            recalcMission();
+            resetMission();
+          });
+
+        function setDifficulty(d) {
+          state.difficulty = d;
+          document
+            .getElementById("diffEasyBtn")
+            .classList.toggle("active", d === "easy");
+          document
+            .getElementById("diffMediumBtn")
+            .classList.toggle("active", d === "medium");
+          document
+            .getElementById("diffHardBtn")
+            .classList.toggle("active", d === "hard");
+
+          state.warpLevels = computeWarpLevels(state.homeKey, state.destKey);
+          state.timeWarp =
+            state.warpLevels[state.warpLevel] || state.warpLevels.normal;
+          updateBurnMeter();
+          updateReadouts();
+        }
+
+        function setWarp(level) {
+          if (state.warpLocked) return;
+          if (state.playing && state.warpLevel === level) {
+            state.playing = false;
+          } else {
+            state.warpLevel = level;
+            state.timeWarp = state.warpLevels[level] || state.warpLevels.normal;
+            if (!state.playing) {
+              state.playing = true;
+              if (!state.missionStarted) state.missionStarted = true;
+            }
+          }
+          updateWarpBtns();
+          updateAccelDisplay();
+        }
+
+        function resetMission() {
+          state.simTime = 0;
+          state.homeM0Offset = 0;
+          state.destM0Offset = 0;
+          state.phase = "prelaunch";
+          state.burn = {
+            holding: false,
+            holdStart: 0,
+            holdDuration: 0,
+            accel: 0,
+            meterFrac: 0,
+            committed: false,
+          };
+          state.sc = { x: 0, y: 0, launched: false, trail: [] };
+          state.transfer = null;
+          state.burnZones = null;
+          state.tauFlip = 0;
+          state.tauSim = 0;
+          state.launchSimTime = 0;
+          state.flipTrailIdx = 0;
+          state.accelFinal = 0;
+          state.tActual = 0;
+          state.flipStartWall = 0;
+          state.flipAngle = 0;
+          state.flipDurMs = 0;
+          state.captureStart = 0;
+          state.captureAlpha = 1;
+          state.resultType = null;
+          state.resultSubtype = null;
+          state.solarClearance = Infinity;
+          state.solarDeathStart = 0;
+          state.insetScAngle = 0;
+          state.overlayDismissed = false;
+          state.postResultStart = 0;
+          state.windowOpenSimTime = 0;
+          state.windowWasOpen = false;
+          state.warpLocked = false;
+          state.phaseAtLaunch = 0;
+          state.coastStart = 0;
+          state.playing = false;
+          state.missionStarted = false;
+          state.warpLevel = "normal";
+          state.timeWarp = state.warpLevels.normal;
+          trailAccum = 0;
+
+          const existing = document.querySelector(".result-overlay");
+          if (existing) existing.remove();
+
+          updateEngineBtn();
+          updateBurnMeter();
+          updateWarpBtns();
+          updateReadouts();
+          updateAccelDisplay();
+
+          document.getElementById("burnFill").style.width = "0%";
+          document
+            .getElementById("burnFill")
+            .classList.remove("good", "over", "fatal");
+          document.getElementById("burnTarget").style.display = "none";
+        }
+
+        function recalcMission() {
+          state.ref = computeFlipBurnRef(
+            state.homeKey,
+            state.destKey,
+            state.simTime,
+          );
+          state.warpLevels = computeWarpLevels(state.homeKey, state.destKey);
+          state.timeWarp = state.warpLevels.normal;
+          state.warpLevel = "normal";
+          const auto = computeAutoCamera();
+          state.camera.targetScale = auto.scale;
+          state.camera.cx = auto.cx;
+          state.camera.cy = auto.cy;
+          state.camera.scale = auto.scale;
+          updateReadouts();
+          updateBurnMeter();
+          updateWarpBtns();
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Localization                                   */
+        /* ══════════════════════════════════════════════ */
+
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          document.getElementById("lblHome").textContent = T("home");
+          document.getElementById("lblDest").textContent = T("destination");
+          document.getElementById("lblDifficulty").textContent =
+            T("difficulty");
+          document.getElementById("diffEasyBtn").textContent = T("easy");
+          document.getElementById("diffMediumBtn").textContent = T("medium");
+          document.getElementById("diffHardBtn").textContent = T("hard");
+          document.getElementById("lblTimeWarp").textContent = T("timeWarp");
+          document.getElementById("warpNormalBtn").textContent =
+            T("warpNormal");
+          document.getElementById("warpFastBtn").textContent = T("warpFast");
+          document.getElementById("warpFastestBtn").textContent =
+            T("warpFastest");
+          document.getElementById("lblBurn").textContent = T("burn");
+          updateEngineBtn();
+          document.getElementById("lblMission").textContent = T("mission");
+          document.getElementById("lblBraking").textContent = T("braking");
+          document.getElementById("lblDv1").textContent = T("dv1");
+          document.getElementById("lblDv2").textContent = T("dv2");
+          document.getElementById("lblPhase").textContent = T("phase");
+          document.getElementById("lblStatus").textContent = T("status");
+          document.getElementById("resetBtn").textContent = T("reset");
+          const infoEl = document.getElementById("infoText");
+          infoEl.textContent = "";
+          const parsed = new DOMParser().parseFromString(
+            T("info"),
+            "text/html",
+          );
+          while (parsed.body.firstChild) {
+            infoEl.appendChild(parsed.body.firstChild);
+          }
+          document.getElementById("langBtn").textContent =
+            state.lang === "en" ? "PL" : "EN";
+
+          document.getElementById("stepLbl1").textContent =
+            "1 " + T("stepLaunch");
+          document.getElementById("stepLbl2").textContent =
+            "2 " + T("stepFlip");
+          document.getElementById("stepLbl3").textContent =
+            "3 " + T("stepArrive");
+
+          populateHomeSelect();
+          populateDestSelect();
+          updateReadouts();
+          updateAccelDisplay();
+        }
+
+        function toggleLang() {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Animation Loop                                 */
+        /* ══════════════════════════════════════════════ */
+
+        let lastTimestamp = 0;
+        let trailAccum = 0;
+        let rafId = 0;
+
+        function animate(timestamp) {
+          if (!lastTimestamp) lastTimestamp = timestamp;
+          const dtReal = Math.min((timestamp - lastTimestamp) / 1000, MAX_DT);
+          lastTimestamp = timestamp;
+
+          if (state.playing && state.phase !== "result") {
+            let dtSim;
+
+            switch (state.phase) {
+              case "prelaunch":
+                if (!state.draggingKey) {
+                  dtSim = dtReal * state.timeWarp * SIM_RATE;
+                  state.simTime += dtSim;
+                }
+                state.insetScAngle += dtReal * 2.0;
+
+                // Continuously update reference for readouts
+                state.ref = computeFlipBurnRef(
+                  state.homeKey,
+                  state.destKey,
+                  state.simTime,
+                );
+
+                updateEngineBtn();
+                break;
+
+              case "burn":
+                // simTime frozen. Accumulate acceleration from wall-clock.
+                if (state.burn.holding) {
+                  state.burn.holdDuration =
+                    (performance.now() - state.burn.holdStart) / 1000;
+                  state.burn.meterFrac = Math.min(
+                    1,
+                    state.burn.holdDuration / BURN_FILL_SEC,
+                  );
+                  const edges = getGreenZoneEdges();
+                  state.burn.accel =
+                    meterToAccelG(state.burn.meterFrac, edges.p, edges.q) *
+                    G_TO_AUYR2;
+                  updateBurnMeter();
+                }
+                break;
+
+              case "transit":
+                // Solar death freeze — ship frozen, dissolving
+                if (state.solarDeathStart > 0) {
+                  const deathElapsed =
+                    (performance.now() - state.solarDeathStart) / 1000;
+                  if (deathElapsed >= 2.0) {
+                    state.phase = "result";
+                    showResultOverlay();
+                  }
+                  break;
+                }
+
+                // Animate transit: 10s at 0.3g (snail), 4s at 20g (deadly)
+                const accelG = state.accelFinal / G_TO_AUYR2;
+                const transitSec =
+                  10 -
+                  (6 * (accelG - METER_MIN_G)) / (METER_MAX_G - METER_MIN_G);
+                const cruiseWarp = state.tActual / (transitSec * SIM_RATE);
+                dtSim = dtReal * cruiseWarp * SIM_RATE;
+                state.tauSim += dtSim;
+                state.simTime += dtSim;
+
+                const pos = getTransferLinePosition(state.tauSim);
+                state.sc.x = pos.x;
+                state.sc.y = pos.y;
+
+                // Trail
+                trailAccum += dtSim;
+                let trailInterval = state.tActual / 500;
+                if (trailInterval < 0.0001) trailInterval = 0.0001;
+                while (trailAccum >= trailInterval) {
+                  trailAccum -= trailInterval;
+                  state.sc.trail.push({ x: pos.x, y: pos.y });
+                  if (state.sc.trail.length > 5000) state.sc.trail.splice(0, 1);
+                }
+
+                state.insetScAngle += dtReal * 1.5;
+
+                // Trigger flip animation when reaching the flip point
+                if (
+                  state.tauSim >= state.tauFlip &&
+                  state.flipStartWall === 0
+                ) {
+                  state.flipStartWall = performance.now();
+                  state.flipTrailIdx = state.sc.trail.length;
+                  // Flip must finish well before arrival — cap at 1/6 of remaining wall-clock time
+                  const remainingWallMs =
+                    ((state.tActual - state.tauFlip) /
+                      (cruiseWarp * SIM_RATE)) *
+                    1000;
+                  state.flipDurMs = Math.min(FLIP_ANIM_MS, remainingWallMs / 6);
+                  state.flipDurMs = Math.max(state.flipDurMs, 100); // floor at 100ms
+                }
+
+                // Update flip angle (wall-clock driven within transit)
+                if (state.flipStartWall > 0) {
+                  const flipElapsed = performance.now() - state.flipStartWall;
+                  const flipDur = state.flipDurMs || FLIP_ANIM_MS;
+                  state.flipAngle =
+                    Math.PI * Math.min(1, flipElapsed / flipDur);
+                }
+
+                // Solar proximity check — freeze and dissolve
+                const sunDist = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
+                if (
+                  sunDist < SOLAR_KILL_RADIUS &&
+                  state.solarDeathStart === 0
+                ) {
+                  state.solarDeathStart = performance.now();
+                  state.resultType = "fatal";
+                  state.resultSubtype = "solar";
+                  break;
+                }
+
+                // Check completion — ship always reaches destination (symmetric transfer)
+                if (state.tauSim >= state.tActual) {
+                  if (
+                    state.resultType === "success" ||
+                    state.resultType === "close" ||
+                    state.resultType === "slow"
+                  ) {
+                    state.phase = "captured";
+                    state.captureStart = performance.now();
+                    state.captureAlpha = 1;
+                  } else {
+                    // Fatal from g-force — ship arrives but crew is dead
+                    state.phase = "result";
+                    showResultOverlay();
+                  }
+                }
+                break;
+
+              case "captured":
+                const captureElapsed =
+                  (performance.now() - state.captureStart) / 1000;
+                const DISSOLVE_DUR = 0.5;
+                const POST_CAPTURE_DUR = 2.0;
+
+                if (captureElapsed < DISSOLVE_DUR) {
+                  const ct = captureElapsed / DISSOLVE_DUR;
+                  if (ct > 0.4) {
+                    state.captureAlpha = 1 - (ct - 0.4) / 0.6;
+                  }
+                } else {
+                  state.captureAlpha = 0;
+                  state.simTime += dtReal * SIM_RATE;
+                }
+
+                state.insetScAngle += dtReal * 2.0;
+
+                if (captureElapsed >= DISSOLVE_DUR + POST_CAPTURE_DUR) {
+                  state.phase = "result";
+                  showResultOverlay();
+                }
+                break;
+
+              case "coasting":
+                // Ship stopped, destination moves away
+                state.simTime += dtReal * SIM_RATE;
+                state.insetScAngle += dtReal * 0.5;
+                if ((performance.now() - state.coastStart) / 1000 > 4.0) {
+                  state.phase = "result";
+                  showResultOverlay();
+                }
+                break;
+            }
+          }
+
+          // Keep sim running during result
+          if (state.phase === "result") {
+            state.simTime += dtReal * SIM_RATE;
+          }
+
+          // Auto-reset
+          if (state.phase === "result" && state.overlayDismissed) {
+            if ((performance.now() - state.postResultStart) / 1000 > 3.0) {
+              resetMission();
+            }
+          }
+
+          const auto = computeAutoCamera();
+          state.camera.cx = 0;
+          state.camera.cy = 0;
+          state.camera.scale = auto.scale;
+
+          drawScene();
+          drawInset();
+          updateReadouts();
+          updatePrompt();
+          updateStepIndicator();
+          updateAccelDisplay();
+
+          rafId = requestAnimationFrame(animate);
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* Init                                           */
+        /* ══════════════════════════════════════════════ */
+
+        document
+          .getElementById("canvas")
+          .addEventListener("click", function () {
+            if (state.phase === "result" && state.overlayDismissed) {
+              resetMission();
+            }
+          });
+
+        function init() {
+          resize();
+          recalcMission();
+          applyTranslations();
+          setDifficulty("easy");
+          updateWarpBtns();
+          updateEngineBtn();
+          updatePrompt();
+          updateStepIndicator();
+          updateAccelDisplay();
+
+          document
+            .getElementById("langBtn")
+            .addEventListener("click", toggleLang);
+          document
+            .getElementById("diffEasyBtn")
+            .addEventListener("click", function () {
+              setDifficulty("easy");
+            });
+          document
+            .getElementById("diffMediumBtn")
+            .addEventListener("click", function () {
+              setDifficulty("medium");
+            });
+          document
+            .getElementById("diffHardBtn")
+            .addEventListener("click", function () {
+              setDifficulty("hard");
+            });
+          document
+            .getElementById("warpNormalBtn")
+            .addEventListener("click", function () {
+              setWarp("normal");
+            });
+          document
+            .getElementById("warpFastBtn")
+            .addEventListener("click", function () {
+              setWarp("fast");
+            });
+          document
+            .getElementById("warpFastestBtn")
+            .addEventListener("click", function () {
+              setWarp("fastest");
+            });
+          document
+            .getElementById("resetBtn")
+            .addEventListener("click", resetMission);
+
+          rafId = requestAnimationFrame(animate);
+        }
+
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) {
+            cancelAnimationFrame(rafId);
+            lastTimestamp = 0;
+          } else {
+            lastTimestamp = 0;
+            rafId = requestAnimationFrame(animate);
+          }
+        });
+
+        init();
+      })();
+    </script>
+  </body>
 </html>

@@ -1,2285 +1,3070 @@
-<!DOCTYPE html>
+<!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run cr -- gravassist.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- gravassist.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="description" content="Interactive gravity assist simulator. Explore how spacecraft use planetary gravity for propulsion, with adjustable reference frames.">
-<meta name="author" content="Łukasz Łepecki">
-<link rel="canonical" href="https://lepecki.com/learn/gravassist.html">
-<meta property="og:title" content="Gravity Assist Simulator">
-<meta property="og:description" content="Interactive gravity assist simulator. Explore how spacecraft use planetary gravity for propulsion, with adjustable reference frames.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://lepecki.com/learn/gravassist.html">
-<meta property="og:site_name" content="Łukasz Łepecki">
-<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Gravity Assist Simulator">
-<meta name="twitter:description" content="Interactive gravity assist simulator. Explore how spacecraft use planetary gravity for propulsion, with adjustable reference frames.">
-<title>Gravity Assist Simulator</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0b0f18;
-    --panel: #131825;
-    --panel-border: #1e2a3a;
-    --text: #c9d1d9;
-    --text-dim: #6e7a8a;
-    --accent: #58a6ff;
-    --gain: #3fb950;
-    --loss: #f97583;
-  }
-
-  body {
-    min-height: 100vh;
-    background: var(--bg);
-    font-family: 'Outfit', sans-serif;
-    color: var(--text);
-  }
-
-  header {
-    padding: 20px 28px 16px;
-    border-bottom: 1px solid var(--panel-border);
-    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  }
-  .header-text { flex: 1; }
-  header h1 { font-size: 22px; font-weight: 700; }
-  header h1 a { color: inherit; text-decoration: none; }
-  header h1 a:hover { opacity: .7; }
-  header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
-
-  .lang-btn {
-    background: none; border: 1px solid var(--panel-border);
-    border-radius: 4px; padding: 3px 8px;
-    cursor: pointer; flex-shrink: 0;
-    color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; font-weight: 700; letter-spacing: 1px;
-    transition: border-color 0.15s, color 0.15s;
-  }
-  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  .main { display: flex; height: calc(100vh - 80px); }
-
-  .canvas-wrap {
-    flex: 1; position: relative;
-    background: #080c14; min-width: 0;
-  }
-  .canvas-wrap canvas { width: 100%; height: 100%; display: block; }
-
-  .controls {
-    width: 300px; flex-shrink: 0;
-    padding: 20px;
-    border-left: 1px solid var(--panel-border);
-    display: flex; flex-direction: column; gap: 18px;
-    overflow-y: auto;
-  }
-
-  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
-  .ctrl-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--text-dim);
-  }
-
-  .type-toggle { display: flex; gap: 6px; }
-  .type-btn {
-    padding: 10px 4px; border-radius: 6px;
-    border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
-    cursor: pointer; transition: all 0.2s; text-align: center;
-    flex: 1;
-  }
-  .type-btn:hover { border-color: var(--accent); }
-  .type-btn.active { border-color: var(--accent); color: var(--accent); }
-  .type-btn.full-width { flex: none; width: 100%; }
-
-  /* Larger glyphs for the View zoom buttons */
-  #zoomInBtn, #zoomOutBtn { font-size: 18px; line-height: 1; }
-
-  /* Stop button centering */
-  #resetBtn {
-    display: flex; align-items: center; justify-content: center;
-  }
-  #resetBtn:hover { color: var(--accent); }
-
-  .slider-row { display: flex; align-items: center; gap: 6px; }
-  .slider-row input[type=range] {
-    flex: 1; -webkit-appearance: none; appearance: none;
-    height: 6px; background: var(--panel-border); border-radius: 3px; outline: none;
-  }
-  .slider-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
-  }
-  .slider-row input[type=range]::-moz-range-thumb {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
-  }
-  .slider-val {
-    min-width: 28px; text-align: right;
-    font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text);
-  }
-
-  .step-btn {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 16px; line-height: 1;
-    cursor: pointer; transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    touch-action: manipulation;
-  }
-  .step-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .step-btn:active { background: var(--accent); color: var(--bg); }
-
-  .planet-select {
-    width: 100%; padding: 8px 10px; border-radius: 6px;
-    border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
-    cursor: pointer; outline: none;
-  }
-  .planet-select:focus { border-color: var(--accent); }
-  .planet-select option { background: var(--panel); color: var(--text); }
-
-  .readouts { gap: 6px; }
-  .readout-row {
-    display: flex; justify-content: space-between; align-items: center;
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
-  }
-  .readout-label { color: var(--text-dim); }
-  .readout-val { color: var(--text); }
-
-  .gauge-bar {
-    width: 100%; height: 4px;
-    background: var(--panel-border);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: -2px;
-  }
-  .gauge-fill {
-    height: 100%;
-    background: var(--accent);
-    width: 0%;
-  }
-
-  .boost-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 0;
-    border-top: 1px solid var(--panel-border);
-    border-bottom: 1px solid var(--panel-border);
-  }
-  .boost-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--text-dim);
-  }
-  .boost-val {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 20px; font-weight: 700;
-  }
-
-  .info-text {
-    font-size: 12px; color: var(--text-dim); line-height: 1.6;
-  }
-
-  .result-overlay {
-    position: fixed; inset: 0; z-index: 9999;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    cursor: pointer;
-    animation: overlayFadeIn 0.3s ease;
-  }
-  .overlay-emoji {
-    font-size: 72px;
-    animation: overlayPop 0.4s ease;
-  }
-  .overlay-msg {
-    font-family: 'Outfit', sans-serif;
-    font-size: 24px; font-weight: 700;
-    margin-top: 16px; color: #fff;
-  }
-  .overlay-hint {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; margin-top: 8px; color: rgba(255,255,255,0.6);
-  }
-
-  @keyframes overlayFadeIn {
-    from { opacity: 0; } to { opacity: 1; }
-  }
-  @keyframes overlayPop {
-    0% { transform: scale(0.3); }
-    70% { transform: scale(1.15); }
-    100% { transform: scale(1); }
-  }
-
-  @media (max-width: 700px) {
-    .main { flex-direction: column; }
-    .canvas-wrap { min-height: 350px; flex: 1; }
-    .controls {
-      width: 100%; flex-direction: row; flex-wrap: wrap;
-      border-left: none; border-top: 1px solid var(--panel-border);
-      padding: 12px 16px; gap: 12px;
-    }
-    .ctrl-group { min-width: 140px; flex: 1; }
-  }
-</style>
-</head>
-<body>
-
-<header>
-  <div class="header-text">
-    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F680;</span></a> <span id="titleText">Gravity Assist Simulator</span></h1>
-    <p id="subtitleText">Solar-system planets bend spacecraft paths with their gravity, and a moving planet adds speed for free. Explore freely or try to hit a target in Game mode.</p>
-  </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
-</header>
-
-<div class="main">
-  <div class="canvas-wrap">
-    <canvas id="canvas"></canvas>
-  </div>
-
-  <div class="controls">
-    <div class="ctrl-group">
-      <div class="type-toggle">
-        <button class="type-btn active" id="modeExploreBtn" onclick="setMode('explore')">Explore</button>
-        <button class="type-btn" id="modeGameBtn" onclick="setMode('game')">Game</button>
-      </div>
-    </div>
-
-    <div class="ctrl-group">
-      <span class="ctrl-label" id="lblPlanet">Planet</span>
-      <select class="planet-select" id="planetSelect"></select>
-    </div>
-
-    <div class="ctrl-group" id="grpPlanetVel">
-      <span class="ctrl-label" id="lblPlanetSpeed">Planet Speed</span>
-      <div class="slider-row">
-        <button class="step-btn" onclick="stepSlider('planetVelSlider',-5)">&minus;</button>
-        <input type="range" id="planetVelSlider" min="0" max="60" value="0" step="5">
-        <button class="step-btn" onclick="stepSlider('planetVelSlider',5)">+</button>
-        <span class="slider-val" id="planetVelVal">0</span>
-      </div>
-    </div>
-
-    <div class="ctrl-group" id="grpAnim">
-      <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
-      <div class="type-toggle">
-        <button class="type-btn" id="warpNormalBtn" onclick="setWarp('normal')">&#x25b6;</button>
-        <button class="type-btn" id="warpFastBtn" onclick="setWarp('fast')">&#x25b6;&#x25b6;</button>
-        <button class="type-btn" id="warpFastestBtn" onclick="setWarp('fastest')">&#x25b6;&#x25b6;&#x25b6;</button>
-        <button class="type-btn" id="resetBtn" onclick="handleStopClick()">&#x25a0;</button>
-      </div>
-    </div>
-
-    <div class="ctrl-group">
-      <span class="ctrl-label" id="lblView">View</span>
-      <div class="type-toggle">
-        <button class="type-btn" id="zoomOutBtn" onclick="zoomOut()">&minus;</button>
-        <button class="type-btn" id="autoViewBtn" onclick="resetView()">Auto</button>
-        <button class="type-btn" id="zoomInBtn" onclick="zoomIn()">+</button>
-      </div>
-      <div class="type-toggle">
-        <button class="type-btn" id="focusPlanetBtn" onclick="focusPlanet()">&#x1F4CD; Planet</button>
-        <button class="type-btn" id="focusScBtn" onclick="focusSpacecraft()">&#x1F4CD; Spacecraft</button>
-      </div>
-    </div>
-
-    <div class="ctrl-group">
-      <button class="type-btn full-width" id="precisionBtn" onclick="togglePrecision()">Precision (Shift)</button>
-    </div>
-
-
-    <div class="ctrl-group" id="grpNewTarget" style="display:none">
-      <button class="type-btn full-width" id="newTargetBtn" onclick="newTarget()">New Target</button>
-    </div>
-
-    <div class="ctrl-group readouts" id="grpReadouts">
-      <div class="boost-row">
-        <span class="boost-label" id="lblBoost">Speed boost</span>
-        <span class="boost-val" id="boostVal">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblSpeedIn">Speed in</span>
-        <span class="readout-val" id="speedInVal">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblSpeedOut">Speed out</span>
-        <span class="readout-val" id="speedOutVal">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblDefl">Deflection</span>
-        <span class="readout-val" id="deflVal">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblMinAlt">Min altitude</span>
-        <span class="readout-val" id="minAltVal">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblPlanetRadius">Planet radius</span>
-        <span class="readout-val" id="planetRadiusVal">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblPlanetVel">Planet velocity</span>
-        <span class="readout-val" id="planetVelKmsVal">&mdash;</span>
-      </div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblCurSpeed">Current speed</span>
-        <span class="readout-val" id="curSpeedVal">&mdash;</span>
-      </div>
-      <div class="gauge-bar"><div class="gauge-fill" id="gaugeFill"></div></div>
-      <div class="readout-row">
-        <span class="readout-label" id="lblCurAlt">Current altitude</span>
-        <span class="readout-val" id="curAltVal">&mdash;</span>
-      </div>
-    </div>
-
-    <div class="ctrl-group info-text">
-      <span id="infoText"></span>
-    </div>
-  </div>
-</div>
-
-<script>
-'use strict';
-// ══════════════════════════════════════════════
-// I18N
-// ══════════════════════════════════════════════
-const I18N = {
-  en: {
-    title: 'Gravity Assist Simulator',
-    subtitle: 'Solar-system planets bend spacecraft paths with their gravity, and a moving planet adds speed for free. Explore freely or try to hit a target in Game mode.',
-    modeExplore: 'Explore',
-    modeGame: 'Game',
-    planet: 'Planet',
-    planetSpeed: 'Planet Speed',
-    flybyAlt: 'Flyby Altitude',
-    spacecraftSpeed: 'Spacecraft Speed',
-    timeWarp: 'Time Warp',
-    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
-    launch: 'Launch',
-    reset: 'Reset',
-    stop: 'Stop (double-click resets the view)',
-    newTarget: 'New Target',
-    precision: 'Precision (Shift)',
-    view: 'View',
-    fixed: 'Auto',
-    focusPlanet: '\uD83D\uDCCD Planet',
-    focusSpacecraft: '\uD83D\uDCCD Spacecraft',
-    speedBoost: 'Speed boost',
-    speedIn: 'Speed in',
-    speedOut: 'Speed out',
-    deflection: 'Deflection',
-    minAltitude: 'Min altitude',
-    planetRadiusLabel: 'Planet radius',
-    planetVelKms: 'Planet velocity',
-    curSpeed: 'Current speed',
-    curAltitude: 'Current altitude',
-    hintLine1: 'Drag the spacecraft to reposition',
-    hintLine2: 'Drag the tip to aim and set speed',
-    crash: 'CRASH',
-    stationary: '(stationary)',
-    infoCrash: 'The spacecraft flew too close and crashed into the planet! Increase the flyby altitude or spacecraft speed to survive the encounter.',
-    infoStationary: 'The planet is stationary. The spacecraft exits at the same speed it entered \u2014 gravity only changed its direction. Try increasing the planet\u2019s speed!',
-    infoBoost: 'The planet is moving! The spacecraft swung behind it and exits faster \u2014 a free speed boost from the planet\u2019s motion. This is how Voyager reached the outer solar system.',
-    infoDefault: 'Drag the arrow body to reposition, or drag the tip to rotate. Increase the planet\u2019s speed to see a bigger boost.',
-    infoGame: 'Adjust the velocity arrow and flyby altitude to steer the spacecraft through the target. Click Launch when ready!',
-    gameSuccess: 'Great shot!',
-    gameCloseMiss: 'Almost! Try again',
-    gameFarMiss: 'Way off! Try again',
-    gameCrash: 'Crash! Too close',
-    clickToDismiss: 'Click to continue',
-    mercury: 'Mercury', venus: 'Venus', earth: 'Earth', mars: 'Mars',
-    jupiter: 'Jupiter', saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune',
-  },
-  pl: {
-    title: 'Symulator Asysty Grawitacyjnej',
-    subtitle: 'Planety Uk\u0142adu S\u0142onecznego zakrzywiaj\u0105 tory statk\u00F3w kosmicznych swoj\u0105 grawitacj\u0105, a poruszaj\u0105ca si\u0119 planeta dodaje pr\u0119dko\u015Bci za darmo. Eksploruj swobodnie lub spr\u00F3buj trafi\u0107 w cel w trybie gry.',
-    modeExplore: 'Eksploracja',
-    modeGame: 'Gra',
-    planet: 'Planeta',
-    planetSpeed: 'Pr\u0119dko\u015B\u0107 planety',
-    flybyAlt: 'Wysoko\u015B\u0107 przelotu',
-    spacecraftSpeed: 'Pr\u0119dko\u015B\u0107 statku',
-    timeWarp: 'Przyspieszenie',
-    warpNormal: '\u25b6', warpFast: '\u25b6\u25b6', warpFastest: '\u25b6\u25b6\u25b6',
-    launch: 'Start',
-    reset: 'Resetuj',
-    stop: 'Zatrzymaj (dwuklik resetuje widok)',
-    newTarget: 'Nowy cel',
-    precision: 'Precyzja (Shift)',
-    view: 'Widok',
-    fixed: 'Auto',
-    focusPlanet: '\uD83D\uDCCD Planeta',
-    focusSpacecraft: '\uD83D\uDCCD Statek',
-    speedBoost: 'Przyrost pr\u0119dko\u015Bci',
-    speedIn: 'Pr\u0119dko\u015B\u0107 wlotowa',
-    speedOut: 'Pr\u0119dko\u015B\u0107 wylotowa',
-    deflection: 'Odchylenie',
-    minAltitude: 'Min. wysoko\u015B\u0107',
-    planetRadiusLabel: 'Promie\u0144 planety',
-    planetVelKms: 'Pr\u0119dko\u015B\u0107 planety',
-    curSpeed: 'Bie\u017C\u0105ca pr\u0119dko\u015B\u0107',
-    curAltitude: 'Bie\u017C\u0105ca wysoko\u015B\u0107',
-    hintLine1: 'Przeci\u0105gnij statek, aby zmieni\u0107 pozycj\u0119',
-    hintLine2: 'Przeci\u0105gnij grot, aby celowa\u0107 i ustawi\u0107 pr\u0119dko\u015B\u0107',
-    crash: 'KATASTROFA',
-    stationary: '(nieruchoma)',
-    infoCrash: 'Statek kosmiczny przylecia\u0142 za blisko i rozbi\u0142 si\u0119 o planet\u0119! Zwi\u0119ksz wysoko\u015B\u0107 przelotu lub pr\u0119dko\u015B\u0107 statku.',
-    infoStationary: 'Planeta jest nieruchoma. Statek wyleci z t\u0105 sam\u0105 pr\u0119dko\u015Bci\u0105 co wlecia\u0142 \u2014 grawitacja zmieni\u0142a jedynie kierunek. Spr\u00F3buj zwi\u0119kszy\u0107 pr\u0119dko\u015B\u0107 planety!',
-    infoBoost: 'Planeta si\u0119 porusza! Statek okr\u0105\u017Cy\u0142 j\u0105 i wylecia\u0142 szybciej \u2014 darmowy przyrost pr\u0119dko\u015Bci dzi\u0119ki ruchowi planety. Tak Voyager dotar\u0142 do kra\u0144c\u00F3w Uk\u0142adu S\u0142onecznego.',
-    infoDefault: 'Przeci\u0105gnij cia\u0142o strza\u0142ki, aby zmieni\u0107 pozycj\u0119, lub przeci\u0105gnij grot, aby obr\u00F3ci\u0107. Zwi\u0119ksz pr\u0119dko\u015B\u0107 planety, aby zobaczy\u0107 wi\u0119kszy przyrost.',
-    infoGame: 'Dopasuj strza\u0142k\u0119 pr\u0119dko\u015Bci i wysoko\u015B\u0107 przelotu, aby poprowadzi\u0107 statek przez cel. Kliknij Start gdy gotowe!',
-    gameSuccess: '\u015Awietny strza\u0142!',
-    gameCloseMiss: 'Prawie! Spr\u00F3buj ponownie',
-    gameFarMiss: 'Pud\u0142o! Spr\u00F3buj ponownie',
-    gameCrash: 'Katastrofa! Za blisko',
-    clickToDismiss: 'Kliknij, aby kontynuowa\u0107',
-    mercury: 'Merkury', venus: 'Wenus', earth: 'Ziemia', mars: 'Mars',
-    jupiter: 'Jowisz', saturn: 'Saturn', uranus: 'Uran', neptune: 'Neptun',
-  },
-};
-
-// ══════════════════════════════════════════════
-// PLANET DATA
-// ══════════════════════════════════════════════
-// Real planetary mass and radius ratios relative to Earth. The simulator uses
-// these directly: mu = massRatio * GM_BASE; planetRadius = BASE_RADIUS * radiusRatio.
-// Mass ratios span ~5750x (Mercury 0.0553 to Jupiter 317.8); the simulator
-// honors this honestly — Jupiter really is ~318x Earth's mu.
-//
-// defaultSpeed is the planet's orbital velocity slider default (Sun-frame).
-// defaultApproachSpeed is the spacecraft slider default. Massive planets need
-// a higher default approach speed to produce hyperbolic flybys at sensible
-// drag distances; if the user sets the slider too low, Jupiter/Saturn will
-// show a bound (captured) orbit instead of a flyby — that's intentional and
-// physically correct.
-const PLANET_DATA = [
-  { key: 'mercury',  massRatio: 0.0553, radiusRatio: 0.383,  defaultSpeed: 45, defaultApproachSpeed: 50,  colors: { hi: '#b0b0b0', mid: '#8a8a8a', lo: '#5c5c5c', glow: '150,150,150' } },
-  { key: 'venus',    massRatio: 0.815,  radiusRatio: 0.949,  defaultSpeed: 35, defaultApproachSpeed: 50,  colors: { hi: '#f5e6a3', mid: '#d4b856', lo: '#a08530', glow: '213,184,86' } },
-  { key: 'earth',    massRatio: 1,      radiusRatio: 1,      defaultSpeed: 30, defaultApproachSpeed: 50,  colors: { hi: '#7ed6f7', mid: '#3aa8d8', lo: '#1a6e8e', glow: '77,201,246' } },
-  { key: 'mars',     massRatio: 0.107,  radiusRatio: 0.532,  defaultSpeed: 25, defaultApproachSpeed: 50,  colors: { hi: '#e8a07a', mid: '#c75b3a', lo: '#8b3a1f', glow: '199,91,58' } },
-  { key: 'jupiter',  massRatio: 317.8,  radiusRatio: 10.973, defaultSpeed: 15, defaultApproachSpeed: 100, colors: { hi: '#f0c590', mid: '#d4944a', lo: '#a06020', glow: '212,148,74' } },
-  { key: 'saturn',   massRatio: 95.2,   radiusRatio: 9.140,  defaultSpeed: 10, defaultApproachSpeed: 100, colors: { hi: '#f0dca0', mid: '#c8a84c', lo: '#967830', glow: '200,168,76' } },
-  { key: 'uranus',   massRatio: 14.54,  radiusRatio: 3.981,  defaultSpeed: 5,  defaultApproachSpeed: 80,  colors: { hi: '#b8e8f0', mid: '#7cc8d8', lo: '#4a9aaa', glow: '124,200,216' } },
-  { key: 'neptune',  massRatio: 17.15,  radiusRatio: 3.865,  defaultSpeed: 5,  defaultApproachSpeed: 80,  colors: { hi: '#7090e0', mid: '#4060c0', lo: '#203880', glow: '64,96,192' } },
-];
-
-// ══════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════
-const state = {
-  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
-  mode: 'explore',
-  selectedPlanet: 'earth',
-  planetMass: 1,    // Earth massRatio; mu = planetMass * GM_BASE
-  planetRadius: 12, // = BASE_RADIUS * earth.radiusRatio
-  planetColors: { hi: '#7ed6f7', mid: '#3aa8d8', lo: '#1a6e8e', glow: '77,201,246' },
-  approachSpeed: 50,
-  periapsisAlt: 50,
-  planetVel: 0,
-  approachAngle: Math.PI,
-  vecPfX: 0,
-  vecPfY: 0,
-  warpLevel: 'normal',
-  warpLevels: { normal: 1, fast: 3, fastest: 10 },
-  animSpeed: 1,
-  playing: false,
-  currentIndex: 0,
-  trajectory: [],
-  closestIndex: 0,
-  crashed: false,
-  dragMode: null,
-  vIn: 0,
-  vOut: 0,
-  deltaV: 0,
-  deflectionAngle: 0,
-  maxSpeedSliderUnits: 0,
-  hintShown: true,
-  gameTarget: null,
-  gameResult: null,
-  gameLaunched: false,
-  gameGhost: null,        // sun-frame trail of the previous attempt (game mode only)
-  fineDrag: false,        // derived: precisionMode XOR shiftHeld
-  precisionMode: false,   // latched setting (toggled by button click)
-  shiftHeld: false,       // momentary Shift key tracking
-};
-
-// ══════════════════════════════════════════════
-// CONSTANTS
-// ══════════════════════════════════════════════
-// GM_BASE is Earth's gravitational parameter in sim units; per-planet mu is
-// computed as state.planetMass (= massRatio) * GM_BASE. Earth's behavior is
-// preserved exactly: 1 * 5000 = 5000, matching the previous 25 * 200 = 5000.
-const GM_BASE     = 5000;
-const BASE_RADIUS = 12;
-// V_SCALE bridges slider units to the integrator's internal speed units.
-// With slider units anchored so 1 unit ≈ 1 km/s, V_SCALE absorbs the
-// 10× factor so the integrator sees the same sim-frame speeds as before
-// the slider rescale (e.g. Earth at planetVel=30 → vp = 30 * 0.15 = 4.5).
-const V_SCALE     = 0.15;
-const SIM_DT      = 0.25;
-// MAX_STEPS bumped from 15000 to handle Jupiter-class encounters where the
-// integration starts at r ≈ 70k–80k and traverses ~160k of trajectory.
-const MAX_STEPS   = 80000;
-// Captured-orbit limiter: stop integration after this many full revolutions
-// around the planet (counted after closest approach). Prevents endlessly
-// looping trajectories when the spacecraft enters a bound orbit.
-const MAX_REVOLUTIONS = 5;
-
-// Real-world unit conversions for the readouts. LENGTH is exact for all
-// planets because radiusRatio values come from real planetary data. VELOCITY
-// is anchored on Earth's orbital velocity (29.78 km/s at planetVel = 30 in
-// the new 1..100 slider scale). With 1 slider unit ≈ 1 km/s, the slider
-// value IS approximately the speed in km/s. Other planets are approximate
-// (~2% Saturn → ~27% Uranus error at default slider) because per-planet
-// defaultSpeed values were tuned for visual effect, not strict realism.
-const KM_PER_SIM_LENGTH  = 6371 / BASE_RADIUS;  // ≈ 530.92 km / sim unit
-const KMS_PER_SLIDER_VEL = 29.78 / 30.0;        // ≈ 0.993 km/s per slider unit
-
-// ══════════════════════════════════════════════
-// I18N FUNCTIONS
-// ══════════════════════════════════════════════
-function T(key) { return I18N[state.lang][key]; }
-
-function applyTranslations() {
-  const l = I18N[state.lang];
-  document.title = l.title;
-  document.documentElement.lang = state.lang;
-  document.getElementById('titleText').textContent = l.title;
-  document.getElementById('subtitleText').textContent = l.subtitle;
-  document.getElementById('modeExploreBtn').textContent = l.modeExplore;
-  document.getElementById('modeGameBtn').textContent = l.modeGame;
-  document.getElementById('lblPlanet').textContent = l.planet;
-  document.getElementById('lblPlanetSpeed').textContent = l.planetSpeed;
-  document.getElementById('lblTimeWarp').textContent = l.timeWarp;
-  document.getElementById('resetBtn').title = l.stop;
-  updateWarpBtns();
-  document.getElementById('newTargetBtn').textContent = l.newTarget;
-  document.getElementById('precisionBtn').textContent = l.precision;
-  document.getElementById('lblView').textContent = l.view;
-  document.getElementById('autoViewBtn').textContent = l.fixed;
-  document.getElementById('focusPlanetBtn').textContent = l.focusPlanet;
-  document.getElementById('focusScBtn').textContent = l.focusSpacecraft;
-  updateViewButtons();
-  document.getElementById('lblBoost').textContent = l.speedBoost;
-  document.getElementById('lblSpeedIn').textContent = l.speedIn;
-  document.getElementById('lblSpeedOut').textContent = l.speedOut;
-  document.getElementById('lblDefl').textContent = l.deflection;
-  document.getElementById('lblMinAlt').textContent = l.minAltitude;
-  document.getElementById('lblPlanetRadius').textContent = l.planetRadiusLabel;
-  document.getElementById('lblPlanetVel').textContent = l.planetVelKms;
-  document.getElementById('lblCurSpeed').textContent = l.curSpeed;
-  document.getElementById('lblCurAlt').textContent = l.curAltitude;
-  document.getElementById('modeExploreBtn').classList.toggle('active', state.mode === 'explore');
-  document.getElementById('modeGameBtn').classList.toggle('active', state.mode === 'game');
-  populatePlanetSelect();
-  updateReadouts();
-  updateInfo();
-}
-
-// eslint-disable-next-line no-unused-vars
-function toggleLang() {
-  state.lang = state.lang === 'en' ? 'pl' : 'en';
-  // Button label shows the language you'd switch TO (the inverse of current).
-  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
-  applyTranslations();
-}
-
-function populatePlanetSelect() {
-  const sel = document.getElementById('planetSelect');
-  const cur = sel.value || state.selectedPlanet;
-  sel.innerHTML = '';
-  PLANET_DATA.forEach(function(p) {
-    const opt = document.createElement('option');
-    opt.value = p.key;
-    opt.textContent = T(p.key);
-    sel.appendChild(opt);
-  });
-  sel.value = cur;
-}
-
-// ══════════════════════════════════════════════
-// MODE & GAME
-// ══════════════════════════════════════════════
-// eslint-disable-next-line no-unused-vars
-function setMode(mode) {
-  state.mode = mode;
-  document.getElementById('modeExploreBtn').classList.toggle('active', mode === 'explore');
-  document.getElementById('modeGameBtn').classList.toggle('active', mode === 'game');
-
-  document.getElementById('grpReadouts').style.display = mode === 'explore' ? '' : 'none';
-  document.getElementById('grpNewTarget').style.display = mode === 'game' ? '' : 'none';
-
-
-
-  if (mode === 'game') {
-    const planet = PLANET_DATA.find(function(p) { return p.key === state.selectedPlanet; });
-    state.planetVel = planet.defaultSpeed;
-    document.getElementById('planetVelSlider').value = planet.defaultSpeed;
-    document.getElementById('planetVelVal').textContent = planet.defaultSpeed;
-    generateTarget();
-  } else {
-    state.gameTarget = null;
-    state.gameResult = null;
-    state.gameLaunched = false;
-    state.gameGhost = null;
-  }
-  updateInfo();
-}
-
-function generateTarget() {
-  state.gameGhost = null;  // new target → previous attempts irrelevant
-  const planet = PLANET_DATA.find(function(p) { return p.key === state.selectedPlanet; });
-  state.planetVel = planet.defaultSpeed;
-
-  let target = null;
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const solAngle = Math.PI + (Math.random() - 0.5) * 1.0;
-    const solAlt = state.planetRadius * (1 + Math.random() * 4);
-    const solSpeed = 30 + Math.random() * 50;
-
-    state.approachAngle = solAngle;
-    state.periapsisAlt = solAlt;
-    state.approachSpeed = solSpeed;
-    initVecPosition();
-    computeTrajectory();
-
-    if (!state.crashed && state.trajectory.length >= 100) {
-      const outStart = state.closestIndex;
-      const outLen = state.trajectory.length - outStart;
-      const targetIdx = Math.min(
-        outStart + Math.floor(outLen * (0.6 + Math.random() * 0.2)),
-        state.trajectory.length - 1
-      );
-      const sf = toSunFrame(targetIdx);
-      target = {
-        x: sf.x + (Math.random() - 0.5) * 20,
-        y: sf.y + (Math.random() - 0.5) * 20,
-      };
-      break;
-    }
-  }
-  if (!target) target = { x: 150, y: -100 };
-
-  state.gameTarget = target;
-
-  // Reset player to defaults
-  state.approachAngle = Math.PI;
-  state.periapsisAlt = 50;
-  state.approachSpeed = 50;
-  state.periapsisAlt = 50;
-  state.approachSpeed = 50;
-
-  initVecPosition();
-  recompute();
-  state.gameResult = null;
-  state.gameLaunched = false;
-  state.playing = false;
-}
-
-// eslint-disable-next-line no-unused-vars
-function newTarget() { generateTarget(); }
-
-function gameTolerance() {
-  // Constant on-screen radius (~11 px) regardless of planet/zoom. Anchored
-  // to lastScale, which is the current camera scale set every frame in
-  // drawScene; the rendering then computes gtol * scale = 11 px.
-  // Matches Earth's default visual size so the target stays consistent.
-  return 11 / Math.max(lastScale, 0.001);
-}
-
-function evaluateGame() {
-  if (state.mode !== 'game' || !state.gameLaunched || !state.gameTarget || state.gameResult) return;
-
-  if (state.crashed) {
-    state.gameResult = 'crash';
-    showGameOverlay('crash');
-    return;
-  }
-
-  const hitTol = gameTolerance();
-  const hitTolSq = hitTol * hitTol;
-  // Close-miss boundary: 3× the hit radius (~33 px on screen). Tight enough
-  // that "almost!" feels honest, generous enough that small misalignments
-  // still get encouragement instead of the discouraging far-miss feedback.
-  const closeTol = hitTol * 3;
-  const closeTolSq = closeTol * closeTol;
-  const gx = state.gameTarget.x, gy = state.gameTarget.y;
-  let minDistSq = Infinity;
-
-  for (let i = 0; i < state.trajectory.length; i++) {
-    const sf = toSunFrame(i);
-    const dx = sf.x - gx, dy = sf.y - gy;
-    const dSq = dx * dx + dy * dy;
-    if (dSq < minDistSq) minDistSq = dSq;
-    if (dSq < hitTolSq) {
-      state.gameResult = 'success';
-      showGameOverlay('success');
-      return;
-    }
-  }
-
-  if (minDistSq < closeTolSq) {
-    state.gameResult = 'closeMiss';
-    showGameOverlay('closeMiss');
-  } else {
-    state.gameResult = 'farMiss';
-    showGameOverlay('farMiss');
-  }
-}
-
-function showGameOverlay(result) {
-  // Capture the just-finished trajectory as a sun-frame ghost so the next
-  // attempt can reference where the previous one went. Subsampled to keep
-  // the array small (~4000 points max) — at low alpha the ghost only needs
-  // enough resolution to read as a curve.
-  if (state.mode === 'game' && state.trajectory.length > 1) {
-    const glen = state.trajectory.length;
-    const gstep = Math.max(1, Math.floor(glen / 4000));
-    state.gameGhost = [];
-    for (let gi = 0; gi < glen; gi += gstep) {
-      const gsf = toSunFrame(gi);
-      state.gameGhost.push({ x: gsf.x, y: gsf.y });
-    }
-    if ((glen - 1) % gstep !== 0) {
-      const glast = toSunFrame(glen - 1);
-      state.gameGhost.push({ x: glast.x, y: glast.y });
-    }
-  }
-
-  const existing = document.querySelector('.result-overlay');
-  if (existing) existing.remove();
-
-  const overlay = document.createElement('div');
-  overlay.className = 'result-overlay';
-
-  let emoji, msg, bg;
-  if (result === 'success') {
-    emoji = '\uD83C\uDF89'; msg = T('gameSuccess'); bg = 'rgba(63,185,80,0.88)';
-  } else if (result === 'crash') {
-    emoji = '\uD83D\uDCA5'; msg = T('gameCrash'); bg = 'rgba(249,117,131,0.88)';
-  } else if (result === 'closeMiss') {
-    // Thumbs up with Fitzpatrick Type 1-2 skin tone modifier (light/Caucasian).
-    emoji = '\uD83D\uDC4D\uD83C\uDFFB'; msg = T('gameCloseMiss'); bg = 'rgba(88,166,255,0.88)';
-  } else { // farMiss
-    // Thumbs down with Fitzpatrick Type 1-2 skin tone modifier (light/Caucasian).
-    emoji = '\uD83D\uDC4E\uD83C\uDFFB'; msg = T('gameFarMiss'); bg = 'rgba(240,180,60,0.92)';
-  }
-
-  overlay.style.background = bg;
-  overlay.innerHTML =
-    '<div class="overlay-emoji">' + emoji + '</div>' +
-    '<div class="overlay-msg">' + msg + '</div>' +
-    '<div class="overlay-hint">' + T('clickToDismiss') + '</div>';
-
-  overlay.addEventListener('click', function() { overlay.remove(); });
-  document.body.appendChild(overlay);
-}
-
-// ══════════════════════════════════════════════
-// VECTOR POSITION HELPERS
-// ══════════════════════════════════════════════
-function computeStartDist() {
-  const GM = state.planetMass * GM_BASE;
-  const vp = state.planetVel * V_SCALE;
-  const vScSun = state.approachSpeed * V_SCALE;
-  const vPfX = vScSun * Math.cos(state.approachAngle) - vp;
-  const vPfY = vScSun * Math.sin(state.approachAngle);
-  // vLocal2 is the local KE×2 in the planet frame (under the local semantic).
-  // The formula 10*GM/v² places gravitational potential ≈ 0.4·KE at start,
-  // leaving 60% as asymptotic vInf². Cap raised to 80000 to handle Jupiter
-  // (which would otherwise be capped into a bound state). minR scales with
-  // planetRadius so massive bodies leave visual room around the integration
-  // start.
-  const vLocal2 = vPfX * vPfX + vPfY * vPfY;
-  const dynamic = Math.ceil(10 * GM / Math.max(vLocal2, 1));
-  const minR = Math.max(800, 30 * state.planetRadius);
-  return Math.max(minR, Math.min(80000, dynamic));
-}
-
-function initVecPosition() {
-  const startDist = computeStartDist();
-  const GM = state.planetMass * GM_BASE;
-  const vp = state.planetVel * V_SCALE;
-  const vScSun = state.approachSpeed * V_SCALE;
-  const alpha = state.approachAngle;
-
-  const vPfX = vScSun * Math.cos(alpha) - vp;
-  const vPfY = vScSun * Math.sin(alpha);
-  const vInf = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
-  const alphaPf = Math.atan2(vPfY, vPfX);
-  const safeVInf = Math.max(vInf, 0.01);
-
-  const rp = state.planetRadius + state.periapsisAlt;
-  const b = rp * Math.sqrt(1 + 2 * GM / (rp * safeVInf * safeVInf));
-
-  state.vecPfX = -startDist * Math.cos(alphaPf) - b * Math.sin(alphaPf);
-  state.vecPfY = -startDist * Math.sin(alphaPf) + b * Math.cos(alphaPf);
-}
-
-function computePeriapsisAltFromPosition() {
-  const GM = state.planetMass * GM_BASE;
-  const vp = state.planetVel * V_SCALE;
-  const vScSun = state.approachSpeed * V_SCALE;
-  const alpha = state.approachAngle;
-
-  const vPfX = vScSun * Math.cos(alpha) - vp;
-  const vPfY = vScSun * Math.sin(alpha);
-  const vPfMag = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
-  if (vPfMag < 0.001) return;
-
-  const vHatX = vPfX / vPfMag;
-  const vHatY = vPfY / vPfMag;
-  const b = Math.abs(state.vecPfX * vHatY - state.vecPfY * vHatX);
-
-  const vInf2 = vPfMag * vPfMag;
-  const k = GM / vInf2;
-  const rp = -k + Math.sqrt(k * k + b * b);
-
-  state.periapsisAlt = Math.max(0, rp - state.planetRadius);
-}
-
-// ══════════════════════════════════════════════
-// CANVAS SETUP
-// ══════════════════════════════════════════════
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let W, H;
-let bgStars = [];
-
-let handleScreenX = 0, handleScreenY = 0;
-let scStartScreenX = 0, scStartScreenY = 0;
-let lastScale = 1;
-let cameraFrozen = false;
-let frozenScale = 1, frozenCamX = 0, frozenCamY = 0;
-let dragInitialTipX = 0, dragInitialTipY = 0;
-let dragAccumX = 0, dragAccumY = 0;
-let dragLastPosX = 0, dragLastPosY = 0;
-let frozenRootX = 0, frozenRootY = 0;
-let dragPrevX = 0, dragPrevY = 0;
-let targetScreenX = 0, targetScreenY = 0;
-let cameraMode = 'auto';
-let manualScale = 1;
-const manualCamX = 0, manualCamY = 0;
-let zoomFactor = 1;
-let targetGrabOfsX = 0, targetGrabOfsY = 0;
-const MIN_ARROW_PX = 68, MAX_ARROW_PX = 188;
-
-function initBgStars(n) {
-  bgStars = [];
-  for (let i = 0; i < n; i++) {
-    bgStars.push({
-      x: Math.random(), y: Math.random(),
-      r: Math.random() * 1.2 + 0.3,
-      b: Math.random() * 0.4 + 0.2,
-    });
-  }
-}
-initBgStars(200);
-
-function resize() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  W = rect.width;
-  H = rect.height;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-window.addEventListener('resize', function() { resize(); });
-
-// ══════════════════════════════════════════════
-// PHYSICS
-// ══════════════════════════════════════════════
-function computeTrajectory() {
-  const startDist = computeStartDist();
-  const GM = state.planetMass * GM_BASE;
-  const vp = state.planetVel * V_SCALE;
-  const vScSun = state.approachSpeed * V_SCALE;
-  const alpha = state.approachAngle;
-  const collisionR = state.planetRadius;
-
-  const vPfX = vScSun * Math.cos(alpha) - vp;
-  const vPfY = vScSun * Math.sin(alpha);
-  const vInfPlanet = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
-  const alphaPf = Math.atan2(vPfY, vPfX);
-  const safePf = Math.max(vInfPlanet, 0.01);
-
-  let x = state.vecPfX;
-  let y = state.vecPfY;
-  let vx = safePf * Math.cos(alphaPf);
-  let vy = safePf * Math.sin(alphaPf);
-
-  const points = [];
-  let minDist = Infinity;
-  let closestIdx = 0;
-  let crashed = false;
-
-  // Revolution counter: track cumulative angle swept around the planet.
-  // Counting starts after closest approach (+50 samples settling margin).
-  let prevAngle = Math.atan2(y, x);
-  let totalAngle = 0;
-  let revCounting = false;
-
-  for (let i = 0; i < MAX_STEPS; i++) {
-    const r = Math.sqrt(x * x + y * y);
-    points.push({ x: x, y: y, vx: vx, vy: vy });
-
-    if (r < minDist) { minDist = r; closestIdx = i; }
-
-    // Track revolutions to cap captured (bound) orbits
-    const curAngle = Math.atan2(y, x);
-    if (revCounting) {
-      let dAngle = curAngle - prevAngle;
-      if (dAngle > Math.PI) dAngle -= 2 * Math.PI;
-      if (dAngle < -Math.PI) dAngle += 2 * Math.PI;
-      totalAngle += dAngle;
-      if (Math.abs(totalAngle) >= MAX_REVOLUTIONS * 2 * Math.PI) break;
-    } else if (i > closestIdx + 50) {
-      revCounting = true;
-    }
-    prevAngle = curAngle;
-
-    const rScale = collisionR;
-    const substeps = r < rScale * 1.7 ? 32 : r < rScale * 3.3 ? 16 : r < rScale * 6.7 ? 8 : r < rScale * 13 ? 4 : 1;
-    const subdt = SIM_DT / substeps;
-
-    for (let s = 0; s < substeps; s++) {
-      const xPrev = x, yPrev = y;
-      const rs = Math.sqrt(x * x + y * y);
-      const rs3 = rs * rs * rs;
-      const ax = -GM * x / rs3;
-      const ay = -GM * y / rs3;
-
-      x = x + vx * subdt + 0.5 * ax * subdt * subdt;
-      y = y + vy * subdt + 0.5 * ay * subdt * subdt;
-      const rs1 = Math.sqrt(x * x + y * y);
-      const rs1_3 = rs1 * rs1 * rs1;
-      const ax1 = -GM * x / rs1_3;
-      const ay1 = -GM * y / rs1_3;
-
-      vx += 0.5 * (ax + ax1) * subdt;
-      vy += 0.5 * (ay + ay1) * subdt;
-
-      if (rs1 <= collisionR && rs > collisionR) {
-        const f = (rs - collisionR) / (rs - rs1);
-        x = xPrev + f * (x - xPrev);
-        y = yPrev + f * (y - yPrev);
-        crashed = true;
-        break;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Interactive gravity assist simulator. Explore how spacecraft use planetary gravity for propulsion, with adjustable reference frames."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/gravassist.html" />
+    <meta property="og:title" content="Gravity Assist Simulator" />
+    <meta
+      property="og:description"
+      content="Interactive gravity assist simulator. Explore how spacecraft use planetary gravity for propulsion, with adjustable reference frames."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://lepecki.com/learn/gravassist.html"
+    />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Gravity Assist Simulator" />
+    <meta
+      name="twitter:description"
+      content="Interactive gravity assist simulator. Explore how spacecraft use planetary gravity for propulsion, with adjustable reference frames."
+    />
+    <title>Gravity Assist Simulator</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-    }
-    if (crashed) { points.push({ x: x, y: y, vx: vx, vy: vy }); break; }
 
-    const rEnd = Math.sqrt(x * x + y * y);
-    if (rEnd > startDist && i > closestIdx + 50) break;
-  }
-
-  state.trajectory = points;
-  state.closestIndex = closestIdx;
-  state.crashed = crashed;
-
-  computeResults();
-}
-
-// Time anchor: sample 0 (start of integration). This means "the planet is at
-// sun-frame origin at the moment of integration sample 0." The choice is
-// arbitrary for visualization — only relative positions matter — but it's
-// critical that the anchor be STABLE across recomputes. closestIndex was the
-// previous anchor, but it shifts every time the trajectory shape changes,
-// causing toSunFrame(0) to drift during arrow drag (vecPfX is constant but
-// the offset term changes). That drift was hidden by a dragOfsX/Y rendering
-// hack which only shifted the trajectory, not the planet/target/arrow,
-// producing a visual lie where the trajectory appeared to hit a target it
-// physically missed. Anchoring at sample 0 makes toSunFrame(0).x = vecPfX,
-// stable for the entire drag.
-function planetPos(idx) {
-  const vp = state.planetVel * V_SCALE;
-  const tRel = idx * SIM_DT;
-  return { x: vp * tRel, y: 0 };
-}
-
-function toSunFrame(idx) {
-  const p = state.trajectory[idx];
-  const vp = state.planetVel * V_SCALE;
-  const tRel = idx * SIM_DT;
-  return {
-    x: p.x + vp * tRel,
-    y: p.y,
-    vx: p.vx + vp,
-    vy: p.vy,
-  };
-}
-
-// Returns the asymptotic velocity vector at infinity (in planet frame) for the
-// orbit defined by the local state (rx, ry, vx, vy). branch = 'in' returns the
-// past-infinity (inbound) asymptote; 'out' returns the future-infinity
-// (outbound) asymptote. Falls back to the local velocity for non-hyperbolic
-// or degenerate states.
-//
-// Derivation:
-// - vis-viva: vInf² = v² − 2·mu/r
-// - eccentricity vector: e_vec = ((v² − mu/r)·r − (r·v)·v) / mu
-// - perifocal asymptote unit vectors:
-//     inbound  = (1/e,  sqrt(e²−1)/e)
-//     outbound = (-1/e, sqrt(e²−1)/e)
-// - perifocal x-axis ê_p = e_vec/e (toward periapsis)
-// - perifocal y-axis ê_q = sgn(h)·(-eY, eX)/e (in direction of motion at periapsis)
-// - planet-frame asymptote = perX·ê_p + perY·ê_q, scaled by vInf
-function asymptoticVelocityPf(rx, ry, vx, vy, mu, branch) {
-  const r = Math.sqrt(rx * rx + ry * ry);
-  const v2 = vx * vx + vy * vy;
-  const vInf2 = v2 - 2 * mu / r;
-  if (vInf2 <= 0) return { x: vx, y: vy };
-  const vInf = Math.sqrt(vInf2);
-
-  const coeffR = (v2 - mu / r) / mu;
-  const rDotV = rx * vx + ry * vy;
-  const coeffV = rDotV / mu;
-  const eX = coeffR * rx - coeffV * vx;
-  const eY = coeffR * ry - coeffV * vy;
-  const e = Math.sqrt(eX * eX + eY * eY);
-  if (e <= 1.0001) return { x: vx, y: vy };
-
-  const sqrtE2m1 = Math.sqrt(e * e - 1);
-  const perX = (branch === 'in') ? (1 / e) : (-1 / e);
-  const perY = sqrtE2m1 / e;
-
-  const h = rx * vy - ry * vx;
-  const sgnH = h >= 0 ? 1 : -1;
-  const ePx = eX / e, ePy = eY / e;
-  const eQx = -sgnH * eY / e, eQy = sgnH * eX / e;
-
-  const planetX = perX * ePx + perY * eQx;
-  const planetY = perX * ePy + perY * eQy;
-  return { x: planetX * vInf, y: planetY * vInf };
-}
-
-function computeResults() {
-  const vp = state.planetVel * V_SCALE;
-  const mu = state.planetMass * GM_BASE;
-  const traj = state.trajectory;
-
-  if (traj.length === 0) {
-    state.vIn = 0;
-    state.vOut = 0;
-    state.deltaV = 0;
-    state.deflectionAngle = 0;
-    state.maxSpeedSliderUnits = 0;
-    return;
-  }
-
-  // Pre-pass: max Sun-frame speed across the trajectory, used as the gauge
-  // anchor for the live current-speed bar. Runs for both crash and non-crash
-  // paths (the gauge stays meaningful even when the spacecraft impacts).
-  let maxV2 = 0;
-  for (let k = 0; k < traj.length; k++) {
-    const pk = traj[k];
-    const sxk = pk.vx + vp;
-    const syk = pk.vy;
-    const v2 = sxk * sxk + syk * syk;
-    if (v2 > maxV2) maxV2 = v2;
-  }
-  state.maxSpeedSliderUnits = Math.sqrt(maxV2) / V_SCALE;
-
-  // Asymptotic inbound: derived from the FIRST integrated sample via vis-viva
-  // and the eccentricity vector. This is the actual asymptotic Sun-frame
-  // entry speed, not the slider value.
-  const first = traj[0];
-  const asymIn = asymptoticVelocityPf(first.x, first.y, first.vx, first.vy, mu, 'in');
-  const vInSunX = asymIn.x + vp;
-  const vInSunY = asymIn.y;
-  state.vIn = Math.sqrt(vInSunX * vInSunX + vInSunY * vInSunY) / V_SCALE;
-
-  if (state.crashed) {
-    state.vOut = 0;
-    state.deltaV = 0;
-    state.deflectionAngle = 0;
-    return;
-  }
-
-  // Asymptotic outbound: derived from the LAST integrated sample. Computing
-  // inbound from first and outbound from last also serves as a built-in
-  // integrator-drift check (energy conservation requires |asymIn| = |asymOut|).
-  const last = traj[traj.length - 1];
-  const asymOut = asymptoticVelocityPf(last.x, last.y, last.vx, last.vy, mu, 'out');
-  const vOutSunX = asymOut.x + vp;
-  const vOutSunY = asymOut.y;
-  state.vOut = Math.sqrt(vOutSunX * vOutSunX + vOutSunY * vOutSunY) / V_SCALE;
-  state.deltaV = state.vOut - state.vIn;
-
-  // Deflection: signed angle between asymptotic inbound and outbound vectors
-  // in the planet frame. Equals 2·asin(1/e) in magnitude for a clean orbit.
-  const inAngle = Math.atan2(asymIn.y, asymIn.x);
-  const outAngle = Math.atan2(asymOut.y, asymOut.x);
-  let da = (outAngle - inAngle) * 180 / Math.PI;
-  while (da > 180) da -= 360;
-  while (da < -180) da += 360;
-  state.deflectionAngle = da;
-}
-
-// ══════════════════════════════════════════════
-// RENDERING
-// ══════════════════════════════════════════════
-function drawScene() {
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#080c14';
-  ctx.fillRect(0, 0, W, H);
-
-  updateLiveReadouts();
-
-  const traj = state.trajectory;
-  if (traj.length < 2) return;
-  const len = traj.length;
-  const idx = Math.min(state.currentIndex, len - 1);
-
-  // ── Camera ──
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  const sampleStep = Math.max(1, Math.floor(len / 3000));
-  for (let i = 0; i < len; i += sampleStep) {
-    const p = toSunFrame(i);
-    if (p.x < minX) minX = p.x;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.y > maxY) maxY = p.y;
-  }
-  const pL = toSunFrame(len - 1);
-  minX = Math.min(minX, pL.x); maxX = Math.max(maxX, pL.x);
-  minY = Math.min(minY, pL.y); maxY = Math.max(maxY, pL.y);
-
-  const plS = planetPos(0);
-  const plE = planetPos(len - 1);
-  minX = Math.min(minX, plS.x, plE.x);
-  maxX = Math.max(maxX, plS.x, plE.x);
-  minY = Math.min(minY, plS.y, plE.y, -30);
-  maxY = Math.max(maxY, plS.y, plE.y, 30);
-
-  if (state.mode === 'game' && state.gameTarget) {
-    const tol = gameTolerance();
-    minX = Math.min(minX, state.gameTarget.x - tol);
-    maxX = Math.max(maxX, state.gameTarget.x + tol);
-    minY = Math.min(minY, state.gameTarget.y - tol);
-    maxY = Math.max(maxY, state.gameTarget.y + tol);
-  }
-
-  const pad = 100;
-  const spanX = (maxX - minX) + 2 * pad;
-  const spanY = (maxY - minY) + 2 * pad;
-  let scale = Math.min(W / spanX, H / spanY);
-  let camX = (minX + maxX) / 2;
-  let camY = (minY + maxY) / 2;
-
-  if (cameraFrozen) {
-    scale = frozenScale;
-    camX = frozenCamX;
-    camY = frozenCamY;
-  } else if (cameraMode === 'planet') {
-    const plFocus = planetPos(idx);
-    camX = plFocus.x; camY = plFocus.y;
-    scale = manualScale;
-    lastScale = scale; frozenCamX = camX; frozenCamY = camY;
-  } else if (cameraMode === 'spacecraft') {
-    const scFocus = toSunFrame(idx);
-    camX = scFocus.x; camY = scFocus.y;
-    scale = manualScale;
-    lastScale = scale; frozenCamX = camX; frozenCamY = camY;
-  } else if (cameraMode === 'manual') {
-    scale = manualScale; camX = manualCamX; camY = manualCamY;
-    lastScale = scale; frozenCamX = camX; frozenCamY = camY;
-  } else {
-    scale *= zoomFactor;
-    lastScale = scale;
-    frozenCamX = camX;
-    frozenCamY = camY;
-  }
-
-  function tx(x) { return W / 2 + (x - camX) * scale; }
-  function ty(y) { return H / 2 - (y - camY) * scale; }
-
-  // ── Stars ──
-  bgStars.forEach(function(s) {
-    ctx.beginPath();
-    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(200,210,220,' + (s.b * 0.3) + ')';
-    ctx.fill();
-  });
-
-  // ── Planet orbital path (straight dashed line) ──
-  const vp = state.planetVel * V_SCALE;
-  const pg = state.planetColors.glow;
-  if (vp > 0.01) {
-    ctx.setLineDash([4, 6]);
-    ctx.strokeStyle = 'rgba(' + pg + ',0.12)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(tx(plS.x), ty(plS.y));
-    ctx.lineTo(tx(plE.x), ty(plE.y));
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // ── Ghost planets ──
-  if (vp > 0.01) {
-    [plS, plE].forEach(function(pl) {
-      ctx.beginPath();
-      ctx.arc(tx(pl.x), ty(pl.y), state.planetRadius * scale * 0.8, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(' + pg + ',0.1)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    });
-  }
-
-  // ── Planet ──
-  const plNow = planetPos(idx);
-  drawPlanet(tx(plNow.x), ty(plNow.y), scale);
-
-  // ── Planet velocity arrow ──
-  if (vp > 0.01) {
-    const ppx = tx(plNow.x), ppy = ty(plNow.y);
-    const pr = Math.max(8, state.planetRadius * scale);
-    const arrowLen = Math.min(vp * 10, 60);
-    drawArrow(ppx + pr + 6, ppy, ppx + pr + 6 + arrowLen, ppy,
-      'rgba(' + pg + ',0.5)', 1.5, 10);
-    ctx.font = '14px "Share Tech Mono", monospace';
-    ctx.fillStyle = 'rgba(' + pg + ',0.5)';
-    ctx.textAlign = 'center';
-    ctx.fillText('v\u209A', ppx + pr + 6 + arrowLen / 2, ppy - 16);
-  }
-
-  // Render step: finer than the bounds-sampling step so the smoothed curve
-  // has enough segments to follow sharp curvature near periapsis.
-  const renderStep = Math.max(1, Math.floor(len / 8000));
-
-  // Smooth-polyline helper using quadratic Beziers through segment midpoints.
-  // Each curve goes midpoint(i-1,i) → midpoint(i,i+1) with sample i as the
-  // control point, producing a visually smooth approximation of the polyline
-  // without changing the underlying physics.
-  function strokeSmoothTrail(start, end, step) {
-    if (end <= start) return;
-    const p0 = toSunFrame(start);
-    ctx.beginPath();
-    ctx.moveTo(tx(p0.x), ty(p0.y));
-    for (let i = start + step; i + step <= end; i += step) {
-      const p = toSunFrame(i);
-      const pNext = toSunFrame(i + step);
-      const midX = tx((p.x + pNext.x) / 2);
-      const midY = ty((p.y + pNext.y) / 2);
-      ctx.quadraticCurveTo(tx(p.x), ty(p.y), midX, midY);
-    }
-    // Finish exactly at the requested end sample (so the trail meets the
-    // spacecraft icon and the faint trajectory ends at the true last point).
-    const pEnd = toSunFrame(end);
-    ctx.lineTo(tx(pEnd.x), ty(pEnd.y));
-    ctx.stroke();
-  }
-
-  // ── Full trajectory (faint) — explore mode only; in game mode the
-  //    pre-launch shadow would spoil the puzzle ──
-  if (state.mode !== 'game') {
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(255,224,102,0.08)';
-    strokeSmoothTrail(0, len - 1, renderStep);
-  }
-
-  // ── Game ghost (previous attempt's trajectory) — game mode only ──
-  if (state.mode === 'game' && state.gameGhost && state.gameGhost.length > 1) {
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(255,224,102,0.12)';
-    ctx.beginPath();
-    ctx.moveTo(tx(state.gameGhost[0].x), ty(state.gameGhost[0].y));
-    for (let ggi = 1; ggi < state.gameGhost.length; ggi++) {
-      ctx.lineTo(tx(state.gameGhost[ggi].x), ty(state.gameGhost[ggi].y));
-    }
-    ctx.stroke();
-  }
-
-  // ── Animated trail ──
-  if (idx > 0) {
-    const trailStep = Math.max(1, Math.floor(idx / 2000));
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(255,224,102,0.55)';
-    strokeSmoothTrail(0, idx, trailStep);
-  }
-
-  // ── Game target ──
-  if (state.mode === 'game' && state.gameTarget) {
-    const gtol = gameTolerance();
-    const gx = tx(state.gameTarget.x);
-    const gy = ty(state.gameTarget.y);
-    targetScreenX = gx;
-    targetScreenY = gy;
-    const gr = gtol * scale;
-    const pulse = 1 + 0.06 * Math.sin(Date.now() / 250);
-
-    ctx.beginPath();
-    ctx.arc(gx, gy, gr * pulse, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,107,107,0.25)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(gx, gy, gr * 0.5 * pulse, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,107,107,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(gx, gy, 4 * pulse, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,107,107,0.8)';
-    ctx.fill();
-
-    const ch = gr * 0.35;
-    ctx.strokeStyle = 'rgba(255,107,107,0.3)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(gx - ch, gy); ctx.lineTo(gx + ch, gy);
-    ctx.moveTo(gx, gy - ch); ctx.lineTo(gx, gy + ch);
-    ctx.stroke();
-  }
-
-  // ── Crash overlay ──
-  if (state.crashed && idx >= len - 1) {
-    const plCrash = planetPos(len - 1);
-    const cx = tx(plCrash.x), cy = ty(plCrash.y);
-
-    const boom = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80);
-    boom.addColorStop(0, 'rgba(255,140,50,0.7)');
-    boom.addColorStop(0.3, 'rgba(255,80,30,0.4)');
-    boom.addColorStop(0.7, 'rgba(255,50,20,0.1)');
-    boom.addColorStop(1, 'rgba(255,50,20,0.0)');
-    ctx.fillStyle = boom;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 80, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.font = '36px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('\uD83D\uDCA5', cx, cy);
-    ctx.textBaseline = 'alphabetic';
-  }
-
-  // ── Velocity arrows (exit) — hidden in game mode (it's a spoiler) ──
-  if (!state.crashed && state.mode !== 'game') {
-    drawVelocityArrows(len, tx, ty);
-  }
-
-  // ── Draggable velocity vector (arrow length = speed) ──
-  (function() {
-    const sf0 = toSunFrame(0);
-    let sx, sy;
-    if (state.dragMode === 'arrow' || state.dragMode === 'translate') {
-      sx = frozenRootX;
-      sy = frozenRootY;
-    } else {
-      sx = tx(sf0.x);
-      sy = ty(sf0.y);
-    }
-    scStartScreenX = sx;
-    scStartScreenY = sy;
-
-    const a = state.approachAngle;
-    const aLen = MIN_ARROW_PX + (state.approachSpeed - 10) * (MAX_ARROW_PX - MIN_ARROW_PX) / 90;
-    const tipX = sx + Math.cos(a) * aLen;
-    const tipY = sy - Math.sin(a) * aLen;
-    handleScreenX = tipX;
-    handleScreenY = tipY;
-
-    const shaftColor = state.fineDrag ? '#7dffe7' : (state.dragMode ? '#7dc4ff' : '#58a6ff');
-
-    // Dotted circle guide while dragging
-    if (state.dragMode === 'arrow') {
-      ctx.setLineDash([3, 5]);
-      ctx.strokeStyle = 'rgba(88,166,255,0.2)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(sx, sy, aLen, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    const headAngle = Math.atan2(tipY - sy, tipX - sx);
-    const shaftEndX = tipX - 13 * Math.cos(headAngle);
-    const shaftEndY = tipY - 13 * Math.sin(headAngle);
-    ctx.strokeStyle = shaftColor;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'butt';
-    ctx.beginPath();
-    ctx.moveTo(sx, sy);
-    ctx.lineTo(shaftEndX, shaftEndY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(sx, sy, 4, 0, Math.PI * 2);
-    ctx.fillStyle = shaftColor;
-    ctx.fill();
-
-    ctx.fillStyle = shaftColor;
-    ctx.beginPath();
-    ctx.moveTo(tipX, tipY);
-    ctx.lineTo(tipX - 16 * Math.cos(headAngle - 0.4), tipY - 16 * Math.sin(headAngle - 0.4));
-    ctx.lineTo(tipX - 16 * Math.cos(headAngle + 0.4), tipY - 16 * Math.sin(headAngle + 0.4));
-    ctx.closePath();
-    ctx.fill();
-
-    const perpX = -(tipY - sy);
-    const perpY = tipX - sx;
-    const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
-    const midX = (sx + tipX) / 2, midY = (sy + tipY) / 2;
-    ctx.font = '17px "Share Tech Mono", monospace';
-    ctx.fillStyle = '#58a6ff';
-    ctx.textAlign = 'center';
-    ctx.fillText('v=' + Math.round(state.vIn),
-      midX + perpX / perpLen * 22, midY + perpY / perpLen * 22);
-  })();
-
-  // ── Onboarding tooltip (vanishes after first drag) ──
-  drawVectorTooltip();
-
-  // ── Spacecraft (drawn LAST among game objects) ──
-  if (idx < len) {
-    const sc = toSunFrame(idx);
-    const screenAngle = Math.atan2(-sc.vy, sc.vx);
-    const isDrag = (state.dragMode === 'arrow' || state.dragMode === 'translate');
-    const scx = (isDrag && idx === 0) ? frozenRootX : tx(sc.x);
-    const scy = (isDrag && idx === 0) ? frozenRootY : ty(sc.y);
-    drawSpacecraft(scx, scy, screenAngle);
-  }
-
-  // ── Labels ──
-  ctx.font = '15px "Share Tech Mono", monospace';
-  ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(110,122,138,0.7)';
-  const plLabelY = ty(plNow.y) + Math.max(8, state.planetRadius * scale) + 14;
-  ctx.fillText(T(state.selectedPlanet).toUpperCase(), tx(plNow.x), plLabelY);
-
-  if (vp < 0.01) {
-    ctx.fillStyle = 'rgba(110,122,138,0.35)';
-    ctx.fillText(T('stationary'), tx(plNow.x), plLabelY + 13);
-  }
-}
-
-function drawPlanet(px, py, scale) {
-  // physR is the PHYSICAL radius in screen units — drawn at exactly this size
-  // so the filled solid body never exceeds the collision boundary. The glow
-  // and atmosphere remain clamped for visibility, and a non-solid helper
-  // marker is drawn at extreme zoom-out where physR would otherwise be too
-  // small to see.
-  const physR = state.planetRadius * scale;
-  const glowR = Math.max(8, physR);
-  const bodyR = physR;
-  const c = state.planetColors;
-
-  // Atmosphere ring (visible scale)
-  ctx.beginPath();
-  ctx.arc(px, py, glowR * 1.15, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(' + c.glow + ',0.12)';
-  ctx.lineWidth = glowR * 0.15;
-  ctx.stroke();
-
-  // Outer glow gradient (visible scale)
-  const glow = ctx.createRadialGradient(px, py, glowR * 0.3, px, py, glowR * 3);
-  glow.addColorStop(0, 'rgba(' + c.glow + ',0.2)');
-  glow.addColorStop(0.5, 'rgba(' + c.glow + ',0.06)');
-  glow.addColorStop(1, 'rgba(' + c.glow + ',0.0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(px, py, glowR * 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Solid body at PHYSICAL scale — a safe flyby never visually intersects this
-  const bodyGrad = ctx.createRadialGradient(
-    px - bodyR * 0.3, py - bodyR * 0.3, bodyR * 0.1, px, py, bodyR);
-  bodyGrad.addColorStop(0, c.hi);
-  bodyGrad.addColorStop(0.7, c.mid);
-  bodyGrad.addColorStop(1, c.lo);
-  ctx.fillStyle = bodyGrad;
-  ctx.beginPath();
-  ctx.arc(px, py, bodyR, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = 'rgba(' + c.glow + ',0.3)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Non-solid helper marker at extreme zoom-out: when the physical body is
-  // smaller than ~1.5 px the user can't see it, so draw an outline ring and
-  // crosshair to indicate the planet's location without misrepresenting the
-  // collision radius.
-  if (physR < 1.5) {
-    const helperR = Math.max(6, glowR * 0.4);
-    ctx.strokeStyle = 'rgba(' + c.glow + ',0.4)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(px, py, helperR, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(px - helperR, py); ctx.lineTo(px + helperR, py);
-    ctx.moveTo(px, py - helperR); ctx.lineTo(px, py + helperR);
-    ctx.stroke();
-  }
-}
-
-// Draws an onboarding text tooltip near the velocity vector to teach the
-// drag interactions. Two lines: one for translating the body, one for
-// rotating/scaling the tip. Vanishes permanently the first time startDrag()
-// fires. Positioned above the vector midpoint and clamped to canvas bounds.
-function drawVectorTooltip() {
-  if (!state.hintShown) return;
-
-  const lines = [T('hintLine1'), T('hintLine2')];
-
-  ctx.font = '13px "Share Tech Mono", monospace';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-
-  let maxWidth = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const w = ctx.measureText(lines[i]).width;
-    if (w > maxWidth) maxWidth = w;
-  }
-
-  const padX = 12, padY = 10;
-  const lineH = 17;
-  const boxW = maxWidth + padX * 2;
-  const boxH = lineH * lines.length + padY * 2 - 2;
-
-  // Anchor: above the vector midpoint with a 60 px gap, then clamp to canvas.
-  const midX = (scStartScreenX + handleScreenX) / 2;
-  const midY = (scStartScreenY + handleScreenY) / 2;
-  let rx = midX - boxW / 2;
-  let ry = midY - 60 - boxH;
-
-  const margin = 12;
-  if (rx < margin) rx = margin;
-  if (rx + boxW > W - margin) rx = W - margin - boxW;
-  if (ry < margin) ry = margin;
-  if (ry + boxH > H - margin) ry = H - margin - boxH;
-
-  // Rounded rectangle backdrop (manual path for portability across browsers).
-  const r = 6;
-  ctx.beginPath();
-  ctx.moveTo(rx + r, ry);
-  ctx.lineTo(rx + boxW - r, ry);
-  ctx.quadraticCurveTo(rx + boxW, ry, rx + boxW, ry + r);
-  ctx.lineTo(rx + boxW, ry + boxH - r);
-  ctx.quadraticCurveTo(rx + boxW, ry + boxH, rx + boxW - r, ry + boxH);
-  ctx.lineTo(rx + r, ry + boxH);
-  ctx.quadraticCurveTo(rx, ry + boxH, rx, ry + boxH - r);
-  ctx.lineTo(rx, ry + r);
-  ctx.quadraticCurveTo(rx, ry, rx + r, ry);
-  ctx.closePath();
-
-  ctx.fillStyle = 'rgba(11,15,24,0.94)';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(125,196,255,0.5)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  ctx.fillStyle = '#c9d1d9';
-  for (let j = 0; j < lines.length; j++) {
-    ctx.fillText(lines[j], rx + padX, ry + padY + lineH * j);
-  }
-}
-
-function drawSpacecraft(x, y, angle) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-
-  const glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 20);
-  glow.addColorStop(0, 'rgba(255,224,102,0.45)');
-  glow.addColorStop(1, 'rgba(255,224,102,0.0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(0, 0, 20, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#ffe066';
-  ctx.beginPath();
-  ctx.moveTo(13, 0);
-  ctx.lineTo(-7, -6.5);
-  ctx.lineTo(-7, 6.5);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
-}
-
-function drawArrow(x1, y1, x2, y2, color, lineW, headSize) {
-  const angle = Math.atan2(y2 - y1, x2 - x1);
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineWidth = lineW;
-  ctx.lineCap = 'butt';
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2 - (headSize - 1) * Math.cos(angle), y2 - (headSize - 1) * Math.sin(angle));
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - headSize * Math.cos(angle - 0.4), y2 - headSize * Math.sin(angle - 0.4));
-  ctx.lineTo(x2 - headSize * Math.cos(angle + 0.4), y2 - headSize * Math.sin(angle + 0.4));
-  ctx.closePath();
-  ctx.fill();
-}
-
-function drawVelocityArrows(len, tx, ty) {
-  const sl = toSunFrame(len - 1);
-  const maxSpeed = Math.max(state.vIn, state.vOut, 0.1);
-  const maxArrowPx = Math.min(W, H) * 0.14;
-  const arrowK = maxArrowPx / (maxSpeed * V_SCALE);
-
-  if (state.vOut > 0.01) {
-    const sx = tx(sl.x), sy = ty(sl.y);
-    const ex = sx + sl.vx * arrowK;
-    const ey = sy - sl.vy * arrowK;
-
-    let color = '#58a6ff';
-    if (state.deltaV > 0.15) color = '#3fb950';
-    else if (state.deltaV < -0.15) color = '#f97583';
-
-    drawArrow(sx, sy, ex, ey, color, 2.5, 16);
-
-    ctx.font = '17px "Share Tech Mono", monospace';
-    ctx.fillStyle = color;
-    ctx.textAlign = 'center';
-    const mx = (sx + ex) / 2, my = (sy + ey) / 2;
-    const perpX = -(ey - sy), perpY = ex - sx;
-    const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
-    ctx.fillText('v=' + Math.round(state.vOut),
-      mx + perpX / perpLen * 22, my + perpY / perpLen * 22);
-  }
-}
-
-// ══════════════════════════════════════════════
-// ANIMATION
-// ══════════════════════════════════════════════
-let lastTime = 0;
-let stepAccum = 0;
-
-function animate(timestamp) {
-  if (!lastTime) lastTime = timestamp;
-  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
-  lastTime = timestamp;
-
-  if (state.playing && state.trajectory.length > 0) {
-    const baseStepsPerSec = Math.max(30, Math.ceil(state.trajectory.length / 3.5));
-    stepAccum += dt * baseStepsPerSec * state.animSpeed;
-    const steps = Math.floor(stepAccum);
-    stepAccum -= steps;
-    if (steps > 0) state.currentIndex += steps;
-
-    // Check for target hit mid-flight (game mode)
-    if (state.mode === 'game' && state.gameLaunched && state.gameTarget && !state.gameResult) {
-      const tol = gameTolerance(), tolSq = tol * tol;
-      const gx = state.gameTarget.x, gy = state.gameTarget.y;
-      const sc = toSunFrame(Math.min(state.currentIndex, state.trajectory.length - 1));
-      const ddx = sc.x - gx, ddy = sc.y - gy;
-      if (ddx * ddx + ddy * ddy < tolSq) {
-        state.gameResult = 'success';
-        state.playing = false;
-        showGameOverlay('success');
+      :root {
+        --bg: #0b0f18;
+        --panel: #131825;
+        --panel-border: #1e2a3a;
+        --text: #c9d1d9;
+        --text-dim: #6e7a8a;
+        --accent: #58a6ff;
+        --gain: #3fb950;
+        --loss: #f97583;
       }
-    }
 
-    if (state.currentIndex >= state.trajectory.length - 1) {
-      state.currentIndex = state.trajectory.length - 1;
-      state.playing = false;
-      evaluateGame();
-    }
-  }
-
-  drawScene();
-  updateWarpBtns();
-  requestAnimationFrame(animate);
-}
-
-// ══════════════════════════════════════════════
-// CONTROLS
-// ══════════════════════════════════════════════
-// Play / Pause / Resume toggle. If currently playing, pauses. If paused mid-
-// trajectory, resumes from the current sample. If paused at the end of the
-// trajectory (or never started), restarts from the beginning. In game mode,
-// every fresh start clears the previous result and re-arms gameLaunched.
-// eslint-disable-next-line no-unused-vars
-function setWarp(level) {
-  if (state.playing && state.warpLevel === level) {
-    state.playing = false;
-  } else {
-    state.warpLevel = level;
-    state.animSpeed = state.warpLevels[level] || state.warpLevels.normal;
-    if (!state.playing) {
-      if (state.currentIndex >= state.trajectory.length - 1) {
-        state.currentIndex = 0;
-        stepAccum = 0;
+      body {
+        min-height: 100vh;
+        background: var(--bg);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
       }
-      state.playing = true;
-      if (state.mode === 'game') {
-        state.gameLaunched = true;
-        state.gameResult = null;
+
+      header {
+        padding: 20px 28px 16px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
       }
-    }
-  }
-  updateWarpBtns();
-}
-
-function updateWarpBtns() {
-  var playing = state.playing;
-  var nBtn = document.getElementById('warpNormalBtn');
-  var fBtn = document.getElementById('warpFastBtn');
-  var ffBtn = document.getElementById('warpFastestBtn');
-  nBtn.classList.toggle('active', playing && state.warpLevel === 'normal');
-  fBtn.classList.toggle('active', playing && state.warpLevel === 'fast');
-  ffBtn.classList.toggle('active', playing && state.warpLevel === 'fastest');
-  nBtn.textContent = (playing && state.warpLevel === 'normal') ? '\u25ae\u25ae' : T('warpNormal');
-  fBtn.textContent = (playing && state.warpLevel === 'fast') ? '\u25ae\u25ae' : T('warpFast');
-  ffBtn.textContent = (playing && state.warpLevel === 'fastest') ? '\u25ae\u25ae' : T('warpFastest');
-}
-
-function resetSim() {
-  state.currentIndex = 0;
-  stepAccum = 0;
-  state.playing = false;
-  updateWarpBtns();
-}
-
-// Stop button click dispatcher: single click → resetSim (animation reset),
-// double click → resetToDefaults (full per-planet reset). Uses a timer to
-// distinguish single from double click without firing resetSim twice during
-// a double-click sequence.
-let stopClickTimer = null;
-// eslint-disable-next-line no-unused-vars
-function handleStopClick() {
-  if (stopClickTimer !== null) {
-    clearTimeout(stopClickTimer);
-    stopClickTimer = null;
-    resetToDefaults();
-  } else {
-    stopClickTimer = setTimeout(function() {
-      stopClickTimer = null;
-      resetSim();
-    }, 260);
-  }
-}
-
-function recompute() {
-  computeTrajectory();
-
-  updateReadouts();
-  updateInfo();
-  state.currentIndex = 0;
-  stepAccum = 0;
-  state.playing = false;
-  if (state.mode === 'game') {
-    state.gameLaunched = false;
-    state.gameResult = null;
-  }
-  updateWarpBtns();
-}
-
-// eslint-disable-next-line no-unused-vars
-function stepSlider(sliderId, delta) {
-  const slider = document.getElementById(sliderId);
-  const min = +slider.min, max = +slider.max, step = +slider.step;
-  let val = +slider.value + delta;
-  val = Math.round(val / step) * step;
-  val = Math.max(min, Math.min(max, val));
-  val = Math.round(val * 1000) / 1000;
-  slider.value = val;
-  slider.dispatchEvent(new Event('input'));
-}
-
-function selectPlanet(key, keepTarget) {
-  const planet = PLANET_DATA.find(function(p) { return p.key === key; });
-  if (!planet) return;
-  state.selectedPlanet = key;
-  state.planetMass = planet.massRatio;
-  state.planetRadius = BASE_RADIUS * planet.radiusRatio;
-  state.planetColors = planet.colors;
-  state.planetVel = planet.defaultSpeed;
-  state.approachSpeed = planet.defaultApproachSpeed;
-
-  document.getElementById('planetVelSlider').value = planet.defaultSpeed;
-  document.getElementById('planetVelVal').textContent = planet.defaultSpeed;
-  document.getElementById('planetSelect').value = key;
-
-  initVecPosition();
-  recompute();
-
-  if (state.mode === 'game' && !keepTarget) {
-    generateTarget();
-  }
-}
-
-// Full reset to the planet's default initial view: angle, periapsis, planet
-// velocity, approach speed, camera mode, and zoom — everything the user sees
-// on a fresh planet selection. Triggered by double-clicking the Stop button.
-// Keeps the game target so the user can retry the same challenge from clean
-// defaults instead of getting a brand new randomized target.
-function resetToDefaults() {
-  state.approachAngle = Math.PI;
-  state.periapsisAlt = 50;
-  state.currentIndex = 0;
-  stepAccum = 0;
-  state.playing = false;
-  zoomFactor = 1;
-  cameraMode = 'auto';
-  selectPlanet(state.selectedPlanet, true);
-  updateViewButtons();
-  updateWarpBtns();
-}
-
-document.getElementById('planetSelect').addEventListener('change', function(e) {
-  selectPlanet(e.target.value);
-});
-
-document.getElementById('planetVelSlider').addEventListener('input', function(e) {
-  state.planetVel = +e.target.value;
-  document.getElementById('planetVelVal').textContent = e.target.value;
-  initVecPosition();
-  recompute();
-});
-
-// ══════════════════════════════════════════════
-// CAMERA CONTROLS
-// ══════════════════════════════════════════════
-function updateViewButtons() {
-  document.getElementById('autoViewBtn').classList.toggle('active', cameraMode === 'auto');
-  document.getElementById('focusPlanetBtn').classList.toggle('active', cameraMode === 'planet');
-  document.getElementById('focusScBtn').classList.toggle('active', cameraMode === 'spacecraft');
-}
-
-function applyZoom(factor) {
-  if (cameraMode === 'auto') {
-    zoomFactor *= factor;
-  } else {
-    manualScale *= factor;
-  }
-  updateViewButtons();
-}
-
-// eslint-disable-next-line no-unused-vars
-function zoomIn()  { applyZoom(1.3); }
-// eslint-disable-next-line no-unused-vars
-function zoomOut() { applyZoom(1 / 1.3); }
-
-// eslint-disable-next-line no-unused-vars
-function focusPlanet() {
-  manualScale = Math.min(W, H) / (state.planetRadius * 25);
-  cameraMode = 'planet';
-  updateViewButtons();
-}
-
-// eslint-disable-next-line no-unused-vars
-function focusSpacecraft() {
-  manualScale = lastScale * 1.5;
-  cameraMode = 'spacecraft';
-  updateViewButtons();
-}
-
-// eslint-disable-next-line no-unused-vars
-function resetView() {
-  cameraMode = 'auto';
-  zoomFactor = 1;
-  updateViewButtons();
-}
-
-// ══════════════════════════════════════════════
-// DRAG INTERACTION
-// ══════════════════════════════════════════════
-const ARROW_HIT_DIST = 20;
-
-function getCanvasPos(e) {
-  const rect = canvas.getBoundingClientRect();
-  if (e.touches) {
-    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-  }
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-}
-
-function isNearArrow(pos) {
-  // Check near tip (circle)
-  const dtx = pos.x - handleScreenX, dty = pos.y - handleScreenY;
-  if (dtx * dtx + dty * dty < 25 * 25) return true;
-  // Check near shaft (segment)
-  const x1 = scStartScreenX, y1 = scStartScreenY;
-  const x2 = handleScreenX, y2 = handleScreenY;
-  const dx = x2 - x1, dy = y2 - y1;
-  const lenSq = dx * dx + dy * dy;
-  if (lenSq < 1) return false;
-  let t = ((pos.x - x1) * dx + (pos.y - y1) * dy) / lenSq;
-  t = Math.max(0, Math.min(1, t));
-  const projX = x1 + t * dx, projY = y1 + t * dy;
-  const distSq = (pos.x - projX) * (pos.x - projX) + (pos.y - projY) * (pos.y - projY);
-  return distSq < ARROW_HIT_DIST * ARROW_HIT_DIST;
-}
-
-function freezeCamera() {
-  cameraFrozen = true;
-  frozenScale = lastScale;
-}
-
-function unfreezeCamera() {
-  cameraFrozen = false;
-}
-
-function handleArrowDrag(pos, shiftHeld) {
-  // Delta accumulation: cursor movement is added to an effective tip position,
-  // optionally scaled down by 8x for fine adjustments. This avoids any jumps
-  // when Shift is pressed or released mid-drag — only NEW movement is scaled.
-  state.shiftHeld = !!shiftHeld;
-  recomputeFineDrag();
-  updatePrecisionUI();
-
-  const rawDx = pos.x - dragLastPosX;
-  const rawDy = pos.y - dragLastPosY;
-  const scale = state.fineDrag ? 0.125 : 1.0;
-  dragAccumX += rawDx * scale;
-  dragAccumY += rawDy * scale;
-  dragLastPosX = pos.x;
-  dragLastPosY = pos.y;
-
-  const effX = dragInitialTipX + dragAccumX;
-  const effY = dragInitialTipY + dragAccumY;
-  const dx = effX - frozenRootX;
-  const dy = -(effY - frozenRootY);
-  const dist = Math.sqrt(dx * dx + dy * dy);
-
-  state.approachAngle = Math.atan2(dy, dx);
-
-  const speed = 10 + (dist - MIN_ARROW_PX) * 90 / (MAX_ARROW_PX - MIN_ARROW_PX);
-  state.approachSpeed = Math.max(10, Math.min(100, Math.round(speed)));
-
-  state.currentIndex = 0;
-  computePeriapsisAltFromPosition();
-  computeTrajectory();
-
-  updateReadouts();
-  updateInfo();
-}
-
-function isNearTarget(pos) {
-  if (state.mode !== 'game' || !state.gameTarget) return false;
-  const dx = pos.x - targetScreenX, dy = pos.y - targetScreenY;
-  const hitR = Math.max(30, gameTolerance() * lastScale);
-  return dx * dx + dy * dy < hitR * hitR;
-}
-
-function handleTargetDrag(pos) {
-  const sx = pos.x - targetGrabOfsX;
-  const sy = pos.y - targetGrabOfsY;
-  state.gameTarget.x = frozenCamX + (sx - W / 2) / frozenScale;
-  state.gameTarget.y = frozenCamY - (sy - H / 2) / frozenScale;
-
-}
-
-function isNearRoot(pos) {
-  const dx = pos.x - scStartScreenX, dy = pos.y - scStartScreenY;
-  return dx * dx + dy * dy < 15 * 15;
-}
-
-function handleTranslateDrag(pos) {
-  const dx = pos.x - dragPrevX;
-  const dy = pos.y - dragPrevY;
-  dragPrevX = pos.x;
-  dragPrevY = pos.y;
-  state.vecPfX += dx / frozenScale;
-  state.vecPfY -= dy / frozenScale;
-  frozenRootX += dx;
-  frozenRootY += dy;
-  state.currentIndex = 0;
-  computePeriapsisAltFromPosition();
-  computeTrajectory();
-
-  updateReadouts();
-  updateInfo();
-}
-
-function startDrag(mode, pos) {
-  state.dragMode = mode;
-  state.playing = false;
-  state.hintShown = false;
-  freezeCamera();
-  if (mode === 'arrow') {
-    dragInitialTipX = handleScreenX;
-    dragInitialTipY = handleScreenY;
-    dragAccumX = 0;
-    dragAccumY = 0;
-    dragLastPosX = pos.x;
-    dragLastPosY = pos.y;
-    frozenRootX = scStartScreenX;
-    frozenRootY = scStartScreenY;
-  } else if (mode === 'translate') {
-    dragPrevX = pos.x;
-    dragPrevY = pos.y;
-    frozenRootX = scStartScreenX;
-    frozenRootY = scStartScreenY;
-  } else if (mode === 'target') {
-    targetGrabOfsX = pos.x - targetScreenX;
-    targetGrabOfsY = pos.y - targetScreenY;
-  }
-}
-
-function endDrag() {
-  if (state.dragMode) {
-    state.dragMode = null;
-    canvas.style.cursor = 'default';
-    unfreezeCamera();
-  }
-}
-
-// Effective precision state = latched setting OR Shift held. Shift acts as a
-// momentary boost only when precision is NOT latched on; once latched, Shift
-// is a no-op. Both the toggle button click and Shift key events update this
-// through recomputeFineDrag + updatePrecisionUI.
-function recomputeFineDrag() {
-  state.fineDrag = state.precisionMode || state.shiftHeld;
-}
-
-function updatePrecisionUI() {
-  document.getElementById('precisionBtn').classList.toggle('active', state.fineDrag);
-}
-
-// eslint-disable-next-line no-unused-vars
-function togglePrecision() {
-  state.precisionMode = !state.precisionMode;
-  recomputeFineDrag();
-  updatePrecisionUI();
-}
-
-canvas.addEventListener('mousedown', function(e) {
-  const pos = getCanvasPos(e);
-  if (isNearTarget(pos)) {
-    startDrag('target', pos);
-    canvas.style.cursor = 'move';
-    e.preventDefault();
-  } else if (isNearRoot(pos)) {
-    startDrag('translate', pos);
-    canvas.style.cursor = 'move';
-    e.preventDefault();
-  } else if (isNearArrow(pos)) {
-    startDrag('arrow', pos);
-    canvas.style.cursor = 'grabbing';
-    state.shiftHeld = e.shiftKey;
-    recomputeFineDrag();
-    updatePrecisionUI();
-    e.preventDefault();
-  }
-});
-
-canvas.addEventListener('mousemove', function(e) {
-  const pos = getCanvasPos(e);
-  if (state.dragMode === 'arrow') {
-    handleArrowDrag(pos, e.shiftKey);
-    e.preventDefault();
-  } else if (state.dragMode === 'translate') {
-    handleTranslateDrag(pos);
-    e.preventDefault();
-  } else if (state.dragMode === 'target') {
-    handleTargetDrag(pos);
-    e.preventDefault();
-  } else {
-    if (isNearTarget(pos)) canvas.style.cursor = 'move';
-    else if (isNearRoot(pos)) canvas.style.cursor = 'move';
-    else if (isNearArrow(pos)) canvas.style.cursor = 'grab';
-    else canvas.style.cursor = 'default';
-  }
-});
-
-canvas.addEventListener('mouseup', endDrag);
-canvas.addEventListener('mouseleave', endDrag);
-
-canvas.addEventListener('touchstart', function(e) {
-  const pos = getCanvasPos(e);
-  if (isNearTarget(pos)) {
-    startDrag('target', pos);
-    e.preventDefault();
-  } else if (isNearRoot(pos)) {
-    startDrag('translate', pos);
-    e.preventDefault();
-  } else if (isNearArrow(pos)) {
-    startDrag('arrow', pos);
-    e.preventDefault();
-  }
-}, { passive: false });
-
-canvas.addEventListener('touchmove', function(e) {
-  const pos = getCanvasPos(e);
-  if (state.dragMode === 'arrow') {
-    handleArrowDrag(pos);
-    e.preventDefault();
-  } else if (state.dragMode === 'translate') {
-    handleTranslateDrag(pos);
-    e.preventDefault();
-  } else if (state.dragMode === 'target') {
-    handleTargetDrag(pos);
-    e.preventDefault();
-  }
-}, { passive: false });
-
-canvas.addEventListener('touchend', endDrag);
-
-// Mouse-wheel zoom. Smooth exponential scaling: a single wheel notch
-// (deltaY ≈ ±100) gives roughly 1.16× zoom; trackpad smooth scrolling gives
-// finer-grained adjustments. Routes through applyZoom so the same camera-mode
-// branching as the +/- buttons applies. passive: false is required for
-// preventDefault to actually stop the page from scrolling.
-canvas.addEventListener('wheel', function(e) {
-  e.preventDefault();
-  applyZoom(Math.pow(1.0015, -e.deltaY));
-}, { passive: false });
-
-// Track Shift globally so the precision toggle button reflects the current
-// effective state (latched XOR Shift held), and so the arrow shaft color
-// flips immediately during drag without waiting for the next mousemove.
-// The !state.shiftHeld guard avoids redundant work from auto-repeat keydown.
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Shift' && !state.shiftHeld) {
-    state.shiftHeld = true;
-    recomputeFineDrag();
-    updatePrecisionUI();
-  }
-});
-
-document.addEventListener('keyup', function(e) {
-  if (e.key === 'Shift' && state.shiftHeld) {
-    state.shiftHeld = false;
-    recomputeFineDrag();
-    updatePrecisionUI();
-  }
-});
-
-// ══════════════════════════════════════════════
-// READOUTS & INFO
-// ══════════════════════════════════════════════
-function formatKm(km) {
-  return Math.round(km).toLocaleString('en-US') + ' km';
-}
-
-function formatKmS(kmps) {
-  return kmps.toFixed(1) + ' km/s';
-}
-
-// Live readouts updated every animation frame from drawScene(). Reads the
-// current trajectory sample at state.currentIndex and refreshes the current
-// altitude, current speed, and the speed gauge fill. Cheap (~3 DOM ops) and
-// guarded against an empty trajectory.
-function updateLiveReadouts() {
-  const len = state.trajectory.length;
-  if (len === 0) {
-    document.getElementById('curSpeedVal').textContent = '\u2014';
-    document.getElementById('curAltVal').textContent = '\u2014';
-    document.getElementById('gaugeFill').style.width = '0%';
-    return;
-  }
-  const idx = Math.min(state.currentIndex, len - 1);
-  const pt = state.trajectory[idx];
-  const vp = state.planetVel * V_SCALE;
-
-  const r = Math.sqrt(pt.x * pt.x + pt.y * pt.y);
-  const altKm = Math.max(0, (r - state.planetRadius) * KM_PER_SIM_LENGTH);
-  document.getElementById('curAltVal').textContent = formatKm(altKm);
-
-  const sx = pt.vx + vp;
-  const sy = pt.vy;
-  const vSliderUnits = Math.sqrt(sx * sx + sy * sy) / V_SCALE;
-  document.getElementById('curSpeedVal').textContent =
-    formatKmS(vSliderUnits * KMS_PER_SLIDER_VEL);
-
-  let pct = state.maxSpeedSliderUnits > 0
-    ? (vSliderUnits / state.maxSpeedSliderUnits) * 100
-    : 0;
-  if (pct < 0) pct = 0;
-  if (pct > 100) pct = 100;
-  document.getElementById('gaugeFill').style.width = pct.toFixed(1) + '%';
-}
-
-function updateReadouts() {
-  // Planet radius and planet velocity are static within a flyby but cheap to
-  // recompute on every update. Both display regardless of crash state.
-  document.getElementById('planetRadiusVal').textContent =
-    formatKm(state.planetRadius * KM_PER_SIM_LENGTH);
-  document.getElementById('planetVelKmsVal').textContent =
-    formatKmS(state.planetVel * KMS_PER_SLIDER_VEL);
-
-  if (state.crashed) {
-    document.getElementById('speedInVal').textContent =
-      formatKmS(state.vIn * KMS_PER_SLIDER_VEL);
-    document.getElementById('speedOutVal').textContent = '\u2014';
-    const boostEl = document.getElementById('boostVal');
-    boostEl.textContent = T('crash');
-    boostEl.style.color = 'var(--loss)';
-    document.getElementById('deflVal').textContent = '\u2014';
-    document.getElementById('minAltVal').textContent = formatKm(0);
-    return;
-  }
-
-  document.getElementById('speedInVal').textContent =
-    formatKmS(state.vIn * KMS_PER_SLIDER_VEL);
-  document.getElementById('speedOutVal').textContent =
-    formatKmS(state.vOut * KMS_PER_SLIDER_VEL);
-
-  const boostEl = document.getElementById('boostVal');
-  const dvKmS = state.deltaV * KMS_PER_SLIDER_VEL;
-  boostEl.textContent = (dvKmS >= 0 ? '+' : '') + dvKmS.toFixed(1) + ' km/s';
-  if (dvKmS > 0.15 * KMS_PER_SLIDER_VEL) boostEl.style.color = 'var(--gain)';
-  else if (dvKmS < -0.15 * KMS_PER_SLIDER_VEL) boostEl.style.color = 'var(--loss)';
-  else boostEl.style.color = 'var(--text)';
-
-  document.getElementById('deflVal').textContent =
-    Math.abs(state.deflectionAngle).toFixed(0) + '\u00B0';
-
-  // Min altitude: closest approach above the planet surface, in km.
-  const closestPt = state.trajectory[state.closestIndex];
-  if (closestPt) {
-    const closestR = Math.sqrt(closestPt.x * closestPt.x + closestPt.y * closestPt.y);
-    const minAltKm = Math.max(0, (closestR - state.planetRadius) * KM_PER_SIM_LENGTH);
-    document.getElementById('minAltVal').textContent = formatKm(minAltKm);
-  } else {
-    document.getElementById('minAltVal').textContent = '\u2014';
-  }
-}
-
-function updateInfo() {
-  let text;
-  if (state.mode === 'game') {
-    text = T('infoGame');
-  } else if (state.crashed) {
-    text = T('infoCrash');
-  } else if (state.planetVel < 0.1) {
-    text = T('infoStationary');
-  } else if (state.deltaV > 0.15) {
-    text = T('infoBoost');
-  } else {
-    text = T('infoDefault');
-  }
-  document.getElementById('infoText').textContent = text;
-}
-
-// ══════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════
-document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
-applyTranslations();
-resize();
-populatePlanetSelect();
-selectPlanet('earth');
-applyTranslations();
-requestAnimationFrame(animate);
-</script>
-</body>
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .main {
+        display: flex;
+        height: calc(100vh - 80px);
+      }
+
+      .canvas-wrap {
+        flex: 1;
+        position: relative;
+        background: #080c14;
+        min-width: 0;
+      }
+      .canvas-wrap canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .controls {
+        width: 300px;
+        flex-shrink: 0;
+        padding: 20px;
+        border-left: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        overflow-y: auto;
+      }
+
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .ctrl-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
+
+      .type-toggle {
+        display: flex;
+        gap: 6px;
+      }
+      .type-btn {
+        padding: 10px 4px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        flex: 1;
+      }
+      .type-btn:hover {
+        border-color: var(--accent);
+      }
+      .type-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .type-btn.full-width {
+        flex: none;
+        width: 100%;
+      }
+
+      /* Larger glyphs for the View zoom buttons */
+      #zoomInBtn,
+      #zoomOutBtn {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      /* Stop button centering */
+      #resetBtn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #resetBtn:hover {
+        color: var(--accent);
+      }
+
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .slider-row input[type="range"] {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        background: var(--panel-border);
+        border-radius: 3px;
+        outline: none;
+        box-shadow: 0 0 0 2px transparent;
+      }
+      .slider-row input[type="range"]:focus-visible {
+        box-shadow: 0 0 0 2px var(--accent);
+      }
+      .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid var(--bg);
+      }
+      .slider-row input[type="range"]::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid var(--bg);
+      }
+      .slider-val {
+        min-width: 28px;
+        text-align: right;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        color: var(--text);
+      }
+
+      .step-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        touch-action: manipulation;
+      }
+      .step-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .step-btn:active {
+        background: var(--accent);
+        color: var(--bg);
+      }
+
+      .planet-select {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        cursor: pointer;
+        outline: none;
+      }
+      .planet-select:focus {
+        border-color: var(--accent);
+      }
+      .planet-select option {
+        background: var(--panel);
+        color: var(--text);
+      }
+
+      .readouts {
+        gap: 6px;
+      }
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+      }
+      .readout-label {
+        color: var(--text-dim);
+      }
+      .readout-val {
+        color: var(--text);
+      }
+
+      .gauge-bar {
+        width: 100%;
+        height: 4px;
+        background: var(--panel-border);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: -2px;
+      }
+      .gauge-fill {
+        height: 100%;
+        background: var(--accent);
+        width: 0%;
+      }
+
+      .boost-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-top: 1px solid var(--panel-border);
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .boost-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
+      .boost-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .info-text {
+        font-size: 12px;
+        color: var(--text-dim);
+        line-height: 1.6;
+      }
+
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        font-family: "Outfit", sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 16px;
+        color: #fff;
+      }
+      .overlay-hint {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+      #grpNewTarget {
+        display: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .result-overlay,
+        .overlay-emoji {
+          animation: none;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .main {
+          flex-direction: column;
+        }
+        .canvas-wrap {
+          min-height: 350px;
+          flex: 1;
+        }
+        .controls {
+          width: 100%;
+          flex-direction: row;
+          flex-wrap: wrap;
+          border-left: none;
+          border-top: 1px solid var(--panel-border);
+          padding: 12px 16px;
+          gap: 12px;
+        }
+        .ctrl-group {
+          min-width: 140px;
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-icon">&#x1F680;</span></a>
+          <span id="titleText">Gravity Assist Simulator</span>
+        </h1>
+        <p id="subtitleText">
+          Solar-system planets bend spacecraft paths with their gravity, and a
+          moving planet adds speed for free. Explore freely or try to hit a
+          target in Game mode.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="canvas-wrap">
+        <canvas
+          id="canvas"
+          aria-label="Gravity assist simulation viewport"
+        ></canvas>
+      </div>
+
+      <div class="controls">
+        <div class="ctrl-group">
+          <div class="type-toggle">
+            <button type="button" class="type-btn active" id="modeExploreBtn">
+              Explore
+            </button>
+            <button type="button" class="type-btn" id="modeGameBtn">
+              Game
+            </button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblPlanet">Planet</span>
+          <select
+            class="planet-select"
+            id="planetSelect"
+            aria-label="Planet"
+          ></select>
+        </div>
+
+        <div class="ctrl-group" id="grpPlanetVel">
+          <span class="ctrl-label" id="lblPlanetSpeed">Planet Speed</span>
+          <div class="slider-row">
+            <button
+              type="button"
+              class="step-btn"
+              id="planetVelDecBtn"
+              aria-label="Decrease planet speed"
+            >
+              &minus;
+            </button>
+            <input
+              type="range"
+              id="planetVelSlider"
+              min="0"
+              max="60"
+              value="0"
+              step="5"
+              aria-label="Planet speed"
+            />
+            <button
+              type="button"
+              class="step-btn"
+              id="planetVelIncBtn"
+              aria-label="Increase planet speed"
+            >
+              +
+            </button>
+            <span class="slider-val" id="planetVelVal">0</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group" id="grpAnim">
+          <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
+          <div class="type-toggle">
+            <button
+              type="button"
+              class="type-btn"
+              id="warpNormalBtn"
+              aria-label="Normal speed"
+            >
+              &#x25b6;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="warpFastBtn"
+              aria-label="Fast speed"
+            >
+              &#x25b6;&#x25b6;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="warpFastestBtn"
+              aria-label="Fastest speed"
+            >
+              &#x25b6;&#x25b6;&#x25b6;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="resetBtn"
+              aria-label="Stop"
+            >
+              &#x25a0;
+            </button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblView">View</span>
+          <div class="type-toggle">
+            <button
+              type="button"
+              class="type-btn"
+              id="zoomOutBtn"
+              aria-label="Zoom out"
+            >
+              &minus;
+            </button>
+            <button type="button" class="type-btn" id="autoViewBtn">
+              Auto
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="zoomInBtn"
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+          </div>
+          <div class="type-toggle">
+            <button type="button" class="type-btn" id="focusPlanetBtn">
+              &#x1F4CD; Planet
+            </button>
+            <button type="button" class="type-btn" id="focusScBtn">
+              &#x1F4CD; Spacecraft
+            </button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <button type="button" class="type-btn full-width" id="precisionBtn">
+            Precision (Shift)
+          </button>
+        </div>
+
+        <div class="ctrl-group" id="grpNewTarget">
+          <button type="button" class="type-btn full-width" id="newTargetBtn">
+            New Target
+          </button>
+        </div>
+
+        <div class="ctrl-group readouts" id="grpReadouts">
+          <div class="boost-row">
+            <span class="boost-label" id="lblBoost">Speed boost</span>
+            <span class="boost-val" id="boostVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblSpeedIn">Speed in</span>
+            <span class="readout-val" id="speedInVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblSpeedOut">Speed out</span>
+            <span class="readout-val" id="speedOutVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblDefl">Deflection</span>
+            <span class="readout-val" id="deflVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblMinAlt">Min altitude</span>
+            <span class="readout-val" id="minAltVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblPlanetRadius"
+              >Planet radius</span
+            >
+            <span class="readout-val" id="planetRadiusVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblPlanetVel">Planet velocity</span>
+            <span class="readout-val" id="planetVelKmsVal">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblCurSpeed">Current speed</span>
+            <span class="readout-val" id="curSpeedVal">&mdash;</span>
+          </div>
+          <div class="gauge-bar">
+            <div class="gauge-fill" id="gaugeFill"></div>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblCurAlt">Current altitude</span>
+            <span class="readout-val" id="curAltVal">&mdash;</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group info-text">
+          <span id="infoText"></span>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+        // ══════════════════════════════════════════════
+        // I18N
+        // ══════════════════════════════════════════════
+        const I18N = {
+          en: {
+            title: "Gravity Assist Simulator",
+            subtitle:
+              "Solar-system planets bend spacecraft paths with their gravity, and a moving planet adds speed for free. Explore freely or try to hit a target in Game mode.",
+            modeExplore: "Explore",
+            modeGame: "Game",
+            planet: "Planet",
+            planetSpeed: "Planet Speed",
+            flybyAlt: "Flyby Altitude",
+            spacecraftSpeed: "Spacecraft Speed",
+            timeWarp: "Time Warp",
+            warpNormal: "\u25b6",
+            warpFast: "\u25b6\u25b6",
+            warpFastest: "\u25b6\u25b6\u25b6",
+            launch: "Launch",
+            reset: "Reset",
+            stop: "Stop (double-click resets the view)",
+            newTarget: "New Target",
+            precision: "Precision (Shift)",
+            view: "View",
+            fixed: "Auto",
+            focusPlanet: "\uD83D\uDCCD Planet",
+            focusSpacecraft: "\uD83D\uDCCD Spacecraft",
+            speedBoost: "Speed boost",
+            speedIn: "Speed in",
+            speedOut: "Speed out",
+            deflection: "Deflection",
+            minAltitude: "Min altitude",
+            planetRadiusLabel: "Planet radius",
+            planetVelKms: "Planet velocity",
+            curSpeed: "Current speed",
+            curAltitude: "Current altitude",
+            hintLine1: "Drag the spacecraft to reposition",
+            hintLine2: "Drag the tip to aim and set speed",
+            crash: "CRASH",
+            stationary: "(stationary)",
+            infoCrash:
+              "The spacecraft flew too close and crashed into the planet! Increase the flyby altitude or spacecraft speed to survive the encounter.",
+            infoStationary:
+              "The planet is stationary. The spacecraft exits at the same speed it entered \u2014 gravity only changed its direction. Try increasing the planet\u2019s speed!",
+            infoBoost:
+              "The planet is moving! The spacecraft swung behind it and exits faster \u2014 a free speed boost from the planet\u2019s motion. This is how Voyager reached the outer solar system.",
+            infoDefault:
+              "Drag the arrow body to reposition, or drag the tip to rotate. Increase the planet\u2019s speed to see a bigger boost.",
+            infoGame:
+              "Adjust the velocity arrow and flyby altitude to steer the spacecraft through the target. Click Launch when ready!",
+            gameSuccess: "Great shot!",
+            gameCloseMiss: "Almost! Try again",
+            gameFarMiss: "Way off! Try again",
+            gameCrash: "Crash! Too close",
+            clickToDismiss: "Click to continue",
+            mercury: "Mercury",
+            venus: "Venus",
+            earth: "Earth",
+            mars: "Mars",
+            jupiter: "Jupiter",
+            saturn: "Saturn",
+            uranus: "Uranus",
+            neptune: "Neptune",
+          },
+          pl: {
+            title: "Symulator Asysty Grawitacyjnej",
+            subtitle:
+              "Planety Uk\u0142adu S\u0142onecznego zakrzywiaj\u0105 tory statk\u00F3w kosmicznych swoj\u0105 grawitacj\u0105, a poruszaj\u0105ca si\u0119 planeta dodaje pr\u0119dko\u015Bci za darmo. Eksploruj swobodnie lub spr\u00F3buj trafi\u0107 w cel w trybie gry.",
+            modeExplore: "Eksploracja",
+            modeGame: "Gra",
+            planet: "Planeta",
+            planetSpeed: "Pr\u0119dko\u015B\u0107 planety",
+            flybyAlt: "Wysoko\u015B\u0107 przelotu",
+            spacecraftSpeed: "Pr\u0119dko\u015B\u0107 statku",
+            timeWarp: "Przyspieszenie",
+            warpNormal: "\u25b6",
+            warpFast: "\u25b6\u25b6",
+            warpFastest: "\u25b6\u25b6\u25b6",
+            launch: "Start",
+            reset: "Resetuj",
+            stop: "Zatrzymaj (dwuklik resetuje widok)",
+            newTarget: "Nowy cel",
+            precision: "Precyzja (Shift)",
+            view: "Widok",
+            fixed: "Auto",
+            focusPlanet: "\uD83D\uDCCD Planeta",
+            focusSpacecraft: "\uD83D\uDCCD Statek",
+            speedBoost: "Przyrost pr\u0119dko\u015Bci",
+            speedIn: "Pr\u0119dko\u015B\u0107 wlotowa",
+            speedOut: "Pr\u0119dko\u015B\u0107 wylotowa",
+            deflection: "Odchylenie",
+            minAltitude: "Min. wysoko\u015B\u0107",
+            planetRadiusLabel: "Promie\u0144 planety",
+            planetVelKms: "Pr\u0119dko\u015B\u0107 planety",
+            curSpeed: "Bie\u017C\u0105ca pr\u0119dko\u015B\u0107",
+            curAltitude: "Bie\u017C\u0105ca wysoko\u015B\u0107",
+            hintLine1: "Przeci\u0105gnij statek, aby zmieni\u0107 pozycj\u0119",
+            hintLine2:
+              "Przeci\u0105gnij grot, aby celowa\u0107 i ustawi\u0107 pr\u0119dko\u015B\u0107",
+            crash: "KATASTROFA",
+            stationary: "(nieruchoma)",
+            infoCrash:
+              "Statek kosmiczny przylecia\u0142 za blisko i rozbi\u0142 si\u0119 o planet\u0119! Zwi\u0119ksz wysoko\u015B\u0107 przelotu lub pr\u0119dko\u015B\u0107 statku.",
+            infoStationary:
+              "Planeta jest nieruchoma. Statek wyleci z t\u0105 sam\u0105 pr\u0119dko\u015Bci\u0105 co wlecia\u0142 \u2014 grawitacja zmieni\u0142a jedynie kierunek. Spr\u00F3buj zwi\u0119kszy\u0107 pr\u0119dko\u015B\u0107 planety!",
+            infoBoost:
+              "Planeta si\u0119 porusza! Statek okr\u0105\u017Cy\u0142 j\u0105 i wylecia\u0142 szybciej \u2014 darmowy przyrost pr\u0119dko\u015Bci dzi\u0119ki ruchowi planety. Tak Voyager dotar\u0142 do kra\u0144c\u00F3w Uk\u0142adu S\u0142onecznego.",
+            infoDefault:
+              "Przeci\u0105gnij cia\u0142o strza\u0142ki, aby zmieni\u0107 pozycj\u0119, lub przeci\u0105gnij grot, aby obr\u00F3ci\u0107. Zwi\u0119ksz pr\u0119dko\u015B\u0107 planety, aby zobaczy\u0107 wi\u0119kszy przyrost.",
+            infoGame:
+              "Dopasuj strza\u0142k\u0119 pr\u0119dko\u015Bci i wysoko\u015B\u0107 przelotu, aby poprowadzi\u0107 statek przez cel. Kliknij Start gdy gotowe!",
+            gameSuccess: "\u015Awietny strza\u0142!",
+            gameCloseMiss: "Prawie! Spr\u00F3buj ponownie",
+            gameFarMiss: "Pud\u0142o! Spr\u00F3buj ponownie",
+            gameCrash: "Katastrofa! Za blisko",
+            clickToDismiss: "Kliknij, aby kontynuowa\u0107",
+            mercury: "Merkury",
+            venus: "Wenus",
+            earth: "Ziemia",
+            mars: "Mars",
+            jupiter: "Jowisz",
+            saturn: "Saturn",
+            uranus: "Uran",
+            neptune: "Neptun",
+          },
+        };
+
+        // ══════════════════════════════════════════════
+        // PLANET DATA
+        // ══════════════════════════════════════════════
+        // Real planetary mass and radius ratios relative to Earth. The simulator uses
+        // these directly: mu = massRatio * GM_BASE; planetRadius = BASE_RADIUS * radiusRatio.
+        // Mass ratios span ~5750x (Mercury 0.0553 to Jupiter 317.8); the simulator
+        // honors this honestly — Jupiter really is ~318x Earth's mu.
+        //
+        // defaultSpeed is the planet's orbital velocity slider default (Sun-frame).
+        // defaultApproachSpeed is the spacecraft slider default. Massive planets need
+        // a higher default approach speed to produce hyperbolic flybys at sensible
+        // drag distances; if the user sets the slider too low, Jupiter/Saturn will
+        // show a bound (captured) orbit instead of a flyby — that's intentional and
+        // physically correct.
+        const PLANET_DATA = [
+          {
+            key: "mercury",
+            massRatio: 0.0553,
+            radiusRatio: 0.383,
+            defaultSpeed: 45,
+            defaultApproachSpeed: 50,
+            colors: {
+              hi: "#b0b0b0",
+              mid: "#8a8a8a",
+              lo: "#5c5c5c",
+              glow: "150,150,150",
+            },
+          },
+          {
+            key: "venus",
+            massRatio: 0.815,
+            radiusRatio: 0.949,
+            defaultSpeed: 35,
+            defaultApproachSpeed: 50,
+            colors: {
+              hi: "#f5e6a3",
+              mid: "#d4b856",
+              lo: "#a08530",
+              glow: "213,184,86",
+            },
+          },
+          {
+            key: "earth",
+            massRatio: 1,
+            radiusRatio: 1,
+            defaultSpeed: 30,
+            defaultApproachSpeed: 50,
+            colors: {
+              hi: "#7ed6f7",
+              mid: "#3aa8d8",
+              lo: "#1a6e8e",
+              glow: "77,201,246",
+            },
+          },
+          {
+            key: "mars",
+            massRatio: 0.107,
+            radiusRatio: 0.532,
+            defaultSpeed: 25,
+            defaultApproachSpeed: 50,
+            colors: {
+              hi: "#e8a07a",
+              mid: "#c75b3a",
+              lo: "#8b3a1f",
+              glow: "199,91,58",
+            },
+          },
+          {
+            key: "jupiter",
+            massRatio: 317.8,
+            radiusRatio: 10.973,
+            defaultSpeed: 15,
+            defaultApproachSpeed: 100,
+            colors: {
+              hi: "#f0c590",
+              mid: "#d4944a",
+              lo: "#a06020",
+              glow: "212,148,74",
+            },
+          },
+          {
+            key: "saturn",
+            massRatio: 95.2,
+            radiusRatio: 9.14,
+            defaultSpeed: 10,
+            defaultApproachSpeed: 100,
+            colors: {
+              hi: "#f0dca0",
+              mid: "#c8a84c",
+              lo: "#967830",
+              glow: "200,168,76",
+            },
+          },
+          {
+            key: "uranus",
+            massRatio: 14.54,
+            radiusRatio: 3.981,
+            defaultSpeed: 5,
+            defaultApproachSpeed: 80,
+            colors: {
+              hi: "#b8e8f0",
+              mid: "#7cc8d8",
+              lo: "#4a9aaa",
+              glow: "124,200,216",
+            },
+          },
+          {
+            key: "neptune",
+            massRatio: 17.15,
+            radiusRatio: 3.865,
+            defaultSpeed: 5,
+            defaultApproachSpeed: 80,
+            colors: {
+              hi: "#7090e0",
+              mid: "#4060c0",
+              lo: "#203880",
+              glow: "64,96,192",
+            },
+          },
+        ];
+
+        // ══════════════════════════════════════════════
+        // STATE
+        // ══════════════════════════════════════════════
+        const state = {
+          lang: navigator.language?.startsWith("pl") ? "pl" : "en",
+          mode: "explore",
+          selectedPlanet: "earth",
+          planetMass: 1, // Earth massRatio; mu = planetMass * GM_BASE
+          planetRadius: 12, // = BASE_RADIUS * earth.radiusRatio
+          planetColors: {
+            hi: "#7ed6f7",
+            mid: "#3aa8d8",
+            lo: "#1a6e8e",
+            glow: "77,201,246",
+          },
+          approachSpeed: 50,
+          periapsisAlt: 50,
+          planetVel: 0,
+          approachAngle: Math.PI,
+          vecPfX: 0,
+          vecPfY: 0,
+          warpLevel: "normal",
+          warpLevels: { normal: 1, fast: 3, fastest: 10 },
+          animSpeed: 1,
+          playing: false,
+          currentIndex: 0,
+          trajectory: [],
+          closestIndex: 0,
+          crashed: false,
+          dragMode: null,
+          vIn: 0,
+          vOut: 0,
+          deltaV: 0,
+          deflectionAngle: 0,
+          maxSpeedSliderUnits: 0,
+          hintShown: true,
+          gameTarget: null,
+          gameResult: null,
+          gameLaunched: false,
+          gameGhost: null, // sun-frame trail of the previous attempt (game mode only)
+          fineDrag: false, // derived: precisionMode XOR shiftHeld
+          precisionMode: false, // latched setting (toggled by button click)
+          shiftHeld: false, // momentary Shift key tracking
+        };
+
+        // ══════════════════════════════════════════════
+        // CONSTANTS
+        // ══════════════════════════════════════════════
+        // GM_BASE is Earth's gravitational parameter in sim units; per-planet mu is
+        // computed as state.planetMass (= massRatio) * GM_BASE. Earth's behavior is
+        // preserved exactly: 1 * 5000 = 5000, matching the previous 25 * 200 = 5000.
+        const GM_BASE = 5000;
+        const BASE_RADIUS = 12;
+        // V_SCALE bridges slider units to the integrator's internal speed units.
+        // With slider units anchored so 1 unit ≈ 1 km/s, V_SCALE absorbs the
+        // 10× factor so the integrator sees the same sim-frame speeds as before
+        // the slider rescale (e.g. Earth at planetVel=30 → vp = 30 * 0.15 = 4.5).
+        const V_SCALE = 0.15;
+        const SIM_DT = 0.25;
+        // MAX_STEPS bumped from 15000 to handle Jupiter-class encounters where the
+        // integration starts at r ≈ 70k–80k and traverses ~160k of trajectory.
+        const MAX_STEPS = 80000;
+        // Captured-orbit limiter: stop integration after this many full revolutions
+        // around the planet (counted after closest approach). Prevents endlessly
+        // looping trajectories when the spacecraft enters a bound orbit.
+        const MAX_REVOLUTIONS = 5;
+
+        // Real-world unit conversions for the readouts. LENGTH is exact for all
+        // planets because radiusRatio values come from real planetary data. VELOCITY
+        // is anchored on Earth's orbital velocity (29.78 km/s at planetVel = 30 in
+        // the new 1..100 slider scale). With 1 slider unit ≈ 1 km/s, the slider
+        // value IS approximately the speed in km/s. Other planets are approximate
+        // (~2% Saturn → ~27% Uranus error at default slider) because per-planet
+        // defaultSpeed values were tuned for visual effect, not strict realism.
+        const KM_PER_SIM_LENGTH = 6371 / BASE_RADIUS; // ≈ 530.92 km / sim unit
+        const KMS_PER_SLIDER_VEL = 29.78 / 30.0; // ≈ 0.993 km/s per slider unit
+
+        // ══════════════════════════════════════════════
+        // I18N FUNCTIONS
+        // ══════════════════════════════════════════════
+        function T(key) {
+          return I18N[state.lang][key];
+        }
+
+        function applyTranslations() {
+          const l = I18N[state.lang];
+          document.title = l.title;
+          document.documentElement.lang = state.lang;
+          document.getElementById("titleText").textContent = l.title;
+          document.getElementById("subtitleText").textContent = l.subtitle;
+          document.getElementById("modeExploreBtn").textContent = l.modeExplore;
+          document.getElementById("modeGameBtn").textContent = l.modeGame;
+          document.getElementById("lblPlanet").textContent = l.planet;
+          document.getElementById("lblPlanetSpeed").textContent = l.planetSpeed;
+          document.getElementById("lblTimeWarp").textContent = l.timeWarp;
+          document.getElementById("resetBtn").title = l.stop;
+          updateWarpBtns();
+          document.getElementById("newTargetBtn").textContent = l.newTarget;
+          document.getElementById("precisionBtn").textContent = l.precision;
+          document.getElementById("lblView").textContent = l.view;
+          document.getElementById("autoViewBtn").textContent = l.fixed;
+          document.getElementById("focusPlanetBtn").textContent = l.focusPlanet;
+          document.getElementById("focusScBtn").textContent = l.focusSpacecraft;
+          updateViewButtons();
+          document.getElementById("lblBoost").textContent = l.speedBoost;
+          document.getElementById("lblSpeedIn").textContent = l.speedIn;
+          document.getElementById("lblSpeedOut").textContent = l.speedOut;
+          document.getElementById("lblDefl").textContent = l.deflection;
+          document.getElementById("lblMinAlt").textContent = l.minAltitude;
+          document.getElementById("lblPlanetRadius").textContent =
+            l.planetRadiusLabel;
+          document.getElementById("lblPlanetVel").textContent = l.planetVelKms;
+          document.getElementById("lblCurSpeed").textContent = l.curSpeed;
+          document.getElementById("lblCurAlt").textContent = l.curAltitude;
+          document
+            .getElementById("modeExploreBtn")
+            .classList.toggle("active", state.mode === "explore");
+          document
+            .getElementById("modeGameBtn")
+            .classList.toggle("active", state.mode === "game");
+          populatePlanetSelect();
+          updateReadouts();
+          updateInfo();
+        }
+
+        function toggleLang() {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          // Button label shows the language you'd switch TO (the inverse of current).
+          document.getElementById("langBtn").textContent =
+            state.lang === "en" ? "PL" : "EN";
+          applyTranslations();
+        }
+
+        function populatePlanetSelect() {
+          const sel = document.getElementById("planetSelect");
+          const cur = sel.value || state.selectedPlanet;
+          sel.replaceChildren();
+          PLANET_DATA.forEach(function (p) {
+            const opt = document.createElement("option");
+            opt.value = p.key;
+            opt.textContent = T(p.key);
+            sel.appendChild(opt);
+          });
+          sel.value = cur;
+        }
+
+        // ══════════════════════════════════════════════
+        // MODE & GAME
+        // ══════════════════════════════════════════════
+        // eslint-disable-next-line no-unused-vars
+        function setMode(mode) {
+          state.mode = mode;
+          document
+            .getElementById("modeExploreBtn")
+            .classList.toggle("active", mode === "explore");
+          document
+            .getElementById("modeGameBtn")
+            .classList.toggle("active", mode === "game");
+
+          document.getElementById("grpReadouts").style.display =
+            mode === "explore" ? "" : "none";
+          document.getElementById("grpNewTarget").style.display =
+            mode === "game" ? "" : "none";
+
+          if (mode === "game") {
+            const planet = PLANET_DATA.find(function (p) {
+              return p.key === state.selectedPlanet;
+            });
+            state.planetVel = planet.defaultSpeed;
+            document.getElementById("planetVelSlider").value =
+              planet.defaultSpeed;
+            document.getElementById("planetVelVal").textContent =
+              planet.defaultSpeed;
+            generateTarget();
+          } else {
+            state.gameTarget = null;
+            state.gameResult = null;
+            state.gameLaunched = false;
+            state.gameGhost = null;
+          }
+          updateInfo();
+        }
+
+        function generateTarget() {
+          state.gameGhost = null; // new target → previous attempts irrelevant
+          const planet = PLANET_DATA.find(function (p) {
+            return p.key === state.selectedPlanet;
+          });
+          state.planetVel = planet.defaultSpeed;
+
+          let target = null;
+          for (let attempt = 0; attempt < 20; attempt++) {
+            const solAngle = Math.PI + (Math.random() - 0.5) * 1.0;
+            const solAlt = state.planetRadius * (1 + Math.random() * 4);
+            const solSpeed = 30 + Math.random() * 50;
+
+            state.approachAngle = solAngle;
+            state.periapsisAlt = solAlt;
+            state.approachSpeed = solSpeed;
+            initVecPosition();
+            computeTrajectory();
+
+            if (!state.crashed && state.trajectory.length >= 100) {
+              const outStart = state.closestIndex;
+              const outLen = state.trajectory.length - outStart;
+              const targetIdx = Math.min(
+                outStart + Math.floor(outLen * (0.6 + Math.random() * 0.2)),
+                state.trajectory.length - 1,
+              );
+              const sf = toSunFrame(targetIdx);
+              target = {
+                x: sf.x + (Math.random() - 0.5) * 20,
+                y: sf.y + (Math.random() - 0.5) * 20,
+              };
+              break;
+            }
+          }
+          if (!target) target = { x: 150, y: -100 };
+
+          state.gameTarget = target;
+
+          // Reset player to defaults
+          state.approachAngle = Math.PI;
+          state.periapsisAlt = 50;
+          state.approachSpeed = 50;
+          state.periapsisAlt = 50;
+          state.approachSpeed = 50;
+
+          initVecPosition();
+          recompute();
+          state.gameResult = null;
+          state.gameLaunched = false;
+          state.playing = false;
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function newTarget() {
+          generateTarget();
+        }
+
+        function gameTolerance() {
+          // Constant on-screen radius (~11 px) regardless of planet/zoom. Anchored
+          // to lastScale, which is the current camera scale set every frame in
+          // drawScene; the rendering then computes gtol * scale = 11 px.
+          // Matches Earth's default visual size so the target stays consistent.
+          return 11 / Math.max(lastScale, 0.001);
+        }
+
+        function evaluateGame() {
+          if (
+            state.mode !== "game" ||
+            !state.gameLaunched ||
+            !state.gameTarget ||
+            state.gameResult
+          )
+            return;
+
+          if (state.crashed) {
+            state.gameResult = "crash";
+            showGameOverlay("crash");
+            return;
+          }
+
+          const hitTol = gameTolerance();
+          const hitTolSq = hitTol * hitTol;
+          // Close-miss boundary: 3× the hit radius (~33 px on screen). Tight enough
+          // that "almost!" feels honest, generous enough that small misalignments
+          // still get encouragement instead of the discouraging far-miss feedback.
+          const closeTol = hitTol * 3;
+          const closeTolSq = closeTol * closeTol;
+          const gx = state.gameTarget.x,
+            gy = state.gameTarget.y;
+          let minDistSq = Infinity;
+
+          for (let i = 0; i < state.trajectory.length; i++) {
+            const sf = toSunFrame(i);
+            const dx = sf.x - gx,
+              dy = sf.y - gy;
+            const dSq = dx * dx + dy * dy;
+            if (dSq < minDistSq) minDistSq = dSq;
+            if (dSq < hitTolSq) {
+              state.gameResult = "success";
+              showGameOverlay("success");
+              return;
+            }
+          }
+
+          if (minDistSq < closeTolSq) {
+            state.gameResult = "closeMiss";
+            showGameOverlay("closeMiss");
+          } else {
+            state.gameResult = "farMiss";
+            showGameOverlay("farMiss");
+          }
+        }
+
+        function showGameOverlay(result) {
+          // Capture the just-finished trajectory as a sun-frame ghost so the next
+          // attempt can reference where the previous one went. Subsampled to keep
+          // the array small (~4000 points max) — at low alpha the ghost only needs
+          // enough resolution to read as a curve.
+          if (state.mode === "game" && state.trajectory.length > 1) {
+            const glen = state.trajectory.length;
+            const gstep = Math.max(1, Math.floor(glen / 4000));
+            state.gameGhost = [];
+            for (let gi = 0; gi < glen; gi += gstep) {
+              const gsf = toSunFrame(gi);
+              state.gameGhost.push({ x: gsf.x, y: gsf.y });
+            }
+            if ((glen - 1) % gstep !== 0) {
+              const glast = toSunFrame(glen - 1);
+              state.gameGhost.push({ x: glast.x, y: glast.y });
+            }
+          }
+
+          const existing = document.querySelector(".result-overlay");
+          if (existing) existing.remove();
+
+          const overlay = document.createElement("div");
+          overlay.className = "result-overlay";
+
+          let emoji, msg, bg;
+          if (result === "success") {
+            emoji = "\uD83C\uDF89";
+            msg = T("gameSuccess");
+            bg = "rgba(63,185,80,0.88)";
+          } else if (result === "crash") {
+            emoji = "\uD83D\uDCA5";
+            msg = T("gameCrash");
+            bg = "rgba(249,117,131,0.88)";
+          } else if (result === "closeMiss") {
+            // Thumbs up with Fitzpatrick Type 1-2 skin tone modifier (light/Caucasian).
+            emoji = "\uD83D\uDC4D\uD83C\uDFFB";
+            msg = T("gameCloseMiss");
+            bg = "rgba(88,166,255,0.88)";
+          } else {
+            // farMiss
+            // Thumbs down with Fitzpatrick Type 1-2 skin tone modifier (light/Caucasian).
+            emoji = "\uD83D\uDC4E\uD83C\uDFFB";
+            msg = T("gameFarMiss");
+            bg = "rgba(240,180,60,0.92)";
+          }
+
+          overlay.style.background = bg;
+          const emojiDiv = document.createElement("div");
+          emojiDiv.className = "overlay-emoji";
+          emojiDiv.textContent = emoji;
+          const msgDiv = document.createElement("div");
+          msgDiv.className = "overlay-msg";
+          msgDiv.textContent = msg;
+          const hintDiv = document.createElement("div");
+          hintDiv.className = "overlay-hint";
+          hintDiv.textContent = T("clickToDismiss");
+          overlay.replaceChildren(emojiDiv, msgDiv, hintDiv);
+
+          overlay.addEventListener("click", function () {
+            overlay.remove();
+          });
+          document.body.appendChild(overlay);
+        }
+
+        // ══════════════════════════════════════════════
+        // VECTOR POSITION HELPERS
+        // ══════════════════════════════════════════════
+        function computeStartDist() {
+          const GM = state.planetMass * GM_BASE;
+          const vp = state.planetVel * V_SCALE;
+          const vScSun = state.approachSpeed * V_SCALE;
+          const vPfX = vScSun * Math.cos(state.approachAngle) - vp;
+          const vPfY = vScSun * Math.sin(state.approachAngle);
+          // vLocal2 is the local KE×2 in the planet frame (under the local semantic).
+          // The formula 10*GM/v² places gravitational potential ≈ 0.4·KE at start,
+          // leaving 60% as asymptotic vInf². Cap raised to 80000 to handle Jupiter
+          // (which would otherwise be capped into a bound state). minR scales with
+          // planetRadius so massive bodies leave visual room around the integration
+          // start.
+          const vLocal2 = vPfX * vPfX + vPfY * vPfY;
+          const dynamic = Math.ceil((10 * GM) / Math.max(vLocal2, 1));
+          const minR = Math.max(800, 30 * state.planetRadius);
+          return Math.max(minR, Math.min(80000, dynamic));
+        }
+
+        function initVecPosition() {
+          const startDist = computeStartDist();
+          const GM = state.planetMass * GM_BASE;
+          const vp = state.planetVel * V_SCALE;
+          const vScSun = state.approachSpeed * V_SCALE;
+          const alpha = state.approachAngle;
+
+          const vPfX = vScSun * Math.cos(alpha) - vp;
+          const vPfY = vScSun * Math.sin(alpha);
+          const vInf = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
+          const alphaPf = Math.atan2(vPfY, vPfX);
+          const safeVInf = Math.max(vInf, 0.01);
+
+          const rp = state.planetRadius + state.periapsisAlt;
+          const b = rp * Math.sqrt(1 + (2 * GM) / (rp * safeVInf * safeVInf));
+
+          state.vecPfX = -startDist * Math.cos(alphaPf) - b * Math.sin(alphaPf);
+          state.vecPfY = -startDist * Math.sin(alphaPf) + b * Math.cos(alphaPf);
+        }
+
+        function computePeriapsisAltFromPosition() {
+          const GM = state.planetMass * GM_BASE;
+          const vp = state.planetVel * V_SCALE;
+          const vScSun = state.approachSpeed * V_SCALE;
+          const alpha = state.approachAngle;
+
+          const vPfX = vScSun * Math.cos(alpha) - vp;
+          const vPfY = vScSun * Math.sin(alpha);
+          const vPfMag = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
+          if (vPfMag < 0.001) return;
+
+          const vHatX = vPfX / vPfMag;
+          const vHatY = vPfY / vPfMag;
+          const b = Math.abs(state.vecPfX * vHatY - state.vecPfY * vHatX);
+
+          const vInf2 = vPfMag * vPfMag;
+          const k = GM / vInf2;
+          const rp = -k + Math.sqrt(k * k + b * b);
+
+          state.periapsisAlt = Math.max(0, rp - state.planetRadius);
+        }
+
+        // ══════════════════════════════════════════════
+        // CANVAS SETUP
+        // ══════════════════════════════════════════════
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        let W, H;
+        let bgStars = [];
+
+        let handleScreenX = 0,
+          handleScreenY = 0;
+        let scStartScreenX = 0,
+          scStartScreenY = 0;
+        let lastScale = 1;
+        let cameraFrozen = false;
+        let frozenScale = 1,
+          frozenCamX = 0,
+          frozenCamY = 0;
+        let dragInitialTipX = 0,
+          dragInitialTipY = 0;
+        let dragAccumX = 0,
+          dragAccumY = 0;
+        let dragLastPosX = 0,
+          dragLastPosY = 0;
+        let frozenRootX = 0,
+          frozenRootY = 0;
+        let dragPrevX = 0,
+          dragPrevY = 0;
+        let targetScreenX = 0,
+          targetScreenY = 0;
+        let cameraMode = "auto";
+        let manualScale = 1;
+        const manualCamX = 0,
+          manualCamY = 0;
+        let zoomFactor = 1;
+        let targetGrabOfsX = 0,
+          targetGrabOfsY = 0;
+        const MIN_ARROW_PX = 68,
+          MAX_ARROW_PX = 188;
+
+        function initBgStars(n) {
+          bgStars = [];
+          for (let i = 0; i < n; i++) {
+            bgStars.push({
+              x: Math.random(),
+              y: Math.random(),
+              r: Math.random() * 1.2 + 0.3,
+              b: Math.random() * 0.4 + 0.2,
+            });
+          }
+        }
+        initBgStars(200);
+
+        function resize() {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          W = rect.width;
+          H = rect.height;
+          canvas.width = W * dpr;
+          canvas.height = H * dpr;
+          canvas.style.width = W + "px";
+          canvas.style.height = H + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener("resize", function () {
+          resize();
+        });
+
+        // ══════════════════════════════════════════════
+        // PHYSICS
+        // ══════════════════════════════════════════════
+        function computeTrajectory() {
+          const startDist = computeStartDist();
+          const GM = state.planetMass * GM_BASE;
+          const vp = state.planetVel * V_SCALE;
+          const vScSun = state.approachSpeed * V_SCALE;
+          const alpha = state.approachAngle;
+          const collisionR = state.planetRadius;
+
+          const vPfX = vScSun * Math.cos(alpha) - vp;
+          const vPfY = vScSun * Math.sin(alpha);
+          const vInfPlanet = Math.sqrt(vPfX * vPfX + vPfY * vPfY);
+          const alphaPf = Math.atan2(vPfY, vPfX);
+          const safePf = Math.max(vInfPlanet, 0.01);
+
+          let x = state.vecPfX;
+          let y = state.vecPfY;
+          let vx = safePf * Math.cos(alphaPf);
+          let vy = safePf * Math.sin(alphaPf);
+
+          const points = [];
+          let minDist = Infinity;
+          let closestIdx = 0;
+          let crashed = false;
+
+          // Revolution counter: track cumulative angle swept around the planet.
+          // Counting starts after closest approach (+50 samples settling margin).
+          let prevAngle = Math.atan2(y, x);
+          let totalAngle = 0;
+          let revCounting = false;
+
+          for (let i = 0; i < MAX_STEPS; i++) {
+            const r = Math.sqrt(x * x + y * y);
+            points.push({ x: x, y: y, vx: vx, vy: vy });
+
+            if (r < minDist) {
+              minDist = r;
+              closestIdx = i;
+            }
+
+            // Track revolutions to cap captured (bound) orbits
+            const curAngle = Math.atan2(y, x);
+            if (revCounting) {
+              let dAngle = curAngle - prevAngle;
+              if (dAngle > Math.PI) dAngle -= 2 * Math.PI;
+              if (dAngle < -Math.PI) dAngle += 2 * Math.PI;
+              totalAngle += dAngle;
+              if (Math.abs(totalAngle) >= MAX_REVOLUTIONS * 2 * Math.PI) break;
+            } else if (i > closestIdx + 50) {
+              revCounting = true;
+            }
+            prevAngle = curAngle;
+
+            const rScale = collisionR;
+            const substeps =
+              r < rScale * 1.7
+                ? 32
+                : r < rScale * 3.3
+                  ? 16
+                  : r < rScale * 6.7
+                    ? 8
+                    : r < rScale * 13
+                      ? 4
+                      : 1;
+            const subdt = SIM_DT / substeps;
+
+            for (let s = 0; s < substeps; s++) {
+              const xPrev = x,
+                yPrev = y;
+              const rs = Math.sqrt(x * x + y * y);
+              const rs3 = rs * rs * rs;
+              const ax = (-GM * x) / rs3;
+              const ay = (-GM * y) / rs3;
+
+              x = x + vx * subdt + 0.5 * ax * subdt * subdt;
+              y = y + vy * subdt + 0.5 * ay * subdt * subdt;
+              const rs1 = Math.sqrt(x * x + y * y);
+              const rs1_3 = rs1 * rs1 * rs1;
+              const ax1 = (-GM * x) / rs1_3;
+              const ay1 = (-GM * y) / rs1_3;
+
+              vx += 0.5 * (ax + ax1) * subdt;
+              vy += 0.5 * (ay + ay1) * subdt;
+
+              if (rs1 <= collisionR && rs > collisionR) {
+                const f = (rs - collisionR) / (rs - rs1);
+                x = xPrev + f * (x - xPrev);
+                y = yPrev + f * (y - yPrev);
+                crashed = true;
+                break;
+              }
+            }
+            if (crashed) {
+              points.push({ x: x, y: y, vx: vx, vy: vy });
+              break;
+            }
+
+            const rEnd = Math.sqrt(x * x + y * y);
+            if (rEnd > startDist && i > closestIdx + 50) break;
+          }
+
+          state.trajectory = points;
+          state.closestIndex = closestIdx;
+          state.crashed = crashed;
+
+          computeResults();
+        }
+
+        // Time anchor: sample 0 (start of integration). This means "the planet is at
+        // sun-frame origin at the moment of integration sample 0." The choice is
+        // arbitrary for visualization — only relative positions matter — but it's
+        // critical that the anchor be STABLE across recomputes. closestIndex was the
+        // previous anchor, but it shifts every time the trajectory shape changes,
+        // causing toSunFrame(0) to drift during arrow drag (vecPfX is constant but
+        // the offset term changes). That drift was hidden by a dragOfsX/Y rendering
+        // hack which only shifted the trajectory, not the planet/target/arrow,
+        // producing a visual lie where the trajectory appeared to hit a target it
+        // physically missed. Anchoring at sample 0 makes toSunFrame(0).x = vecPfX,
+        // stable for the entire drag.
+        function planetPos(idx) {
+          const vp = state.planetVel * V_SCALE;
+          const tRel = idx * SIM_DT;
+          return { x: vp * tRel, y: 0 };
+        }
+
+        function toSunFrame(idx) {
+          const p = state.trajectory[idx];
+          const vp = state.planetVel * V_SCALE;
+          const tRel = idx * SIM_DT;
+          return {
+            x: p.x + vp * tRel,
+            y: p.y,
+            vx: p.vx + vp,
+            vy: p.vy,
+          };
+        }
+
+        // Returns the asymptotic velocity vector at infinity (in planet frame) for the
+        // orbit defined by the local state (rx, ry, vx, vy). branch = 'in' returns the
+        // past-infinity (inbound) asymptote; 'out' returns the future-infinity
+        // (outbound) asymptote. Falls back to the local velocity for non-hyperbolic
+        // or degenerate states.
+        //
+        // Derivation:
+        // - vis-viva: vInf² = v² − 2·mu/r
+        // - eccentricity vector: e_vec = ((v² − mu/r)·r − (r·v)·v) / mu
+        // - perifocal asymptote unit vectors:
+        //     inbound  = (1/e,  sqrt(e²−1)/e)
+        //     outbound = (-1/e, sqrt(e²−1)/e)
+        // - perifocal x-axis ê_p = e_vec/e (toward periapsis)
+        // - perifocal y-axis ê_q = sgn(h)·(-eY, eX)/e (in direction of motion at periapsis)
+        // - planet-frame asymptote = perX·ê_p + perY·ê_q, scaled by vInf
+        function asymptoticVelocityPf(rx, ry, vx, vy, mu, branch) {
+          const r = Math.sqrt(rx * rx + ry * ry);
+          const v2 = vx * vx + vy * vy;
+          const vInf2 = v2 - (2 * mu) / r;
+          if (vInf2 <= 0) return { x: vx, y: vy };
+          const vInf = Math.sqrt(vInf2);
+
+          const coeffR = (v2 - mu / r) / mu;
+          const rDotV = rx * vx + ry * vy;
+          const coeffV = rDotV / mu;
+          const eX = coeffR * rx - coeffV * vx;
+          const eY = coeffR * ry - coeffV * vy;
+          const e = Math.sqrt(eX * eX + eY * eY);
+          if (e <= 1.0001) return { x: vx, y: vy };
+
+          const sqrtE2m1 = Math.sqrt(e * e - 1);
+          const perX = branch === "in" ? 1 / e : -1 / e;
+          const perY = sqrtE2m1 / e;
+
+          const h = rx * vy - ry * vx;
+          const sgnH = h >= 0 ? 1 : -1;
+          const ePx = eX / e,
+            ePy = eY / e;
+          const eQx = (-sgnH * eY) / e,
+            eQy = (sgnH * eX) / e;
+
+          const planetX = perX * ePx + perY * eQx;
+          const planetY = perX * ePy + perY * eQy;
+          return { x: planetX * vInf, y: planetY * vInf };
+        }
+
+        function computeResults() {
+          const vp = state.planetVel * V_SCALE;
+          const mu = state.planetMass * GM_BASE;
+          const traj = state.trajectory;
+
+          if (traj.length === 0) {
+            state.vIn = 0;
+            state.vOut = 0;
+            state.deltaV = 0;
+            state.deflectionAngle = 0;
+            state.maxSpeedSliderUnits = 0;
+            return;
+          }
+
+          // Pre-pass: max Sun-frame speed across the trajectory, used as the gauge
+          // anchor for the live current-speed bar. Runs for both crash and non-crash
+          // paths (the gauge stays meaningful even when the spacecraft impacts).
+          let maxV2 = 0;
+          for (let k = 0; k < traj.length; k++) {
+            const pk = traj[k];
+            const sxk = pk.vx + vp;
+            const syk = pk.vy;
+            const v2 = sxk * sxk + syk * syk;
+            if (v2 > maxV2) maxV2 = v2;
+          }
+          state.maxSpeedSliderUnits = Math.sqrt(maxV2) / V_SCALE;
+
+          // Asymptotic inbound: derived from the FIRST integrated sample via vis-viva
+          // and the eccentricity vector. This is the actual asymptotic Sun-frame
+          // entry speed, not the slider value.
+          const first = traj[0];
+          const asymIn = asymptoticVelocityPf(
+            first.x,
+            first.y,
+            first.vx,
+            first.vy,
+            mu,
+            "in",
+          );
+          const vInSunX = asymIn.x + vp;
+          const vInSunY = asymIn.y;
+          state.vIn =
+            Math.sqrt(vInSunX * vInSunX + vInSunY * vInSunY) / V_SCALE;
+
+          if (state.crashed) {
+            state.vOut = 0;
+            state.deltaV = 0;
+            state.deflectionAngle = 0;
+            return;
+          }
+
+          // Asymptotic outbound: derived from the LAST integrated sample. Computing
+          // inbound from first and outbound from last also serves as a built-in
+          // integrator-drift check (energy conservation requires |asymIn| = |asymOut|).
+          const last = traj[traj.length - 1];
+          const asymOut = asymptoticVelocityPf(
+            last.x,
+            last.y,
+            last.vx,
+            last.vy,
+            mu,
+            "out",
+          );
+          const vOutSunX = asymOut.x + vp;
+          const vOutSunY = asymOut.y;
+          state.vOut =
+            Math.sqrt(vOutSunX * vOutSunX + vOutSunY * vOutSunY) / V_SCALE;
+          state.deltaV = state.vOut - state.vIn;
+
+          // Deflection: signed angle between asymptotic inbound and outbound vectors
+          // in the planet frame. Equals 2·asin(1/e) in magnitude for a clean orbit.
+          const inAngle = Math.atan2(asymIn.y, asymIn.x);
+          const outAngle = Math.atan2(asymOut.y, asymOut.x);
+          let da = ((outAngle - inAngle) * 180) / Math.PI;
+          while (da > 180) da -= 360;
+          while (da < -180) da += 360;
+          state.deflectionAngle = da;
+        }
+
+        // ══════════════════════════════════════════════
+        // RENDERING
+        // ══════════════════════════════════════════════
+        function drawScene() {
+          ctx.clearRect(0, 0, W, H);
+          ctx.fillStyle = "#080c14";
+          ctx.fillRect(0, 0, W, H);
+
+          updateLiveReadouts();
+
+          const traj = state.trajectory;
+          if (traj.length < 2) return;
+          const len = traj.length;
+          const idx = Math.min(state.currentIndex, len - 1);
+
+          // ── Camera ──
+          let minX = Infinity,
+            maxX = -Infinity,
+            minY = Infinity,
+            maxY = -Infinity;
+          const sampleStep = Math.max(1, Math.floor(len / 3000));
+          for (let i = 0; i < len; i += sampleStep) {
+            const p = toSunFrame(i);
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+          }
+          const pL = toSunFrame(len - 1);
+          minX = Math.min(minX, pL.x);
+          maxX = Math.max(maxX, pL.x);
+          minY = Math.min(minY, pL.y);
+          maxY = Math.max(maxY, pL.y);
+
+          const plS = planetPos(0);
+          const plE = planetPos(len - 1);
+          minX = Math.min(minX, plS.x, plE.x);
+          maxX = Math.max(maxX, plS.x, plE.x);
+          minY = Math.min(minY, plS.y, plE.y, -30);
+          maxY = Math.max(maxY, plS.y, plE.y, 30);
+
+          if (state.mode === "game" && state.gameTarget) {
+            const tol = gameTolerance();
+            minX = Math.min(minX, state.gameTarget.x - tol);
+            maxX = Math.max(maxX, state.gameTarget.x + tol);
+            minY = Math.min(minY, state.gameTarget.y - tol);
+            maxY = Math.max(maxY, state.gameTarget.y + tol);
+          }
+
+          const pad = 100;
+          const spanX = maxX - minX + 2 * pad;
+          const spanY = maxY - minY + 2 * pad;
+          let scale = Math.min(W / spanX, H / spanY);
+          let camX = (minX + maxX) / 2;
+          let camY = (minY + maxY) / 2;
+
+          if (cameraFrozen) {
+            scale = frozenScale;
+            camX = frozenCamX;
+            camY = frozenCamY;
+          } else if (cameraMode === "planet") {
+            const plFocus = planetPos(idx);
+            camX = plFocus.x;
+            camY = plFocus.y;
+            scale = manualScale;
+            lastScale = scale;
+            frozenCamX = camX;
+            frozenCamY = camY;
+          } else if (cameraMode === "spacecraft") {
+            const scFocus = toSunFrame(idx);
+            camX = scFocus.x;
+            camY = scFocus.y;
+            scale = manualScale;
+            lastScale = scale;
+            frozenCamX = camX;
+            frozenCamY = camY;
+          } else if (cameraMode === "manual") {
+            scale = manualScale;
+            camX = manualCamX;
+            camY = manualCamY;
+            lastScale = scale;
+            frozenCamX = camX;
+            frozenCamY = camY;
+          } else {
+            scale *= zoomFactor;
+            lastScale = scale;
+            frozenCamX = camX;
+            frozenCamY = camY;
+          }
+
+          function tx(x) {
+            return W / 2 + (x - camX) * scale;
+          }
+          function ty(y) {
+            return H / 2 - (y - camY) * scale;
+          }
+
+          // ── Stars ──
+          bgStars.forEach(function (s) {
+            ctx.beginPath();
+            ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(200,210,220," + s.b * 0.3 + ")";
+            ctx.fill();
+          });
+
+          // ── Planet orbital path (straight dashed line) ──
+          const vp = state.planetVel * V_SCALE;
+          const pg = state.planetColors.glow;
+          if (vp > 0.01) {
+            ctx.setLineDash([4, 6]);
+            ctx.strokeStyle = "rgba(" + pg + ",0.12)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(tx(plS.x), ty(plS.y));
+            ctx.lineTo(tx(plE.x), ty(plE.y));
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          // ── Ghost planets ──
+          if (vp > 0.01) {
+            [plS, plE].forEach(function (pl) {
+              ctx.beginPath();
+              ctx.arc(
+                tx(pl.x),
+                ty(pl.y),
+                state.planetRadius * scale * 0.8,
+                0,
+                Math.PI * 2,
+              );
+              ctx.strokeStyle = "rgba(" + pg + ",0.1)";
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            });
+          }
+
+          // ── Planet ──
+          const plNow = planetPos(idx);
+          drawPlanet(tx(plNow.x), ty(plNow.y), scale);
+
+          // ── Planet velocity arrow ──
+          if (vp > 0.01) {
+            const ppx = tx(plNow.x),
+              ppy = ty(plNow.y);
+            const pr = Math.max(8, state.planetRadius * scale);
+            const arrowLen = Math.min(vp * 10, 60);
+            drawArrow(
+              ppx + pr + 6,
+              ppy,
+              ppx + pr + 6 + arrowLen,
+              ppy,
+              "rgba(" + pg + ",0.5)",
+              1.5,
+              10,
+            );
+            ctx.font = '14px "Share Tech Mono", monospace';
+            ctx.fillStyle = "rgba(" + pg + ",0.5)";
+            ctx.textAlign = "center";
+            ctx.fillText("v\u209A", ppx + pr + 6 + arrowLen / 2, ppy - 16);
+          }
+
+          // Render step: finer than the bounds-sampling step so the smoothed curve
+          // has enough segments to follow sharp curvature near periapsis.
+          const renderStep = Math.max(1, Math.floor(len / 8000));
+
+          // Smooth-polyline helper using quadratic Beziers through segment midpoints.
+          // Each curve goes midpoint(i-1,i) → midpoint(i,i+1) with sample i as the
+          // control point, producing a visually smooth approximation of the polyline
+          // without changing the underlying physics.
+          function strokeSmoothTrail(start, end, step) {
+            if (end <= start) return;
+            const p0 = toSunFrame(start);
+            ctx.beginPath();
+            ctx.moveTo(tx(p0.x), ty(p0.y));
+            for (let i = start + step; i + step <= end; i += step) {
+              const p = toSunFrame(i);
+              const pNext = toSunFrame(i + step);
+              const midX = tx((p.x + pNext.x) / 2);
+              const midY = ty((p.y + pNext.y) / 2);
+              ctx.quadraticCurveTo(tx(p.x), ty(p.y), midX, midY);
+            }
+            // Finish exactly at the requested end sample (so the trail meets the
+            // spacecraft icon and the faint trajectory ends at the true last point).
+            const pEnd = toSunFrame(end);
+            ctx.lineTo(tx(pEnd.x), ty(pEnd.y));
+            ctx.stroke();
+          }
+
+          // ── Full trajectory (faint) — explore mode only; in game mode the
+          //    pre-launch shadow would spoil the puzzle ──
+          if (state.mode !== "game") {
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = "rgba(255,224,102,0.08)";
+            strokeSmoothTrail(0, len - 1, renderStep);
+          }
+
+          // ── Game ghost (previous attempt's trajectory) — game mode only ──
+          if (
+            state.mode === "game" &&
+            state.gameGhost &&
+            state.gameGhost.length > 1
+          ) {
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = "rgba(255,224,102,0.12)";
+            ctx.beginPath();
+            ctx.moveTo(tx(state.gameGhost[0].x), ty(state.gameGhost[0].y));
+            for (let ggi = 1; ggi < state.gameGhost.length; ggi++) {
+              ctx.lineTo(
+                tx(state.gameGhost[ggi].x),
+                ty(state.gameGhost[ggi].y),
+              );
+            }
+            ctx.stroke();
+          }
+
+          // ── Animated trail ──
+          if (idx > 0) {
+            const trailStep = Math.max(1, Math.floor(idx / 2000));
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = "rgba(255,224,102,0.55)";
+            strokeSmoothTrail(0, idx, trailStep);
+          }
+
+          // ── Game target ──
+          if (state.mode === "game" && state.gameTarget) {
+            const gtol = gameTolerance();
+            const gx = tx(state.gameTarget.x);
+            const gy = ty(state.gameTarget.y);
+            targetScreenX = gx;
+            targetScreenY = gy;
+            const gr = gtol * scale;
+            const pulse = 1 + 0.06 * Math.sin(Date.now() / 250);
+
+            ctx.beginPath();
+            ctx.arc(gx, gy, gr * pulse, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(255,107,107,0.25)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(gx, gy, gr * 0.5 * pulse, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(255,107,107,0.35)";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(gx, gy, 4 * pulse, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255,107,107,0.8)";
+            ctx.fill();
+
+            const ch = gr * 0.35;
+            ctx.strokeStyle = "rgba(255,107,107,0.3)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(gx - ch, gy);
+            ctx.lineTo(gx + ch, gy);
+            ctx.moveTo(gx, gy - ch);
+            ctx.lineTo(gx, gy + ch);
+            ctx.stroke();
+          }
+
+          // ── Crash overlay ──
+          if (state.crashed && idx >= len - 1) {
+            const plCrash = planetPos(len - 1);
+            const cx = tx(plCrash.x),
+              cy = ty(plCrash.y);
+
+            const boom = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80);
+            boom.addColorStop(0, "rgba(255,140,50,0.7)");
+            boom.addColorStop(0.3, "rgba(255,80,30,0.4)");
+            boom.addColorStop(0.7, "rgba(255,50,20,0.1)");
+            boom.addColorStop(1, "rgba(255,50,20,0.0)");
+            ctx.fillStyle = boom;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 80, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.font = "36px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("\uD83D\uDCA5", cx, cy);
+            ctx.textBaseline = "alphabetic";
+          }
+
+          // ── Velocity arrows (exit) — hidden in game mode (it's a spoiler) ──
+          if (!state.crashed && state.mode !== "game") {
+            drawVelocityArrows(len, tx, ty);
+          }
+
+          // ── Draggable velocity vector (arrow length = speed) ──
+          (function () {
+            const sf0 = toSunFrame(0);
+            let sx, sy;
+            if (state.dragMode === "arrow" || state.dragMode === "translate") {
+              sx = frozenRootX;
+              sy = frozenRootY;
+            } else {
+              sx = tx(sf0.x);
+              sy = ty(sf0.y);
+            }
+            scStartScreenX = sx;
+            scStartScreenY = sy;
+
+            const a = state.approachAngle;
+            const aLen =
+              MIN_ARROW_PX +
+              ((state.approachSpeed - 10) * (MAX_ARROW_PX - MIN_ARROW_PX)) / 90;
+            const tipX = sx + Math.cos(a) * aLen;
+            const tipY = sy - Math.sin(a) * aLen;
+            handleScreenX = tipX;
+            handleScreenY = tipY;
+
+            const shaftColor = state.fineDrag
+              ? "#7dffe7"
+              : state.dragMode
+                ? "#7dc4ff"
+                : "#58a6ff";
+
+            // Dotted circle guide while dragging
+            if (state.dragMode === "arrow") {
+              ctx.setLineDash([3, 5]);
+              ctx.strokeStyle = "rgba(88,166,255,0.2)";
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.arc(sx, sy, aLen, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
+
+            const headAngle = Math.atan2(tipY - sy, tipX - sx);
+            const shaftEndX = tipX - 13 * Math.cos(headAngle);
+            const shaftEndY = tipY - 13 * Math.sin(headAngle);
+            ctx.strokeStyle = shaftColor;
+            ctx.lineWidth = 3;
+            ctx.lineCap = "butt";
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(shaftEndX, shaftEndY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+            ctx.fillStyle = shaftColor;
+            ctx.fill();
+
+            ctx.fillStyle = shaftColor;
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(
+              tipX - 16 * Math.cos(headAngle - 0.4),
+              tipY - 16 * Math.sin(headAngle - 0.4),
+            );
+            ctx.lineTo(
+              tipX - 16 * Math.cos(headAngle + 0.4),
+              tipY - 16 * Math.sin(headAngle + 0.4),
+            );
+            ctx.closePath();
+            ctx.fill();
+
+            const perpX = -(tipY - sy);
+            const perpY = tipX - sx;
+            const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
+            const midX = (sx + tipX) / 2,
+              midY = (sy + tipY) / 2;
+            ctx.font = '17px "Share Tech Mono", monospace';
+            ctx.fillStyle = "#58a6ff";
+            ctx.textAlign = "center";
+            ctx.fillText(
+              "v=" + Math.round(state.vIn),
+              midX + (perpX / perpLen) * 22,
+              midY + (perpY / perpLen) * 22,
+            );
+          })();
+
+          // ── Onboarding tooltip (vanishes after first drag) ──
+          drawVectorTooltip();
+
+          // ── Spacecraft (drawn LAST among game objects) ──
+          if (idx < len) {
+            const sc = toSunFrame(idx);
+            const screenAngle = Math.atan2(-sc.vy, sc.vx);
+            const isDrag =
+              state.dragMode === "arrow" || state.dragMode === "translate";
+            const scx = isDrag && idx === 0 ? frozenRootX : tx(sc.x);
+            const scy = isDrag && idx === 0 ? frozenRootY : ty(sc.y);
+            drawSpacecraft(scx, scy, screenAngle);
+          }
+
+          // ── Labels ──
+          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.fillStyle = "rgba(110,122,138,0.7)";
+          const plLabelY =
+            ty(plNow.y) + Math.max(8, state.planetRadius * scale) + 14;
+          ctx.fillText(
+            T(state.selectedPlanet).toUpperCase(),
+            tx(plNow.x),
+            plLabelY,
+          );
+
+          if (vp < 0.01) {
+            ctx.fillStyle = "rgba(110,122,138,0.35)";
+            ctx.fillText(T("stationary"), tx(plNow.x), plLabelY + 13);
+          }
+        }
+
+        function drawPlanet(px, py, scale) {
+          // physR is the PHYSICAL radius in screen units — drawn at exactly this size
+          // so the filled solid body never exceeds the collision boundary. The glow
+          // and atmosphere remain clamped for visibility, and a non-solid helper
+          // marker is drawn at extreme zoom-out where physR would otherwise be too
+          // small to see.
+          const physR = state.planetRadius * scale;
+          const glowR = Math.max(8, physR);
+          const bodyR = physR;
+          const c = state.planetColors;
+
+          // Atmosphere ring (visible scale)
+          ctx.beginPath();
+          ctx.arc(px, py, glowR * 1.15, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(" + c.glow + ",0.12)";
+          ctx.lineWidth = glowR * 0.15;
+          ctx.stroke();
+
+          // Outer glow gradient (visible scale)
+          const glow = ctx.createRadialGradient(
+            px,
+            py,
+            glowR * 0.3,
+            px,
+            py,
+            glowR * 3,
+          );
+          glow.addColorStop(0, "rgba(" + c.glow + ",0.2)");
+          glow.addColorStop(0.5, "rgba(" + c.glow + ",0.06)");
+          glow.addColorStop(1, "rgba(" + c.glow + ",0.0)");
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(px, py, glowR * 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Solid body at PHYSICAL scale — a safe flyby never visually intersects this
+          const bodyGrad = ctx.createRadialGradient(
+            px - bodyR * 0.3,
+            py - bodyR * 0.3,
+            bodyR * 0.1,
+            px,
+            py,
+            bodyR,
+          );
+          bodyGrad.addColorStop(0, c.hi);
+          bodyGrad.addColorStop(0.7, c.mid);
+          bodyGrad.addColorStop(1, c.lo);
+          ctx.fillStyle = bodyGrad;
+          ctx.beginPath();
+          ctx.arc(px, py, bodyR, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(" + c.glow + ",0.3)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Non-solid helper marker at extreme zoom-out: when the physical body is
+          // smaller than ~1.5 px the user can't see it, so draw an outline ring and
+          // crosshair to indicate the planet's location without misrepresenting the
+          // collision radius.
+          if (physR < 1.5) {
+            const helperR = Math.max(6, glowR * 0.4);
+            ctx.strokeStyle = "rgba(" + c.glow + ",0.4)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(px, py, helperR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(px - helperR, py);
+            ctx.lineTo(px + helperR, py);
+            ctx.moveTo(px, py - helperR);
+            ctx.lineTo(px, py + helperR);
+            ctx.stroke();
+          }
+        }
+
+        // Draws an onboarding text tooltip near the velocity vector to teach the
+        // drag interactions. Two lines: one for translating the body, one for
+        // rotating/scaling the tip. Vanishes permanently the first time startDrag()
+        // fires. Positioned above the vector midpoint and clamped to canvas bounds.
+        function drawVectorTooltip() {
+          if (!state.hintShown) return;
+
+          const lines = [T("hintLine1"), T("hintLine2")];
+
+          ctx.font = '13px "Share Tech Mono", monospace';
+          ctx.textAlign = "left";
+          ctx.textBaseline = "top";
+
+          let maxWidth = 0;
+          for (let i = 0; i < lines.length; i++) {
+            const w = ctx.measureText(lines[i]).width;
+            if (w > maxWidth) maxWidth = w;
+          }
+
+          const padX = 12,
+            padY = 10;
+          const lineH = 17;
+          const boxW = maxWidth + padX * 2;
+          const boxH = lineH * lines.length + padY * 2 - 2;
+
+          // Anchor: above the vector midpoint with a 60 px gap, then clamp to canvas.
+          const midX = (scStartScreenX + handleScreenX) / 2;
+          const midY = (scStartScreenY + handleScreenY) / 2;
+          let rx = midX - boxW / 2;
+          let ry = midY - 60 - boxH;
+
+          const margin = 12;
+          if (rx < margin) rx = margin;
+          if (rx + boxW > W - margin) rx = W - margin - boxW;
+          if (ry < margin) ry = margin;
+          if (ry + boxH > H - margin) ry = H - margin - boxH;
+
+          // Rounded rectangle backdrop (manual path for portability across browsers).
+          const r = 6;
+          ctx.beginPath();
+          ctx.moveTo(rx + r, ry);
+          ctx.lineTo(rx + boxW - r, ry);
+          ctx.quadraticCurveTo(rx + boxW, ry, rx + boxW, ry + r);
+          ctx.lineTo(rx + boxW, ry + boxH - r);
+          ctx.quadraticCurveTo(rx + boxW, ry + boxH, rx + boxW - r, ry + boxH);
+          ctx.lineTo(rx + r, ry + boxH);
+          ctx.quadraticCurveTo(rx, ry + boxH, rx, ry + boxH - r);
+          ctx.lineTo(rx, ry + r);
+          ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+          ctx.closePath();
+
+          ctx.fillStyle = "rgba(11,15,24,0.94)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(125,196,255,0.5)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = "#c9d1d9";
+          for (let j = 0; j < lines.length; j++) {
+            ctx.fillText(lines[j], rx + padX, ry + padY + lineH * j);
+          }
+        }
+
+        function drawSpacecraft(x, y, angle) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(angle);
+
+          const glow = ctx.createRadialGradient(0, 0, 1.6, 0, 0, 16);
+          glow.addColorStop(0, "rgba(255,224,102,0.36)");
+          glow.addColorStop(1, "rgba(255,224,102,0.0)");
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(0, 0, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffe066";
+          ctx.beginPath();
+          ctx.moveTo(14.3, 0);
+          ctx.lineTo(-7.7, -7.15);
+          ctx.lineTo(-7.7, 7.15);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.restore();
+        }
+
+        function drawArrow(x1, y1, x2, y2, color, lineW, headSize) {
+          const angle = Math.atan2(y2 - y1, x2 - x1);
+          ctx.strokeStyle = color;
+          ctx.fillStyle = color;
+          ctx.lineWidth = lineW;
+          ctx.lineCap = "butt";
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(
+            x2 - (headSize - 1) * Math.cos(angle),
+            y2 - (headSize - 1) * Math.sin(angle),
+          );
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x2, y2);
+          ctx.lineTo(
+            x2 - headSize * Math.cos(angle - 0.4),
+            y2 - headSize * Math.sin(angle - 0.4),
+          );
+          ctx.lineTo(
+            x2 - headSize * Math.cos(angle + 0.4),
+            y2 - headSize * Math.sin(angle + 0.4),
+          );
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        function drawVelocityArrows(len, tx, ty) {
+          const sl = toSunFrame(len - 1);
+          const maxSpeed = Math.max(state.vIn, state.vOut, 0.1);
+          const maxArrowPx = Math.min(W, H) * 0.14;
+          const arrowK = maxArrowPx / (maxSpeed * V_SCALE);
+
+          if (state.vOut > 0.01) {
+            const sx = tx(sl.x),
+              sy = ty(sl.y);
+            const ex = sx + sl.vx * arrowK;
+            const ey = sy - sl.vy * arrowK;
+
+            let color = "#58a6ff";
+            if (state.deltaV > 0.15) color = "#3fb950";
+            else if (state.deltaV < -0.15) color = "#f97583";
+
+            drawArrow(sx, sy, ex, ey, color, 2.5, 16);
+
+            ctx.font = '17px "Share Tech Mono", monospace';
+            ctx.fillStyle = color;
+            ctx.textAlign = "center";
+            const mx = (sx + ex) / 2,
+              my = (sy + ey) / 2;
+            const perpX = -(ey - sy),
+              perpY = ex - sx;
+            const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
+            ctx.fillText(
+              "v=" + Math.round(state.vOut),
+              mx + (perpX / perpLen) * 22,
+              my + (perpY / perpLen) * 22,
+            );
+          }
+        }
+
+        // ══════════════════════════════════════════════
+        // ANIMATION
+        // ══════════════════════════════════════════════
+        let lastTime = 0;
+        let stepAccum = 0;
+        let animFrameId = 0;
+
+        function animate(timestamp) {
+          if (!lastTime) lastTime = timestamp;
+          const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+          lastTime = timestamp;
+
+          if (state.playing && state.trajectory.length > 0) {
+            const baseStepsPerSec = Math.max(
+              30,
+              Math.ceil(state.trajectory.length / 3.5),
+            );
+            stepAccum += dt * baseStepsPerSec * state.animSpeed;
+            const steps = Math.floor(stepAccum);
+            stepAccum -= steps;
+            if (steps > 0) state.currentIndex += steps;
+
+            // Check for target hit mid-flight (game mode)
+            if (
+              state.mode === "game" &&
+              state.gameLaunched &&
+              state.gameTarget &&
+              !state.gameResult
+            ) {
+              const tol = gameTolerance(),
+                tolSq = tol * tol;
+              const gx = state.gameTarget.x,
+                gy = state.gameTarget.y;
+              const sc = toSunFrame(
+                Math.min(state.currentIndex, state.trajectory.length - 1),
+              );
+              const ddx = sc.x - gx,
+                ddy = sc.y - gy;
+              if (ddx * ddx + ddy * ddy < tolSq) {
+                state.gameResult = "success";
+                state.playing = false;
+                showGameOverlay("success");
+              }
+            }
+
+            if (state.currentIndex >= state.trajectory.length - 1) {
+              state.currentIndex = state.trajectory.length - 1;
+              state.playing = false;
+              evaluateGame();
+            }
+          }
+
+          drawScene();
+          updateWarpBtns();
+          animFrameId = requestAnimationFrame(animate);
+        }
+
+        // ══════════════════════════════════════════════
+        // CONTROLS
+        // ══════════════════════════════════════════════
+        // Play / Pause / Resume toggle. If currently playing, pauses. If paused mid-
+        // trajectory, resumes from the current sample. If paused at the end of the
+        // trajectory (or never started), restarts from the beginning. In game mode,
+        // every fresh start clears the previous result and re-arms gameLaunched.
+        // eslint-disable-next-line no-unused-vars
+        function setWarp(level) {
+          if (state.playing && state.warpLevel === level) {
+            state.playing = false;
+          } else {
+            state.warpLevel = level;
+            state.animSpeed =
+              state.warpLevels[level] || state.warpLevels.normal;
+            if (!state.playing) {
+              if (state.currentIndex >= state.trajectory.length - 1) {
+                state.currentIndex = 0;
+                stepAccum = 0;
+              }
+              state.playing = true;
+              if (state.mode === "game") {
+                state.gameLaunched = true;
+                state.gameResult = null;
+              }
+            }
+          }
+          updateWarpBtns();
+        }
+
+        function updateWarpBtns() {
+          const playing = state.playing;
+          const nBtn = document.getElementById("warpNormalBtn");
+          const fBtn = document.getElementById("warpFastBtn");
+          const ffBtn = document.getElementById("warpFastestBtn");
+          nBtn.classList.toggle(
+            "active",
+            playing && state.warpLevel === "normal",
+          );
+          fBtn.classList.toggle(
+            "active",
+            playing && state.warpLevel === "fast",
+          );
+          ffBtn.classList.toggle(
+            "active",
+            playing && state.warpLevel === "fastest",
+          );
+          nBtn.textContent =
+            playing && state.warpLevel === "normal"
+              ? "\u25ae\u25ae"
+              : T("warpNormal");
+          fBtn.textContent =
+            playing && state.warpLevel === "fast"
+              ? "\u25ae\u25ae"
+              : T("warpFast");
+          ffBtn.textContent =
+            playing && state.warpLevel === "fastest"
+              ? "\u25ae\u25ae"
+              : T("warpFastest");
+        }
+
+        function resetSim() {
+          state.currentIndex = 0;
+          stepAccum = 0;
+          state.playing = false;
+          updateWarpBtns();
+        }
+
+        // Stop button click dispatcher: single click → resetSim (animation reset),
+        // double click → resetToDefaults (full per-planet reset). Uses a timer to
+        // distinguish single from double click without firing resetSim twice during
+        // a double-click sequence.
+        let stopClickTimer = null;
+        // eslint-disable-next-line no-unused-vars
+        function handleStopClick() {
+          if (stopClickTimer !== null) {
+            clearTimeout(stopClickTimer);
+            stopClickTimer = null;
+            resetToDefaults();
+          } else {
+            stopClickTimer = setTimeout(function () {
+              stopClickTimer = null;
+              resetSim();
+            }, 260);
+          }
+        }
+
+        function recompute() {
+          computeTrajectory();
+
+          updateReadouts();
+          updateInfo();
+          state.currentIndex = 0;
+          stepAccum = 0;
+          state.playing = false;
+          if (state.mode === "game") {
+            state.gameLaunched = false;
+            state.gameResult = null;
+          }
+          updateWarpBtns();
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function stepSlider(sliderId, delta) {
+          const slider = document.getElementById(sliderId);
+          const min = +slider.min,
+            max = +slider.max,
+            step = +slider.step;
+          let val = +slider.value + delta;
+          val = Math.round(val / step) * step;
+          val = Math.max(min, Math.min(max, val));
+          val = Math.round(val * 1000) / 1000;
+          slider.value = val;
+          slider.dispatchEvent(new Event("input"));
+        }
+
+        function selectPlanet(key, keepTarget) {
+          const planet = PLANET_DATA.find(function (p) {
+            return p.key === key;
+          });
+          if (!planet) return;
+          state.selectedPlanet = key;
+          state.planetMass = planet.massRatio;
+          state.planetRadius = BASE_RADIUS * planet.radiusRatio;
+          state.planetColors = planet.colors;
+          state.planetVel = planet.defaultSpeed;
+          state.approachSpeed = planet.defaultApproachSpeed;
+
+          document.getElementById("planetVelSlider").value =
+            planet.defaultSpeed;
+          document.getElementById("planetVelVal").textContent =
+            planet.defaultSpeed;
+          document.getElementById("planetSelect").value = key;
+
+          initVecPosition();
+          recompute();
+
+          if (state.mode === "game" && !keepTarget) {
+            generateTarget();
+          }
+        }
+
+        // Full reset to the planet's default initial view: angle, periapsis, planet
+        // velocity, approach speed, camera mode, and zoom — everything the user sees
+        // on a fresh planet selection. Triggered by double-clicking the Stop button.
+        // Keeps the game target so the user can retry the same challenge from clean
+        // defaults instead of getting a brand new randomized target.
+        function resetToDefaults() {
+          state.approachAngle = Math.PI;
+          state.periapsisAlt = 50;
+          state.currentIndex = 0;
+          stepAccum = 0;
+          state.playing = false;
+          zoomFactor = 1;
+          cameraMode = "auto";
+          selectPlanet(state.selectedPlanet, true);
+          updateViewButtons();
+          updateWarpBtns();
+        }
+
+        document
+          .getElementById("planetSelect")
+          .addEventListener("change", function (e) {
+            selectPlanet(e.target.value);
+          });
+
+        document
+          .getElementById("planetVelSlider")
+          .addEventListener("input", function (e) {
+            state.planetVel = +e.target.value;
+            document.getElementById("planetVelVal").textContent =
+              e.target.value;
+            initVecPosition();
+            recompute();
+          });
+
+        // ══════════════════════════════════════════════
+        // CAMERA CONTROLS
+        // ══════════════════════════════════════════════
+        function updateViewButtons() {
+          document
+            .getElementById("autoViewBtn")
+            .classList.toggle("active", cameraMode === "auto");
+          document
+            .getElementById("focusPlanetBtn")
+            .classList.toggle("active", cameraMode === "planet");
+          document
+            .getElementById("focusScBtn")
+            .classList.toggle("active", cameraMode === "spacecraft");
+        }
+
+        function applyZoom(factor) {
+          if (cameraMode === "auto") {
+            zoomFactor *= factor;
+          } else {
+            manualScale *= factor;
+          }
+          updateViewButtons();
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function zoomIn() {
+          applyZoom(1.3);
+        }
+        // eslint-disable-next-line no-unused-vars
+        function zoomOut() {
+          applyZoom(1 / 1.3);
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function focusPlanet() {
+          manualScale = Math.min(W, H) / (state.planetRadius * 25);
+          cameraMode = "planet";
+          updateViewButtons();
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function focusSpacecraft() {
+          manualScale = lastScale * 1.5;
+          cameraMode = "spacecraft";
+          updateViewButtons();
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function resetView() {
+          cameraMode = "auto";
+          zoomFactor = 1;
+          updateViewButtons();
+        }
+
+        // ══════════════════════════════════════════════
+        // DRAG INTERACTION
+        // ══════════════════════════════════════════════
+        const ARROW_HIT_DIST = 20;
+
+        function getCanvasPos(e) {
+          const rect = canvas.getBoundingClientRect();
+          if (e.touches) {
+            return {
+              x: e.touches[0].clientX - rect.left,
+              y: e.touches[0].clientY - rect.top,
+            };
+          }
+          return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function isNearArrow(pos) {
+          // Check near tip (circle)
+          const dtx = pos.x - handleScreenX,
+            dty = pos.y - handleScreenY;
+          if (dtx * dtx + dty * dty < 25 * 25) return true;
+          // Check near shaft (segment)
+          const x1 = scStartScreenX,
+            y1 = scStartScreenY;
+          const x2 = handleScreenX,
+            y2 = handleScreenY;
+          const dx = x2 - x1,
+            dy = y2 - y1;
+          const lenSq = dx * dx + dy * dy;
+          if (lenSq < 1) return false;
+          let t = ((pos.x - x1) * dx + (pos.y - y1) * dy) / lenSq;
+          t = Math.max(0, Math.min(1, t));
+          const projX = x1 + t * dx,
+            projY = y1 + t * dy;
+          const distSq =
+            (pos.x - projX) * (pos.x - projX) +
+            (pos.y - projY) * (pos.y - projY);
+          return distSq < ARROW_HIT_DIST * ARROW_HIT_DIST;
+        }
+
+        function freezeCamera() {
+          cameraFrozen = true;
+          frozenScale = lastScale;
+        }
+
+        function unfreezeCamera() {
+          cameraFrozen = false;
+        }
+
+        function handleArrowDrag(pos, shiftHeld) {
+          // Delta accumulation: cursor movement is added to an effective tip position,
+          // optionally scaled down by 8x for fine adjustments. This avoids any jumps
+          // when Shift is pressed or released mid-drag — only NEW movement is scaled.
+          state.shiftHeld = !!shiftHeld;
+          recomputeFineDrag();
+          updatePrecisionUI();
+
+          const rawDx = pos.x - dragLastPosX;
+          const rawDy = pos.y - dragLastPosY;
+          const scale = state.fineDrag ? 0.125 : 1.0;
+          dragAccumX += rawDx * scale;
+          dragAccumY += rawDy * scale;
+          dragLastPosX = pos.x;
+          dragLastPosY = pos.y;
+
+          const effX = dragInitialTipX + dragAccumX;
+          const effY = dragInitialTipY + dragAccumY;
+          const dx = effX - frozenRootX;
+          const dy = -(effY - frozenRootY);
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          state.approachAngle = Math.atan2(dy, dx);
+
+          const speed =
+            10 + ((dist - MIN_ARROW_PX) * 90) / (MAX_ARROW_PX - MIN_ARROW_PX);
+          state.approachSpeed = Math.max(10, Math.min(100, Math.round(speed)));
+
+          state.currentIndex = 0;
+          computePeriapsisAltFromPosition();
+          computeTrajectory();
+
+          updateReadouts();
+          updateInfo();
+        }
+
+        function isNearTarget(pos) {
+          if (state.mode !== "game" || !state.gameTarget) return false;
+          const dx = pos.x - targetScreenX,
+            dy = pos.y - targetScreenY;
+          const hitR = Math.max(30, gameTolerance() * lastScale);
+          return dx * dx + dy * dy < hitR * hitR;
+        }
+
+        function handleTargetDrag(pos) {
+          const sx = pos.x - targetGrabOfsX;
+          const sy = pos.y - targetGrabOfsY;
+          state.gameTarget.x = frozenCamX + (sx - W / 2) / frozenScale;
+          state.gameTarget.y = frozenCamY - (sy - H / 2) / frozenScale;
+        }
+
+        function isNearRoot(pos) {
+          const dx = pos.x - scStartScreenX,
+            dy = pos.y - scStartScreenY;
+          return dx * dx + dy * dy < 15 * 15;
+        }
+
+        function handleTranslateDrag(pos) {
+          const dx = pos.x - dragPrevX;
+          const dy = pos.y - dragPrevY;
+          dragPrevX = pos.x;
+          dragPrevY = pos.y;
+          state.vecPfX += dx / frozenScale;
+          state.vecPfY -= dy / frozenScale;
+          frozenRootX += dx;
+          frozenRootY += dy;
+          state.currentIndex = 0;
+          computePeriapsisAltFromPosition();
+          computeTrajectory();
+
+          updateReadouts();
+          updateInfo();
+        }
+
+        function startDrag(mode, pos) {
+          state.dragMode = mode;
+          state.playing = false;
+          state.hintShown = false;
+          freezeCamera();
+          if (mode === "arrow") {
+            dragInitialTipX = handleScreenX;
+            dragInitialTipY = handleScreenY;
+            dragAccumX = 0;
+            dragAccumY = 0;
+            dragLastPosX = pos.x;
+            dragLastPosY = pos.y;
+            frozenRootX = scStartScreenX;
+            frozenRootY = scStartScreenY;
+          } else if (mode === "translate") {
+            dragPrevX = pos.x;
+            dragPrevY = pos.y;
+            frozenRootX = scStartScreenX;
+            frozenRootY = scStartScreenY;
+          } else if (mode === "target") {
+            targetGrabOfsX = pos.x - targetScreenX;
+            targetGrabOfsY = pos.y - targetScreenY;
+          }
+        }
+
+        function endDrag() {
+          if (state.dragMode) {
+            state.dragMode = null;
+            canvas.style.cursor = "default";
+            unfreezeCamera();
+          }
+        }
+
+        // Effective precision state = latched setting OR Shift held. Shift acts as a
+        // momentary boost only when precision is NOT latched on; once latched, Shift
+        // is a no-op. Both the toggle button click and Shift key events update this
+        // through recomputeFineDrag + updatePrecisionUI.
+        function recomputeFineDrag() {
+          state.fineDrag = state.precisionMode || state.shiftHeld;
+        }
+
+        function updatePrecisionUI() {
+          document
+            .getElementById("precisionBtn")
+            .classList.toggle("active", state.fineDrag);
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function togglePrecision() {
+          state.precisionMode = !state.precisionMode;
+          recomputeFineDrag();
+          updatePrecisionUI();
+        }
+
+        canvas.addEventListener("mousedown", function (e) {
+          const pos = getCanvasPos(e);
+          if (isNearTarget(pos)) {
+            startDrag("target", pos);
+            canvas.style.cursor = "move";
+            e.preventDefault();
+          } else if (isNearRoot(pos)) {
+            startDrag("translate", pos);
+            canvas.style.cursor = "move";
+            e.preventDefault();
+          } else if (isNearArrow(pos)) {
+            startDrag("arrow", pos);
+            canvas.style.cursor = "grabbing";
+            state.shiftHeld = e.shiftKey;
+            recomputeFineDrag();
+            updatePrecisionUI();
+            e.preventDefault();
+          }
+        });
+
+        canvas.addEventListener("mousemove", function (e) {
+          const pos = getCanvasPos(e);
+          if (state.dragMode === "arrow") {
+            handleArrowDrag(pos, e.shiftKey);
+            e.preventDefault();
+          } else if (state.dragMode === "translate") {
+            handleTranslateDrag(pos);
+            e.preventDefault();
+          } else if (state.dragMode === "target") {
+            handleTargetDrag(pos);
+            e.preventDefault();
+          } else {
+            if (isNearTarget(pos)) canvas.style.cursor = "move";
+            else if (isNearRoot(pos)) canvas.style.cursor = "move";
+            else if (isNearArrow(pos)) canvas.style.cursor = "grab";
+            else canvas.style.cursor = "default";
+          }
+        });
+
+        canvas.addEventListener("mouseup", endDrag);
+        canvas.addEventListener("mouseleave", endDrag);
+
+        canvas.addEventListener(
+          "touchstart",
+          function (e) {
+            const pos = getCanvasPos(e);
+            if (isNearTarget(pos)) {
+              startDrag("target", pos);
+              e.preventDefault();
+            } else if (isNearRoot(pos)) {
+              startDrag("translate", pos);
+              e.preventDefault();
+            } else if (isNearArrow(pos)) {
+              startDrag("arrow", pos);
+              e.preventDefault();
+            }
+          },
+          { passive: false },
+        );
+
+        canvas.addEventListener(
+          "touchmove",
+          function (e) {
+            const pos = getCanvasPos(e);
+            if (state.dragMode === "arrow") {
+              handleArrowDrag(pos);
+              e.preventDefault();
+            } else if (state.dragMode === "translate") {
+              handleTranslateDrag(pos);
+              e.preventDefault();
+            } else if (state.dragMode === "target") {
+              handleTargetDrag(pos);
+              e.preventDefault();
+            }
+          },
+          { passive: false },
+        );
+
+        canvas.addEventListener("touchend", endDrag);
+
+        // Mouse-wheel zoom. Smooth exponential scaling: a single wheel notch
+        // (deltaY ≈ ±100) gives roughly 1.16× zoom; trackpad smooth scrolling gives
+        // finer-grained adjustments. Routes through applyZoom so the same camera-mode
+        // branching as the +/- buttons applies. passive: false is required for
+        // preventDefault to actually stop the page from scrolling.
+        canvas.addEventListener(
+          "wheel",
+          function (e) {
+            e.preventDefault();
+            applyZoom(Math.pow(1.0015, -e.deltaY));
+          },
+          { passive: false },
+        );
+
+        // Track Shift globally so the precision toggle button reflects the current
+        // effective state (latched XOR Shift held), and so the arrow shaft color
+        // flips immediately during drag without waiting for the next mousemove.
+        // The !state.shiftHeld guard avoids redundant work from auto-repeat keydown.
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Shift" && !state.shiftHeld) {
+            state.shiftHeld = true;
+            recomputeFineDrag();
+            updatePrecisionUI();
+          }
+        });
+
+        document.addEventListener("keyup", function (e) {
+          if (e.key === "Shift" && state.shiftHeld) {
+            state.shiftHeld = false;
+            recomputeFineDrag();
+            updatePrecisionUI();
+          }
+        });
+
+        // ══════════════════════════════════════════════
+        // READOUTS & INFO
+        // ══════════════════════════════════════════════
+        function formatKm(km) {
+          return Math.round(km).toLocaleString("en-US") + " km";
+        }
+
+        function formatKmS(kmps) {
+          return kmps.toFixed(1) + " km/s";
+        }
+
+        // Live readouts updated every animation frame from drawScene(). Reads the
+        // current trajectory sample at state.currentIndex and refreshes the current
+        // altitude, current speed, and the speed gauge fill. Cheap (~3 DOM ops) and
+        // guarded against an empty trajectory.
+        function updateLiveReadouts() {
+          const len = state.trajectory.length;
+          if (len === 0) {
+            document.getElementById("curSpeedVal").textContent = "\u2014";
+            document.getElementById("curAltVal").textContent = "\u2014";
+            document.getElementById("gaugeFill").style.width = "0%";
+            return;
+          }
+          const idx = Math.min(state.currentIndex, len - 1);
+          const pt = state.trajectory[idx];
+          const vp = state.planetVel * V_SCALE;
+
+          const r = Math.sqrt(pt.x * pt.x + pt.y * pt.y);
+          const altKm = Math.max(
+            0,
+            (r - state.planetRadius) * KM_PER_SIM_LENGTH,
+          );
+          document.getElementById("curAltVal").textContent = formatKm(altKm);
+
+          const sx = pt.vx + vp;
+          const sy = pt.vy;
+          const vSliderUnits = Math.sqrt(sx * sx + sy * sy) / V_SCALE;
+          document.getElementById("curSpeedVal").textContent = formatKmS(
+            vSliderUnits * KMS_PER_SLIDER_VEL,
+          );
+
+          let pct =
+            state.maxSpeedSliderUnits > 0
+              ? (vSliderUnits / state.maxSpeedSliderUnits) * 100
+              : 0;
+          if (pct < 0) pct = 0;
+          if (pct > 100) pct = 100;
+          document.getElementById("gaugeFill").style.width =
+            pct.toFixed(1) + "%";
+        }
+
+        function updateReadouts() {
+          // Planet radius and planet velocity are static within a flyby but cheap to
+          // recompute on every update. Both display regardless of crash state.
+          document.getElementById("planetRadiusVal").textContent = formatKm(
+            state.planetRadius * KM_PER_SIM_LENGTH,
+          );
+          document.getElementById("planetVelKmsVal").textContent = formatKmS(
+            state.planetVel * KMS_PER_SLIDER_VEL,
+          );
+
+          if (state.crashed) {
+            document.getElementById("speedInVal").textContent = formatKmS(
+              state.vIn * KMS_PER_SLIDER_VEL,
+            );
+            document.getElementById("speedOutVal").textContent = "\u2014";
+            const boostEl = document.getElementById("boostVal");
+            boostEl.textContent = T("crash");
+            boostEl.style.color = "var(--loss)";
+            document.getElementById("deflVal").textContent = "\u2014";
+            document.getElementById("minAltVal").textContent = formatKm(0);
+            return;
+          }
+
+          document.getElementById("speedInVal").textContent = formatKmS(
+            state.vIn * KMS_PER_SLIDER_VEL,
+          );
+          document.getElementById("speedOutVal").textContent = formatKmS(
+            state.vOut * KMS_PER_SLIDER_VEL,
+          );
+
+          const boostEl = document.getElementById("boostVal");
+          const dvKmS = state.deltaV * KMS_PER_SLIDER_VEL;
+          boostEl.textContent =
+            (dvKmS >= 0 ? "+" : "") + dvKmS.toFixed(1) + " km/s";
+          if (dvKmS > 0.15 * KMS_PER_SLIDER_VEL)
+            boostEl.style.color = "var(--gain)";
+          else if (dvKmS < -0.15 * KMS_PER_SLIDER_VEL)
+            boostEl.style.color = "var(--loss)";
+          else boostEl.style.color = "var(--text)";
+
+          document.getElementById("deflVal").textContent =
+            Math.abs(state.deflectionAngle).toFixed(0) + "\u00B0";
+
+          // Min altitude: closest approach above the planet surface, in km.
+          const closestPt = state.trajectory[state.closestIndex];
+          if (closestPt) {
+            const closestR = Math.sqrt(
+              closestPt.x * closestPt.x + closestPt.y * closestPt.y,
+            );
+            const minAltKm = Math.max(
+              0,
+              (closestR - state.planetRadius) * KM_PER_SIM_LENGTH,
+            );
+            document.getElementById("minAltVal").textContent =
+              formatKm(minAltKm);
+          } else {
+            document.getElementById("minAltVal").textContent = "\u2014";
+          }
+        }
+
+        function updateInfo() {
+          let text;
+          if (state.mode === "game") {
+            text = T("infoGame");
+          } else if (state.crashed) {
+            text = T("infoCrash");
+          } else if (state.planetVel < 0.1) {
+            text = T("infoStationary");
+          } else if (state.deltaV > 0.15) {
+            text = T("infoBoost");
+          } else {
+            text = T("infoDefault");
+          }
+          document.getElementById("infoText").textContent = text;
+        }
+
+        // ══════════════════════════════════════════════
+        // INIT
+        // ══════════════════════════════════════════════
+        document.getElementById("langBtn").textContent =
+          state.lang === "en" ? "PL" : "EN";
+        document
+          .getElementById("langBtn")
+          .addEventListener("click", toggleLang);
+        document
+          .getElementById("modeExploreBtn")
+          .addEventListener("click", () => setMode("explore"));
+        document
+          .getElementById("modeGameBtn")
+          .addEventListener("click", () => setMode("game"));
+        document
+          .getElementById("planetVelDecBtn")
+          .addEventListener("click", () => stepSlider("planetVelSlider", -5));
+        document
+          .getElementById("planetVelIncBtn")
+          .addEventListener("click", () => stepSlider("planetVelSlider", 5));
+        document
+          .getElementById("warpNormalBtn")
+          .addEventListener("click", () => setWarp("normal"));
+        document
+          .getElementById("warpFastBtn")
+          .addEventListener("click", () => setWarp("fast"));
+        document
+          .getElementById("warpFastestBtn")
+          .addEventListener("click", () => setWarp("fastest"));
+        document
+          .getElementById("resetBtn")
+          .addEventListener("click", handleStopClick);
+        document
+          .getElementById("zoomOutBtn")
+          .addEventListener("click", zoomOut);
+        document
+          .getElementById("autoViewBtn")
+          .addEventListener("click", resetView);
+        document.getElementById("zoomInBtn").addEventListener("click", zoomIn);
+        document
+          .getElementById("focusPlanetBtn")
+          .addEventListener("click", focusPlanet);
+        document
+          .getElementById("focusScBtn")
+          .addEventListener("click", focusSpacecraft);
+        document
+          .getElementById("precisionBtn")
+          .addEventListener("click", togglePrecision);
+        document
+          .getElementById("newTargetBtn")
+          .addEventListener("click", newTarget);
+        applyTranslations();
+        resize();
+        populatePlanetSelect();
+        selectPlanet("earth");
+        applyTranslations();
+        animFrameId = requestAnimationFrame(animate);
+
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) {
+            cancelAnimationFrame(animFrameId);
+            animFrameId = 0;
+          } else {
+            lastTime = 0;
+            animFrameId = requestAnimationFrame(animate);
+          }
+        });
+      })();
+    </script>
+  </body>
 </html>

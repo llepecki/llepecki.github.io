@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "cr": "node tools/cr.mjs"
+    "code-review": "node tools/code-review.mjs"
   },
   "dependencies": {
     "eslint": "10.2.0",

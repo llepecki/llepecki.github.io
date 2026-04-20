@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run cr -- copernicus.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- copernicus.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -1496,6 +1496,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       window._app.resetLastTimestamp = function () {
         lastTimestamp = 0;
       };
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+          lastTimestamp = 0;
+        }
+      });
     </script>
     <script type="module">
       /* ── Block 3: Controls, events, localization, init ── */
@@ -1775,6 +1781,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       updateVisUI();
       window._app.fetchIMCCEPositions();
       requestAnimationFrame(window._app.animate);
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+          window._app.resetLastTimestamp();
+        }
+      });
     </script>
   </body>
 </html>

@@ -1,1495 +1,2207 @@
-<!DOCTYPE html>
+<!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run cr -- momentum.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- momentum.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conservation of Momentum</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #FAFAF7;
-  --panel: #ffffff;
-  --panel-border: #E0DDD6;
-  --text: #37474F;
-  --text-head: #263238;
-  --text-dim: #78909C;
-  --text-label: #90A4AE;
-  --accent: #455A64;
-  --accent-light: #ECEFF1;
-  --canvas-bg: #f5f3ee;
-  --obj-a: #D32F2F;
-  --obj-b: #1565C0;
-  --total: #00C853;
-}
-body {
-  min-height: 100vh;
-  background: linear-gradient(160deg, #FAFAF7 0%, #F0EDE6 100%);
-  font-family: 'Outfit', sans-serif;
-  color: var(--text);
-  -webkit-tap-highlight-color: transparent;
-}
-header {
-  padding: 6px 28px 5px;
-  border-bottom: 1px solid var(--panel-border);
-  display: flex; align-items: center; gap: 12px;
-}
-.header-text { flex: 1; }
-header h1 {
-  font-size: 18px; font-weight: 700; color: var(--text-head);
-  display: flex; align-items: center; gap: 8px;
-}
-header h1 a { color: inherit; text-decoration: none; }
-header h1 a:hover { opacity: .7; }
-header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
-.lang-btn {
-  background: none; border: 1px solid var(--panel-border);
-  border-radius: 4px; padding: 3px 8px;
-  cursor: pointer; flex-shrink: 0;
-  color: var(--text-dim);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 13px; font-weight: 700; letter-spacing: 1px;
-  transition: border-color 0.15s, color 0.15s;
-}
-.lang-btn:hover { border-color: var(--accent); color: var(--accent); }
-.main { display: flex; height: calc(100vh - 46px); }
-.canvas-wrap {
-  flex: 1; position: relative; min-width: 0;
-  background: var(--canvas-bg);
-  border-right: 1px solid var(--panel-border);
-}
-canvas { display: block; width: 100%; height: 100%; cursor: default; }
-canvas.dragging { cursor: grabbing !important; }
-canvas.hover-obj { cursor: grab; }
-.panel {
-  width: 300px; flex-shrink: 0;
-  background: var(--panel);
-  display: flex; flex-direction: column;
-  overflow-y: auto;
-}
-.controls {
-  padding: 20px;
-  display: flex; flex-direction: column; gap: 18px;
-  border-bottom: 1px solid var(--panel-border);
-}
-.ctrl-group { display: flex; flex-direction: column; gap: 6px; }
-#grpExplore, #grpGame { display: flex; flex-direction: column; gap: 18px; }
-.section-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
-  color: var(--text-label);
-  padding-bottom: 2px; border-bottom: 1px solid var(--panel-border);
-}
-.ctrl-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
-  color: var(--text-label);
-}
-.type-toggle { display: flex; gap: 6px; }
-.type-btn {
-  flex: 1; padding: 8px 4px; border-radius: 8px;
-  border: 2px solid transparent;
-  background: #FAFAF7; color: #546E7A;
-  font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 500;
-  cursor: pointer; transition: all 0.15s; text-align: center;
-  touch-action: manipulation;
-}
-.type-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
-.type-btn:hover { background: #F0EDE6; }
-.type-btn:disabled { opacity: 0.4; pointer-events: none; }
-.slider-row { display: flex; align-items: center; gap: 8px; }
-.slider-row input[type=range] {
-  flex: 1; -webkit-appearance: none; appearance: none;
-  height: 6px; background: #E0DDD6; border-radius: 3px; outline: none;
-  touch-action: none;
-}
-.slider-row input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--accent); cursor: pointer; border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-}
-.slider-row input[type=range]::-moz-range-thumb {
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--accent); cursor: pointer; border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-}
-.slider-row input[type=range]:disabled { opacity: 0.4; }
-.slider-val {
-  min-width: 52px; text-align: right;
-  font-family: 'Share Tech Mono', monospace; font-size: 13px;
-  font-weight: 700; color: var(--text-head);
-}
-#playBtn, #stopBtn {
-  display: flex; align-items: center; justify-content: center;
-  padding: 10px;
-}
-#playBtn .pause-icon { display: none; }
-#playBtn.playing .play-icon { display: none; }
-#playBtn.playing .pause-icon { display: block; }
-.btn-row { display: flex; gap: 8px; }
-.readout-section { display: flex; flex-direction: column; gap: 3px; }
-.readout-row { display: flex; justify-content: space-between; align-items: baseline; padding: 1px 0; }
-.readout-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
-  color: var(--text-label);
-}
-.readout-val {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 13px; font-weight: 700; color: var(--text-head);
-}
-.readout-val.pa { color: var(--obj-a); }
-.readout-val.pb { color: var(--obj-b); }
-.readout-val.pt { color: var(--total); }
-.info { padding: 16px 20px; flex: 1; }
-.info-text { font-size: 13px; color: #546E7A; line-height: 1.6; }
-.info-text a { color: var(--accent); }
-.challenge-info {
-  margin-top: 4px; padding: 8px 10px;
-  border-radius: 6px;
-  font-family: 'Share Tech Mono', monospace; font-size: 12px;
-  font-weight: 700; text-align: center;
-}
-.challenge-info.target-b { background: #E3F2FD; color: #1565C0; }
-.challenge-info.target-a { background: #FFCDD2; color: #D32F2F; }
-.result-overlay {
-  position: fixed; inset: 0; z-index: 9999;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  cursor: pointer;
-  animation: overlayFadeIn 0.3s ease;
-}
-.overlay-emoji { font-size: 72px; animation: overlayPop 0.4s ease; }
-.overlay-msg {
-  font-family: 'Outfit', sans-serif;
-  font-size: 24px; font-weight: 700;
-  margin-top: 16px; color: #fff;
-}
-.overlay-hint {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 12px; margin-top: 8px; color: rgba(255,255,255,0.6);
-}
-@keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes overlayPop {
-  0% { transform: scale(0.3); }
-  70% { transform: scale(1.15); }
-  100% { transform: scale(1); }
-}
-@media (max-width: 700px) {
-  .main { flex-direction: column; height: auto; min-height: calc(100vh - 46px); }
-  .canvas-wrap { min-height: 320px; height: 50vh; border-right: none; border-bottom: 1px solid var(--panel-border); }
-  .panel { width: 100%; }
-  .controls { flex-direction: row; flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
-  .ctrl-group { min-width: 120px; flex: 1; }
-  .btn-row { min-width: 100%; }
-  .info { padding: 12px 16px; }
-}
-</style>
-</head>
-<body>
-
-<header>
-  <div class="header-text">
-    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">&#x1F4A5;</span></a> <span id="titleText">Conservation of Momentum</span></h1>
-    <p id="subtitleText">Discover why total momentum never changes in a collision.</p>
-  </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
-</header>
-
-<div class="main">
-  <div class="canvas-wrap">
-    <canvas id="canvas"></canvas>
-  </div>
-
-  <div class="panel">
-    <div class="controls">
-
-      <div class="ctrl-group">
-        <span class="ctrl-label" id="lblMode">Mode</span>
-        <div class="type-toggle">
-          <button class="type-btn active" id="modeExploreBtn" onclick="setMode('explore')">Explore</button>
-          <button class="type-btn" id="modeGameBtn" onclick="setMode('game')">Game</button>
-        </div>
-      </div>
-
-      <div id="grpExplore">
-        <div class="ctrl-group">
-          <span class="ctrl-label" id="lblCollType">Collision type</span>
-          <div class="type-toggle">
-            <button class="type-btn active" id="elasticBtn" onclick="setCollisionType('elastic')">Elastic</button>
-            <button class="type-btn" id="inelasticBtn" onclick="setCollisionType('inelastic')">Inelastic</button>
-            <button class="type-btn" id="stickyBtn" onclick="setCollisionType('sticky')">Sticky</button>
-          </div>
-        </div>
-
-        <div class="ctrl-group" id="elasticityGroup" style="display:none">
-          <span class="ctrl-label" id="lblElasticity">Elasticity</span>
-          <div class="slider-row">
-            <input type="range" id="elasticitySlider" min="0.1" max="0.9" value="0.5" step="0.1">
-            <span class="slider-val" id="elasticityVal">0.5</span>
-          </div>
-        </div>
-
-      </div>
-
-      <div id="grpGame" style="display:none">
-        <div class="ctrl-group">
-          <div class="challenge-info" id="challengeInfo">
-            <span id="challengeTargetText"></span>
-          </div>
-          <div class="type-toggle" style="margin-top:6px">
-            <button class="type-btn" id="newTargetBtn" onclick="generateTarget()">New target</button>
-          </div>
-        </div>
-      </div>
-
-      <button class="type-btn" id="precisionBtn" onclick="togglePrecision()" style="width:100%">Precision (Shift)</button>
-
-      <div class="btn-row">
-        <button class="type-btn" id="playBtn" onclick="togglePlay()" style="flex:1">
-          <svg class="play-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>
-          <svg class="pause-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
-        </button>
-        <button class="type-btn" id="stopBtn" onclick="resetSim()" style="flex:1">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
-        </button>
-      </div>
-
-      <div id="grpReadouts">
-        <div class="readout-section">
-          <div class="readout-row">
-            <span class="readout-label" id="lblReadPA">p(A)</span>
-            <span class="readout-val pa" id="readoutPA">25.0</span>
-          </div>
-          <div class="readout-row">
-            <span class="readout-label" id="lblReadPB">p(B)</span>
-            <span class="readout-val pb" id="readoutPB">0.0</span>
-          </div>
-          <div class="readout-row">
-            <span class="readout-label" id="lblReadTotal">Total</span>
-            <span class="readout-val pt" id="readoutTotal">25.0</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="info">
-      <div class="info-text" id="infoText"></div>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ───────── I18N ───────── */
-const I18N = {
-  en: {
-    title: 'Conservation of Momentum',
-    subtitle: 'Discover why total momentum never changes in a collision.',
-    mode: 'Mode', explore: 'Explore', game: 'Game',
-    collisionType: 'Collision type',
-    elastic: 'Elastic', inelastic: 'Inelastic', sticky: 'Sticky',
-    elasticity: 'Elasticity',
-    precision: 'Precision (Shift)',
-    newTarget: 'New target',
-    play: 'Play', pause: 'Pause',
-    pA: 'p(A)', pB: 'p(B)', total: 'Total',
-    challengeTargetA: 'Target: A = {0} m/s',
-    challengeTargetB: 'Target: B = {0} m/s',
-    challengeSuccess: 'Perfect shot!',
-    challengeClose: 'So close! Try again',
-    challengeMiss: 'Not quite! Try again',
-    clickToDismiss: 'Click to continue',
-    momentum: 'MOMENTUM',
-    centerOfMass: 'CoM',
-    infoExplore: '<strong>Momentum = mass × velocity.</strong><br><br>Set the mass and velocity for each ball. Set mass to <strong>0</strong> to hide a ball.<br><br>Hit <strong>Launch</strong> and watch the bars — the green <strong>Total</strong> bar never moves during a collision!',
-    infoGameB: 'Adjust Object A\'s mass and velocity so that Object B reaches the target speed after the collision. Then hit Launch!',
-    infoGameA: 'Adjust Object B\'s mass and velocity so that Object A reaches the target speed after the collision. Then hit Launch!',
-  },
-  pl: {
-    title: 'Zasada zachowania pędu',
-    subtitle: 'Odkryj, dlaczego całkowity pęd nigdy się nie zmienia podczas zderzenia.',
-    mode: 'Tryb', explore: 'Eksploruj', game: 'Gra',
-    collisionType: 'Rodzaj zderzenia',
-    elastic: 'Sprężyste', inelastic: 'Niesprężyste', sticky: 'Zlepienie',
-    elasticity: 'Sprężystość',
-    precision: 'Precyzja (Shift)',
-    newTarget: 'Nowy cel',
-    play: 'Start', pause: 'Pauza',
-    pA: 'p(A)', pB: 'p(B)', total: 'Suma',
-    challengeTargetA: 'Cel: A = {0} m/s',
-    challengeTargetB: 'Cel: B = {0} m/s',
-    challengeSuccess: 'Doskonały strzał!',
-    challengeClose: 'Prawie! Spróbuj ponownie',
-    challengeMiss: 'Daleko! Spróbuj ponownie',
-    clickToDismiss: 'Kliknij, aby kontynuować',
-    momentum: 'PĘD',
-    centerOfMass: 'ŚM',
-    infoExplore: '<strong>Pęd = masa × prędkość.</strong><br><br>Ustaw masę i prędkość każdej kuli. Ustaw masę na <strong>0</strong>, aby ukryć kulę.<br><br>Naciśnij <strong>Start</strong> i obserwuj paski — zielony pasek <strong>Suma</strong> nie porusza się podczas zderzenia!',
-    infoGameB: 'Ustaw mas\u0119 i pr\u0119dko\u015b\u0107 Obiektu A tak, aby Obiekt B osi\u0105gn\u0105\u0142 docelow\u0105 pr\u0119dko\u015b\u0107 po zderzeniu. Potem naci\u015bnij Start!',
-    infoGameA: 'Ustaw mas\u0119 i pr\u0119dko\u015b\u0107 Obiektu B tak, aby Obiekt A osi\u0105gn\u0105\u0142 docelow\u0105 pr\u0119dko\u015b\u0107 po zderzeniu. Potem naci\u015bnij Start!',
-  },
-};
-function T(key) { return I18N[state.lang][key]; }
-
-/* ───────── CONSTANTS ───────── */
-const TRACK_Y = 180;
-const INIT_POS_A = 200;
-const INIT_POS_B = 500;
-const VEL_SCALE = 30;
-const ARROW_SCALE = 16;
-const BAR_CENTER = 500;
-const BAR_MAX_W = 320;
-const BAR_H = 24;
-const BAR_GAP = 14;
-const COL_A = '#D32F2F';
-const COL_B = '#1565C0';
-const COL_TOTAL = '#00C853';
-function objR(mass) { return 14 + Math.sqrt(mass) * 2; }
-function hasA() { return state.massA > 0; }
-function hasB() { return state.massB > 0; }
-function hasBoth() { return hasA() && hasB(); }
-
-/* ───────── STATE ───────── */
-const state = {
-  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
-  mode: 'explore',
-  massA: 50, velA: 5,
-  massB: 50, velB: 0,
-  collisionType: 'elastic',
-  restitution: 0.5,
-  playing: false,
-  time: 0,
-  posA: INIT_POS_A, posB: INIT_POS_B,
-  currentVelA: 5, currentVelB: 0,
-  precisionMode: false,
-  shiftHeld: false,
-  fineDrag: false,
-  dragLastX: 0,
-  dragAccumX: 0,
-  dragInitTipX: 0,
-  collided: false,
-  stuck: false,
-  initialTotalP: 0,
-  initialKE: 0,
-  postVelA: 0, postVelB: 0,
-  particles: [],
-  simDone: false,
-  challengeTarget: 0,
-  challengeTargetObj: 'b',
-  gameShowVel: true,
-  selectedObj: -1,
-  selectedTimeout: null,
-  tapStart: null,
-  draggingArrow: null,
-};
-
-/* ───────── CANVAS SETUP ───────── */
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let W, H, scaleF, ox, oy;
-
-function resize() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  W = rect.width; H = rect.height;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  scaleF = Math.min(W / 1000, H / 680) * 0.92;
-  ox = (W - 1000 * scaleF) / 2;
-  oy = (H - 680 * scaleF) / 2;
-}
-window.addEventListener('resize', resize);
-
-function tx(x) { return ox + x * scaleF; }
-function ty(y) { return oy + y * scaleF; }
-function ts(s) { return s * scaleF; }
-
-/* ───────── PHYSICS ───────── */
-function getRestitution() {
-  if (state.collisionType === 'elastic') return 1;
-  if (state.collisionType === 'sticky') return 0;
-  return state.restitution;
-}
-
-function computeCollision(m1, v1, m2, v2, e) {
-  const M = m1 + m2;
-  return {
-    v1: (m1 * v1 + m2 * v2 + m2 * e * (v2 - v1)) / M,
-    v2: (m1 * v1 + m2 * v2 + m1 * e * (v1 - v2)) / M,
-  };
-}
-
-function fmtNum(v) { return parseFloat(v.toPrecision(3)).toString(); }
-
-/* ───────── DRAWING HELPERS ───────── */
-function roundRect(x, y, w, h, r) {
-  if (w < 0) { x += w; w = -w; }
-  r = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-/* ───────── DRAW: TRACK ───────── */
-function drawTrack() {
-  ctx.strokeStyle = '#CFD8DC';
-  ctx.lineWidth = ts(2);
-  ctx.beginPath();
-  ctx.moveTo(tx(50), ty(TRACK_Y));
-  ctx.lineTo(tx(950), ty(TRACK_Y));
-  ctx.stroke();
-  ctx.strokeStyle = '#E0DDD6';
-  ctx.lineWidth = ts(1);
-  for (let x = 100; x <= 900; x += 100) {
-    ctx.beginPath();
-    ctx.moveTo(tx(x), ty(TRACK_Y - 5));
-    ctx.lineTo(tx(x), ty(TRACK_Y + 5));
-    ctx.stroke();
-  }
-}
-
-/* ───────── DRAW: OBJECT (BALL) ───────── */
-function drawObject(x, mass, color, label) {
-  const r = objR(mass);
-  const cx = tx(x), cy = ty(TRACK_Y);
-  const sr = ts(r);
-
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.10)';
-  ctx.beginPath();
-  ctx.arc(cx + ts(2), cy + ts(3), sr, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Body
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(cx, cy, sr, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Highlight (3D shine)
-  const grad = ctx.createRadialGradient(cx - sr * 0.3, cy - sr * 0.3, sr * 0.1, cx, cy, sr);
-  grad.addColorStop(0, 'rgba(255,255,255,0.35)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(cx, cy, sr, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Letter
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold ' + ts(Math.min(20, r * 0.85)) + 'px Outfit';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(label, cx, cy);
-
-  // Mass label
-  ctx.fillStyle = '#90A4AE';
-  ctx.font = ts(13) + 'px "Share Tech Mono", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(mass + ' kg', cx, cy + sr + ts(5));
-}
-
-function drawStickyObject(x, massA, massB) {
-  const totalMass = massA + massB;
-  const r = objR(totalMass);
-  const cx = tx(x), cy = ty(TRACK_Y);
-  const sr = ts(r);
-
-  ctx.fillStyle = 'rgba(0,0,0,0.10)';
-  ctx.beginPath();
-  ctx.arc(cx + ts(2), cy + ts(3), sr, 0, Math.PI * 2);
-  ctx.fill();
-
-  const grad = ctx.createLinearGradient(cx - sr, 0, cx + sr, 0);
-  grad.addColorStop(0, COL_A);
-  grad.addColorStop(1, COL_B);
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(cx, cy, sr, 0, Math.PI * 2);
-  ctx.fill();
-
-  const hl = ctx.createRadialGradient(cx - sr * 0.3, cy - sr * 0.3, sr * 0.1, cx, cy, sr);
-  hl.addColorStop(0, 'rgba(255,255,255,0.3)');
-  hl.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = hl;
-  ctx.beginPath();
-  ctx.arc(cx, cy, sr, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold ' + ts(Math.min(18, r * 0.65)) + 'px Outfit';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('A+B', cx, cy);
-
-  ctx.fillStyle = '#90A4AE';
-  ctx.font = ts(13) + 'px "Share Tech Mono", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(totalMass + ' kg', cx, cy + sr + ts(5));
-}
-
-/* ───────── DRAW: VELOCITY ARROW ───────── */
-function drawVelArrow(x, vel, r, color) {
-  if (vel === 0) {
-    ctx.fillStyle = '#B0BEC5';
-    ctx.font = ts(13) + 'px "Share Tech Mono", monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('v=0', tx(x), ty(TRACK_Y - r - 4));
-    return;
-  }
-  const dir = Math.sign(vel);
-  const startX = x + dir * (r + 4);
-  const len = Math.abs(vel) * ARROW_SCALE;
-  const endX = startX + dir * len;
-  const arrowY = TRACK_Y;
-
-  const headSize = ts(12);
-  const angle = dir > 0 ? 0 : Math.PI;
-  const sx = tx(startX), sy = ty(arrowY);
-  const ex = tx(endX), ey = ty(arrowY);
-
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineWidth = ts(2.5);
-  ctx.lineCap = 'butt';
-  ctx.beginPath();
-  ctx.moveTo(sx, sy);
-  ctx.lineTo(ex - (headSize - 1) * Math.cos(angle), ey - (headSize - 1) * Math.sin(angle));
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(ex, ey);
-  ctx.lineTo(ex - headSize * Math.cos(angle - 0.4), ey - headSize * Math.sin(angle - 0.4));
-  ctx.lineTo(ex - headSize * Math.cos(angle + 0.4), ey - headSize * Math.sin(angle + 0.4));
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = color;
-  ctx.font = 'bold ' + ts(14) + 'px "Share Tech Mono", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText(fmtNum(Math.abs(vel)) + ' m/s', tx((startX + endX) / 2), ty(arrowY - r - 4));
-}
-
-/* ───────── DRAW: MOMENTUM BARS ───────── */
-function drawMomentumBars() {
-  const pA = hasA() ? state.massA * state.currentVelA : 0;
-  const pB = hasB() ? state.massB * state.currentVelB : 0;
-  const pTotal = pA + pB;
-
-  const sectionY = 300;
-
-  ctx.fillStyle = '#90A4AE';
-  ctx.font = 'bold ' + ts(13) + 'px "Share Tech Mono", monospace';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText(T('momentum'), tx(140), ty(sectionY - 18));
-
-  let maxP;
-  if (state.playing || state.collided) {
-    maxP = Math.max(
-      Math.abs(state.massA * state.velA),
-      Math.abs(state.massB * state.velB),
-      Math.abs(state.massA * state.postVelA),
-      Math.abs(state.massB * state.postVelB),
-      Math.abs(state.initialTotalP), 0.1
-    );
-  } else {
-    maxP = Math.max(Math.abs(pA), Math.abs(pB), Math.abs(pTotal), 0.1);
-  }
-  const scale = BAR_MAX_W / maxP;
-
-  // Zero axis
-  ctx.strokeStyle = '#E8E5DE';
-  ctx.lineWidth = ts(1);
-  const rows = hasBoth() ? 3 : 1;
-  const axisBot = sectionY + rows * (BAR_H + BAR_GAP) + (hasBoth() ? 10 : 0);
-  ctx.beginPath();
-  ctx.moveTo(tx(BAR_CENTER), ty(sectionY - 2));
-  ctx.lineTo(tx(BAR_CENTER), ty(axisBot));
-  ctx.stroke();
-
-  ctx.fillStyle = '#CFD8DC';
-  ctx.font = ts(11) + 'px "Share Tech Mono", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText('0', tx(BAR_CENTER), ty(axisBot + 2));
-
-  // Single ball: only show that ball's bar
-  if (!hasBoth()) {
-    const p = hasA() ? pA : pB;
-    const col = hasA() ? COL_A : COL_B;
-    const lbl = hasA() ? T('pA') : T('pB');
-    drawBar(sectionY, p, scale, col, lbl);
-    return;
-  }
-
-  drawBar(sectionY, pA, scale, COL_A, T('pA'));
-  drawBar(sectionY + BAR_H + BAR_GAP, pB, scale, COL_B, T('pB'));
-
-  const sepY = sectionY + 2 * (BAR_H + BAR_GAP) - BAR_GAP / 2;
-  ctx.strokeStyle = '#E8E5DE';
-  ctx.lineWidth = ts(1);
-  ctx.beginPath();
-  ctx.moveTo(tx(140), ty(sepY));
-  ctx.lineTo(tx(860), ty(sepY));
-  ctx.stroke();
-
-  const totalY = sectionY + 2 * (BAR_H + BAR_GAP) + 4;
-  drawBar(totalY, pTotal, scale, COL_TOTAL, T('total'));
-
-  // Reference line for initial total
-  if (state.playing || state.collided) {
-    const refX = BAR_CENTER + state.initialTotalP * scale;
-    ctx.strokeStyle = COL_TOTAL;
-    ctx.lineWidth = ts(2);
-    ctx.setLineDash([ts(3), ts(3)]);
-    ctx.beginPath();
-    ctx.moveTo(tx(refX), ty(totalY - 3));
-    ctx.lineTo(tx(refX), ty(totalY + BAR_H + 3));
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-}
-
-function drawBar(y, value, scale, color, label) {
-  const barW = value * scale;
-  const absW = Math.abs(barW);
-
-  ctx.fillStyle = '#90A4AE';
-  ctx.font = 'bold ' + ts(14) + 'px "Share Tech Mono", monospace';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(label, tx(135), ty(y + BAR_H / 2));
-
-  if (absW > 0.5) {
-    const x = barW >= 0 ? BAR_CENTER : BAR_CENTER + barW;
-    ctx.globalAlpha = 0.2;
-    ctx.fillStyle = color;
-    roundRect(tx(x), ty(y), ts(absW), ts(BAR_H), ts(4));
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = ts(2);
-    roundRect(tx(x), ty(y), ts(absW), ts(BAR_H), ts(4));
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = color;
-  ctx.font = 'bold ' + ts(15) + 'px "Share Tech Mono", monospace';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  const valX = barW >= 0 ? BAR_CENTER + absW + 8 : BAR_CENTER + 8;
-  ctx.fillText(value.toFixed(1), tx(valX), ty(y + BAR_H / 2));
-}
-
-/* ───────── DRAW: CENTER OF MASS ───────── */
-function drawCoM() {
-  if (!hasBoth()) return;
-  const totalMass = state.massA + state.massB;
-  const xCoM = (state.massA * state.posA + state.massB * state.posB) / totalMass;
-  if (xCoM < 30 || xCoM > 970) return;
-
-  const s = 7;
-  ctx.fillStyle = COL_TOTAL;
-  ctx.globalAlpha = 0.5;
-  ctx.beginPath();
-  ctx.moveTo(tx(xCoM), ty(TRACK_Y - s));
-  ctx.lineTo(tx(xCoM + s), ty(TRACK_Y));
-  ctx.lineTo(tx(xCoM), ty(TRACK_Y + s));
-  ctx.lineTo(tx(xCoM - s), ty(TRACK_Y));
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 1;
-
-  ctx.fillStyle = COL_TOTAL;
-  ctx.font = ts(12) + 'px "Share Tech Mono", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.globalAlpha = 0.5;
-  ctx.fillText(T('centerOfMass'), tx(xCoM), ty(TRACK_Y - s - 2));
-  ctx.globalAlpha = 1;
-}
-
-/* ───────── DRAW: PARTICLES ───────── */
-function spawnParticles(x) {
-  for (let i = 0; i < 28; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 60 + Math.random() * 180;
-    state.particles.push({
-      x: x, y: TRACK_Y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      life: 1,
-      color: Math.random() > 0.5 ? COL_A : COL_B,
-    });
-  }
-}
-
-function updateParticles(dt) {
-  for (let i = state.particles.length - 1; i >= 0; i--) {
-    const p = state.particles[i];
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.life -= dt * 2.5;
-    if (p.life <= 0) state.particles.splice(i, 1);
-  }
-}
-
-function drawParticles() {
-  state.particles.forEach(p => {
-    ctx.globalAlpha = Math.max(0, p.life);
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(tx(p.x), ty(p.y), ts(3 * p.life), 0, Math.PI * 2);
-    ctx.fill();
-  });
-  ctx.globalAlpha = 1;
-}
-
-/* ───────── DRAW: SCENE ───────── */
-function drawScene() {
-  ctx.fillStyle = '#f5f3ee';
-  ctx.fillRect(0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
-
-  drawTrack();
-
-  const isStuck = state.stuck;
-
-  var showArrows = state.mode !== 'game' || state.gameShowVel;
-  if (isStuck) {
-    drawStickyObject(state.posA, state.massA, state.massB);
-    if (showArrows) drawVelArrow(state.posA, state.currentVelA, objR(state.massA + state.massB), COL_TOTAL);
-  } else {
-    if (hasA() && state.posA > -60 && state.posA < 1060) {
-      drawObject(state.posA, state.massA, COL_A, 'A');
-      if (showArrows) drawVelArrow(state.posA, state.currentVelA, objR(state.massA), COL_A);
-    }
-    if (hasB() && state.posB > -60 && state.posB < 1060) {
-      drawObject(state.posB, state.massB, COL_B, 'B');
-      if (showArrows) drawVelArrow(state.posB, state.currentVelB, objR(state.massB), COL_B);
-    }
-  }
-
-  drawParticles();
-  drawCoM();
-  if (state.mode !== 'game') drawMomentumBars();
-  drawTargetRef();
-  drawObjButtons();
-}
-
-/* ───────── DRAW: TARGET REFERENCE (game) ───────── */
-function drawTargetRef() {
-  if (state.mode !== 'game' || state.playing || state.simDone) return;
-  var tObj = state.challengeTargetObj;
-  var color = tObj === 'b' ? COL_B : COL_A;
-  var targetVel = state.challengeTarget;
-  var refX = 500;
-  var refY = TRACK_Y + 180;
-
-  // Ghost ball
-  ctx.globalAlpha = 0.25;
-  var r = objR(tObj === 'b' ? state.massB : state.massA);
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(tx(refX), ty(refY), ts(r), 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-
-  // Target arrow (dashed)
-  if (Math.abs(targetVel) > 0.01) {
-    var dir = Math.sign(targetVel);
-    var startX = refX + dir * (r + 4);
-    var len = Math.abs(targetVel) * ARROW_SCALE;
-    var endX = startX + dir * len;
-    ctx.strokeStyle = color;
-    ctx.globalAlpha = 0.5;
-    ctx.lineWidth = ts(2.5);
-    ctx.setLineDash([ts(4), ts(4)]);
-    ctx.beginPath();
-    ctx.moveTo(tx(startX), ty(refY));
-    ctx.lineTo(tx(endX), ty(refY));
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Arrowhead
-    var headSize = ts(10);
-    var angle = dir > 0 ? 0 : Math.PI;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(tx(endX), ty(refY));
-    ctx.lineTo(tx(endX) - headSize * Math.cos(angle - 0.4), ty(refY) - headSize * Math.sin(angle - 0.4));
-    ctx.lineTo(tx(endX) - headSize * Math.cos(angle + 0.4), ty(refY) - headSize * Math.sin(angle + 0.4));
-    ctx.closePath();
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-
-  // Label
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.6;
-  ctx.font = 'bold ' + ts(13) + 'px "Share Tech Mono", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText('Target: ' + fmtNum(Math.abs(targetVel)) + ' m/s', tx(refX), ty(refY - r - 8));
-  ctx.globalAlpha = 1;
-}
-
-/* ───────── OBJECT +/− BUTTONS ───────── */
-var OBJ_BTN_R = 13;
-var OBJ_BTN_GAP = 15;
-
-function getObjBtnPos(idx) {
-  var x = idx === 0 ? state.posA : state.posB;
-  var mass = idx === 0 ? state.massA : state.massB;
-  var r = objR(mass);
-  var sx = tx(x), sy = ty(TRACK_Y);
-  var btnY = sy + ts(r) + 4 + OBJ_BTN_R;
-  return {
-    minus: { x: sx - OBJ_BTN_GAP, y: btnY },
-    plus: { x: sx + OBJ_BTN_GAP, y: btnY },
-  };
-}
-
-function hitTestObjButton(sx, sy) {
-  if (state.selectedObj < 0) return null;
-  var rect = canvas.getBoundingClientRect();
-  var cx = sx - rect.left;
-  var cy = sy - rect.top;
-  var b = getObjBtnPos(state.selectedObj);
-  if (Math.hypot(cx - b.minus.x, cy - b.minus.y) < OBJ_BTN_R + 5) return 'minus';
-  if (Math.hypot(cx - b.plus.x, cy - b.plus.y) < OBJ_BTN_R + 5) return 'plus';
-  return null;
-}
-
-function adjustObjMass(idx, delta) {
-  if (state.playing) return;
-  if (idx === 0) {
-    state.massA = Math.max(10, Math.min(200, state.massA + delta));
-  } else {
-    state.massB = Math.max(10, Math.min(200, state.massB + delta));
-  }
-  state.currentVelA = state.velA;
-  state.currentVelB = state.velB;
-  updateReadouts();
-  clearTimeout(state.selectedTimeout);
-  state.selectedTimeout = setTimeout(deselectObj, 4000);
-}
-
-function selectObj(idx) {
-  state.selectedObj = idx;
-  clearTimeout(state.selectedTimeout);
-  state.selectedTimeout = setTimeout(deselectObj, 4000);
-}
-
-function deselectObj() {
-  state.selectedObj = -1;
-  clearTimeout(state.selectedTimeout);
-  state.selectedTimeout = null;
-}
-
-function drawObjButtons() {
-  if (state.selectedObj < 0 || state.playing) return;
-  var idx = state.selectedObj;
-  var mass = idx === 0 ? state.massA : state.massB;
-  if (mass <= 0 && idx === state.selectedObj) return;
-  var b = getObjBtnPos(idx);
-  var color = idx === 0 ? COL_A : COL_B;
-
-  // Minus
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.beginPath(); ctx.arc(b.minus.x, b.minus.y, OBJ_BTN_R, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.arc(b.minus.x, b.minus.y, OBJ_BTN_R, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = color;
-  ctx.font = 'bold 16px "Share Tech Mono", monospace';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('\u2212', b.minus.x, b.minus.y);
-
-  // Plus
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.beginPath(); ctx.arc(b.plus.x, b.plus.y, OBJ_BTN_R, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.arc(b.plus.x, b.plus.y, OBJ_BTN_R, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = color;
-  ctx.fillText('+', b.plus.x, b.plus.y);
-}
-
-/* ───────── CANVAS INTERACTION ───────── */
-function screenToLogical(sx, sy) {
-  var rect = canvas.getBoundingClientRect();
-  return { x: (sx - rect.left - ox) / scaleF, y: (sy - rect.top - oy) / scaleF };
-}
-
-function hitTestObj(lx, ly) {
-  if (hasB()) {
-    var rB = objR(state.massB);
-    if (Math.hypot(lx - state.posB, ly - TRACK_Y) < rB + 8) return 1;
-  }
-  if (hasA()) {
-    var rA = objR(state.massA);
-    if (Math.hypot(lx - state.posA, ly - TRACK_Y) < rA + 8) return 0;
-  }
-  return -1;
-}
-
-function hitTestArrowTip(lx, ly) {
-  if (state.playing || state.simDone) return null;
-  var blockA = state.mode === 'game' && state.challengeTargetObj === 'a';
-  var blockB = state.mode === 'game' && state.challengeTargetObj === 'b';
-  if (hasA() && !blockA && state.velA !== 0) {
-    var dir = Math.sign(state.velA);
-    var tipX = state.posA + dir * (objR(state.massA) + 4 + Math.abs(state.velA) * ARROW_SCALE);
-    if (Math.abs(lx - tipX) < 15 && Math.abs(ly - TRACK_Y) < 25) return 'a';
-  }
-  if (hasB() && !blockB && state.velB !== 0) {
-    var dir = Math.sign(state.velB);
-    var tipX = state.posB + dir * (objR(state.massB) + 4 + Math.abs(state.velB) * ARROW_SCALE);
-    if (Math.abs(lx - tipX) < 15 && Math.abs(ly - TRACK_Y) < 25) return 'b';
-  }
-  return null;
-}
-
-function recomputeFineDrag() {
-  state.fineDrag = state.precisionMode || state.shiftHeld;
-  document.getElementById('precisionBtn').classList.toggle('active', state.fineDrag);
-}
-
-function togglePrecision() {
-  state.precisionMode = !state.precisionMode;
-  recomputeFineDrag();
-}
-
-function handleArrowDrag(lx) {
-  var rawDx = lx - state.dragLastX;
-  var scale = state.fineDrag ? 0.125 : 1.0;
-  state.dragAccumX += rawDx * scale;
-  state.dragLastX = lx;
-
-  var effTipX = state.dragInitTipX + state.dragAccumX;
-  var objPos, objR_;
-  if (state.draggingArrow === 'a') {
-    objPos = state.posA; objR_ = objR(state.massA);
-  } else {
-    objPos = state.posB; objR_ = objR(state.massB);
-  }
-
-  var dist = effTipX - objPos;
-  var sign = dist >= 0 ? 1 : -1;
-  var rawVel = (Math.abs(dist) - objR_ - 4) / ARROW_SCALE * sign;
-  var vel = Math.round(Math.max(-10, Math.min(10, rawVel)));
-
-  if (state.draggingArrow === 'a') {
-    state.velA = vel; state.currentVelA = vel;
-  } else {
-    state.velB = vel; state.currentVelB = vel;
-  }
-  updateReadouts();
-}
-
-function handlePointerDown(sx, sy, e) {
-  var lp = screenToLogical(sx, sy);
-
-  // 1. Object +/- buttons
-  var btn = hitTestObjButton(sx, sy);
-  if (btn) {
-    adjustObjMass(state.selectedObj, btn === 'plus' ? 10 : -10);
-    if (e) e.preventDefault();
-    return;
-  }
-
-  // 2. Arrow tip drag
-  if (!state.playing && !state.simDone) {
-    var arrow = hitTestArrowTip(lp.x, lp.y);
-    if (arrow) {
-      state.draggingArrow = arrow;
-      state.dragLastX = lp.x;
-      state.dragAccumX = 0;
-      // Compute initial tip position
-      var aObj = arrow === 'a';
-      var aPos = aObj ? state.posA : state.posB;
-      var aVel = aObj ? state.velA : state.velB;
-      var aR = objR(aObj ? state.massA : state.massB);
-      state.dragInitTipX = aPos + Math.sign(aVel) * (aR + 4 + Math.abs(aVel) * ARROW_SCALE);
-      state.shiftHeld = !!(e && e.shiftKey);
-      recomputeFineDrag();
-      canvas.classList.add('dragging');
-      if (e) e.preventDefault();
-      return;
-    }
-  }
-
-  // 3. Object tap (deferred — distinguish from just clicking)
-  if (!state.playing && !state.simDone) {
-    var hit = hitTestObj(lp.x, lp.y);
-    if (hit >= 0) {
-      // In game mode, block interaction with the target object
-      var isTarget = state.mode === 'game' &&
-        ((state.challengeTargetObj === 'b' && hit === 1) ||
-         (state.challengeTargetObj === 'a' && hit === 0));
-      if (!isTarget) {
-        state.tapStart = { lx: lp.x, ly: lp.y, idx: hit };
-        if (e) e.preventDefault();
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conservation of Momentum</title>
+    <meta
+      name="description"
+      content="Interactive simulation exploring the conservation of momentum through elastic, inelastic, and sticky collisions."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-    }
-  }
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --obj-a: #d32f2f;
+        --obj-b: #1565c0;
+        --total: #00c853;
+      }
+      body {
+        min-height: 100vh;
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+        -webkit-tap-highlight-color: transparent;
+      }
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+      .canvas-wrap {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: default;
+      }
+      canvas.dragging,
+      canvas.dragging.hover-obj {
+        cursor: grabbing;
+      }
+      canvas.hover-obj {
+        cursor: grab;
+      }
+      .panel {
+        width: 300px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .controls {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      #grpExplore,
+      #grpGame {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .section-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+        padding-bottom: 2px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .ctrl-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+      .type-toggle {
+        display: flex;
+        gap: 6px;
+      }
+      .type-btn {
+        flex: 1;
+        padding: 8px 4px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Outfit", sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+      }
+      .type-btn.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+      .type-btn:hover {
+        background: #f0ede6;
+      }
+      .type-btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .slider-row input[type="range"] {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        background: #e0ddd6;
+        border-radius: 3px;
+        outline: none;
+        box-shadow: none;
+        touch-action: none;
+      }
+      .slider-row input[type="range"]:focus-visible {
+        box-shadow: 0 0 0 2px var(--accent);
+      }
+      .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+      .slider-row input[type="range"]::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+      .slider-row input[type="range"]:disabled {
+        opacity: 0.4;
+      }
+      .slider-val {
+        min-width: 52px;
+        text-align: right;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      #playBtn,
+      #stopBtn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+      }
+      #playBtn .pause-icon {
+        display: none;
+      }
+      #playBtn.playing .play-icon {
+        display: none;
+      }
+      #playBtn.playing .pause-icon {
+        display: block;
+      }
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .readout-section {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 1px 0;
+      }
+      .readout-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+      .readout-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .readout-val.pa {
+        color: var(--obj-a);
+      }
+      .readout-val.pb {
+        color: var(--obj-b);
+      }
+      .readout-val.pt {
+        color: var(--total);
+      }
+      .info {
+        padding: 16px 20px;
+        flex: 1;
+      }
+      .info-text {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.6;
+      }
+      .info-text a {
+        color: var(--accent);
+      }
+      .challenge-info {
+        margin-top: 4px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+      }
+      .challenge-info.target-b {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+      .challenge-info.target-a {
+        background: #ffcdd2;
+        color: #d32f2f;
+      }
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        font-family: "Outfit", sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 16px;
+        color: #fff;
+      }
+      .overlay-hint {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.6);
+      }
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      @media (max-width: 700px) {
+        .main {
+          flex-direction: column;
+          height: auto;
+          min-height: calc(100vh - 46px);
+        }
+        .canvas-wrap {
+          min-height: 320px;
+          height: 50vh;
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+        }
+        .panel {
+          width: 100%;
+        }
+        .controls {
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 12px;
+          padding: 12px 16px;
+        }
+        .ctrl-group {
+          min-width: 120px;
+          flex: 1;
+        }
+        .btn-row {
+          min-width: 100%;
+        }
+        .info {
+          padding: 12px 16px;
+        }
+      }
+      .lang-btn:focus-visible,
+      .type-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      input[type="range"]:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .header-emoji {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .hidden-group {
+        display: none;
+      }
+      .precision-full-width {
+        width: 100%;
+      }
+      .play-stop-flex {
+        flex: 1;
+      }
+      .inline-result-line {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        margin-top: 12px;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .game-toggle-margin {
+        margin-top: 6px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .result-overlay {
+          animation: none;
+        }
+        .overlay-emoji {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-emoji">&#x1F4A5;</span></a>
+          <span id="titleText">Conservation of Momentum</span>
+        </h1>
+        <p id="subtitleText">
+          Discover why total momentum never changes in a collision.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
 
-  // 4. Track area tap → play/pause
-  if (lp.y > TRACK_Y - 60 && lp.y < TRACK_Y + 60 && lp.x > 50 && lp.x < 950) {
-    togglePlay();
-    deselectObj();
-    if (e) e.preventDefault();
-    return;
-  }
+    <main class="main">
+      <div class="canvas-wrap">
+        <canvas id="canvas" aria-label="Momentum collision simulation"></canvas>
+      </div>
 
-  deselectObj();
-}
+      <div class="panel">
+        <div class="controls">
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblMode">Mode</span>
+            <div class="type-toggle">
+              <button type="button" class="type-btn active" id="modeExploreBtn">
+                Explore
+              </button>
+              <button type="button" class="type-btn" id="modeGameBtn">
+                Game
+              </button>
+            </div>
+          </div>
 
-function handlePointerMove(sx, sy, e) {
-  if (state.draggingArrow) {
-    if (e && e.shiftKey !== undefined) { state.shiftHeld = !!e.shiftKey; recomputeFineDrag(); }
-    var lp = screenToLogical(sx, sy);
-    handleArrowDrag(lp.x);
-    if (e) e.preventDefault();
-    return;
-  }
-  if (state.tapStart) {
-    var lp = screenToLogical(sx, sy);
-    if (Math.hypot(lp.x - state.tapStart.lx, lp.y - state.tapStart.ly) > 5) {
-      // Exceeded threshold — cancel tap, no drag for objects in momentum
-      state.tapStart = null;
-    }
-    return;
-  }
-  // Hover cursor
-  if (!state.playing) {
-    var rect = canvas.getBoundingClientRect();
-    if (sx >= rect.left && sx <= rect.right && sy >= rect.top && sy <= rect.bottom) {
-      var lp = screenToLogical(sx, sy);
-      var onObj = hitTestObj(lp.x, lp.y) >= 0;
-      var onArrow = hitTestArrowTip(lp.x, lp.y) !== null;
-      canvas.classList.toggle('hover-obj', onObj || onArrow);
-    }
-  }
-}
+          <div id="grpExplore">
+            <div class="ctrl-group">
+              <span class="ctrl-label" id="lblCollType">Collision type</span>
+              <div class="type-toggle">
+                <button type="button" class="type-btn active" id="elasticBtn">
+                  Elastic
+                </button>
+                <button type="button" class="type-btn" id="inelasticBtn">
+                  Inelastic
+                </button>
+                <button type="button" class="type-btn" id="stickyBtn">
+                  Sticky
+                </button>
+              </div>
+            </div>
 
-function handlePointerUp() {
-  if (state.draggingArrow) {
-    state.draggingArrow = null;
-    canvas.classList.remove('dragging');
-  } else if (state.tapStart) {
-    selectObj(state.tapStart.idx);
-    state.tapStart = null;
-  }
-}
+            <div class="ctrl-group hidden-group" id="elasticityGroup">
+              <span class="ctrl-label" id="lblElasticity">Elasticity</span>
+              <div class="slider-row">
+                <input
+                  type="range"
+                  id="elasticitySlider"
+                  min="0.1"
+                  max="0.9"
+                  value="0.5"
+                  step="0.1"
+                  aria-label="Elasticity coefficient"
+                />
+                <span class="slider-val" id="elasticityVal">0.5</span>
+              </div>
+            </div>
+          </div>
 
-canvas.addEventListener('mousedown', function(e) { handlePointerDown(e.clientX, e.clientY, e); });
-window.addEventListener('mousemove', function(e) { handlePointerMove(e.clientX, e.clientY, e); });
-window.addEventListener('mouseup', function() { handlePointerUp(); });
+          <div id="grpGame" class="hidden-group">
+            <div class="ctrl-group">
+              <div class="challenge-info" id="challengeInfo">
+                <span id="challengeTargetText"></span>
+              </div>
+              <div class="type-toggle game-toggle-margin">
+                <button type="button" class="type-btn" id="newTargetBtn">
+                  New target
+                </button>
+              </div>
+            </div>
+          </div>
 
-canvas.addEventListener('touchstart', function(e) {
-  var t = e.touches[0]; handlePointerDown(t.clientX, t.clientY, e);
-}, { passive: false });
-window.addEventListener('touchmove', function(e) {
-  if (state.draggingArrow || state.tapStart) {
-    handlePointerMove(e.touches[0].clientX, e.touches[0].clientY, e);
-  }
-}, { passive: false });
-window.addEventListener('touchend', function() { handlePointerUp(); });
+          <button
+            type="button"
+            class="type-btn precision-full-width"
+            id="precisionBtn"
+          >
+            Precision (Shift)
+          </button>
 
-window.addEventListener('keydown', function(e) {
-  if (e.key === 'Shift') { state.shiftHeld = true; recomputeFineDrag(); }
-});
-window.addEventListener('keyup', function(e) {
-  if (e.key === 'Shift') { state.shiftHeld = false; recomputeFineDrag(); }
-});
+          <div class="btn-row">
+            <button
+              type="button"
+              class="type-btn play-stop-flex"
+              id="playBtn"
+              aria-label="Play or pause simulation"
+            >
+              <svg
+                class="play-icon"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <polygon points="7,5 19,12 7,19" />
+              </svg>
+              <svg
+                class="pause-icon"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <rect x="6" y="5" width="4" height="14" />
+                <rect x="14" y="5" width="4" height="14" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="type-btn play-stop-flex"
+              id="stopBtn"
+              aria-label="Stop and reset simulation"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <rect x="6" y="6" width="12" height="12" />
+              </svg>
+            </button>
+          </div>
 
-/* ───────── ANIMATION ───────── */
-let lastTime = 0;
+          <div id="grpReadouts">
+            <div class="readout-section">
+              <div class="readout-row">
+                <span class="readout-label" id="lblReadPA">p(A)</span>
+                <span class="readout-val pa" id="readoutPA">25.0</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblReadPB">p(B)</span>
+                <span class="readout-val pb" id="readoutPB">0.0</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblReadTotal">Total</span>
+                <span class="readout-val pt" id="readoutTotal">25.0</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-function animate(now) {
-  now /= 1000;
-  const dt = lastTime ? Math.min(now - lastTime, 0.05) : 0;
-  lastTime = now;
+        <div class="info">
+          <div class="info-text" id="infoText"></div>
+        </div>
+      </div>
+    </main>
 
-  if (state.playing) {
-    state.time += dt;
-    updateParticles(dt);
-
-    if (hasA()) state.posA += state.currentVelA * VEL_SCALE * dt;
-    if (hasB()) state.posB += state.currentVelB * VEL_SCALE * dt;
-
-    // Keep stuck objects together
-    if (state.stuck) {
-      const avg = (state.posA + state.posB) / 2;
-      state.posA = avg;
-      state.posB = avg;
-    }
-
-    // Collision detection (only when both balls exist)
-    if (hasBoth() && !state.collided) {
-      const gap = Math.abs(state.posA - state.posB) - objR(state.massA) - objR(state.massB);
-      if (gap <= 0) {
-        const e = getRestitution();
-        const result = computeCollision(state.massA, state.currentVelA, state.massB, state.currentVelB, e);
-        state.postVelA = result.v1;
-        state.postVelB = result.v2;
-        state.currentVelA = result.v1;
-        state.currentVelB = result.v2;
-        state.collided = true;
-
-        const totalMass = state.massA + state.massB;
-        const com = (state.massA * state.posA + state.massB * state.posB) / totalMass;
-
-        if (e === 0) {
-          state.stuck = true;
-          state.posA = com;
-          state.posB = com;
+    <script>
+      (function () {
+        "use strict";
+        /* ───────── I18N ───────── */
+        const I18N = {
+          en: {
+            title: "Conservation of Momentum",
+            subtitle:
+              "Discover why total momentum never changes in a collision.",
+            mode: "Mode",
+            explore: "Explore",
+            game: "Game",
+            collisionType: "Collision type",
+            elastic: "Elastic",
+            inelastic: "Inelastic",
+            sticky: "Sticky",
+            elasticity: "Elasticity",
+            precision: "Precision (Shift)",
+            newTarget: "New target",
+            play: "Play",
+            pause: "Pause",
+            pA: "p(A)",
+            pB: "p(B)",
+            total: "Total",
+            challengeTargetA: "Target: A = {0} m/s",
+            challengeTargetB: "Target: B = {0} m/s",
+            challengeSuccess: "Perfect shot!",
+            challengeClose: "So close! Try again",
+            challengeMiss: "Not quite! Try again",
+            clickToDismiss: "Click to continue",
+            momentum: "MOMENTUM",
+            centerOfMass: "CoM",
+            infoExplore: [
+              { bold: "Momentum = mass \u00D7 velocity." },
+              { br: 2 },
+              "Set the mass and velocity for each ball. Set mass to ",
+              { bold: "0" },
+              " to hide a ball.",
+              { br: 2 },
+              "Hit ",
+              { bold: "Launch" },
+              " and watch the bars \u2014 the green ",
+              { bold: "Total" },
+              " bar never moves during a collision!",
+            ],
+            infoGameB: [
+              "Adjust Object A's mass and velocity so that Object B reaches the target speed after the collision. Then hit Launch!",
+            ],
+            infoGameA: [
+              "Adjust Object B's mass and velocity so that Object A reaches the target speed after the collision. Then hit Launch!",
+            ],
+          },
+          pl: {
+            title: "Zasada zachowania pędu",
+            subtitle:
+              "Odkryj, dlaczego całkowity pęd nigdy się nie zmienia podczas zderzenia.",
+            mode: "Tryb",
+            explore: "Eksploruj",
+            game: "Gra",
+            collisionType: "Rodzaj zderzenia",
+            elastic: "Sprężyste",
+            inelastic: "Niesprężyste",
+            sticky: "Zlepienie",
+            elasticity: "Sprężystość",
+            precision: "Precyzja (Shift)",
+            newTarget: "Nowy cel",
+            play: "Start",
+            pause: "Pauza",
+            pA: "p(A)",
+            pB: "p(B)",
+            total: "Suma",
+            challengeTargetA: "Cel: A = {0} m/s",
+            challengeTargetB: "Cel: B = {0} m/s",
+            challengeSuccess: "Doskonały strzał!",
+            challengeClose: "Prawie! Spróbuj ponownie",
+            challengeMiss: "Daleko! Spróbuj ponownie",
+            clickToDismiss: "Kliknij, aby kontynuować",
+            momentum: "PĘD",
+            centerOfMass: "ŚM",
+            infoExplore: [
+              { bold: "P\u0119d = masa \u00D7 pr\u0119dko\u015b\u0107." },
+              { br: 2 },
+              "Ustaw mas\u0119 i pr\u0119dko\u015b\u0107 ka\u017cdej kuli. Ustaw mas\u0119 na ",
+              { bold: "0" },
+              ", aby ukry\u0107 kul\u0119.",
+              { br: 2 },
+              "Naci\u015bnij ",
+              { bold: "Start" },
+              " i obserwuj paski \u2014 zielony pasek ",
+              { bold: "Suma" },
+              " nie porusza si\u0119 podczas zderzenia!",
+            ],
+            infoGameB: [
+              "Ustaw mas\u0119 i pr\u0119dko\u015b\u0107 Obiektu A tak, aby Obiekt B osi\u0105gn\u0105\u0142 docelow\u0105 pr\u0119dko\u015b\u0107 po zderzeniu. Potem naci\u015bnij Start!",
+            ],
+            infoGameA: [
+              "Ustaw mas\u0119 i pr\u0119dko\u015b\u0107 Obiektu B tak, aby Obiekt A osi\u0105gn\u0105\u0142 docelow\u0105 pr\u0119dko\u015b\u0107 po zderzeniu. Potem naci\u015bnij Start!",
+            ],
+          },
+        };
+        function T(key) {
+          return I18N[state.lang][key];
         }
 
-        if (!state.stuck) {
-          const minDist = objR(state.massA) + objR(state.massB) + 1;
-          if (state.posA < state.posB) {
-            state.posA = com - minDist * state.massB / totalMass;
-            state.posB = com + minDist * state.massA / totalMass;
-          } else {
-            state.posA = com + minDist * state.massB / totalMass;
-            state.posB = com - minDist * state.massA / totalMass;
+        /* ───────── CONSTANTS ───────── */
+        const TRACK_Y = 180;
+        const INIT_POS_A = 200;
+        const INIT_POS_B = 500;
+        const VEL_SCALE = 30;
+        const ARROW_SCALE = 16;
+        const BAR_CENTER = 500;
+        const BAR_MAX_W = 320;
+        const BAR_H = 24;
+        const BAR_GAP = 14;
+        const COL_A = "#D32F2F";
+        const COL_B = "#1565C0";
+        const COL_TOTAL = "#00C853";
+        function objR(mass) {
+          return 14 + Math.sqrt(mass) * 2;
+        }
+        function hasA() {
+          return state.massA > 0;
+        }
+        function hasB() {
+          return state.massB > 0;
+        }
+        function hasBoth() {
+          return hasA() && hasB();
+        }
+
+        /* ───────── STATE ───────── */
+        const state = {
+          lang: navigator.language?.startsWith("pl") ? "pl" : "en",
+          mode: "explore",
+          massA: 50,
+          velA: 5,
+          massB: 50,
+          velB: 0,
+          collisionType: "elastic",
+          restitution: 0.5,
+          playing: false,
+          time: 0,
+          posA: INIT_POS_A,
+          posB: INIT_POS_B,
+          currentVelA: 5,
+          currentVelB: 0,
+          precisionMode: false,
+          shiftHeld: false,
+          fineDrag: false,
+          dragLastX: 0,
+          dragAccumX: 0,
+          dragInitTipX: 0,
+          collided: false,
+          stuck: false,
+          initialTotalP: 0,
+          initialKE: 0,
+          postVelA: 0,
+          postVelB: 0,
+          particles: [],
+          simDone: false,
+          challengeTarget: 0,
+          challengeTargetObj: "b",
+          gameShowVel: true,
+          selectedObj: -1,
+          selectedTimeout: null,
+          tapStart: null,
+          draggingArrow: null,
+        };
+
+        /* ───────── CANVAS SETUP ───────── */
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        let W, H, scaleF, ox, oy;
+
+        function resize() {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          W = rect.width;
+          H = rect.height;
+          canvas.width = W * dpr;
+          canvas.height = H * dpr;
+          canvas.style.width = W + "px";
+          canvas.style.height = H + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          scaleF = Math.min(W / 1000, H / 680) * 0.92;
+          ox = (W - 1000 * scaleF) / 2;
+          oy = (H - 680 * scaleF) / 2;
+        }
+        window.addEventListener("resize", resize);
+
+        function tx(x) {
+          return ox + x * scaleF;
+        }
+        function ty(y) {
+          return oy + y * scaleF;
+        }
+        function ts(s) {
+          return s * scaleF;
+        }
+
+        /* ───────── PHYSICS ───────── */
+        function getRestitution() {
+          if (state.collisionType === "elastic") return 1;
+          if (state.collisionType === "sticky") return 0;
+          return state.restitution;
+        }
+
+        function computeCollision(m1, v1, m2, v2, e) {
+          const M = m1 + m2;
+          return {
+            v1: (m1 * v1 + m2 * v2 + m2 * e * (v2 - v1)) / M,
+            v2: (m1 * v1 + m2 * v2 + m1 * e * (v1 - v2)) / M,
+          };
+        }
+
+        function fmtNum(v) {
+          return parseFloat(v.toPrecision(3)).toString();
+        }
+
+        /* ───────── DRAWING HELPERS ───────── */
+        function roundRect(x, y, w, h, r) {
+          if (w < 0) {
+            x += w;
+            w = -w;
+          }
+          r = Math.min(r, w / 2, h / 2);
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + w - r, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+          ctx.lineTo(x + w, y + h - r);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+          ctx.lineTo(x + r, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+          ctx.lineTo(x, y + r);
+          ctx.quadraticCurveTo(x, y, x + r, y);
+          ctx.closePath();
+        }
+
+        /* ───────── DRAW: TRACK ───────── */
+        function drawTrack() {
+          ctx.strokeStyle = "#CFD8DC";
+          ctx.lineWidth = ts(2);
+          ctx.beginPath();
+          ctx.moveTo(tx(50), ty(TRACK_Y));
+          ctx.lineTo(tx(950), ty(TRACK_Y));
+          ctx.stroke();
+          ctx.strokeStyle = "#E0DDD6";
+          ctx.lineWidth = ts(1);
+          for (let x = 100; x <= 900; x += 100) {
+            ctx.beginPath();
+            ctx.moveTo(tx(x), ty(TRACK_Y - 5));
+            ctx.lineTo(tx(x), ty(TRACK_Y + 5));
+            ctx.stroke();
           }
         }
 
-        spawnParticles((state.posA + state.posB) / 2);
+        /* ───────── DRAW: OBJECT (BALL) ───────── */
+        function drawObject(x, mass, color, label) {
+          const r = objR(mass);
+          const cx = tx(x),
+            cy = ty(TRACK_Y);
+          const sr = ts(r);
 
-        if (state.mode === 'game') {
-          state.gameShowVel = false;
-          setTimeout(() => evaluateChallenge(), 600);
+          // Shadow
+          ctx.fillStyle = "rgba(0,0,0,0.10)";
+          ctx.beginPath();
+          ctx.arc(cx + ts(2), cy + ts(3), sr, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Body
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(cx, cy, sr, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Highlight (3D shine)
+          const grad = ctx.createRadialGradient(
+            cx - sr * 0.3,
+            cy - sr * 0.3,
+            sr * 0.1,
+            cx,
+            cy,
+            sr,
+          );
+          grad.addColorStop(0, "rgba(255,255,255,0.35)");
+          grad.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, sr, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Letter
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold " + ts(Math.min(20, r * 0.85)) + "px Outfit";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, cx, cy);
+
+          // Mass label
+          ctx.fillStyle = "#90A4AE";
+          ctx.font = ts(13) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(mass + " kg", cx, cy + sr + ts(5));
         }
-      }
-    }
 
-    // Auto-stop when all visible balls are off screen
-    const aOff = !hasA() || state.posA < -150 || state.posA > 1150;
-    const bOff = !hasB() || state.posB < -150 || state.posB > 1150;
-    if ((aOff && bOff) || state.time > 15) {
-      state.playing = false;
-      state.simDone = true;
-      updatePlayButton();
-    }
-  }
+        function drawStickyObject(x, massA, massB) {
+          const totalMass = massA + massB;
+          const r = objR(totalMass);
+          const cx = tx(x),
+            cy = ty(TRACK_Y);
+          const sr = ts(r);
 
-  if (state.playing || state.collided) updateReadouts();
-  drawScene();
-  requestAnimationFrame(animate);
-}
+          ctx.fillStyle = "rgba(0,0,0,0.10)";
+          ctx.beginPath();
+          ctx.arc(cx + ts(2), cy + ts(3), sr, 0, Math.PI * 2);
+          ctx.fill();
 
-/* ───────── UI: ELASTICITY SLIDER ───────── */
-document.getElementById('elasticitySlider').addEventListener('input', function(e) {
-  state.restitution = +e.target.value;
-  document.getElementById('elasticityVal').textContent = (+e.target.value).toFixed(1);
-});
+          const grad = ctx.createLinearGradient(cx - sr, 0, cx + sr, 0);
+          grad.addColorStop(0, COL_A);
+          grad.addColorStop(1, COL_B);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, sr, 0, Math.PI * 2);
+          ctx.fill();
 
-/* ───────── UI: PLAY / PAUSE / STOP ───────── */
-function freshLaunch() {
-  if (!hasA() && !hasB()) return;
+          const hl = ctx.createRadialGradient(
+            cx - sr * 0.3,
+            cy - sr * 0.3,
+            sr * 0.1,
+            cx,
+            cy,
+            sr,
+          );
+          hl.addColorStop(0, "rgba(255,255,255,0.3)");
+          hl.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = hl;
+          ctx.beginPath();
+          ctx.arc(cx, cy, sr, 0, Math.PI * 2);
+          ctx.fill();
 
-  state.currentVelA = state.velA;
-  state.currentVelB = state.velB;
-  state.posA = INIT_POS_A;
-  state.posB = INIT_POS_B;
-  state.collided = false;
-  state.stuck = false;
-  state.particles = [];
-  state.time = 0;
-  state.simDone = false;
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold " + ts(Math.min(18, r * 0.65)) + "px Outfit";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("A+B", cx, cy);
 
-  const pA = hasA() ? state.massA * state.velA : 0;
-  const pB = hasB() ? state.massB * state.velB : 0;
-  state.initialTotalP = pA + pB;
-  state.initialKE = (hasA() ? 0.5 * state.massA * state.velA * state.velA : 0) +
-    (hasB() ? 0.5 * state.massB * state.velB * state.velB : 0);
+          ctx.fillStyle = "#90A4AE";
+          ctx.font = ts(13) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(totalMass + " kg", cx, cy + sr + ts(5));
+        }
 
-  if (hasBoth()) {
-    const result = computeCollision(state.massA, state.velA, state.massB, state.velB, getRestitution());
-    state.postVelA = result.v1;
-    state.postVelB = result.v2;
-  } else {
-    state.postVelA = state.velA;
-    state.postVelB = state.velB;
-  }
+        /* ───────── DRAW: VELOCITY ARROW ───────── */
+        function drawVelArrow(x, vel, r, color) {
+          if (vel === 0) {
+            ctx.fillStyle = "#B0BEC5";
+            ctx.font = ts(13) + 'px "Share Tech Mono", monospace';
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.fillText("v=0", tx(x), ty(TRACK_Y - r - 4));
+            return;
+          }
+          const dir = Math.sign(vel);
+          const startX = x + dir * (r + 4);
+          const len = Math.abs(vel) * ARROW_SCALE;
+          const endX = startX + dir * len;
+          const arrowY = TRACK_Y;
 
-  state.playing = true;
-  setControlsEnabled(false);
-}
+          const headSize = ts(12);
+          const angle = dir > 0 ? 0 : Math.PI;
+          const sx = tx(startX),
+            sy = ty(arrowY);
+          const ex = tx(endX),
+            ey = ty(arrowY);
 
-function togglePlay() {
-  if (state.playing) {
-    // Pause
-    state.playing = false;
-  } else if (state.simDone || state.time === 0) {
-    // Fresh start or restart after sim ended
-    freshLaunch();
-  } else {
-    // Resume from pause
-    state.playing = true;
-  }
-  updatePlayButton();
-}
+          ctx.strokeStyle = color;
+          ctx.fillStyle = color;
+          ctx.lineWidth = ts(2.5);
+          ctx.lineCap = "butt";
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(
+            ex - (headSize - 1) * Math.cos(angle),
+            ey - (headSize - 1) * Math.sin(angle),
+          );
+          ctx.stroke();
 
-function updatePlayButton() {
-  const btn = document.getElementById('playBtn');
-  btn.classList.toggle('playing', state.playing);
-}
+          ctx.beginPath();
+          ctx.moveTo(ex, ey);
+          ctx.lineTo(
+            ex - headSize * Math.cos(angle - 0.4),
+            ey - headSize * Math.sin(angle - 0.4),
+          );
+          ctx.lineTo(
+            ex - headSize * Math.cos(angle + 0.4),
+            ey - headSize * Math.sin(angle + 0.4),
+          );
+          ctx.closePath();
+          ctx.fill();
 
-function resetSim() {
-  state.playing = false;
-  state.simDone = false;
-  state.posA = INIT_POS_A;
-  state.posB = INIT_POS_B;
-  state.currentVelA = state.velA;
-  state.currentVelB = state.velB;
-  state.collided = false;
-  state.stuck = false;
-  state.particles = [];
-  state.time = 0;
+          ctx.fillStyle = color;
+          ctx.font = "bold " + ts(14) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(
+            fmtNum(Math.abs(vel)) + " m/s",
+            tx((startX + endX) / 2),
+            ty(arrowY - r - 4),
+          );
+        }
 
-  setControlsEnabled(true);
-  updatePlayButton();
-  updateReadouts();
-}
+        /* ───────── DRAW: MOMENTUM BARS ───────── */
+        function drawMomentumBars() {
+          const pA = hasA() ? state.massA * state.currentVelA : 0;
+          const pB = hasB() ? state.massB * state.currentVelB : 0;
+          const pTotal = pA + pB;
 
-function setControlsEnabled(enabled) {
-  var el = document.getElementById('elasticitySlider');
-  if (el) el.disabled = !enabled;
-}
+          const sectionY = 300;
 
-/* ───────── UI: MODE ───────── */
-function setMode(mode) {
-  state.mode = mode;
-  document.getElementById('modeExploreBtn').classList.toggle('active', mode === 'explore');
-  document.getElementById('modeGameBtn').classList.toggle('active', mode === 'game');
+          ctx.fillStyle = "#90A4AE";
+          ctx.font = "bold " + ts(13) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "left";
+          ctx.textBaseline = "alphabetic";
+          ctx.fillText(T("momentum"), tx(140), ty(sectionY - 18));
 
-  document.getElementById('grpExplore').style.display = mode === 'explore' ? '' : 'none';
-  document.getElementById('grpReadouts').style.display = mode === 'explore' ? '' : 'none';
-  document.getElementById('grpGame').style.display = mode === 'game' ? '' : 'none';
+          let maxP;
+          if (state.playing || state.collided) {
+            maxP = Math.max(
+              Math.abs(state.massA * state.velA),
+              Math.abs(state.massB * state.velB),
+              Math.abs(state.massA * state.postVelA),
+              Math.abs(state.massB * state.postVelB),
+              Math.abs(state.initialTotalP),
+              0.1,
+            );
+          } else {
+            maxP = Math.max(Math.abs(pA), Math.abs(pB), Math.abs(pTotal), 0.1);
+          }
+          const scale = BAR_MAX_W / maxP;
 
-  if (mode === 'game') {
-    generateTarget();
-  } else {
-    resetSim();
-  }
-  updateInfoText();
-}
+          // Zero axis
+          ctx.strokeStyle = "#E8E5DE";
+          ctx.lineWidth = ts(1);
+          const rows = hasBoth() ? 3 : 1;
+          const axisBot =
+            sectionY + rows * (BAR_H + BAR_GAP) + (hasBoth() ? 10 : 0);
+          ctx.beginPath();
+          ctx.moveTo(tx(BAR_CENTER), ty(sectionY - 2));
+          ctx.lineTo(tx(BAR_CENTER), ty(axisBot));
+          ctx.stroke();
 
-/* ───────── UI: COLLISION TYPE ───────── */
-function setCollisionType(type) {
-  state.collisionType = type;
-  document.getElementById('elasticBtn').classList.toggle('active', type === 'elastic');
-  document.getElementById('inelasticBtn').classList.toggle('active', type === 'inelastic');
-  document.getElementById('stickyBtn').classList.toggle('active', type === 'sticky');
+          ctx.fillStyle = "#CFD8DC";
+          ctx.font = ts(11) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText("0", tx(BAR_CENTER), ty(axisBot + 2));
 
-  document.getElementById('elasticityGroup').style.display = type === 'inelastic' ? '' : 'none';
+          // Single ball: only show that ball's bar
+          if (!hasBoth()) {
+            const p = hasA() ? pA : pB;
+            const col = hasA() ? COL_A : COL_B;
+            const lbl = hasA() ? T("pA") : T("pB");
+            drawBar(sectionY, p, scale, col, lbl);
+            return;
+          }
 
-  if (state.playing) resetSim();
-}
+          drawBar(sectionY, pA, scale, COL_A, T("pA"));
+          drawBar(sectionY + BAR_H + BAR_GAP, pB, scale, COL_B, T("pB"));
 
-/* ───────── GAME MODE ───────── */
-function countSolutions(targetObj, target, fixedMass) {
-  var count = 0;
-  for (var m = 10; m <= 200; m += 10) {
-    for (var v = 1; v <= 10; v++) {
-      var r;
-      if (targetObj === 'b') {
-        r = computeCollision(m, v, fixedMass, 0, 1);
-        if (Math.abs(target) > 0.01 && Math.abs(r.v2 - target) / Math.abs(target) < 0.05) count++;
-      } else {
-        r = computeCollision(fixedMass, 0, m, -v, 1);
-        if (Math.abs(target) > 0.01 && Math.abs(r.v1 - target) / Math.abs(target) < 0.05) count++;
-      }
-    }
-  }
-  return count;
-}
+          const sepY = sectionY + 2 * (BAR_H + BAR_GAP) - BAR_GAP / 2;
+          ctx.strokeStyle = "#E8E5DE";
+          ctx.lineWidth = ts(1);
+          ctx.beginPath();
+          ctx.moveTo(tx(140), ty(sepY));
+          ctx.lineTo(tx(860), ty(sepY));
+          ctx.stroke();
 
-function generateTarget() {
-  resetSim();
-  state.gameShowVel = true;
+          const totalY = sectionY + 2 * (BAR_H + BAR_GAP) + 4;
+          drawBar(totalY, pTotal, scale, COL_TOTAL, T("total"));
 
-  var targetObj, fixedMass, target;
-  var attempts = 0;
+          // Reference line for initial total
+          if (state.playing || state.collided) {
+            const refX = BAR_CENTER + state.initialTotalP * scale;
+            ctx.strokeStyle = COL_TOTAL;
+            ctx.lineWidth = ts(2);
+            ctx.setLineDash([ts(3), ts(3)]);
+            ctx.beginPath();
+            ctx.moveTo(tx(refX), ty(totalY - 3));
+            ctx.lineTo(tx(refX), ty(totalY + BAR_H + 3));
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        }
 
-  do {
-    targetObj = Math.random() < 0.5 ? 'a' : 'b';
-    fixedMass = 30 + Math.floor(Math.random() * 10) * 10;
-    var solMass = 10 + Math.floor(Math.random() * 19) * 10;
-    var solVel = 2 + Math.floor(Math.random() * 9);
+        function drawBar(y, value, scale, color, label) {
+          const barW = value * scale;
+          const absW = Math.abs(barW);
 
-    var result;
-    if (targetObj === 'b') {
-      result = computeCollision(solMass, solVel, fixedMass, 0, 1);
-      target = result.v2;
-    } else {
-      result = computeCollision(fixedMass, 0, solMass, -solVel, 1);
-      target = result.v1;
-    }
-    attempts++;
-  } while ((Math.abs(target) < 0.01 || countSolutions(targetObj, target, fixedMass) < 5) && attempts < 100);
+          ctx.fillStyle = "#90A4AE";
+          ctx.font = "bold " + ts(14) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, tx(135), ty(y + BAR_H / 2));
 
-  state.challengeTargetObj = targetObj;
-  state.collisionType = 'elastic';
-  state.challengeTarget = target;
+          if (absW > 0.5) {
+            const x = barW >= 0 ? BAR_CENTER : BAR_CENTER + barW;
+            ctx.globalAlpha = 0.2;
+            ctx.fillStyle = color;
+            roundRect(tx(x), ty(y), ts(absW), ts(BAR_H), ts(4));
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = ts(2);
+            roundRect(tx(x), ty(y), ts(absW), ts(BAR_H), ts(4));
+            ctx.stroke();
+          }
 
-  if (targetObj === 'b') {
-    state.massA = 50; state.velA = 1; state.currentVelA = 1;
-    state.massB = fixedMass; state.velB = 0; state.currentVelB = 0;
-  } else {
-    state.massA = fixedMass; state.velA = 0; state.currentVelA = 0;
-    state.massB = 50; state.velB = -1; state.currentVelB = -1;
-  }
+          ctx.fillStyle = color;
+          ctx.font = "bold " + ts(15) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          const valX = barW >= 0 ? BAR_CENTER + absW + 8 : BAR_CENTER + 8;
+          ctx.fillText(value.toFixed(1), tx(valX), ty(y + BAR_H / 2));
+        }
 
-  var tKey = targetObj === 'b' ? 'challengeTargetB' : 'challengeTargetA';
-  document.getElementById('challengeTargetText').textContent = T(tKey).replace('{0}', fmtNum(Math.abs(state.challengeTarget)));
-  document.getElementById('challengeInfo').className = 'challenge-info target-' + targetObj;
-  updateInfoText();
-}
+        /* ───────── DRAW: CENTER OF MASS ───────── */
+        function drawCoM() {
+          if (!hasBoth()) return;
+          const totalMass = state.massA + state.massB;
+          const xCoM =
+            (state.massA * state.posA + state.massB * state.posB) / totalMass;
+          if (xCoM < 30 || xCoM > 970) return;
 
-function evaluateChallenge() {
-  if (state.mode !== 'game' || !state.collided) return;
-  const actual = state.challengeTargetObj === 'b' ? state.currentVelB : state.currentVelA;
-  const target = state.challengeTarget;
-  const pct = Math.abs(target) > 0.01 ? Math.abs(actual - target) / Math.abs(target) * 100 : Math.abs(actual - target) * 100;
+          const s = 7;
+          ctx.fillStyle = COL_TOTAL;
+          ctx.globalAlpha = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(tx(xCoM), ty(TRACK_Y - s));
+          ctx.lineTo(tx(xCoM + s), ty(TRACK_Y));
+          ctx.lineTo(tx(xCoM), ty(TRACK_Y + s));
+          ctx.lineTo(tx(xCoM - s), ty(TRACK_Y));
+          ctx.closePath();
+          ctx.fill();
+          ctx.globalAlpha = 1;
 
-  if (pct < 5) {
-    showOverlay('success', actual, pct);
-  } else if (pct < 15) {
-    showOverlay('close', actual, pct);
-  } else {
-    showOverlay('miss', actual, pct);
-  }
-}
+          ctx.fillStyle = COL_TOTAL;
+          ctx.font = ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.globalAlpha = 0.5;
+          ctx.fillText(T("centerOfMass"), tx(xCoM), ty(TRACK_Y - s - 2));
+          ctx.globalAlpha = 1;
+        }
 
-function showOverlay(result, actualVel, pct) {
-  var existing = document.querySelector('.result-overlay');
-  if (existing) existing.remove();
+        /* ───────── DRAW: PARTICLES ───────── */
+        function spawnParticles(x) {
+          for (let i = 0; i < 28; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 60 + Math.random() * 180;
+            state.particles.push({
+              x: x,
+              y: TRACK_Y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              life: 1,
+              color: Math.random() > 0.5 ? COL_A : COL_B,
+            });
+          }
+        }
 
-  var overlay = document.createElement('div');
-  overlay.className = 'result-overlay';
+        function updateParticles(dt) {
+          for (let i = state.particles.length - 1; i >= 0; i--) {
+            const p = state.particles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.life -= dt * 2.5;
+            if (p.life <= 0) state.particles.splice(i, 1);
+          }
+        }
 
-  var emoji, msg, bg;
-  if (result === 'success') {
-    emoji = '\uD83C\uDF89'; msg = T('challengeSuccess'); bg = 'rgba(63,185,80,0.88)';
-  } else if (result === 'close') {
-    emoji = '\uD83D\uDC4D\uD83C\uDFFB'; msg = T('challengeClose'); bg = 'rgba(88,166,255,0.88)';
-  } else {
-    emoji = '\uD83D\uDC4E\uD83C\uDFFB'; msg = T('challengeMiss'); bg = 'rgba(240,180,60,0.92)';
-  }
+        function drawParticles() {
+          state.particles.forEach((p) => {
+            ctx.globalAlpha = Math.max(0, p.life);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(tx(p.x), ty(p.y), ts(3 * p.life), 0, Math.PI * 2);
+            ctx.fill();
+          });
+          ctx.globalAlpha = 1;
+        }
 
-  var resultLine = actualVel != null
-    ? '<div style="font-family:\'Share Tech Mono\',monospace;font-size:16px;margin-top:12px;color:rgba(255,255,255,0.85)">' + fmtNum(actualVel) + ' m/s (' + Math.round(pct) + '% off)</div>'
-    : '';
+        /* ───────── DRAW: SCENE ───────── */
+        function drawScene() {
+          ctx.fillStyle = "#f5f3ee";
+          ctx.fillRect(
+            0,
+            0,
+            canvas.width / (window.devicePixelRatio || 1),
+            canvas.height / (window.devicePixelRatio || 1),
+          );
 
-  overlay.style.background = bg;
-  overlay.innerHTML =
-    '<div class="overlay-emoji">' + emoji + '</div>' +
-    '<div class="overlay-msg">' + msg + '</div>' +
-    resultLine +
-    '<div class="overlay-hint">' + T('clickToDismiss') + '</div>';
+          drawTrack();
 
-  overlay.addEventListener('click', function() {
-    overlay.remove();
-    if (state.mode === 'game') { resetSim(); state.gameShowVel = true; }
-  });
-  document.body.appendChild(overlay);
-}
+          const isStuck = state.stuck;
 
-/* ───────── READOUTS ───────── */
-function updateReadouts() {
-  const pA = hasA() ? state.massA * state.currentVelA : 0;
-  const pB = hasB() ? state.massB * state.currentVelB : 0;
-  const pTotal = pA + pB;
+          const showArrows = state.mode !== "game" || state.gameShowVel;
+          if (isStuck) {
+            drawStickyObject(state.posA, state.massA, state.massB);
+            if (showArrows)
+              drawVelArrow(
+                state.posA,
+                state.currentVelA,
+                objR(state.massA + state.massB),
+                COL_TOTAL,
+              );
+          } else {
+            if (hasA() && state.posA > -60 && state.posA < 1060) {
+              drawObject(state.posA, state.massA, COL_A, "A");
+              if (showArrows)
+                drawVelArrow(
+                  state.posA,
+                  state.currentVelA,
+                  objR(state.massA),
+                  COL_A,
+                );
+            }
+            if (hasB() && state.posB > -60 && state.posB < 1060) {
+              drawObject(state.posB, state.massB, COL_B, "B");
+              if (showArrows)
+                drawVelArrow(
+                  state.posB,
+                  state.currentVelB,
+                  objR(state.massB),
+                  COL_B,
+                );
+            }
+          }
 
-  document.getElementById('readoutPA').textContent = pA.toFixed(1) + ' kg\u00B7m/s';
-  document.getElementById('readoutPB').textContent = pB.toFixed(1) + ' kg\u00B7m/s';
-  document.getElementById('readoutTotal').textContent = pTotal.toFixed(1) + ' kg\u00B7m/s';
+          drawParticles();
+          drawCoM();
+          if (state.mode !== "game") drawMomentumBars();
+          drawTargetRef();
+          drawObjButtons();
+        }
 
-}
+        /* ───────── DRAW: TARGET REFERENCE (game) ───────── */
+        function drawTargetRef() {
+          if (state.mode !== "game" || state.playing || state.simDone) return;
+          const tObj = state.challengeTargetObj;
+          const color = tObj === "b" ? COL_B : COL_A;
+          const targetVel = state.challengeTarget;
+          const refX = 500;
+          const refY = TRACK_Y + 180;
 
-/* ───────── INFO TEXT ───────── */
-function updateInfoText() {
-  const el = document.getElementById('infoText');
-  if (state.mode === 'game') {
-    el.innerHTML = T('infoGame' + state.challengeTargetObj.toUpperCase());
-  } else {
-    el.innerHTML = T('infoExplore');
-  }
-}
+          // Ghost ball
+          ctx.globalAlpha = 0.25;
+          const r = objR(tObj === "b" ? state.massB : state.massA);
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(tx(refX), ty(refY), ts(r), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
 
-/* ───────── TRANSLATIONS ───────── */
-function applyTranslations() {
-  document.title = T('title');
-  document.documentElement.lang = state.lang;
-  document.getElementById('titleText').textContent = T('title');
-  document.getElementById('subtitleText').textContent = T('subtitle');
-  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
-  document.getElementById('lblMode').textContent = T('mode');
-  document.getElementById('modeExploreBtn').textContent = T('explore');
-  document.getElementById('modeGameBtn').textContent = T('game');
-  document.getElementById('lblCollType').textContent = T('collisionType');
-  document.getElementById('elasticBtn').textContent = T('elastic');
-  document.getElementById('inelasticBtn').textContent = T('inelastic');
-  document.getElementById('stickyBtn').textContent = T('sticky');
-  document.getElementById('lblElasticity').textContent = T('elasticity');
-  document.getElementById('precisionBtn').textContent = T('precision');
-  document.getElementById('newTargetBtn').textContent = T('newTarget');
-  updatePlayButton();
-  document.getElementById('lblReadPA').textContent = T('pA');
-  document.getElementById('lblReadPB').textContent = T('pB');
-  document.getElementById('lblReadTotal').textContent = T('total');
+          // Target arrow (dashed)
+          if (Math.abs(targetVel) > 0.01) {
+            const dir = Math.sign(targetVel);
+            const startX = refX + dir * (r + 4);
+            const len = Math.abs(targetVel) * ARROW_SCALE;
+            const endX = startX + dir * len;
+            ctx.strokeStyle = color;
+            ctx.globalAlpha = 0.5;
+            ctx.lineWidth = ts(2.5);
+            ctx.setLineDash([ts(4), ts(4)]);
+            ctx.beginPath();
+            ctx.moveTo(tx(startX), ty(refY));
+            ctx.lineTo(tx(endX), ty(refY));
+            ctx.stroke();
+            ctx.setLineDash([]);
 
-  if (state.mode === 'game') {
-    const tKey = state.challengeTargetObj === 'b' ? 'challengeTargetB' : 'challengeTargetA';
-    document.getElementById('challengeTargetText').textContent = T(tKey).replace('{0}', fmtNum(Math.abs(state.challengeTarget)));
-  }
+            // Arrowhead
+            const headSize = ts(10);
+            const angle = dir > 0 ? 0 : Math.PI;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(tx(endX), ty(refY));
+            ctx.lineTo(
+              tx(endX) - headSize * Math.cos(angle - 0.4),
+              ty(refY) - headSize * Math.sin(angle - 0.4),
+            );
+            ctx.lineTo(
+              tx(endX) - headSize * Math.cos(angle + 0.4),
+              ty(refY) - headSize * Math.sin(angle + 0.4),
+            );
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          }
 
-  updateInfoText();
-  updateReadouts();
-}
+          // Label
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.6;
+          ctx.font = "bold " + ts(13) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(
+            "Target: " + fmtNum(Math.abs(targetVel)) + " m/s",
+            tx(refX),
+            ty(refY - r - 8),
+          );
+          ctx.globalAlpha = 1;
+        }
 
-function toggleLang() {
-  state.lang = state.lang === 'en' ? 'pl' : 'en';
-  applyTranslations();
-}
+        /* ───────── OBJECT +/− BUTTONS ───────── */
+        const OBJ_BTN_R = 13;
+        const OBJ_BTN_GAP = 15;
 
-/* ───────── INIT ───────── */
-function init() {
-  resize();
-  setCollisionType('elastic');
-  applyTranslations();
-  updateReadouts();
-  requestAnimationFrame(animate);
-}
+        function getObjBtnPos(idx) {
+          const x = idx === 0 ? state.posA : state.posB;
+          const mass = idx === 0 ? state.massA : state.massB;
+          const r = objR(mass);
+          const sx = tx(x),
+            sy = ty(TRACK_Y);
+          const btnY = sy + ts(r) + 4 + OBJ_BTN_R;
+          return {
+            minus: { x: sx - OBJ_BTN_GAP, y: btnY },
+            plus: { x: sx + OBJ_BTN_GAP, y: btnY },
+          };
+        }
 
-init();
-</script>
-</body>
+        function hitTestObjButton(sx, sy) {
+          if (state.selectedObj < 0) return null;
+          const rect = canvas.getBoundingClientRect();
+          const cx = sx - rect.left;
+          const cy = sy - rect.top;
+          const b = getObjBtnPos(state.selectedObj);
+          if (Math.hypot(cx - b.minus.x, cy - b.minus.y) < OBJ_BTN_R + 5)
+            return "minus";
+          if (Math.hypot(cx - b.plus.x, cy - b.plus.y) < OBJ_BTN_R + 5)
+            return "plus";
+          return null;
+        }
+
+        function adjustObjMass(idx, delta) {
+          if (state.playing) return;
+          if (idx === 0) {
+            state.massA = Math.max(10, Math.min(200, state.massA + delta));
+          } else {
+            state.massB = Math.max(10, Math.min(200, state.massB + delta));
+          }
+          state.currentVelA = state.velA;
+          state.currentVelB = state.velB;
+          updateReadouts();
+          clearTimeout(state.selectedTimeout);
+          state.selectedTimeout = setTimeout(deselectObj, 4000);
+        }
+
+        function selectObj(idx) {
+          state.selectedObj = idx;
+          clearTimeout(state.selectedTimeout);
+          state.selectedTimeout = setTimeout(deselectObj, 4000);
+        }
+
+        function deselectObj() {
+          state.selectedObj = -1;
+          clearTimeout(state.selectedTimeout);
+          state.selectedTimeout = null;
+        }
+
+        function drawObjButtons() {
+          if (state.selectedObj < 0 || state.playing) return;
+          const idx = state.selectedObj;
+          const mass = idx === 0 ? state.massA : state.massB;
+          if (mass <= 0 && idx === state.selectedObj) return;
+          const b = getObjBtnPos(idx);
+          const color = idx === 0 ? COL_A : COL_B;
+
+          // Minus
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.beginPath();
+          ctx.arc(b.minus.x, b.minus.y, OBJ_BTN_R, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(b.minus.x, b.minus.y, OBJ_BTN_R, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = color;
+          ctx.font = 'bold 16px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("\u2212", b.minus.x, b.minus.y);
+
+          // Plus
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.beginPath();
+          ctx.arc(b.plus.x, b.plus.y, OBJ_BTN_R, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(b.plus.x, b.plus.y, OBJ_BTN_R, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = color;
+          ctx.fillText("+", b.plus.x, b.plus.y);
+        }
+
+        /* ───────── CANVAS INTERACTION ───────── */
+        function screenToLogical(sx, sy) {
+          const rect = canvas.getBoundingClientRect();
+          return {
+            x: (sx - rect.left - ox) / scaleF,
+            y: (sy - rect.top - oy) / scaleF,
+          };
+        }
+
+        function hitTestObj(lx, ly) {
+          if (hasB()) {
+            const rB = objR(state.massB);
+            if (Math.hypot(lx - state.posB, ly - TRACK_Y) < rB + 8) return 1;
+          }
+          if (hasA()) {
+            const rA = objR(state.massA);
+            if (Math.hypot(lx - state.posA, ly - TRACK_Y) < rA + 8) return 0;
+          }
+          return -1;
+        }
+
+        function hitTestArrowTip(lx, ly) {
+          if (state.playing || state.simDone) return null;
+          const blockA =
+            state.mode === "game" && state.challengeTargetObj === "a";
+          const blockB =
+            state.mode === "game" && state.challengeTargetObj === "b";
+          if (hasA() && !blockA && state.velA !== 0) {
+            const dir = Math.sign(state.velA);
+            const tipX =
+              state.posA +
+              dir *
+                (objR(state.massA) + 4 + Math.abs(state.velA) * ARROW_SCALE);
+            if (Math.abs(lx - tipX) < 15 && Math.abs(ly - TRACK_Y) < 25)
+              return "a";
+          }
+          if (hasB() && !blockB && state.velB !== 0) {
+            const dir = Math.sign(state.velB);
+            const tipX =
+              state.posB +
+              dir *
+                (objR(state.massB) + 4 + Math.abs(state.velB) * ARROW_SCALE);
+            if (Math.abs(lx - tipX) < 15 && Math.abs(ly - TRACK_Y) < 25)
+              return "b";
+          }
+          return null;
+        }
+
+        function recomputeFineDrag() {
+          state.fineDrag = state.precisionMode || state.shiftHeld;
+          document
+            .getElementById("precisionBtn")
+            .classList.toggle("active", state.fineDrag);
+        }
+
+        function togglePrecision() {
+          state.precisionMode = !state.precisionMode;
+          recomputeFineDrag();
+        }
+
+        function handleArrowDrag(lx) {
+          const rawDx = lx - state.dragLastX;
+          const scale = state.fineDrag ? 0.125 : 1.0;
+          state.dragAccumX += rawDx * scale;
+          state.dragLastX = lx;
+
+          const effTipX = state.dragInitTipX + state.dragAccumX;
+          let objPos, objR_;
+          if (state.draggingArrow === "a") {
+            objPos = state.posA;
+            objR_ = objR(state.massA);
+          } else {
+            objPos = state.posB;
+            objR_ = objR(state.massB);
+          }
+
+          const dist = effTipX - objPos;
+          const sign = dist >= 0 ? 1 : -1;
+          const rawVel = ((Math.abs(dist) - objR_ - 4) / ARROW_SCALE) * sign;
+          const vel = Math.round(Math.max(-10, Math.min(10, rawVel)));
+
+          if (state.draggingArrow === "a") {
+            state.velA = vel;
+            state.currentVelA = vel;
+          } else {
+            state.velB = vel;
+            state.currentVelB = vel;
+          }
+          updateReadouts();
+        }
+
+        function handlePointerDown(sx, sy, e) {
+          const lp = screenToLogical(sx, sy);
+
+          // 1. Object +/- buttons
+          const btn = hitTestObjButton(sx, sy);
+          if (btn) {
+            adjustObjMass(state.selectedObj, btn === "plus" ? 10 : -10);
+            if (e) e.preventDefault();
+            return;
+          }
+
+          // 2. Arrow tip drag
+          if (!state.playing && !state.simDone) {
+            const arrow = hitTestArrowTip(lp.x, lp.y);
+            if (arrow) {
+              state.draggingArrow = arrow;
+              state.dragLastX = lp.x;
+              state.dragAccumX = 0;
+              // Compute initial tip position
+              const aObj = arrow === "a";
+              const aPos = aObj ? state.posA : state.posB;
+              const aVel = aObj ? state.velA : state.velB;
+              const aR = objR(aObj ? state.massA : state.massB);
+              state.dragInitTipX =
+                aPos +
+                Math.sign(aVel) * (aR + 4 + Math.abs(aVel) * ARROW_SCALE);
+              state.shiftHeld = !!(e && e.shiftKey);
+              recomputeFineDrag();
+              canvas.classList.add("dragging");
+              if (e) e.preventDefault();
+              return;
+            }
+          }
+
+          // 3. Object tap (deferred — distinguish from just clicking)
+          if (!state.playing && !state.simDone) {
+            const hit = hitTestObj(lp.x, lp.y);
+            if (hit >= 0) {
+              // In game mode, block interaction with the target object
+              const isTarget =
+                state.mode === "game" &&
+                ((state.challengeTargetObj === "b" && hit === 1) ||
+                  (state.challengeTargetObj === "a" && hit === 0));
+              if (!isTarget) {
+                state.tapStart = { lx: lp.x, ly: lp.y, idx: hit };
+                if (e) e.preventDefault();
+                return;
+              }
+            }
+          }
+
+          // 4. Track area tap → play/pause
+          if (
+            lp.y > TRACK_Y - 60 &&
+            lp.y < TRACK_Y + 60 &&
+            lp.x > 50 &&
+            lp.x < 950
+          ) {
+            togglePlay();
+            deselectObj();
+            if (e) e.preventDefault();
+            return;
+          }
+
+          deselectObj();
+        }
+
+        function handlePointerMove(sx, sy, e) {
+          if (state.draggingArrow) {
+            if (e && e.shiftKey !== undefined) {
+              state.shiftHeld = !!e.shiftKey;
+              recomputeFineDrag();
+            }
+            const lp = screenToLogical(sx, sy);
+            handleArrowDrag(lp.x);
+            if (e) e.preventDefault();
+            return;
+          }
+          if (state.tapStart) {
+            const lp = screenToLogical(sx, sy);
+            if (
+              Math.hypot(lp.x - state.tapStart.lx, lp.y - state.tapStart.ly) > 5
+            ) {
+              // Exceeded threshold — cancel tap, no drag for objects in momentum
+              state.tapStart = null;
+            }
+            return;
+          }
+          // Hover cursor
+          if (!state.playing) {
+            const rect = canvas.getBoundingClientRect();
+            if (
+              sx >= rect.left &&
+              sx <= rect.right &&
+              sy >= rect.top &&
+              sy <= rect.bottom
+            ) {
+              const lp = screenToLogical(sx, sy);
+              const onObj = hitTestObj(lp.x, lp.y) >= 0;
+              const onArrow = hitTestArrowTip(lp.x, lp.y) !== null;
+              canvas.classList.toggle("hover-obj", onObj || onArrow);
+            }
+          }
+        }
+
+        function handlePointerUp() {
+          if (state.draggingArrow) {
+            state.draggingArrow = null;
+            canvas.classList.remove("dragging");
+          } else if (state.tapStart) {
+            selectObj(state.tapStart.idx);
+            state.tapStart = null;
+          }
+        }
+
+        canvas.addEventListener("mousedown", function (e) {
+          handlePointerDown(e.clientX, e.clientY, e);
+        });
+        window.addEventListener("mousemove", function (e) {
+          handlePointerMove(e.clientX, e.clientY, e);
+        });
+        window.addEventListener("mouseup", function () {
+          handlePointerUp();
+        });
+
+        canvas.addEventListener(
+          "touchstart",
+          function (e) {
+            const t = e.touches[0];
+            handlePointerDown(t.clientX, t.clientY, e);
+          },
+          { passive: false },
+        );
+        window.addEventListener(
+          "touchmove",
+          function (e) {
+            if (state.draggingArrow || state.tapStart) {
+              handlePointerMove(e.touches[0].clientX, e.touches[0].clientY, e);
+            }
+          },
+          { passive: false },
+        );
+        window.addEventListener("touchend", function () {
+          handlePointerUp();
+        });
+
+        window.addEventListener("keydown", function (e) {
+          if (e.key === "Shift") {
+            state.shiftHeld = true;
+            recomputeFineDrag();
+          }
+        });
+        window.addEventListener("keyup", function (e) {
+          if (e.key === "Shift") {
+            state.shiftHeld = false;
+            recomputeFineDrag();
+          }
+        });
+
+        /* ───────── ANIMATION ───────── */
+        let lastTime = 0;
+
+        function animate(now) {
+          now /= 1000;
+          const dt = lastTime ? Math.min(now - lastTime, 0.05) : 0;
+          lastTime = now;
+
+          if (state.playing) {
+            state.time += dt;
+            updateParticles(dt);
+
+            if (hasA()) state.posA += state.currentVelA * VEL_SCALE * dt;
+            if (hasB()) state.posB += state.currentVelB * VEL_SCALE * dt;
+
+            // Keep stuck objects together
+            if (state.stuck) {
+              const avg = (state.posA + state.posB) / 2;
+              state.posA = avg;
+              state.posB = avg;
+            }
+
+            // Collision detection (only when both balls exist)
+            if (hasBoth() && !state.collided) {
+              const gap =
+                Math.abs(state.posA - state.posB) -
+                objR(state.massA) -
+                objR(state.massB);
+              if (gap <= 0) {
+                const e = getRestitution();
+                const result = computeCollision(
+                  state.massA,
+                  state.currentVelA,
+                  state.massB,
+                  state.currentVelB,
+                  e,
+                );
+                state.postVelA = result.v1;
+                state.postVelB = result.v2;
+                state.currentVelA = result.v1;
+                state.currentVelB = result.v2;
+                state.collided = true;
+
+                const totalMass = state.massA + state.massB;
+                const com =
+                  (state.massA * state.posA + state.massB * state.posB) /
+                  totalMass;
+
+                if (e === 0) {
+                  state.stuck = true;
+                  state.posA = com;
+                  state.posB = com;
+                }
+
+                if (!state.stuck) {
+                  const minDist = objR(state.massA) + objR(state.massB) + 1;
+                  if (state.posA < state.posB) {
+                    state.posA = com - (minDist * state.massB) / totalMass;
+                    state.posB = com + (minDist * state.massA) / totalMass;
+                  } else {
+                    state.posA = com + (minDist * state.massB) / totalMass;
+                    state.posB = com - (minDist * state.massA) / totalMass;
+                  }
+                }
+
+                spawnParticles((state.posA + state.posB) / 2);
+
+                if (state.mode === "game") {
+                  state.gameShowVel = false;
+                  setTimeout(() => evaluateChallenge(), 600);
+                }
+              }
+            }
+
+            // Auto-stop when all visible balls are off screen
+            const aOff = !hasA() || state.posA < -150 || state.posA > 1150;
+            const bOff = !hasB() || state.posB < -150 || state.posB > 1150;
+            if ((aOff && bOff) || state.time > 15) {
+              state.playing = false;
+              state.simDone = true;
+              updatePlayButton();
+            }
+          }
+
+          if (state.playing || state.collided) updateReadouts();
+          drawScene();
+          requestAnimationFrame(animate);
+        }
+
+        /* ───────── UI: ELASTICITY SLIDER ───────── */
+        document
+          .getElementById("elasticitySlider")
+          .addEventListener("input", function (e) {
+            state.restitution = +e.target.value;
+            document.getElementById("elasticityVal").textContent = (+e.target
+              .value).toFixed(1);
+          });
+
+        /* ───────── UI: PLAY / PAUSE / STOP ───────── */
+        function freshLaunch() {
+          if (!hasA() && !hasB()) return;
+
+          state.currentVelA = state.velA;
+          state.currentVelB = state.velB;
+          state.posA = INIT_POS_A;
+          state.posB = INIT_POS_B;
+          state.collided = false;
+          state.stuck = false;
+          state.particles = [];
+          state.time = 0;
+          state.simDone = false;
+
+          const pA = hasA() ? state.massA * state.velA : 0;
+          const pB = hasB() ? state.massB * state.velB : 0;
+          state.initialTotalP = pA + pB;
+          state.initialKE =
+            (hasA() ? 0.5 * state.massA * state.velA * state.velA : 0) +
+            (hasB() ? 0.5 * state.massB * state.velB * state.velB : 0);
+
+          if (hasBoth()) {
+            const result = computeCollision(
+              state.massA,
+              state.velA,
+              state.massB,
+              state.velB,
+              getRestitution(),
+            );
+            state.postVelA = result.v1;
+            state.postVelB = result.v2;
+          } else {
+            state.postVelA = state.velA;
+            state.postVelB = state.velB;
+          }
+
+          state.playing = true;
+          setControlsEnabled(false);
+        }
+
+        function togglePlay() {
+          if (state.playing) {
+            // Pause
+            state.playing = false;
+          } else if (state.simDone || state.time === 0) {
+            // Fresh start or restart after sim ended
+            freshLaunch();
+          } else {
+            // Resume from pause
+            state.playing = true;
+          }
+          updatePlayButton();
+        }
+
+        function updatePlayButton() {
+          const btn = document.getElementById("playBtn");
+          btn.classList.toggle("playing", state.playing);
+        }
+
+        function resetSim() {
+          state.playing = false;
+          state.simDone = false;
+          state.posA = INIT_POS_A;
+          state.posB = INIT_POS_B;
+          state.currentVelA = state.velA;
+          state.currentVelB = state.velB;
+          state.collided = false;
+          state.stuck = false;
+          state.particles = [];
+          state.time = 0;
+
+          setControlsEnabled(true);
+          updatePlayButton();
+          updateReadouts();
+        }
+
+        function setControlsEnabled(enabled) {
+          const el = document.getElementById("elasticitySlider");
+          if (el) el.disabled = !enabled;
+        }
+
+        /* ───────── UI: MODE ───────── */
+        function setMode(mode) {
+          state.mode = mode;
+          document
+            .getElementById("modeExploreBtn")
+            .classList.toggle("active", mode === "explore");
+          document
+            .getElementById("modeGameBtn")
+            .classList.toggle("active", mode === "game");
+
+          document.getElementById("grpExplore").style.display =
+            mode === "explore" ? "" : "none";
+          document.getElementById("grpReadouts").style.display =
+            mode === "explore" ? "" : "none";
+          document.getElementById("grpGame").style.display =
+            mode === "game" ? "" : "none";
+
+          if (mode === "game") {
+            generateTarget();
+          } else {
+            resetSim();
+          }
+          updateInfoText();
+        }
+
+        /* ───────── UI: COLLISION TYPE ───────── */
+        function setCollisionType(type) {
+          state.collisionType = type;
+          document
+            .getElementById("elasticBtn")
+            .classList.toggle("active", type === "elastic");
+          document
+            .getElementById("inelasticBtn")
+            .classList.toggle("active", type === "inelastic");
+          document
+            .getElementById("stickyBtn")
+            .classList.toggle("active", type === "sticky");
+
+          document.getElementById("elasticityGroup").style.display =
+            type === "inelastic" ? "" : "none";
+
+          if (state.playing) resetSim();
+        }
+
+        /* ───────── GAME MODE ───────── */
+        function countSolutions(targetObj, target, fixedMass) {
+          let count = 0;
+          for (let m = 10; m <= 200; m += 10) {
+            for (let v = 1; v <= 10; v++) {
+              let r;
+              if (targetObj === "b") {
+                r = computeCollision(m, v, fixedMass, 0, 1);
+                if (
+                  Math.abs(target) > 0.01 &&
+                  Math.abs(r.v2 - target) / Math.abs(target) < 0.05
+                )
+                  count++;
+              } else {
+                r = computeCollision(fixedMass, 0, m, -v, 1);
+                if (
+                  Math.abs(target) > 0.01 &&
+                  Math.abs(r.v1 - target) / Math.abs(target) < 0.05
+                )
+                  count++;
+              }
+            }
+          }
+          return count;
+        }
+
+        function generateTarget() {
+          resetSim();
+          state.gameShowVel = true;
+
+          let targetObj, fixedMass, target;
+          let attempts = 0;
+
+          do {
+            targetObj = Math.random() < 0.5 ? "a" : "b";
+            fixedMass = 30 + Math.floor(Math.random() * 10) * 10;
+            const solMass = 10 + Math.floor(Math.random() * 19) * 10;
+            const solVel = 2 + Math.floor(Math.random() * 9);
+
+            let result;
+            if (targetObj === "b") {
+              result = computeCollision(solMass, solVel, fixedMass, 0, 1);
+              target = result.v2;
+            } else {
+              result = computeCollision(fixedMass, 0, solMass, -solVel, 1);
+              target = result.v1;
+            }
+            attempts++;
+          } while (
+            (Math.abs(target) < 0.01 ||
+              countSolutions(targetObj, target, fixedMass) < 5) &&
+            attempts < 100
+          );
+
+          state.challengeTargetObj = targetObj;
+          state.collisionType = "elastic";
+          state.challengeTarget = target;
+
+          if (targetObj === "b") {
+            state.massA = 50;
+            state.velA = 1;
+            state.currentVelA = 1;
+            state.massB = fixedMass;
+            state.velB = 0;
+            state.currentVelB = 0;
+          } else {
+            state.massA = fixedMass;
+            state.velA = 0;
+            state.currentVelA = 0;
+            state.massB = 50;
+            state.velB = -1;
+            state.currentVelB = -1;
+          }
+
+          const tKey =
+            targetObj === "b" ? "challengeTargetB" : "challengeTargetA";
+          document.getElementById("challengeTargetText").textContent = T(
+            tKey,
+          ).replace("{0}", fmtNum(Math.abs(state.challengeTarget)));
+          document.getElementById("challengeInfo").className =
+            "challenge-info target-" + targetObj;
+          updateInfoText();
+        }
+
+        function evaluateChallenge() {
+          if (state.mode !== "game" || !state.collided) return;
+          const actual =
+            state.challengeTargetObj === "b"
+              ? state.currentVelB
+              : state.currentVelA;
+          const target = state.challengeTarget;
+          const pct =
+            Math.abs(target) > 0.01
+              ? (Math.abs(actual - target) / Math.abs(target)) * 100
+              : Math.abs(actual - target) * 100;
+
+          if (pct < 5) {
+            showOverlay("success", actual, pct);
+          } else if (pct < 15) {
+            showOverlay("close", actual, pct);
+          } else {
+            showOverlay("miss", actual, pct);
+          }
+        }
+
+        function showOverlay(result, actualVel, pct) {
+          const existing = document.querySelector(".result-overlay");
+          if (existing) existing.remove();
+
+          const overlay = document.createElement("div");
+          overlay.className = "result-overlay";
+
+          let emoji, msg, bg;
+          if (result === "success") {
+            emoji = "\uD83C\uDF89";
+            msg = T("challengeSuccess");
+            bg = "rgba(63,185,80,0.88)";
+          } else if (result === "close") {
+            emoji = "\uD83D\uDC4D\uD83C\uDFFB";
+            msg = T("challengeClose");
+            bg = "rgba(88,166,255,0.88)";
+          } else {
+            emoji = "\uD83D\uDC4E\uD83C\uDFFB";
+            msg = T("challengeMiss");
+            bg = "rgba(240,180,60,0.92)";
+          }
+
+          overlay.style.background = bg;
+
+          const emojiDiv = document.createElement("div");
+          emojiDiv.className = "overlay-emoji";
+          emojiDiv.textContent = emoji;
+          overlay.appendChild(emojiDiv);
+
+          const msgDiv = document.createElement("div");
+          msgDiv.className = "overlay-msg";
+          msgDiv.textContent = msg;
+          overlay.appendChild(msgDiv);
+
+          if (actualVel != null) {
+            const resultDiv = document.createElement("div");
+            resultDiv.className = "inline-result-line";
+            resultDiv.textContent =
+              fmtNum(actualVel) + " m/s (" + Math.round(pct) + "% off)";
+            overlay.appendChild(resultDiv);
+          }
+
+          const hintDiv = document.createElement("div");
+          hintDiv.className = "overlay-hint";
+          hintDiv.textContent = T("clickToDismiss");
+          overlay.appendChild(hintDiv);
+
+          overlay.addEventListener("click", function () {
+            overlay.remove();
+            if (state.mode === "game") {
+              resetSim();
+              state.gameShowVel = true;
+            }
+          });
+          document.body.appendChild(overlay);
+        }
+
+        /* ───────── READOUTS ───────── */
+        function updateReadouts() {
+          const pA = hasA() ? state.massA * state.currentVelA : 0;
+          const pB = hasB() ? state.massB * state.currentVelB : 0;
+          const pTotal = pA + pB;
+
+          document.getElementById("readoutPA").textContent =
+            pA.toFixed(1) + " kg\u00B7m/s";
+          document.getElementById("readoutPB").textContent =
+            pB.toFixed(1) + " kg\u00B7m/s";
+          document.getElementById("readoutTotal").textContent =
+            pTotal.toFixed(1) + " kg\u00B7m/s";
+        }
+
+        /* ───────── INFO TEXT ───────── */
+        function buildRichText(el, parts) {
+          el.textContent = "";
+          for (const part of parts) {
+            if (typeof part === "string") {
+              el.appendChild(document.createTextNode(part));
+            } else if (part.bold) {
+              const strong = document.createElement("strong");
+              strong.textContent = part.bold;
+              el.appendChild(strong);
+            } else if (part.br) {
+              for (let i = 0; i < part.br; i++) {
+                el.appendChild(document.createElement("br"));
+              }
+            }
+          }
+        }
+
+        function updateInfoText() {
+          const el = document.getElementById("infoText");
+          if (state.mode === "game") {
+            buildRichText(
+              el,
+              T("infoGame" + state.challengeTargetObj.toUpperCase()),
+            );
+          } else {
+            buildRichText(el, T("infoExplore"));
+          }
+        }
+
+        /* ───────── TRANSLATIONS ───────── */
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          document.getElementById("langBtn").textContent =
+            state.lang === "en" ? "PL" : "EN";
+          document.getElementById("lblMode").textContent = T("mode");
+          document.getElementById("modeExploreBtn").textContent = T("explore");
+          document.getElementById("modeGameBtn").textContent = T("game");
+          document.getElementById("lblCollType").textContent =
+            T("collisionType");
+          document.getElementById("elasticBtn").textContent = T("elastic");
+          document.getElementById("inelasticBtn").textContent = T("inelastic");
+          document.getElementById("stickyBtn").textContent = T("sticky");
+          document.getElementById("lblElasticity").textContent =
+            T("elasticity");
+          document.getElementById("precisionBtn").textContent = T("precision");
+          document.getElementById("newTargetBtn").textContent = T("newTarget");
+          updatePlayButton();
+          document.getElementById("lblReadPA").textContent = T("pA");
+          document.getElementById("lblReadPB").textContent = T("pB");
+          document.getElementById("lblReadTotal").textContent = T("total");
+
+          if (state.mode === "game") {
+            const tKey =
+              state.challengeTargetObj === "b"
+                ? "challengeTargetB"
+                : "challengeTargetA";
+            document.getElementById("challengeTargetText").textContent = T(
+              tKey,
+            ).replace("{0}", fmtNum(Math.abs(state.challengeTarget)));
+          }
+
+          updateInfoText();
+          updateReadouts();
+        }
+
+        function toggleLang() {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        }
+
+        /* ───────── INIT ───────── */
+        function init() {
+          resize();
+          setCollisionType("elastic");
+          applyTranslations();
+          updateReadouts();
+
+          document
+            .getElementById("langBtn")
+            .addEventListener("click", toggleLang);
+          document
+            .getElementById("precisionBtn")
+            .addEventListener("click", togglePrecision);
+          document
+            .getElementById("modeExploreBtn")
+            .addEventListener("click", function () {
+              setMode("explore");
+            });
+          document
+            .getElementById("modeGameBtn")
+            .addEventListener("click", function () {
+              setMode("game");
+            });
+          document
+            .getElementById("elasticBtn")
+            .addEventListener("click", function () {
+              setCollisionType("elastic");
+            });
+          document
+            .getElementById("inelasticBtn")
+            .addEventListener("click", function () {
+              setCollisionType("inelastic");
+            });
+          document
+            .getElementById("stickyBtn")
+            .addEventListener("click", function () {
+              setCollisionType("sticky");
+            });
+          document
+            .getElementById("playBtn")
+            .addEventListener("click", function () {
+              togglePlay();
+              updatePlayButton();
+            });
+          document
+            .getElementById("stopBtn")
+            .addEventListener("click", resetSim);
+          document
+            .getElementById("newTargetBtn")
+            .addEventListener("click", generateTarget);
+
+          requestAnimationFrame(animate);
+        }
+
+        init();
+
+        /* ───────── VISIBILITY ───────── */
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) {
+            lastTime = 0;
+          }
+        });
+      })();
+    </script>
+  </body>
 </html>

@@ -1,773 +1,1108 @@
-<!DOCTYPE html>
+<!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run cr -- gravlens.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- gravlens.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="description" content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images.">
-<meta name="author" content="Łukasz Łepecki">
-<link rel="canonical" href="https://lepecki.com/learn/gravlens.html">
-<meta property="og:title" content="Gravitational Lens Simulator">
-<meta property="og:description" content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://lepecki.com/learn/gravlens.html">
-<meta property="og:site_name" content="Łukasz Łepecki">
-<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Gravitational Lens Simulator">
-<meta name="twitter:description" content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images.">
-<title>Gravitational Lens Simulator</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0b0f18;
-    --panel: #131825;
-    --panel-border: #1e2a3a;
-    --text: #c9d1d9;
-    --text-dim: #6e7a8a;
-    --accent: #58a6ff;
-    --star-color: #ffe066;
-    --ring-color: #58a6ff;
-  }
-
-  body {
-    min-height: 100vh;
-    background: var(--bg);
-    font-family: 'Outfit', sans-serif;
-    color: var(--text);
-  }
-
-  header {
-    padding: 20px 28px 16px;
-    border-bottom: 1px solid var(--panel-border);
-    display: flex; align-items: flex-start; gap: 12px;
-  }
-  .header-text { flex: 1; }
-  header h1 { font-size: 22px; font-weight: 700; }
-  header h1 a { color: inherit; text-decoration: none; }
-  header h1 a:hover { opacity: .7; }
-  header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
-
-  .main { display: flex; flex-direction: column; height: calc(100vh - 80px); }
-
-  .side-view {
-    position: relative;
-    border-bottom: 1px solid var(--panel-border);
-    height: 240px; min-height: 180px;
-    cursor: default;
-  }
-  .side-view canvas { width: 100%; height: 100%; display: block; }
-
-  .bottom { display: flex; flex: 1; min-height: 0; }
-
-  .controls {
-    width: 280px; flex-shrink: 0;
-    padding: 20px;
-    border-right: 1px solid var(--panel-border);
-    display: flex; flex-direction: column; gap: 20px;
-    overflow-y: auto;
-  }
-
-  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
-  .ctrl-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--text-dim);
-  }
-
-  .lang-btn {
-    background: none; border: 1px solid var(--panel-border);
-    border-radius: 4px; padding: 3px 8px;
-    cursor: pointer; flex-shrink: 0;
-    color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; font-weight: 700; letter-spacing: 1px;
-    transition: border-color 0.15s, color 0.15s;
-  }
-  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  .type-btn {
-    flex: 1; padding: 8px 4px; border-radius: 6px;
-    border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
-    cursor: pointer; transition: all 0.2s; text-align: center;
-  }
-  .type-btn.active { border-color: var(--accent); color: var(--accent); }
-  .type-btn:hover { border-color: var(--accent); }
-
-  .slider-row { display: flex; align-items: center; gap: 4px; }
-  .step-btn {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 16px; line-height: 1;
-    cursor: pointer; transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .step-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .step-btn:active { background: var(--accent); color: var(--bg); }
-  .slider-row input[type=range] {
-    flex: 1; -webkit-appearance: none; appearance: none;
-    height: 6px; background: var(--panel-border); border-radius: 3px; outline: none;
-  }
-  .slider-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
-  }
-  .slider-row input[type=range]::-moz-range-thumb {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
-  }
-  .slider-val {
-    min-width: 28px; text-align: right;
-    font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text);
-  }
-
-  .info-text {
-    font-size: 12px; color: var(--text-dim); line-height: 1.5;
-  }
-
-  .observer-view {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    background: #080c14; position: relative; min-width: 0;
-  }
-  .observer-view canvas {
-    border-radius: 50%;
-    box-shadow: 0 0 30px rgba(88,166,255,0.08), inset 0 0 20px rgba(0,0,0,0.5);
-    border: 2px solid var(--panel-border);
-  }
-  .view-label {
-    position: absolute; bottom: 10px; left: 50%;
-    transform: translateX(-50%);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px; color: var(--text-dim); letter-spacing: 1px;
-  }
-
-  @media (max-width: 700px) {
-    .bottom { flex-direction: column; }
-    .controls {
-      width: 100%; flex-direction: row; flex-wrap: wrap;
-      border-right: none; border-bottom: 1px solid var(--panel-border);
-      padding: 12px 16px; gap: 12px;
-    }
-    .ctrl-group { min-width: 120px; }
-    .observer-view { min-height: 300px; }
-  }
-</style>
-</head>
-<body>
-
-<header>
-  <div class="header-text">
-    <h1><a href="/learn/"><span style="font-size:18px;line-height:1">🔭</span></a> <span id="titleText">Gravitational Lens Simulator</span></h1>
-    <p id="subtitleText">A massive object bends light from a distant source. Drag the source to see Einstein rings, arcs, and multiple images.</p>
-  </div>
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
-</header>
-
-<div class="main">
-  <div class="side-view">
-    <canvas id="sideCanvas"></canvas>
-  </div>
-
-  <div class="bottom">
-    <div class="controls">
-      <div class="ctrl-group">
-        <span class="ctrl-label" id="lblMass">Black hole mass</span>
-        <div class="slider-row">
-          <button class="step-btn" onclick="stepSlider('mass',-1)">&minus;</button>
-          <input type="range" id="massSlider" min="0" max="50" value="15" step="1">
-          <button class="step-btn" onclick="stepSlider('mass',1)">+</button>
-          <span class="slider-val" id="massVal">15</span>
-        </div>
-      </div>
-
-      <div class="ctrl-group">
-        <span class="ctrl-label" id="lblSize">Source size</span>
-        <div class="slider-row">
-          <button class="step-btn" onclick="stepSlider('size',-1)">&minus;</button>
-          <input type="range" id="sizeSlider" min="2" max="20" value="8" step="1">
-          <button class="step-btn" onclick="stepSlider('size',1)">+</button>
-          <span class="slider-val" id="sizeVal">8</span>
-        </div>
-      </div>
-
-      <div class="ctrl-group">
-        <span class="ctrl-label" id="lblDisplay">Display</span>
-        <button class="type-btn" id="raysToggle" onclick="toggleRays()">Rays</button>
-      </div>
-
-      <div class="ctrl-group info-text">
-        <span id="infoText">Align the source with the lens to see an Einstein ring.</span>
-        <span id="geoNote" style="display:block; margin-top:8px; font-size:10px; opacity:0.6;">
-          Observer–lens–source distances are fixed. The Mass slider varies lens mass within this geometry.
-        </span>
-      </div>
-    </div>
-
-    <div class="observer-view">
-      <canvas id="obsCanvas"></canvas>
-      <span class="view-label" id="lblObsView">OBSERVER'S VIEW</span>
-    </div>
-  </div>
-</div>
-
-<script>
-'use strict';
-// ══════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════
-const state = {
-  mass: 15,
-  sourceY: 0,       // source offset from optical axis (normalized, -1 to 1)
-  sourceSize: 8,    // source star radius in source-plane units
-  showRays: false,
-  lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
-};
-
-function hasLens() { return state.mass > 0; }
-
-// ══════════════════════════════════════════════
-// I18N
-// ══════════════════════════════════════════════
-const I18N = {
-  en: {
-    title: 'Gravitational Lens Simulator',
-    subtitle: 'A massive object bends light from a distant source. Drag the source to see Einstein rings, arcs, and multiple images.',
-    mass: 'Black hole mass',
-    sourceSize: 'Source size',
-    display: 'Display',
-    rays: 'Rays',
-    obsView: "OBSERVER'S VIEW",
-    geoNote: 'Observer\u2013lens\u2013source distances are fixed. The Mass slider varies lens mass within this geometry.',
-    lblObserver: 'OBSERVER',
-    lblLens: 'LENS',
-    lblSource: 'SOURCE',
-    infoNoLens: 'Mass is zero \u2014 no black hole, direct view of the source.',
-    infoNegligible: 'Lens has negligible mass.',
-    infoRing: '\u2728 Perfect alignment \u2014 Einstein ring!',
-    infoArcs: 'Near alignment \u2014 bright arcs visible around the lens.',
-    infoTwo: 'Two distorted images of the source star.',
-    infoFar: 'Source far from lens \u2014 minimal distortion.',
-  },
-  pl: {
-    title: 'Symulator soczewki grawitacyjnej',
-    subtitle: 'Masywny obiekt zakrzywia \u015Bwiat\u0142o z odleg\u0142ego \u017Ar\u00F3d\u0142a. Przeci\u0105gnij \u017Ar\u00F3d\u0142o, aby zobaczy\u0107 pier\u015Bcienie Einsteina, \u0142uki i wielokrotne obrazy.',
-    mass: 'Masa czarnej dziury',
-    sourceSize: 'Rozmiar \u017Ar\u00F3d\u0142a',
-    display: 'Widok',
-    rays: 'Promienie',
-    obsView: 'WIDOK OBSERWATORA',
-    geoNote: 'Odleg\u0142o\u015Bci obserwator\u2013soczewka\u2013\u017Ar\u00F3d\u0142o s\u0105 sta\u0142e. Suwak Masa zmienia mas\u0119 soczewki w tej geometrii.',
-    lblObserver: 'OBSERWATOR',
-    lblLens: 'SOCZEWKA',
-    lblSource: '\u0179R\u00D3D\u0141O',
-    infoNoLens: 'Masa wynosi zero \u2014 brak czarnej dziury, bezpo\u015Bredni widok \u017Ar\u00F3d\u0142a.',
-    infoNegligible: 'Soczewka ma zaniedbywaln\u0105 mas\u0119.',
-    infoRing: '\u2728 Idealne ustawienie \u2014 pier\u015Bcie\u0144 Einsteina!',
-    infoArcs: 'Bliskie ustawienie \u2014 jasne \u0142uki widoczne wok\u00F3\u0142 soczewki.',
-    infoTwo: 'Dwa zniekszta\u0142cone obrazy gwiazdy \u017Ar\u00F3d\u0142owej.',
-    infoFar: '\u0179r\u00F3d\u0142o daleko od soczewki \u2014 minimalne zniekszta\u0142cenie.',
-  },
-};
-
-function T(key) { return I18N[state.lang][key]; }
-
-function applyTranslations() {
-  document.title = T('title');
-  document.documentElement.lang = state.lang;
-  document.getElementById('titleText').textContent = T('title');
-  document.getElementById('subtitleText').textContent = T('subtitle');
-  document.getElementById('lblMass').textContent = T('mass');
-  document.getElementById('lblSize').textContent = T('sourceSize');
-  document.getElementById('lblDisplay').textContent = T('display');
-  document.getElementById('raysToggle').textContent = T('rays');
-  document.getElementById('lblObsView').textContent = T('obsView');
-  document.getElementById('geoNote').textContent = T('geoNote');
-  document.getElementById('raysToggle').classList.toggle('active', state.showRays);
-  updateInfo();
-  render();
-}
-
-// eslint-disable-next-line no-unused-vars
-function toggleLang() {
-  state.lang = state.lang === 'en' ? 'pl' : 'en';
-  document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
-  applyTranslations();
-}
-
-// ══════════════════════════════════════════════
-// CANVAS SETUP
-// ══════════════════════════════════════════════
-const sideCanvas = document.getElementById('sideCanvas');
-const sideCtx = sideCanvas.getContext('2d');
-const obsCanvas = document.getElementById('obsCanvas');
-const obsCtx = obsCanvas.getContext('2d');
-
-let obsSize = 400; // observer canvas size (will be adjusted)
-let sideW, sideH;
-let bgStars = []; // pre-generated background stars
-
-function initBgStars(n) {
-  bgStars = [];
-  for (let i = 0; i < n; i++) {
-    bgStars.push({
-      x: Math.random(),
-      y: Math.random(),
-      r: Math.random() * 1.2 + 0.3,
-      b: Math.random() * 0.4 + 0.2,
-    });
-  }
-}
-initBgStars(200);
-
-function resize() {
-  const sideRect = sideCanvas.parentElement.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  sideW = sideRect.width;
-  sideH = sideRect.height;
-  sideCanvas.width = sideW * dpr;
-  sideCanvas.height = sideH * dpr;
-  sideCanvas.style.width = sideW + 'px';
-  sideCanvas.style.height = sideH + 'px';
-  sideCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  const obsRect = obsCanvas.parentElement.getBoundingClientRect();
-  obsSize = Math.min(obsRect.width - 40, obsRect.height - 40, 500);
-  obsSize = Math.max(obsSize, 200);
-  obsCanvas.width = obsSize * dpr;
-  obsCanvas.height = obsSize * dpr;
-  obsCanvas.style.width = obsSize + 'px';
-  obsCanvas.style.height = obsSize + 'px';
-  obsCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  render();
-}
-window.addEventListener('resize', resize);
-
-// ══════════════════════════════════════════════
-// PHYSICS
-// ══════════════════════════════════════════════
-function einsteinRadius() {
-  if (!hasLens()) return 0;
-  // θ_E proportional to sqrt(mass), scaled for visual niceness
-  return Math.sqrt(state.mass) * 12;
-}
-
-// Inverse ray trace: given observed angle (x,y) from lens center,
-// compute source position after removing deflection
-function deflect(ox, oy, thetaE) {
-  const r2 = Math.max(ox * ox + oy * oy, 0.01);
-  const tE2 = thetaE * thetaE;
-  const factor = tE2 / r2;
-  return { x: ox - ox * factor, y: oy - oy * factor };
-}
-
-// ══════════════════════════════════════════════
-// SHARED LENS GEOMETRY
-// ══════════════════════════════════════════════
-function getLensGeometry() {
-  const xObs = 60, xLens = sideW * 0.45, xSrc = sideW - 80, yAxis = sideH / 2;
-  const Dl = xLens - xObs, Dls = xSrc - xLens, Ds = xSrc - xObs;
-  const ySource = state.sourceY * (sideH * 0.4);
-  return { xObs, xLens, xSrc, yAxis, Dl, Dls, Ds, ySource, ySrcScreen: yAxis + ySource };
-}
-
-function solveImageAngles(beta, thetaE) {
-  if (thetaE <= 0) return [];
-  const disc = Math.sqrt(beta * beta + 4 * thetaE * thetaE);
-  return [0.5 * (beta + disc), 0.5 * (beta - disc)];
-}
-
-// ══════════════════════════════════════════════
-// SIDE VIEW RENDERING
-// ══════════════════════════════════════════════
-function drawSideView() {
-  const ctx = sideCtx;
-  const w = sideW, h = sideH;
-  ctx.clearRect(0, 0, w, h);
-
-  // Background
-  ctx.fillStyle = '#080c14';
-  ctx.fillRect(0, 0, w, h);
-
-  // Background stars
-  bgStars.forEach(s => {
-    if (s.x < 0.15) return; // keep area near observer clear
-    ctx.beginPath();
-    ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(200,210,220,${s.b * 0.3})`;
-    ctx.fill();
-  });
-
-  const g = getLensGeometry();
-  const midY = g.yAxis;
-  const obsX = g.xObs;
-  const lensX = g.xLens;
-  const srcX = g.xSrc;
-  const srcY = g.ySrcScreen;
-
-  const thetaE = einsteinRadius();
-  const eRad = thetaE; // match observer view physics exactly
-
-  // Optical axis (dashed)
-  ctx.setLineDash([4, 6]);
-  ctx.strokeStyle = 'rgba(88,166,255,0.15)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(obsX, midY);
-  ctx.lineTo(srcX, midY);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Einstein radius circle (dashed)
-  if (hasLens()) {
-  ctx.setLineDash([3, 5]);
-  ctx.strokeStyle = 'rgba(88,166,255,0.3)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(lensX, midY, eRad, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  }
-
-  // Light rays: schematic fan showing how gravity bends nearby paths,
-  // with solved image-forming rays drawn prominently on top
-  if (state.showRays) {
-    const distLensSrc = srcX - lensX;
-    const distObsLens = lensX - obsX;
-
-    if (!hasLens()) {
-      // No lens: direct straight path from source to observer
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = 'rgba(255,224,102,0.5)';
-      ctx.beginPath();
-      ctx.moveTo(srcX, srcY);
-      ctx.lineTo(obsX, midY);
-      ctx.stroke();
-    } else {
-      // Schematic ray fan showing deflection across many impact parameters
-      const numRays = 50;
-      const maxSpread = h * 0.42;
-      ctx.lineWidth = 0.8;
-
-      for (let i = 0; i < numRays; i++) {
-        const t = (i / (numRays - 1)) * 2 - 1;
-        const rayY = midY + t * maxSpread;
-        const b = rayY - midY;
-        const bAbs = Math.abs(b);
-        if (bAbs < 3) continue;
-
-        const hatAlpha = eRad * eRad / (bAbs * distObsLens);
-        const deflDir = b > 0 ? -1 : 1;
-        const mIn = (rayY - srcY) / distLensSrc;
-        const mOut = mIn + deflDir * hatAlpha;
-        const obsHitY = rayY + mOut * distObsLens;
-
-        const distToObs = Math.abs(obsHitY - midY);
-        const threshold = maxSpread * 0.4;
-        const alpha = Math.max(0.05, 0.4 * (1 - distToObs / threshold));
-        ctx.strokeStyle = `rgba(255,224,102,${alpha})`;
-        ctx.beginPath();
-        ctx.moveTo(srcX, srcY);
-        ctx.lineTo(lensX, rayY);
-        ctx.lineTo(obsX, obsHitY);
-        ctx.stroke();
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/gravlens.html" />
+    <meta property="og:title" content="Gravitational Lens Simulator" />
+    <meta
+      property="og:description"
+      content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/gravlens.html" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Gravitational Lens Simulator" />
+    <meta
+      name="twitter:description"
+      content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images."
+    />
+    <title>Gravitational Lens Simulator</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
 
-      // Solved image-forming rays drawn on top
-      const thetaEAng = einsteinRadius() / g.Dl;
-      const beta = g.ySource / g.Ds;
-      const angles = solveImageAngles(beta, thetaEAng);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255,224,102,0.9)';
-      angles.forEach((theta) => {
-        const yLens = midY + theta * g.Dl;
-        ctx.beginPath();
-        ctx.moveTo(obsX, midY);
-        ctx.lineTo(lensX, yLens);
-        ctx.lineTo(srcX, srcY);
-        ctx.stroke();
-      });
-    }
-  } // end if showRays
-
-  // Lens body — only when lens is active
-  if (hasLens()) {
-    // Accretion glow
-    const glow = ctx.createRadialGradient(lensX, midY, eRad * 0.15, lensX, midY, eRad * 0.7);
-    glow.addColorStop(0, 'rgba(255,120,50,0.0)');
-    glow.addColorStop(0.5, 'rgba(255,120,50,0.12)');
-    glow.addColorStop(1, 'rgba(255,120,50,0.0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(lensX - eRad, midY - eRad, eRad * 2, eRad * 2);
-
-    // Black hole marker
-    ctx.beginPath();
-    ctx.arc(lensX, midY, 12, 0, Math.PI * 2);
-    ctx.fillStyle = '#000';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,120,50,0.5)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  // Source star (scales with source size slider)
-  const srcSolidR = Math.max(2, state.sourceSize * 0.6);
-  const srcGlowR = Math.max(6, state.sourceSize * 2.2);
-  const srcGlow = ctx.createRadialGradient(srcX, srcY, 1, srcX, srcY, srcGlowR);
-  srcGlow.addColorStop(0, 'rgba(255,224,102,0.9)');
-  srcGlow.addColorStop(0.4, 'rgba(255,224,102,0.3)');
-  srcGlow.addColorStop(1, 'rgba(255,224,102,0.0)');
-  ctx.fillStyle = srcGlow;
-  ctx.beginPath();
-  ctx.arc(srcX, srcY, srcGlowR, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(srcX, srcY, srcSolidR, 0, Math.PI * 2);
-  ctx.fillStyle = var_starColor();
-  ctx.fill();
-
-  // Observer
-  ctx.font = '20px serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = var_textColor();
-  ctx.fillText('👩🏻', obsX, midY);
-
-  // Labels
-  ctx.font = '10px "Share Tech Mono", monospace';
-  ctx.fillStyle = 'rgba(110,122,138,0.8)';
-  ctx.textAlign = 'center';
-  ctx.fillText(T('lblObserver'), obsX, midY + 22);
-  if (hasLens()) {
-    ctx.fillText(T('lblLens'), lensX, midY + eRad + 16);
-    ctx.fillText('θ_E', lensX + eRad + 12, midY);
-  }
-  ctx.fillText(T('lblSource'), srcX, srcY + 22);
-
-  // Drag arrows to the right of source star (vertical arrangement)
-  const arrowX = srcX + srcGlowR + 10;
-  const arrowSize = 5;
-  ctx.fillStyle = 'rgba(110,122,138,0.6)';
-  // Up arrow
-  ctx.beginPath();
-  ctx.moveTo(arrowX, srcY - 10 - arrowSize);
-  ctx.lineTo(arrowX - arrowSize, srcY - 10 + arrowSize);
-  ctx.lineTo(arrowX + arrowSize, srcY - 10 + arrowSize);
-  ctx.closePath();
-  ctx.fill();
-  // Down arrow
-  ctx.beginPath();
-  ctx.moveTo(arrowX, srcY + 10 + arrowSize);
-  ctx.lineTo(arrowX - arrowSize, srcY + 10 - arrowSize);
-  ctx.lineTo(arrowX + arrowSize, srcY + 10 - arrowSize);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function var_starColor() { return '#ffe066'; }
-function var_textColor() { return '#c9d1d9'; }
-
-// ══════════════════════════════════════════════
-// OBSERVER VIEW RENDERING
-// ══════════════════════════════════════════════
-function drawObserverView() {
-  const ctx = obsCtx;
-  const size = obsSize;
-  const half = size / 2;
-
-  ctx.clearRect(0, 0, size, size);
-
-  // Dark background
-  ctx.fillStyle = '#050810';
-  ctx.beginPath();
-  ctx.arc(half, half, half, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Background stars
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(half, half, half - 1, 0, Math.PI * 2);
-  ctx.clip();
-
-  bgStars.forEach(s => {
-    ctx.beginPath();
-    ctx.arc(s.x * size, s.y * size, s.r * 0.8, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(200,210,220,${s.b * 0.4})`;
-    ctx.fill();
-  });
-
-  // Ray-traced lensed image
-  const thetaE = einsteinRadius();
-  const srcOffY = state.sourceY * half * 0.8; // source offset in pixel coords
-  const srcR = state.sourceSize; // source radius
-
-  // Use ImageData for pixel-level ray tracing (DPR-aware for sharp output)
-  const dpr = window.devicePixelRatio || 1;
-  const res = Math.min(Math.round(size * dpr), 600);
-  const imgData = ctx.createImageData(res, res);
-  const data = imgData.data;
-  const resHalf = res / 2;
-  const thetaEScaled = thetaE * res / size;
-  const srcOffYScaled = srcOffY * res / size;
-  const srcRScaled = Math.max(srcR * res / size, 0.8);
-
-  for (let py = 0; py < res; py++) {
-    for (let px = 0; px < res; px++) {
-      const ox = px - resHalf;
-      const oy = py - resHalf;
-      const distFromCenter = Math.sqrt(ox * ox + oy * oy);
-
-      // Circular mask
-      if (distFromCenter > resHalf) continue;
-
-      // Apply gravitational deflection
-      const src = deflect(ox, oy, thetaEScaled);
-
-      // Check if deflected ray hits the source star
-      const dx = src.x - 0; // source at x=0 (centered horizontally)
-      const dy = src.y - srcOffYScaled;
-      const distToSrc = Math.sqrt(dx * dx + dy * dy);
-
-      // Anti-aliased source disc with limb darkening
-      const edgeDist = srcRScaled - distToSrc;
-      if (edgeDist > -1) {
-        const aa = Math.max(0, Math.min(1, edgeDist + 0.5));
-        const t = distToSrc / srcRScaled;
-        const brightness = Math.max(0, 1 - t * t * 0.6);
-        const idx = (py * res + px) * 4;
-        data[idx]     = Math.floor(255 * brightness);
-        data[idx + 1] = Math.floor(224 * brightness);
-        data[idx + 2] = Math.floor(102 * brightness);
-        data[idx + 3] = Math.round(255 * aa);
+      :root {
+        --bg: #0b0f18;
+        --panel: #131825;
+        --panel-border: #1e2a3a;
+        --text: #c9d1d9;
+        --text-dim: #6e7a8a;
+        --accent: #58a6ff;
+        --star-color: #ffe066;
+        --ring-color: #58a6ff;
       }
-    }
-  }
 
-  // Draw the ray-traced image scaled up
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = res;
-  tempCanvas.height = res;
-  tempCanvas.getContext('2d').putImageData(imgData, 0, 0);
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(tempCanvas, 0, 0, size, size);
+      body {
+        min-height: 100vh;
+        background: var(--bg);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+      }
 
-  // Einstein radius ring (subtle guide)
-  if (hasLens() && thetaE > 0) {
-    ctx.setLineDash([3, 5]);
-    ctx.strokeStyle = 'rgba(88,166,255,0.15)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(half, half, thetaE, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
+      header {
+        padding: 20px 28px 16px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover,
+      header h1 a:focus-visible {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
 
-  ctx.restore();
-}
+      .main {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 80px);
+      }
 
-// ══════════════════════════════════════════════
-// RENDER ALL
-// ══════════════════════════════════════════════
-let renderPending = false;
-function render() {
-  if (renderPending) return;
-  renderPending = true;
-  requestAnimationFrame(() => {
-    renderPending = false;
-    drawSideView();
-    drawObserverView();
-    updateInfo();
-  });
-}
+      .side-view {
+        position: relative;
+        border-bottom: 1px solid var(--panel-border);
+        height: 240px;
+        min-height: 180px;
+        cursor: default;
+      }
+      .side-view canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
 
-function updateInfo() {
-  const thetaE = einsteinRadius();
-  const half = obsSize / 2;
-  const srcOff = Math.abs(state.sourceY) * half * 0.8;
-  let text;
-  if (!hasLens()) {
-    text = T('infoNoLens');
-  } else if (thetaE < 1) {
-    text = T('infoNegligible');
-  } else {
-    const ratio = srcOff / thetaE;
-    if (ratio < 0.05) {
-      text = T('infoRing');
-    } else if (ratio < 0.5) {
-      text = T('infoArcs');
-    } else if (ratio < 1.5) {
-      text = T('infoTwo');
-    } else {
-      text = T('infoFar');
-    }
-  }
-  document.getElementById('infoText').textContent = text;
-}
+      .bottom {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
 
-// ══════════════════════════════════════════════
-// INTERACTION
-// ══════════════════════════════════════════════
-// eslint-disable-next-line no-unused-vars
-function stepSlider(name, dir) {
-  const slider = document.getElementById(name + 'Slider');
-  const val = Math.min(+slider.max, Math.max(+slider.min, +slider.value + dir * +slider.step));
-  slider.value = val;
-  slider.dispatchEvent(new Event('input'));
-}
+      .controls {
+        width: 280px;
+        flex-shrink: 0;
+        padding: 20px;
+        border-right: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        overflow-y: auto;
+      }
 
-// eslint-disable-next-line no-unused-vars
-function toggleRays() {
-  state.showRays = !state.showRays;
-  document.getElementById('raysToggle').classList.toggle('active', state.showRays);
-  render();
-}
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .ctrl-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
 
-document.getElementById('massSlider').addEventListener('input', e => {
-  state.mass = +e.target.value;
-  document.getElementById('massVal').textContent = e.target.value;
-  render();
-});
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover,
+      .lang-btn:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
 
-document.getElementById('sizeSlider').addEventListener('input', e => {
-  state.sourceSize = +e.target.value;
-  document.getElementById('sizeVal').textContent = e.target.value;
-  render();
-});
+      .type-btn {
+        flex: 1;
+        padding: 8px 4px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+      }
+      .type-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .type-btn:hover,
+      .type-btn:focus-visible {
+        border-color: var(--accent);
+      }
 
-// Drag source star on side view
-let dragging = false;
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .step-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .step-btn:hover,
+      .step-btn:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .step-btn:active {
+        background: var(--accent);
+        color: var(--bg);
+      }
+      .slider-row input[type="range"] {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        background: var(--panel-border);
+        border-radius: 3px;
+        outline: none;
+        box-shadow: 0 0 0 2px transparent;
+      }
+      .slider-row input[type="range"]:focus-visible {
+        box-shadow: 0 0 0 2px var(--accent);
+      }
+      .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid var(--bg);
+      }
+      .slider-row input[type="range"]::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid var(--bg);
+      }
+      .slider-val {
+        min-width: 28px;
+        text-align: right;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        color: var(--text);
+      }
 
-function getSourceY(e) {
-  const rect = sideCanvas.getBoundingClientRect();
-  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-  const midY = rect.height / 2;
-  return Math.max(-1, Math.min(1, (y - midY) / (rect.height * 0.4)));
-}
+      .info-text {
+        font-size: 12px;
+        color: var(--text-dim);
+        line-height: 1.5;
+      }
 
-sideCanvas.addEventListener('mousedown', e => { dragging = true; state.sourceY = getSourceY(e); render(); });
-sideCanvas.addEventListener('touchstart', e => { dragging = true; state.sourceY = getSourceY(e); render(); e.preventDefault(); }, { passive: false });
-window.addEventListener('mousemove', e => { if (dragging) { state.sourceY = getSourceY(e); render(); } });
-window.addEventListener('touchmove', e => { if (dragging) { state.sourceY = getSourceY(e); render(); } }, { passive: true });
-window.addEventListener('mouseup', () => { dragging = false; });
-window.addEventListener('touchend', () => { dragging = false; });
+      .observer-view {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #080c14;
+        position: relative;
+        min-width: 0;
+      }
+      .observer-view canvas {
+        border-radius: 50%;
+        box-shadow:
+          0 0 30px rgba(88, 166, 255, 0.08),
+          inset 0 0 20px rgba(0, 0, 0, 0.5);
+        border: 2px solid var(--panel-border);
+      }
+      .view-label {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        color: var(--text-dim);
+        letter-spacing: 1px;
+      }
 
-// ══════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════
-document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
-applyTranslations();
-resize();
-</script>
-</body>
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .geo-note {
+        display: block;
+        margin-top: 8px;
+        font-size: 10px;
+        opacity: 0.6;
+      }
+
+      @media (max-width: 700px) {
+        .bottom {
+          flex-direction: column;
+        }
+        .controls {
+          width: 100%;
+          flex-direction: row;
+          flex-wrap: wrap;
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+          padding: 12px 16px;
+          gap: 12px;
+        }
+        .ctrl-group {
+          min-width: 120px;
+        }
+        .observer-view {
+          min-height: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-icon">🔭</span></a>
+          <span id="titleText">Gravitational Lens Simulator</span>
+        </h1>
+        <p id="subtitleText">
+          A massive object bends light from a distant source. Drag the source to
+          see Einstein rings, arcs, and multiple images.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="side-view">
+        <canvas
+          id="sideCanvas"
+          aria-label="Side view of gravitational lensing geometry"
+        ></canvas>
+      </div>
+
+      <div class="bottom">
+        <div class="controls">
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblMass">Black hole mass</span>
+            <div class="slider-row">
+              <button
+                type="button"
+                class="step-btn"
+                id="massMinusBtn"
+                aria-label="Decrease mass"
+              >
+                &minus;
+              </button>
+              <input
+                type="range"
+                id="massSlider"
+                min="0"
+                max="50"
+                value="15"
+                step="1"
+                aria-label="Black hole mass"
+              />
+              <button
+                type="button"
+                class="step-btn"
+                id="massPlusBtn"
+                aria-label="Increase mass"
+              >
+                +
+              </button>
+              <span class="slider-val" id="massVal">15</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblSize">Source size</span>
+            <div class="slider-row">
+              <button
+                type="button"
+                class="step-btn"
+                id="sizeMinusBtn"
+                aria-label="Decrease source size"
+              >
+                &minus;
+              </button>
+              <input
+                type="range"
+                id="sizeSlider"
+                min="2"
+                max="20"
+                value="8"
+                step="1"
+                aria-label="Source size"
+              />
+              <button
+                type="button"
+                class="step-btn"
+                id="sizePlusBtn"
+                aria-label="Increase source size"
+              >
+                +
+              </button>
+              <span class="slider-val" id="sizeVal">8</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblDisplay">Display</span>
+            <button type="button" class="type-btn" id="raysToggle">Rays</button>
+          </div>
+
+          <div class="ctrl-group info-text">
+            <span id="infoText"
+              >Align the source with the lens to see an Einstein ring.</span
+            >
+            <span id="geoNote" class="geo-note">
+              Observer–lens–source distances are fixed. The Mass slider varies
+              lens mass within this geometry.
+            </span>
+          </div>
+        </div>
+
+        <div class="observer-view">
+          <canvas
+            id="obsCanvas"
+            aria-label="Observer view of gravitational lensing effect"
+          ></canvas>
+          <span class="view-label" id="lblObsView">OBSERVER'S VIEW</span>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+        // ══════════════════════════════════════════════
+        // STATE
+        // ══════════════════════════════════════════════
+        const state = {
+          mass: 15,
+          sourceY: 0, // source offset from optical axis (normalized, -1 to 1)
+          sourceSize: 8, // source star radius in source-plane units
+          showRays: false,
+          lang: navigator.language?.startsWith("pl") ? "pl" : "en",
+        };
+
+        function hasLens() {
+          return state.mass > 0;
+        }
+
+        // ══════════════════════════════════════════════
+        // I18N
+        // ══════════════════════════════════════════════
+        const I18N = {
+          en: {
+            title: "Gravitational Lens Simulator",
+            subtitle:
+              "A massive object bends light from a distant source. Drag the source to see Einstein rings, arcs, and multiple images.",
+            mass: "Black hole mass",
+            sourceSize: "Source size",
+            display: "Display",
+            rays: "Rays",
+            obsView: "OBSERVER'S VIEW",
+            geoNote:
+              "Observer\u2013lens\u2013source distances are fixed. The Mass slider varies lens mass within this geometry.",
+            lblObserver: "OBSERVER",
+            lblLens: "LENS",
+            lblSource: "SOURCE",
+            infoNoLens:
+              "Mass is zero \u2014 no black hole, direct view of the source.",
+            infoNegligible: "Lens has negligible mass.",
+            infoRing: "\u2728 Perfect alignment \u2014 Einstein ring!",
+            infoArcs:
+              "Near alignment \u2014 bright arcs visible around the lens.",
+            infoTwo: "Two distorted images of the source star.",
+            infoFar: "Source far from lens \u2014 minimal distortion.",
+          },
+          pl: {
+            title: "Symulator soczewki grawitacyjnej",
+            subtitle:
+              "Masywny obiekt zakrzywia \u015Bwiat\u0142o z odleg\u0142ego \u017Ar\u00F3d\u0142a. Przeci\u0105gnij \u017Ar\u00F3d\u0142o, aby zobaczy\u0107 pier\u015Bcienie Einsteina, \u0142uki i wielokrotne obrazy.",
+            mass: "Masa czarnej dziury",
+            sourceSize: "Rozmiar \u017Ar\u00F3d\u0142a",
+            display: "Widok",
+            rays: "Promienie",
+            obsView: "WIDOK OBSERWATORA",
+            geoNote:
+              "Odleg\u0142o\u015Bci obserwator\u2013soczewka\u2013\u017Ar\u00F3d\u0142o s\u0105 sta\u0142e. Suwak Masa zmienia mas\u0119 soczewki w tej geometrii.",
+            lblObserver: "OBSERWATOR",
+            lblLens: "SOCZEWKA",
+            lblSource: "\u0179R\u00D3D\u0141O",
+            infoNoLens:
+              "Masa wynosi zero \u2014 brak czarnej dziury, bezpo\u015Bredni widok \u017Ar\u00F3d\u0142a.",
+            infoNegligible: "Soczewka ma zaniedbywaln\u0105 mas\u0119.",
+            infoRing:
+              "\u2728 Idealne ustawienie \u2014 pier\u015Bcie\u0144 Einsteina!",
+            infoArcs:
+              "Bliskie ustawienie \u2014 jasne \u0142uki widoczne wok\u00F3\u0142 soczewki.",
+            infoTwo:
+              "Dwa zniekszta\u0142cone obrazy gwiazdy \u017Ar\u00F3d\u0142owej.",
+            infoFar:
+              "\u0179r\u00F3d\u0142o daleko od soczewki \u2014 minimalne zniekszta\u0142cenie.",
+          },
+        };
+
+        function T(key) {
+          return I18N[state.lang][key];
+        }
+
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          document.getElementById("lblMass").textContent = T("mass");
+          document.getElementById("lblSize").textContent = T("sourceSize");
+          document.getElementById("lblDisplay").textContent = T("display");
+          document.getElementById("raysToggle").textContent = T("rays");
+          document.getElementById("lblObsView").textContent = T("obsView");
+          document.getElementById("geoNote").textContent = T("geoNote");
+          document
+            .getElementById("raysToggle")
+            .classList.toggle("active", state.showRays);
+          updateInfo();
+          render();
+        }
+
+        function toggleLang() {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          document.getElementById("langBtn").textContent =
+            state.lang === "en" ? "PL" : "EN";
+          applyTranslations();
+        }
+
+        // ══════════════════════════════════════════════
+        // CANVAS SETUP
+        // ══════════════════════════════════════════════
+        const sideCanvas = document.getElementById("sideCanvas");
+        const sideCtx = sideCanvas.getContext("2d");
+        const obsCanvas = document.getElementById("obsCanvas");
+        const obsCtx = obsCanvas.getContext("2d");
+
+        let obsSize = 400; // observer canvas size (will be adjusted)
+        let sideW, sideH;
+        let bgStars = []; // pre-generated background stars
+
+        function initBgStars(n) {
+          bgStars = [];
+          for (let i = 0; i < n; i++) {
+            bgStars.push({
+              x: Math.random(),
+              y: Math.random(),
+              r: Math.random() * 1.2 + 0.3,
+              b: Math.random() * 0.4 + 0.2,
+            });
+          }
+        }
+        initBgStars(200);
+
+        function resize() {
+          const sideRect = sideCanvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          sideW = sideRect.width;
+          sideH = sideRect.height;
+          sideCanvas.width = sideW * dpr;
+          sideCanvas.height = sideH * dpr;
+          sideCanvas.style.width = sideW + "px";
+          sideCanvas.style.height = sideH + "px";
+          sideCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          const obsRect = obsCanvas.parentElement.getBoundingClientRect();
+          obsSize = Math.min(obsRect.width - 40, obsRect.height - 40, 500);
+          obsSize = Math.max(obsSize, 200);
+          obsCanvas.width = obsSize * dpr;
+          obsCanvas.height = obsSize * dpr;
+          obsCanvas.style.width = obsSize + "px";
+          obsCanvas.style.height = obsSize + "px";
+          obsCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          render();
+        }
+        window.addEventListener("resize", resize);
+
+        // ══════════════════════════════════════════════
+        // PHYSICS
+        // ══════════════════════════════════════════════
+        function einsteinRadius() {
+          if (!hasLens()) return 0;
+          // θ_E proportional to sqrt(mass), scaled for visual niceness
+          return Math.sqrt(state.mass) * 12;
+        }
+
+        // Inverse ray trace: given observed angle (x,y) from lens center,
+        // compute source position after removing deflection
+        function deflect(ox, oy, thetaE) {
+          const r2 = Math.max(ox * ox + oy * oy, 0.01);
+          const tE2 = thetaE * thetaE;
+          const factor = tE2 / r2;
+          return { x: ox - ox * factor, y: oy - oy * factor };
+        }
+
+        // ══════════════════════════════════════════════
+        // SHARED LENS GEOMETRY
+        // ══════════════════════════════════════════════
+        function getLensGeometry() {
+          const xObs = 60,
+            xLens = sideW * 0.45,
+            xSrc = sideW - 80,
+            yAxis = sideH / 2;
+          const Dl = xLens - xObs,
+            Dls = xSrc - xLens,
+            Ds = xSrc - xObs;
+          const ySource = state.sourceY * (sideH * 0.4);
+          return {
+            xObs,
+            xLens,
+            xSrc,
+            yAxis,
+            Dl,
+            Dls,
+            Ds,
+            ySource,
+            ySrcScreen: yAxis + ySource,
+          };
+        }
+
+        function solveImageAngles(beta, thetaE) {
+          if (thetaE <= 0) return [];
+          const disc = Math.sqrt(beta * beta + 4 * thetaE * thetaE);
+          return [0.5 * (beta + disc), 0.5 * (beta - disc)];
+        }
+
+        // ══════════════════════════════════════════════
+        // SIDE VIEW RENDERING
+        // ══════════════════════════════════════════════
+        function drawSideView() {
+          const ctx = sideCtx;
+          const w = sideW,
+            h = sideH;
+          ctx.clearRect(0, 0, w, h);
+
+          // Background
+          ctx.fillStyle = "#080c14";
+          ctx.fillRect(0, 0, w, h);
+
+          // Background stars
+          bgStars.forEach((s) => {
+            if (s.x < 0.15) return; // keep area near observer clear
+            ctx.beginPath();
+            ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(200,210,220,${s.b * 0.3})`;
+            ctx.fill();
+          });
+
+          const g = getLensGeometry();
+          const midY = g.yAxis;
+          const obsX = g.xObs;
+          const lensX = g.xLens;
+          const srcX = g.xSrc;
+          const srcY = g.ySrcScreen;
+
+          const thetaE = einsteinRadius();
+          const eRad = thetaE; // match observer view physics exactly
+
+          // Optical axis (dashed)
+          ctx.setLineDash([4, 6]);
+          ctx.strokeStyle = "rgba(88,166,255,0.15)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(obsX, midY);
+          ctx.lineTo(srcX, midY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Einstein radius circle (dashed)
+          if (hasLens()) {
+            ctx.setLineDash([3, 5]);
+            ctx.strokeStyle = "rgba(88,166,255,0.3)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(lensX, midY, eRad, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          // Light rays: schematic fan showing how gravity bends nearby paths,
+          // with solved image-forming rays drawn prominently on top
+          if (state.showRays) {
+            const distLensSrc = srcX - lensX;
+            const distObsLens = lensX - obsX;
+
+            if (!hasLens()) {
+              // No lens: direct straight path from source to observer
+              ctx.lineWidth = 1.5;
+              ctx.strokeStyle = "rgba(255,224,102,0.5)";
+              ctx.beginPath();
+              ctx.moveTo(srcX, srcY);
+              ctx.lineTo(obsX, midY);
+              ctx.stroke();
+            } else {
+              // Schematic ray fan showing deflection across many impact parameters
+              const numRays = 50;
+              const maxSpread = h * 0.42;
+              ctx.lineWidth = 0.8;
+
+              for (let i = 0; i < numRays; i++) {
+                const t = (i / (numRays - 1)) * 2 - 1;
+                const rayY = midY + t * maxSpread;
+                const b = rayY - midY;
+                const bAbs = Math.abs(b);
+                if (bAbs < 3) continue;
+
+                const hatAlpha = (eRad * eRad) / (bAbs * distObsLens);
+                const deflDir = b > 0 ? -1 : 1;
+                const mIn = (rayY - srcY) / distLensSrc;
+                const mOut = mIn + deflDir * hatAlpha;
+                const obsHitY = rayY + mOut * distObsLens;
+
+                const distToObs = Math.abs(obsHitY - midY);
+                const threshold = maxSpread * 0.4;
+                const alpha = Math.max(0.05, 0.4 * (1 - distToObs / threshold));
+                ctx.strokeStyle = `rgba(255,224,102,${alpha})`;
+                ctx.beginPath();
+                ctx.moveTo(srcX, srcY);
+                ctx.lineTo(lensX, rayY);
+                ctx.lineTo(obsX, obsHitY);
+                ctx.stroke();
+              }
+
+              // Solved image-forming rays drawn on top
+              const thetaEAng = einsteinRadius() / g.Dl;
+              const beta = g.ySource / g.Ds;
+              const angles = solveImageAngles(beta, thetaEAng);
+              ctx.lineWidth = 2;
+              ctx.strokeStyle = "rgba(255,224,102,0.9)";
+              angles.forEach((theta) => {
+                const yLens = midY + theta * g.Dl;
+                ctx.beginPath();
+                ctx.moveTo(obsX, midY);
+                ctx.lineTo(lensX, yLens);
+                ctx.lineTo(srcX, srcY);
+                ctx.stroke();
+              });
+            }
+          } // end if showRays
+
+          // Lens body — only when lens is active
+          if (hasLens()) {
+            // Accretion glow
+            const glow = ctx.createRadialGradient(
+              lensX,
+              midY,
+              eRad * 0.15,
+              lensX,
+              midY,
+              eRad * 0.7,
+            );
+            glow.addColorStop(0, "rgba(255,120,50,0.0)");
+            glow.addColorStop(0.5, "rgba(255,120,50,0.12)");
+            glow.addColorStop(1, "rgba(255,120,50,0.0)");
+            ctx.fillStyle = glow;
+            ctx.fillRect(lensX - eRad, midY - eRad, eRad * 2, eRad * 2);
+
+            // Black hole marker
+            ctx.beginPath();
+            ctx.arc(lensX, midY, 12, 0, Math.PI * 2);
+            ctx.fillStyle = "#000";
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255,120,50,0.5)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+
+          // Source star (scales with source size slider)
+          const srcSolidR = Math.max(2, state.sourceSize * 0.6);
+          const srcGlowR = Math.max(6, state.sourceSize * 2.2);
+          const srcGlow = ctx.createRadialGradient(
+            srcX,
+            srcY,
+            1,
+            srcX,
+            srcY,
+            srcGlowR,
+          );
+          srcGlow.addColorStop(0, "rgba(255,224,102,0.9)");
+          srcGlow.addColorStop(0.4, "rgba(255,224,102,0.3)");
+          srcGlow.addColorStop(1, "rgba(255,224,102,0.0)");
+          ctx.fillStyle = srcGlow;
+          ctx.beginPath();
+          ctx.arc(srcX, srcY, srcGlowR, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(srcX, srcY, srcSolidR, 0, Math.PI * 2);
+          ctx.fillStyle = var_starColor();
+          ctx.fill();
+
+          // Observer
+          ctx.font = "20px serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = var_textColor();
+          ctx.fillText("👩🏻", obsX, midY);
+
+          // Labels
+          ctx.font = '10px "Share Tech Mono", monospace';
+          ctx.fillStyle = "rgba(110,122,138,0.8)";
+          ctx.textAlign = "center";
+          ctx.fillText(T("lblObserver"), obsX, midY + 22);
+          if (hasLens()) {
+            ctx.fillText(T("lblLens"), lensX, midY + eRad + 16);
+            ctx.fillText("θ_E", lensX + eRad + 12, midY);
+          }
+          ctx.fillText(T("lblSource"), srcX, srcY + 22);
+
+          // Drag arrows to the right of source star (vertical arrangement)
+          const arrowX = srcX + srcGlowR + 10;
+          const arrowSize = 5;
+          ctx.fillStyle = "rgba(110,122,138,0.6)";
+          // Up arrow
+          ctx.beginPath();
+          ctx.moveTo(arrowX, srcY - 10 - arrowSize);
+          ctx.lineTo(arrowX - arrowSize, srcY - 10 + arrowSize);
+          ctx.lineTo(arrowX + arrowSize, srcY - 10 + arrowSize);
+          ctx.closePath();
+          ctx.fill();
+          // Down arrow
+          ctx.beginPath();
+          ctx.moveTo(arrowX, srcY + 10 + arrowSize);
+          ctx.lineTo(arrowX - arrowSize, srcY + 10 - arrowSize);
+          ctx.lineTo(arrowX + arrowSize, srcY + 10 - arrowSize);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        function var_starColor() {
+          return "#ffe066";
+        }
+        function var_textColor() {
+          return "#c9d1d9";
+        }
+
+        // ══════════════════════════════════════════════
+        // OBSERVER VIEW RENDERING
+        // ══════════════════════════════════════════════
+        function drawObserverView() {
+          const ctx = obsCtx;
+          const size = obsSize;
+          const half = size / 2;
+
+          ctx.clearRect(0, 0, size, size);
+
+          // Dark background
+          ctx.fillStyle = "#050810";
+          ctx.beginPath();
+          ctx.arc(half, half, half, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Background stars
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(half, half, half - 1, 0, Math.PI * 2);
+          ctx.clip();
+
+          bgStars.forEach((s) => {
+            ctx.beginPath();
+            ctx.arc(s.x * size, s.y * size, s.r * 0.8, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(200,210,220,${s.b * 0.4})`;
+            ctx.fill();
+          });
+
+          // Ray-traced lensed image
+          const thetaE = einsteinRadius();
+          const srcOffY = state.sourceY * half * 0.8; // source offset in pixel coords
+          const srcR = state.sourceSize; // source radius
+
+          // Use ImageData for pixel-level ray tracing (DPR-aware for sharp output)
+          const dpr = window.devicePixelRatio || 1;
+          const res = Math.min(Math.round(size * dpr), 600);
+          const imgData = ctx.createImageData(res, res);
+          const data = imgData.data;
+          const resHalf = res / 2;
+          const thetaEScaled = (thetaE * res) / size;
+          const srcOffYScaled = (srcOffY * res) / size;
+          const srcRScaled = Math.max((srcR * res) / size, 0.8);
+
+          for (let py = 0; py < res; py++) {
+            for (let px = 0; px < res; px++) {
+              const ox = px - resHalf;
+              const oy = py - resHalf;
+              const distFromCenter = Math.sqrt(ox * ox + oy * oy);
+
+              // Circular mask
+              if (distFromCenter > resHalf) continue;
+
+              // Apply gravitational deflection
+              const src = deflect(ox, oy, thetaEScaled);
+
+              // Check if deflected ray hits the source star
+              const dx = src.x - 0; // source at x=0 (centered horizontally)
+              const dy = src.y - srcOffYScaled;
+              const distToSrc = Math.sqrt(dx * dx + dy * dy);
+
+              // Anti-aliased source disc with limb darkening
+              const edgeDist = srcRScaled - distToSrc;
+              if (edgeDist > -1) {
+                const aa = Math.max(0, Math.min(1, edgeDist + 0.5));
+                const t = distToSrc / srcRScaled;
+                const brightness = Math.max(0, 1 - t * t * 0.6);
+                const idx = (py * res + px) * 4;
+                data[idx] = Math.floor(255 * brightness);
+                data[idx + 1] = Math.floor(224 * brightness);
+                data[idx + 2] = Math.floor(102 * brightness);
+                data[idx + 3] = Math.round(255 * aa);
+              }
+            }
+          }
+
+          // Draw the ray-traced image scaled up
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = res;
+          tempCanvas.height = res;
+          tempCanvas.getContext("2d").putImageData(imgData, 0, 0);
+          ctx.imageSmoothingEnabled = true;
+          ctx.drawImage(tempCanvas, 0, 0, size, size);
+
+          // Einstein radius ring (subtle guide)
+          if (hasLens() && thetaE > 0) {
+            ctx.setLineDash([3, 5]);
+            ctx.strokeStyle = "rgba(88,166,255,0.15)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(half, half, thetaE, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          ctx.restore();
+        }
+
+        // ══════════════════════════════════════════════
+        // RENDER ALL
+        // ══════════════════════════════════════════════
+        let renderPending = false;
+        function render() {
+          if (renderPending) return;
+          renderPending = true;
+          requestAnimationFrame(() => {
+            renderPending = false;
+            drawSideView();
+            drawObserverView();
+            updateInfo();
+          });
+        }
+
+        function updateInfo() {
+          const thetaE = einsteinRadius();
+          const half = obsSize / 2;
+          const srcOff = Math.abs(state.sourceY) * half * 0.8;
+          let text;
+          if (!hasLens()) {
+            text = T("infoNoLens");
+          } else if (thetaE < 1) {
+            text = T("infoNegligible");
+          } else {
+            const ratio = srcOff / thetaE;
+            if (ratio < 0.05) {
+              text = T("infoRing");
+            } else if (ratio < 0.5) {
+              text = T("infoArcs");
+            } else if (ratio < 1.5) {
+              text = T("infoTwo");
+            } else {
+              text = T("infoFar");
+            }
+          }
+          document.getElementById("infoText").textContent = text;
+        }
+
+        // ══════════════════════════════════════════════
+        // INTERACTION
+        // ══════════════════════════════════════════════
+        function stepSlider(name, dir) {
+          const slider = document.getElementById(name + "Slider");
+          const val = Math.min(
+            +slider.max,
+            Math.max(+slider.min, +slider.value + dir * +slider.step),
+          );
+          slider.value = val;
+          slider.dispatchEvent(new Event("input"));
+        }
+
+        function toggleRays() {
+          state.showRays = !state.showRays;
+          document
+            .getElementById("raysToggle")
+            .classList.toggle("active", state.showRays);
+          render();
+        }
+
+        document
+          .getElementById("langBtn")
+          .addEventListener("click", toggleLang);
+        document
+          .getElementById("massMinusBtn")
+          .addEventListener("click", () => stepSlider("mass", -1));
+        document
+          .getElementById("massPlusBtn")
+          .addEventListener("click", () => stepSlider("mass", 1));
+        document
+          .getElementById("sizeMinusBtn")
+          .addEventListener("click", () => stepSlider("size", -1));
+        document
+          .getElementById("sizePlusBtn")
+          .addEventListener("click", () => stepSlider("size", 1));
+        document
+          .getElementById("raysToggle")
+          .addEventListener("click", toggleRays);
+
+        document.getElementById("massSlider").addEventListener("input", (e) => {
+          state.mass = +e.target.value;
+          document.getElementById("massVal").textContent = e.target.value;
+          render();
+        });
+
+        document.getElementById("sizeSlider").addEventListener("input", (e) => {
+          state.sourceSize = +e.target.value;
+          document.getElementById("sizeVal").textContent = e.target.value;
+          render();
+        });
+
+        // Drag source star on side view
+        let dragging = false;
+
+        function getSourceY(e) {
+          const rect = sideCanvas.getBoundingClientRect();
+          const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+          const midY = rect.height / 2;
+          return Math.max(-1, Math.min(1, (y - midY) / (rect.height * 0.4)));
+        }
+
+        sideCanvas.addEventListener("mousedown", (e) => {
+          dragging = true;
+          state.sourceY = getSourceY(e);
+          render();
+        });
+        sideCanvas.addEventListener(
+          "touchstart",
+          (e) => {
+            dragging = true;
+            state.sourceY = getSourceY(e);
+            render();
+            e.preventDefault();
+          },
+          { passive: false },
+        );
+        window.addEventListener("mousemove", (e) => {
+          if (dragging) {
+            state.sourceY = getSourceY(e);
+            render();
+          }
+        });
+        window.addEventListener(
+          "touchmove",
+          (e) => {
+            if (dragging) {
+              state.sourceY = getSourceY(e);
+              render();
+            }
+          },
+          { passive: true },
+        );
+        window.addEventListener("mouseup", () => {
+          dragging = false;
+        });
+        window.addEventListener("touchend", () => {
+          dragging = false;
+        });
+
+        // ══════════════════════════════════════════════
+        // INIT
+        // ══════════════════════════════════════════════
+        document.getElementById("langBtn").textContent =
+          state.lang === "en" ? "PL" : "EN";
+        applyTranslations();
+        resize();
+
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) {
+            render();
+          }
+        });
+      })();
+    </script>
+  </body>
 </html>

@@ -1,909 +1,1546 @@
-<!DOCTYPE html>
+<!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run cr -- logigate.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- logigate.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
-<!-- saved from url=(0059)file:///Users/llepecki/Downloads/logic-gate-trainer_15.html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="description" content="Interactive logic gate trainer. Build circuits with AND, OR, NOT, XOR gates and watch signals propagate in real time.">
-<meta name="author" content="Łukasz Łepecki">
-<link rel="canonical" href="https://lepecki.com/learn/logigate.html">
-<meta property="og:title" content="Logic Gate Trainer">
-<meta property="og:description" content="Interactive logic gate trainer. Build circuits with AND, OR, NOT, XOR gates and watch signals propagate in real time.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://lepecki.com/learn/logigate.html">
-<meta property="og:site_name" content="Łukasz Łepecki">
-<meta property="og:image" content="https://lepecki.com/assets/img/avatar.webp">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Logic Gate Trainer">
-<meta name="twitter:description" content="Interactive logic gate trainer. Build circuits with AND, OR, NOT, XOR gates and watch signals propagate in real time.">
-<title>Logic Gate Trainer</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0b0f18;
-    --panel: #131825;
-    --panel-border: #1e2a3a;
-    --text: #c9d1d9;
-    --text-dim: #6e7a8a;
-    --accent: #3fb950;
-    --wire-idle: #253040;
-    --wire-high: #3fb950;
-    --wire-low: #c24a4a;
-    --not-color: #f97583;
-    --and-color: #56d4dd;
-    --or-color: #79c0ff;
-    --xor-color: #e3b341;
-    --gate-fill: #151d2b;
-    --gate-stroke: #2a3a50;
-    --input-high: #3fb950;
-    --input-low: #3a4250;
-    --input-label-color: #fff;
-    --output-led-high: #3fb950;
-    --output-led-low: #2a3040;
-    --dot-color: #1a2535;
-  }
-
-  [data-theme="light"] {
-    --bg: #f0f2f5;
-    --panel: #ffffff;
-    --panel-border: #d0d5dd;
-    --text: #1a1a2e;
-    --text-dim: #6b7280;
-    --accent: #16a34a;
-    --wire-idle: #c4cad4;
-    --wire-high: #16a34a;
-    --wire-low: #dc2626;
-    --not-color: #e11d48;
-    --and-color: #0891b2;
-    --or-color: #2563eb;
-    --xor-color: #ca8a04;
-    --gate-fill: #ffffff;
-    --gate-stroke: #94a3b8;
-    --input-high: #16a34a;
-    --input-low: #94a3b8;
-    --input-label-color: #1a1a2e;
-    --output-led-high: #16a34a;
-    --output-led-low: #d0d5dd;
-    --dot-color: #d0d5dd;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Outfit', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-    -webkit-user-select: none;
-    user-select: none;
-    touch-action: manipulation;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    overscroll-behavior: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
-    background-size: 24px 24px;
-    opacity: 0.4;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  header {
-    position: relative; z-index: 1; padding: 20px 28px 0;
-  }
-  header h1 {
-    font-size: 22px; font-weight: 700; margin-bottom: 4px;
-  }
-  header h1 a { color: inherit; text-decoration: none; }
-  header h1 a:hover { opacity: .7; }
-  header p { color: var(--text-dim); font-size: 13px; }
-
-  .config {
-    position: relative; z-index: 1;
-    display: flex; align-items: center; gap: 24px; padding: 16px 28px; flex-wrap: wrap;
-  }
-  .config-group { display: flex; align-items: center; gap: 8px; }
-  .config-group label {
-    font-size: 12px; color: var(--text-dim); text-transform: uppercase;
-    letter-spacing: 1px; font-family: 'Share Tech Mono', monospace;
-  }
-
-  .gate-toggles { display: flex; gap: 6px; }
-  .gate-toggle {
-    padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 13px;
-    cursor: pointer; transition: all 0.2s; user-select: none;
-    min-height: 38px;
-  }
-  .gate-toggle.active { border-color: var(--accent); color: var(--accent); background: #1a2c1f; }
-  .gate-toggle[data-gate="NOT"].active { border-color: var(--not-color); color: var(--not-color); background: #2a1520; }
-  .gate-toggle[data-gate="AND"].active { border-color: var(--and-color); color: var(--and-color); background: #152025; }
-  .gate-toggle[data-gate="OR"].active  { border-color: var(--or-color);  color: var(--or-color);  background: #151e2a; }
-  .gate-toggle[data-gate="XOR"].active { border-color: var(--xor-color); color: var(--xor-color); background: #252015; }
-
-  [data-theme="light"] .gate-toggle.active { background: #e8f5e9; }
-  [data-theme="light"] .gate-toggle[data-gate="NOT"].active { background: #fce4ec; }
-  [data-theme="light"] .gate-toggle[data-gate="AND"].active { background: #e0f7fa; }
-  [data-theme="light"] .gate-toggle[data-gate="OR"].active  { background: #e3f2fd; }
-  [data-theme="light"] .gate-toggle[data-gate="XOR"].active { background: #fff8e1; }
-
-  /* Theme toggle switch */
-  .header-right {
-    position: absolute; right: 28px; top: 24px;
-    display: flex; align-items: center; gap: 10px; z-index: 2;
-  }
-
-  .theme-toggle {
-    display: flex; align-items: center; cursor: pointer;
-    user-select: none; padding: 8px;
-  }
-
-  .theme-toggle-icon {
-    font-size: 22px; line-height: 1;
-    transition: transform 0.3s;
-  }
-
-  .theme-toggle:hover .theme-toggle-icon {
-    transform: scale(1.15);
-  }
-
-  .lang-btn{background:none;border:1px solid var(--panel-border);border-radius:4px;padding:3px 8px;cursor:pointer;flex-shrink:0;color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;letter-spacing:1px;transition:border-color .15s,color .15s}
-  .lang-btn:hover{border-color:var(--accent);color:var(--accent)}
-
-  .count-select {
-    padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text);
-    font-family: 'Share Tech Mono', monospace; font-size: 13px;
-    cursor: pointer; appearance: none; min-height: 38px;
-  }
-  .count-select option { background: var(--panel); color: var(--text); }
-
-  .btn {
-    padding: 10px 20px; border-radius: 6px; border: 1.5px solid var(--accent);
-    background: transparent; color: var(--accent);
-    font-family: 'Share Tech Mono', monospace; font-size: 13px;
-    cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
-    min-height: 40px;
-  }
-  .btn:hover { background: var(--accent); color: var(--bg); }
-  .btn.reveal { border-color: #e3b341; color: #e3b341; }
-  .btn.reveal:hover { background: #e3b341; color: var(--bg); }
-  .btn.reveal.revealed {
-    border-color: var(--not-color); color: var(--not-color);
-    pointer-events: auto; opacity: 1;
-  }
-  .btn.reveal.revealed:hover { background: var(--not-color); color: var(--bg); }
-  .btn.wire-toggle { border-color: var(--panel-border); color: var(--text-dim); }
-  .btn.wire-toggle:hover { background: var(--panel-border); color: var(--text); }
-  .btn.wire-toggle.active { border-color: var(--accent); color: var(--accent); }
-  .btn.wire-toggle.active:hover { background: var(--accent); color: var(--bg); }
-
-  .btn.randomize { border-color: var(--or-color); color: var(--or-color); }
-  .btn.randomize:hover { background: var(--or-color); color: var(--bg); }
-
-  .speed-toggle { display: flex; gap: 6px; }
-  .speed-btn {
-    padding: 8px 6px; border-radius: 6px; border: 1.5px solid var(--panel-border);
-    background: var(--panel); color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace; font-size: 12px;
-    cursor: pointer; transition: all 0.2s; text-align: center;
-  }
-  .speed-btn:hover { border-color: var(--accent); }
-  .speed-btn.active { border-color: var(--accent); color: var(--accent); }
-
-  .circuit-container {
-    position: relative; z-index: 1; flex: 1;
-    display: flex; align-items: center; justify-content: center;
-    padding: 10px 28px 20px; min-height: 400px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .circuit-container .empty-state {
-    color: var(--text-dim); font-size: 14px;
-    font-family: 'Share Tech Mono', monospace; text-align: center; line-height: 1.8;
-  }
-  .circuit-container .empty-state span { color: var(--accent); }
-
-  svg#circuit { width: 100%; height: 100%; max-height: 75vh; }
-
-  /* ── SVG element styles ── */
-  .wire {
-    fill: none; stroke: var(--wire-idle); stroke-width: 2.5;
-    stroke-linecap: round; stroke-linejoin: round;
-    transition: stroke 0.4s ease, filter 0.4s ease;
-  }
-  .wire.high { stroke: var(--wire-high); filter: drop-shadow(0 0 4px rgba(63,185,80,0.4)); }
-  .wire.low  { stroke: var(--wire-low); }
-
-  .gate-body { fill: var(--gate-fill); stroke: var(--gate-stroke); stroke-width: 2; }
-  .gate-body.not-gate { stroke: var(--not-color); }
-  .gate-body.and-gate { stroke: var(--and-color); }
-  .gate-body.or-gate  { stroke: var(--or-color); }
-  .gate-body.xor-gate { stroke: var(--xor-color); }
-
-  .gate-label {
-    fill: var(--text); font-family: 'Share Tech Mono', monospace;
-    font-size: 11px; text-anchor: middle; dominant-baseline: central; pointer-events: none;
-  }
-  .gate-value {
-    font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 700;
-    text-anchor: middle; dominant-baseline: central; pointer-events: none;
-    opacity: 0; transition: opacity 0.3s ease;
-  }
-  .gate-value.visible { opacity: 1; }
-  .gate-value.high { fill: var(--wire-high); }
-  .gate-value.low  { fill: var(--wire-low); }
-
-  .input-toggle { cursor: pointer; }
-  .input-toggle:hover .input-ring { stroke-width: 3; }
-
-  .input-circle { transition: fill 0.2s ease; }
-  .input-circle.high { fill: var(--input-high); }
-  .input-circle.low  { fill: var(--input-low); }
-
-  .input-ring { fill: none; stroke-width: 2; transition: stroke 0.2s ease; }
-  .input-ring.high { stroke: var(--input-high); }
-  .input-ring.low  { stroke: var(--input-low); }
-
-  .input-label {
-    fill: var(--input-label-color); font-family: 'Share Tech Mono', monospace; font-size: 13px;
-    font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none;
-  }
-  .input-value-label {
-    fill: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 11px;
-    text-anchor: middle; dominant-baseline: central; pointer-events: none; transition: fill 0.2s;
-  }
-  .input-value-label.high { fill: var(--input-high); }
-
-  .output-led { transition: all 0.4s ease; }
-  .output-led.high { fill: var(--output-led-high); filter: drop-shadow(0 0 8px rgba(63,185,80,0.6)); }
-  .output-led.low  { fill: var(--wire-low); filter: drop-shadow(0 0 6px rgba(194,74,74,0.4)); }
-  .output-led.idle  { fill: var(--output-led-low); }
-
-  .output-label {
-    fill: var(--text-dim); font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; text-anchor: middle; dominant-baseline: central;
-  }
-  .output-value {
-    font-family: 'Share Tech Mono', monospace; font-size: 16px; font-weight: 700;
-    text-anchor: middle; dominant-baseline: central; opacity: 0; transition: opacity 0.3s;
-  }
-  .output-value.visible { opacity: 1; }
-  .output-value.high { fill: var(--wire-high); }
-  .output-value.low  { fill: var(--wire-low); }
-
-  .wire-label circle { fill: var(--panel); stroke: var(--panel-border); stroke-width: 1; }
-  .wire-label text { fill: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 10px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-  .wire-labels-hidden .wire-label { display: none; }
-
-  .guess-btn { cursor: pointer; transition: all 0.2s; }
-  .guess-btn rect { fill: var(--panel); stroke: var(--panel-border); stroke-width: 1.5; rx: 5; }
-  .guess-btn text { fill: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-  .guess-btn:hover rect { stroke: var(--accent); }
-  .guess-btn.selected-high rect { fill: var(--output-led-high); stroke: var(--output-led-high); }
-  .guess-btn.selected-high text { fill: #fff; }
-  .guess-btn.selected-low rect { fill: var(--wire-low); stroke: var(--wire-low); }
-  .guess-btn.selected-low text { fill: #fff; }
-  .guess-btn.disabled { pointer-events: none; opacity: 0.4; }
-
-  .result-overlay {
-    position: fixed; inset: 0; z-index: 9999;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    cursor: pointer;
-    animation: overlayFadeIn 0.3s ease;
-  }
-  .overlay-emoji { font-size: 72px; animation: overlayPop 0.4s ease; }
-  .overlay-msg {
-    font-family: 'Outfit', sans-serif;
-    font-size: 24px; font-weight: 700;
-    margin-top: 16px; color: #fff;
-  }
-  .overlay-hint {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; margin-top: 8px; color: rgba(255,255,255,0.6);
-  }
-  @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes overlayPop { 0% { transform: scale(0.3); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
-
-  .not-bubble { fill: var(--gate-fill); stroke: var(--not-color); stroke-width: 2; }
-  .xor-extra  { fill: none; stroke: var(--xor-color); stroke-width: 2; }
-
-  .bottom-bar {
-    position: relative; z-index: 1;
-    display: flex; align-items: center; justify-content: center;
-    gap: 16px; padding: 16px 28px 24px;
-  }
-  .status-text {
-    font-family: 'Share Tech Mono', monospace; font-size: 13px;
-    color: var(--text-dim); min-width: 200px; text-align: center;
-  }
-  .status-text .val-high { color: var(--wire-high); }
-  .status-text .val-low  { color: var(--wire-low); }
-  /* Touch device adjustments (won't affect mouse/desktop) */
-  @media (pointer: coarse) {
-    .gate-toggle { padding: 10px 16px; min-height: 44px; }
-    .btn { padding: 12px 22px; min-height: 44px; }
-    .count-select { padding: 10px 14px; min-height: 44px; }
-    .config { gap: 16px; row-gap: 12px; }
-  }
-
-  /* iPad portrait */
-  @media (max-width: 820px) {
-    .config { gap: 14px; row-gap: 10px; padding: 14px 20px; }
-    header { padding: 16px 20px 0; }
-    .circuit-container { padding: 8px 16px 16px; }
-  }
-</style>
-</head>
-<body>
-<header>
-  <h1><a href="/learn/"><span style="font-size:18px;line-height:1">⚡</span></a> <span id="titleText">Logic Gate Trainer</span></h1>
-  <p id="subtitleText">Practice solving circuits — set inputs, predict the output, then reveal!</p>
-  <div class="header-right">
-    <button class="lang-btn" id="langBtn" onclick="toggleLang()" title="Switch language">PL</button>
-    <div class="theme-toggle" onclick="toggleTheme()">
-      <span class="theme-toggle-icon" id="themeIcon">☀</span>
-    </div>
-  </div>
-</header>
-
-<div class="config">
-  <div class="config-group">
-    <label id="lblGates">Gates:</label>
-    <div class="gate-toggles">
-      <button class="gate-toggle active" data-gate="NOT" onclick="toggleGateType(this)">NOT</button>
-      <button class="gate-toggle active" data-gate="AND" onclick="toggleGateType(this)">AND</button>
-      <button class="gate-toggle active" data-gate="OR" onclick="toggleGateType(this)">OR</button>
-      <button class="gate-toggle active" data-gate="XOR" onclick="toggleGateType(this)">XOR</button>
-    </div>
-  </div>
-  <div class="config-group">
-    <label id="lblCount">Count:</label>
-    <select class="count-select" id="gateCount">
-      <option value="2">2</option>
-      <option value="3" selected="">3</option>
-      <option value="4">4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
-      <option value="7">7</option>
-      <option value="8">8</option>
-    </select>
-  </div>
-  <button class="btn" id="generateBtn" onclick="generate()">Generate</button>
-  <button class="btn randomize" id="randomBtn" onclick="randomizeInputs()" style="">Random Inputs</button>
-  <button class="btn reveal" id="revealBtn" onclick="handleRevealReset()">Check</button>
-  <div class="config-group" id="speedGroup" style="">
-    <label id="lblSpeed">Speed:</label>
-    <div class="speed-toggle">
-      <button class="speed-btn" data-speed="0" onclick="setSpeed(0)">▶</button>
-      <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">▶▶</button>
-      <button class="speed-btn" data-speed="2" onclick="setSpeed(2)">▶▶▶</button>
-    </div>
-  </div>
-  <button class="btn wire-toggle" id="wireLabelsBtn" onclick="toggleWireLabels()" data-i18n="wireLabels">Wire #</button>
-</div>
-
-<div class="circuit-container" id="circuitContainer"></div>
-
-<div class="bottom-bar">
-  <div class="status-text" id="statusText"></div>
-</div>
-
-<script>
-'use strict';
-// ══════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════
-let circuit = null, layoutData = null, revealed = false, revealTimeouts = [], userGuess = null;
-let lang = navigator.language?.startsWith('pl') ? 'pl' : 'en';
-
-// ══════════════════════════════════════════════
-// I18N
-// ══════════════════════════════════════════════
-const I18N = {
-  en: {
-    title: 'Logic Gate Trainer',
-    subtitle: 'Practice solving circuits — set inputs, predict the output, then reveal!',
-    gates: 'Gates:',
-    count: 'Count:',
-    speed: 'Speed:',
-    generate: 'Generate',
-    randomInputs: 'Random Inputs',
-    check: 'Check',
-    reset: 'Reset',
-    wireLabels: 'Wire #',
-    outputPrefix: 'Output = ',
-    high: 'HIGH (1)',
-    low: 'LOW (0)',
-    outLabel: 'OUT',
-    pickGuess: 'Pick <span style="color:#e3b341">0</span> or <span style="color:#e3b341">1</span> next to the output first!',
-    instructions: 'Set inputs, pick your answer, then hit <span style="color:#e3b341">Check</span>.',
-    revealing: 'Revealing\u2026',
-    correct: 'Correct!',
-    wrong: 'Wrong!',
-    dismiss: 'click to dismiss',
-    selectGates: 'Select at least one gate type!',
-  },
-  pl: {
-    title: 'Trener Bramek Logicznych',
-    subtitle: '\u0106wicz rozwi\u0105zywanie obwod\u00f3w \u2014 ustaw wej\u015bcia, przewid\u017a wyj\u015bcie, a potem sprawdź!',
-    gates: 'Bramki:',
-    count: 'Liczba:',
-    speed: 'Pr\u0119dko\u015b\u0107:',
-    generate: 'Generuj',
-    randomInputs: 'Losowe wej\u015bcia',
-    check: 'Sprawdź',
-    reset: 'Reset',
-    wireLabels: 'Nr ścieżki',
-    outputPrefix: 'Wyj\u015bcie = ',
-    high: 'WYS (1)',
-    low: 'NIS (0)',
-    outLabel: 'WYJŚCIE',
-    pickGuess: 'Najpierw wybierz <span style="color:#e3b341">0</span> lub <span style="color:#e3b341">1</span> obok wyj\u015bcia!',
-    instructions: 'Ustaw wej\u015bcia, wybierz odpowied\u017a, a potem kliknij <span style="color:#e3b341">Sprawdź</span>.',
-    revealing: 'Ujawnianie\u2026',
-    correct: 'Dobrze!',
-    wrong: '\u0179le!',
-    dismiss: 'kliknij, aby zamkn\u0105\u0107',
-    selectGates: 'Wybierz co najmniej jeden typ bramki!',
-  },
-};
-
-function T(key) { return I18N[lang][key]; }
-
-function applyTranslations() {
-  document.title = T('title');
-  document.documentElement.lang = lang;
-  document.getElementById('titleText').textContent = T('title');
-  document.getElementById('subtitleText').textContent = T('subtitle');
-  document.getElementById('lblGates').textContent = T('gates');
-  document.getElementById('lblCount').textContent = T('count');
-  document.getElementById('lblSpeed').textContent = T('speed');
-  document.getElementById('generateBtn').textContent = T('generate');
-  document.getElementById('randomBtn').textContent = T('randomInputs');
-  document.getElementById('wireLabelsBtn').textContent = T('wireLabels');
-
-  // Check/Reset button
-  const revBtn = document.getElementById('revealBtn');
-  revBtn.textContent = revealed ? T('reset') : T('check');
-
-  // Status text
-  const st = document.getElementById('statusText');
-  if (revealed && circuit) {
-    const v = circuit.gates[circuit.outputGateIdx].value;
-    st.innerHTML = T('outputPrefix') + '<span class="' + (v ? 'val-high' : 'val-low') + '">' + (v ? T('high') : T('low')) + '</span>';
-  } else {
-    st.innerHTML = T('instructions');
-  }
-
-  // Re-render the output label in SVG if circuit is rendered
-  const outLbl = document.querySelector('.output-label');
-  if (outLbl) outLbl.textContent = T('outLabel');
-}
-
-// eslint-disable-next-line no-unused-vars
-function toggleLang() {
-  lang = lang === 'en' ? 'pl' : 'en';
-  document.getElementById('langBtn').textContent = lang === 'en' ? 'PL' : 'EN';
-  applyTranslations();
-}
-
-// eslint-disable-next-line no-unused-vars
-function setGuess(v) {
-  if (revealed) return;
-  userGuess = v;
-  document.querySelectorAll('.guess-btn').forEach(el => {
-    el.classList.remove('selected-high', 'selected-low');
-    if (+el.dataset.val === v) el.classList.add(v ? 'selected-high' : 'selected-low');
-  });
-}
-
-function showResultOverlay(correct) {
-  const existing = document.querySelector('.result-overlay');
-  if (existing) existing.remove();
-
-  const overlay = document.createElement('div');
-  overlay.className = 'result-overlay';
-
-  const emoji = correct ? '\uD83C\uDF89' : '\uD83D\uDC4E\uD83C\uDFFB';
-  const msg = correct ? T('correct') : T('wrong');
-  overlay.style.background = correct ? 'rgba(63,185,80,0.88)' : 'rgba(249,117,131,0.88)';
-  overlay.innerHTML =
-    '<div class="overlay-emoji">' + emoji + '</div>' +
-    '<div class="overlay-msg">' + msg + '</div>' +
-    '<div class="overlay-hint">' + T('dismiss') + '</div>';
-
-  overlay.addEventListener('click', () => overlay.remove());
-  document.body.appendChild(overlay);
-}
-
-// eslint-disable-next-line no-unused-vars
-function toggleTheme() {
-  const html = document.documentElement;
-  const isLight = html.getAttribute('data-theme') === 'light';
-  if (isLight) {
-    html.removeAttribute('data-theme');
-    document.getElementById('themeIcon').textContent = '☀';
-  } else {
-    html.setAttribute('data-theme', 'light');
-    document.getElementById('themeIcon').textContent = '☽';
-  }
-}
-
-function getSelectedGates() {
-  return Array.from(document.querySelectorAll('.gate-toggle.active')).map(b => b.dataset.gate);
-}
-// eslint-disable-next-line no-unused-vars
-function toggleGateType(btn) {
-  btn.classList.toggle('active');
-  if (!getSelectedGates().length) btn.classList.add('active');
-}
-
-// ══════════════════════════════════════════════
-// CIRCUIT GENERATION — pure tree
-// ══════════════════════════════════════════════
-function pinsFor(t) { return t === 'NOT' ? 1 : 2; }
-
-function generateCircuit(types, n) {
-  const gates = [];
-  for (let i = 0; i < n; i++)
-    gates.push({ id: i, type: types[Math.floor(Math.random() * types.length)], inputRefs: [], value: null });
-
-  const outIdx = n - 1;
-  const pool = Array.from({ length: n - 1 }, (_, i) => i);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-
-  const inputs = [];
-  const LABELS = 'ABCDEFGHIJKLMNOP';
-  const queue = [outIdx];
-
-  while (queue.length) {
-    const gi = queue.shift();
-    const g = gates[gi];
-    for (let p = 0; p < pinsFor(g.type); p++) {
-      if (pool.length) {
-        const ci = pool.pop();
-        g.inputRefs.push({ type: 'gate', index: ci });
-        queue.push(ci);
-      } else {
-        const ii = inputs.length;
-        inputs.push({ id: ii, label: LABELS[ii] || 'I' + ii, value: 0 });
-        g.inputRefs.push({ type: 'input', index: ii });
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Interactive logic gate trainer. Build circuits with AND, OR, NOT, XOR gates and watch signals propagate in real time."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/logigate.html" />
+    <meta property="og:title" content="Logic Gate Trainer" />
+    <meta
+      property="og:description"
+      content="Interactive logic gate trainer. Build circuits with AND, OR, NOT, XOR gates and watch signals propagate in real time."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/logigate.html" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Logic Gate Trainer" />
+    <meta
+      name="twitter:description"
+      content="Interactive logic gate trainer. Build circuits with AND, OR, NOT, XOR gates and watch signals propagate in real time."
+    />
+    <title>Logic Gate Trainer</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      defer="defer"
+      src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"
+      integrity="sha384-2IH3T69EIKYC4c+RXZifZRvaH5SRUdacJW7j6HtE5rQbvLhKKdawxq6vpIzJ7j9M"
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-    }
-  }
-  return { gates, inputs, outputGateIdx: outIdx };
-}
 
-// ══════════════════════════════════════════════
-// EVALUATION
-// ══════════════════════════════════════════════
-function evalGate(t, v) {
-  if (t === 'NOT') return v[0] ? 0 : 1;
-  if (t === 'AND') return (v[0] && v[1]) ? 1 : 0;
-  if (t === 'OR')  return (v[0] || v[1]) ? 1 : 0;
-  return (v[0] !== v[1]) ? 1 : 0;
-}
+      :root {
+        --bg: #0b0f18;
+        --panel: #131825;
+        --panel-border: #1e2a3a;
+        --text: #c9d1d9;
+        --text-dim: #6e7a8a;
+        --accent: #3fb950;
+        --wire-idle: #253040;
+        --wire-high: #3fb950;
+        --wire-low: #c24a4a;
+        --not-color: #f97583;
+        --and-color: #56d4dd;
+        --or-color: #79c0ff;
+        --xor-color: #e3b341;
+        --gate-fill: #151d2b;
+        --gate-stroke: #2a3a50;
+        --input-high: #3fb950;
+        --input-low: #3a4250;
+        --input-label-color: #fff;
+        --output-led-high: #3fb950;
+        --output-led-low: #2a3040;
+        --dot-color: #1a2535;
+      }
 
-function evaluateCircuit(c) {
-  const vals = new Map();
-  function calc(i) {
-    if (vals.has(i)) return vals.get(i);
-    const g = c.gates[i];
-    const iv = g.inputRefs.map(r => r.type === 'input' ? c.inputs[r.index].value : calc(r.index));
-    const v = evalGate(g.type, iv);
-    vals.set(i, v); g.value = v; return v;
-  }
-  calc(c.outputGateIdx);
-  return vals;
-}
+      [data-theme="light"] {
+        --bg: #f0f2f5;
+        --panel: #ffffff;
+        --panel-border: #d0d5dd;
+        --text: #1a1a2e;
+        --text-dim: #6b7280;
+        --accent: #16a34a;
+        --wire-idle: #c4cad4;
+        --wire-high: #16a34a;
+        --wire-low: #dc2626;
+        --not-color: #e11d48;
+        --and-color: #0891b2;
+        --or-color: #2563eb;
+        --xor-color: #ca8a04;
+        --gate-fill: #ffffff;
+        --gate-stroke: #94a3b8;
+        --input-high: #16a34a;
+        --input-low: #94a3b8;
+        --input-label-color: #1a1a2e;
+        --output-led-high: #16a34a;
+        --output-led-low: #d0d5dd;
+        --dot-color: #d0d5dd;
+      }
 
-// ══════════════════════════════════════════════
-// LAYOUT — dagre (Sugiyama algorithm)
-//
-// Dagre handles:
-//  1. Layer assignment (longest-path)
-//  2. Crossing minimisation (barycenter heuristic)
-//  3. Coordinate assignment (Brandes-Köpf)
-//
-// We feed it every input, gate, and the output LED
-// as nodes, with edges flowing left → right.
-// ══════════════════════════════════════════════
-function computeLayout(circ) {
-  const g = new dagre.graphlib.Graph();
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+        -webkit-user-select: none;
+        user-select: none;
+        touch-action: manipulation;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+      }
 
-  g.setGraph({
-    rankdir: 'LR',       // left-to-right
-    nodesep: 50,          // vertical gap between nodes in same rank
-    ranksep: 140,         // horizontal gap between ranks
-    marginx: 40,
-    marginy: 40,
-    ranker: 'longest-path'
-  });
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: radial-gradient(
+          circle,
+          var(--dot-color) 1px,
+          transparent 1px
+        );
+        background-size: 24px 24px;
+        opacity: 0.4;
+        pointer-events: none;
+        z-index: 0;
+      }
 
-  g.setDefaultEdgeLabel(() => ({}));
+      header {
+        position: relative;
+        z-index: 1;
+        padding: 20px 28px 0;
+      }
+      header h1 {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        color: var(--text-dim);
+        font-size: 13px;
+      }
 
-  // -- add input nodes --
-  circ.inputs.forEach((inp, i) => {
-    g.setNode('inp_' + i, { width: 36, height: 36, nodeType: 'input', index: i });
-  });
+      .config {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 16px 28px;
+        flex-wrap: wrap;
+      }
+      .config-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .config-group label,
+      .config-group .config-label {
+        font-size: 12px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-family: "Share Tech Mono", monospace;
+      }
 
-  // -- add gate nodes --
-  circ.gates.forEach((gate, i) => {
-    g.setNode('gate_' + i, { width: 70, height: 46, nodeType: 'gate', index: i });
-  });
+      .gate-toggles {
+        display: flex;
+        gap: 6px;
+      }
+      .gate-toggle {
+        padding: 8px 14px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        user-select: none;
+        min-height: 38px;
+      }
+      .gate-toggle.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #1a2c1f;
+      }
+      .gate-toggle[data-gate="NOT"].active {
+        border-color: var(--not-color);
+        color: var(--not-color);
+        background: #2a1520;
+      }
+      .gate-toggle[data-gate="AND"].active {
+        border-color: var(--and-color);
+        color: var(--and-color);
+        background: #152025;
+      }
+      .gate-toggle[data-gate="OR"].active {
+        border-color: var(--or-color);
+        color: var(--or-color);
+        background: #151e2a;
+      }
+      .gate-toggle[data-gate="XOR"].active {
+        border-color: var(--xor-color);
+        color: var(--xor-color);
+        background: #252015;
+      }
 
-  // -- add output node --
-  g.setNode('output', { width: 32, height: 32, nodeType: 'output' });
+      [data-theme="light"] .gate-toggle.active {
+        background: #e8f5e9;
+      }
+      [data-theme="light"] .gate-toggle[data-gate="NOT"].active {
+        background: #fce4ec;
+      }
+      [data-theme="light"] .gate-toggle[data-gate="AND"].active {
+        background: #e0f7fa;
+      }
+      [data-theme="light"] .gate-toggle[data-gate="OR"].active {
+        background: #e3f2fd;
+      }
+      [data-theme="light"] .gate-toggle[data-gate="XOR"].active {
+        background: #fff8e1;
+      }
 
-  // -- add edges (source → target, following signal flow) --
-  circ.gates.forEach((gate, gi) => {
-    gate.inputRefs.forEach((ref) => {
-      const srcId = ref.type === 'input' ? 'inp_' + ref.index : 'gate_' + ref.index;
-      g.setEdge(srcId, 'gate_' + gi);
-    });
-  });
+      /* Theme toggle switch */
+      .header-right {
+        position: absolute;
+        right: 28px;
+        top: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 2;
+      }
 
-  // output gate → output LED
-  g.setEdge('gate_' + circ.outputGateIdx, 'output');
+      .theme-toggle {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        padding: 8px;
+      }
 
-  // -- run layout --
-  dagre.layout(g);
+      .theme-toggle-icon {
+        font-size: 22px;
+        line-height: 1;
+        transition: transform 0.3s;
+      }
 
-  // -- extract positions --
-  const inputPos = {};
-  const gatePos = {};
-  let outputPos = { x: 0, y: 0 };
+      .theme-toggle:hover .theme-toggle-icon {
+        transform: scale(1.15);
+      }
 
-  g.nodes().forEach(id => {
-    const n = g.node(id);
-    if (n.nodeType === 'input')  inputPos[n.index] = { x: n.x, y: n.y };
-    if (n.nodeType === 'gate')   gatePos[n.index]  = { x: n.x, y: n.y };
-    if (n.nodeType === 'output') outputPos = { x: n.x, y: n.y };
-  });
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
 
-  // -- extract edge routing points from dagre --
-  const edgePoints = {};
-  g.edges().forEach(e => {
-    const edge = g.edge(e);
-    edgePoints[e.v + '->' + e.w] = edge.points; // array of {x,y}
-  });
+      .count-select {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        cursor: pointer;
+        appearance: none;
+        min-height: 38px;
+      }
+      .count-select option {
+        background: var(--panel);
+        color: var(--text);
+      }
 
-  // -- compute depth of each gate for reveal ordering --
-  const depthOf = new Map();
-  function calcDepth(i) {
-    if (depthOf.has(i)) return depthOf.get(i);
-    let mx = 0;
-    for (const r of circ.gates[i].inputRefs)
-      if (r.type === 'gate') mx = Math.max(mx, calcDepth(r.index) + 1);
-      else mx = Math.max(mx, 1);
-    depthOf.set(i, mx); return mx;
-  }
-  const maxDepth = calcDepth(circ.outputGateIdx);
+      .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        border: 1.5px solid var(--accent);
+        background: transparent;
+        color: var(--accent);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        min-height: 40px;
+      }
+      .btn:hover {
+        background: var(--accent);
+        color: var(--bg);
+      }
+      .btn.reveal {
+        border-color: #e3b341;
+        color: #e3b341;
+      }
+      .btn.reveal:hover {
+        background: #e3b341;
+        color: var(--bg);
+      }
+      .btn.reveal.revealed {
+        border-color: var(--not-color);
+        color: var(--not-color);
+        pointer-events: auto;
+        opacity: 1;
+      }
+      .btn.reveal.revealed:hover {
+        background: var(--not-color);
+        color: var(--bg);
+      }
+      .btn.wire-toggle {
+        border-color: var(--panel-border);
+        color: var(--text-dim);
+      }
+      .btn.wire-toggle:hover {
+        background: var(--panel-border);
+        color: var(--text);
+      }
+      .btn.wire-toggle.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .btn.wire-toggle.active:hover {
+        background: var(--accent);
+        color: var(--bg);
+      }
 
-  // assign level (0 = output gate, higher = closer to inputs)
-  const gateLevel = {};
-  circ.gates.forEach((_, i) => {
-    if (depthOf.has(i)) gateLevel[i] = maxDepth - depthOf.get(i);
-  });
+      .btn.randomize {
+        border-color: var(--or-color);
+        color: var(--or-color);
+      }
+      .btn.randomize:hover {
+        background: var(--or-color);
+        color: var(--bg);
+      }
 
-  // viewbox
-  const graph = g.graph();
-  const svgW = graph.width + 120;
-  const svgH = graph.height + 40;
+      .speed-toggle {
+        display: flex;
+        gap: 6px;
+      }
+      .speed-btn {
+        padding: 8px 6px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+      }
+      .speed-btn:hover {
+        border-color: var(--accent);
+      }
+      .speed-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
 
-  return { inputPos, gatePos, outputPos, edgePoints, gateLevel, maxDepth, svgW, svgH };
-}
+      .circuit-container {
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 28px 20px;
+        min-height: 400px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .circuit-container .empty-state {
+        color: var(--text-dim);
+        font-size: 14px;
+        font-family: "Share Tech Mono", monospace;
+        text-align: center;
+        line-height: 1.8;
+      }
+      .circuit-container .empty-state span {
+        color: var(--accent);
+      }
 
-// ══════════════════════════════════════════════
-// GATE SVG SHAPES (drawn centred at x,y)
-// ══════════════════════════════════════════════
-function gateShapeSVG(type, x, y) {
-  const gc = type.toLowerCase() + '-gate';
-  let s = '';
-  switch (type) {
-    case 'NOT': {
-      s += `<path d="M ${x-26} ${y-20} L ${x+20} ${y} L ${x-26} ${y+20} Z" class="gate-body ${gc}" />`;
-      s += `<circle cx="${x+26}" cy="${y}" r="5" class="not-bubble" />`;
-      break;
-    }
-    case 'AND': {
-      s += `<path d="M ${x-24} ${y-20} L ${x} ${y-20} A 20 20 0 0 1 ${x} ${y+20} L ${x-24} ${y+20} Z" class="gate-body ${gc}" />`;
-      break;
-    }
-    case 'OR': {
-      s += `<path d="M ${x-26} ${y-20} Q ${x-12} ${y} ${x-26} ${y+20} Q ${x+4} ${y+20} ${x+28} ${y} Q ${x+4} ${y-20} ${x-26} ${y-20} Z" class="gate-body ${gc}" />`;
-      break;
-    }
-    case 'XOR': {
-      s += `<path d="M ${x-26} ${y-20} Q ${x-12} ${y} ${x-26} ${y+20} Q ${x+4} ${y+20} ${x+28} ${y} Q ${x+4} ${y-20} ${x-26} ${y-20} Z" class="gate-body ${gc}" />`;
-      s += `<path d="M ${x-32} ${y-20} Q ${x-18} ${y} ${x-32} ${y+20}" class="xor-extra" />`;
-      break;
-    }
-  }
-  return s;
-}
+      svg#circuit {
+        width: 100%;
+        height: 100%;
+        max-height: 75vh;
+      }
 
-function labelXY(type, x, y) {
-  if (type === 'NOT') return { x: x - 10, y };
-  if (type === 'AND') return { x: x - 6, y };
-  return { x: x - 2, y };
-}
+      /* ── SVG element styles ── */
+      .wire {
+        fill: none;
+        stroke: var(--wire-idle);
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition:
+          stroke 0.4s ease,
+          filter 0.4s ease;
+      }
+      .wire.high {
+        stroke: var(--wire-high);
+        filter: drop-shadow(0 0 4px rgba(63, 185, 80, 0.4));
+      }
+      .wire.low {
+        stroke: var(--wire-low);
+      }
 
-function outputPinXY(type, x, y) {
-  if (type === 'NOT') return { x: x + 32, y };
-  if (type === 'AND') return { x: x + 20, y };
-  return { x: x + 28, y };
-}
+      .gate-body {
+        fill: var(--gate-fill);
+        stroke: var(--gate-stroke);
+        stroke-width: 2;
+      }
+      .gate-body.not-gate {
+        stroke: var(--not-color);
+      }
+      .gate-body.and-gate {
+        stroke: var(--and-color);
+      }
+      .gate-body.or-gate {
+        stroke: var(--or-color);
+      }
+      .gate-body.xor-gate {
+        stroke: var(--xor-color);
+      }
 
-function inputPinXY(type, x, y, pinIndex) {
-  if (type === 'NOT') return { x: x - 26, y };
-  if (type === 'AND') return [{ x: x - 24, y: y - 10 }, { x: x - 24, y: y + 10 }][pinIndex];
-  return [{ x: x - 22, y: y - 10 }, { x: x - 22, y: y + 10 }][pinIndex];
-}
+      .gate-label {
+        fill: var(--text);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-anchor: middle;
+        dominant-baseline: central;
+        pointer-events: none;
+      }
+      .gate-value {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        text-anchor: middle;
+        dominant-baseline: central;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .gate-value.visible {
+        opacity: 1;
+      }
+      .gate-value.high {
+        fill: var(--wire-high);
+      }
+      .gate-value.low {
+        fill: var(--wire-low);
+      }
 
-// ══════════════════════════════════════════════
-// WIRE PATH — uses dagre's routed points,
-// converted to a smooth cubic bezier spline
-// ══════════════════════════════════════════════
-function pointsToPath(points) {
-  if (!points || points.length < 2) return '';
+      .input-toggle {
+        cursor: pointer;
+      }
+      .input-toggle:hover .input-ring {
+        stroke-width: 3;
+      }
 
-  // Start from first point
-  let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+      .input-circle {
+        transition: fill 0.2s ease;
+      }
+      .input-circle.high {
+        fill: var(--input-high);
+      }
+      .input-circle.low {
+        fill: var(--input-low);
+      }
 
-  if (points.length === 2) {
-    // Simple curve between two points
-    const p0 = points[0], p1 = points[1];
-    const cp = Math.max(30, Math.abs(p1.x - p0.x) * 0.4);
-    d += ` C ${(p0.x + cp).toFixed(1)} ${p0.y.toFixed(1)}, ${(p1.x - cp).toFixed(1)} ${p1.y.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
-  } else {
-    // Catmull-Rom → cubic Bezier through all dagre waypoints
-    // This produces a smooth curve that passes through every point
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[Math.max(0, i - 1)];
-      const p1 = points[i];
-      const p2 = points[i + 1];
-      const p3 = points[Math.min(points.length - 1, i + 2)];
+      .input-ring {
+        fill: none;
+        stroke-width: 2;
+        transition: stroke 0.2s ease;
+      }
+      .input-ring.high {
+        stroke: var(--input-high);
+      }
+      .input-ring.low {
+        stroke: var(--input-low);
+      }
 
-      const cp1x = p1.x + (p2.x - p0.x) / 6;
-      const cp1y = p1.y + (p2.y - p0.y) / 6;
-      const cp2x = p2.x - (p3.x - p1.x) / 6;
-      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      .input-label {
+        fill: var(--input-label-color);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        text-anchor: middle;
+        dominant-baseline: central;
+        pointer-events: none;
+      }
+      .input-value-label {
+        fill: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-anchor: middle;
+        dominant-baseline: central;
+        pointer-events: none;
+        transition: fill 0.2s;
+      }
+      .input-value-label.high {
+        fill: var(--input-high);
+      }
 
-      d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
-    }
-  }
-  return d;
-}
+      .output-led {
+        transition: all 0.4s ease;
+      }
+      .output-led.high {
+        fill: var(--output-led-high);
+        filter: drop-shadow(0 0 8px rgba(63, 185, 80, 0.6));
+      }
+      .output-led.low {
+        fill: var(--wire-low);
+        filter: drop-shadow(0 0 6px rgba(194, 74, 74, 0.4));
+      }
+      .output-led.idle {
+        fill: var(--output-led-low);
+      }
 
-// ══════════════════════════════════════════════
-// RENDER
-// ══════════════════════════════════════════════
-function renderCircuit(c, L) {
-  const box = document.getElementById('circuitContainer');
-  box.innerHTML = '';
+      .output-label {
+        fill: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
+      .output-value {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        font-weight: 700;
+        text-anchor: middle;
+        dominant-baseline: central;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .output-value.visible {
+        opacity: 1;
+      }
+      .output-value.high {
+        fill: var(--wire-high);
+      }
+      .output-value.low {
+        fill: var(--wire-low);
+      }
 
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.id = 'circuit';
-  svg.setAttribute('viewBox', `0 0 ${L.svgW} ${L.svgH}`);
-  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-  if (!document.getElementById('wireLabelsBtn').classList.contains('active')) svg.classList.add('wire-labels-hidden');
+      .wire-label circle {
+        fill: var(--panel);
+        stroke: var(--panel-border);
+        stroke-width: 1;
+      }
+      .wire-label text {
+        fill: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-anchor: middle;
+        dominant-baseline: central;
+        pointer-events: none;
+      }
+      .wire-labels-hidden .wire-label {
+        display: none;
+      }
 
-  let h = '';
-  const wireMids = [];
-  let wireNum = 1;
+      .guess-btn {
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .guess-btn rect {
+        fill: var(--panel);
+        stroke: var(--panel-border);
+        stroke-width: 1.5;
+        rx: 5;
+      }
+      .guess-btn text {
+        fill: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        text-anchor: middle;
+        dominant-baseline: central;
+        pointer-events: none;
+      }
+      .guess-btn:hover rect {
+        stroke: var(--accent);
+      }
+      .guess-btn.selected-high rect {
+        fill: var(--output-led-high);
+        stroke: var(--output-led-high);
+      }
+      .guess-btn.selected-high text {
+        fill: #fff;
+      }
+      .guess-btn.selected-low rect {
+        fill: var(--wire-low);
+        stroke: var(--wire-low);
+      }
+      .guess-btn.selected-low text {
+        fill: #fff;
+      }
+      .guess-btn.disabled {
+        pointer-events: none;
+        opacity: 0.4;
+      }
 
-  // ── wires (dagre-routed, behind everything) ──
-  c.gates.forEach((gate, gi) => {
-    gate.inputRefs.forEach((ref, ri) => {
-      const srcId = ref.type === 'input' ? 'inp_' + ref.index : 'gate_' + ref.index;
-      const edgeKey = srcId + '->gate_' + gi;
-      const pts = L.edgePoints[edgeKey];
-
-      // Adjust endpoints to connect to actual pin positions on shapes
-      if (pts && pts.length >= 2) {
-        // Snap start point to source output pin
-        if (ref.type === 'input') {
-          const ip = L.inputPos[ref.index];
-          pts[0] = { x: ip.x + 16, y: ip.y };
-        } else {
-          const sp = L.gatePos[ref.index];
-          const op = outputPinXY(c.gates[ref.index].type, sp.x, sp.y);
-          pts[0] = { x: op.x, y: op.y };
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        font-family: "Outfit", sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 16px;
+        color: #fff;
+      }
+      .overlay-hint {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.6);
+      }
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
         }
-        // Snap end point to target input pin
-        const gp = L.gatePos[gi];
-        const ip = inputPinXY(gate.type, gp.x, gp.y, ri);
-        pts[pts.length - 1] = { x: ip.x, y: ip.y };
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
       }
 
-      if (pts && pts.length >= 2) {
-        const mid = pts[Math.floor(pts.length / 2)];
-        wireMids.push({ x: mid.x, y: mid.y, n: wireNum++ });
+      .not-bubble {
+        fill: var(--gate-fill);
+        stroke: var(--not-color);
+        stroke-width: 2;
+      }
+      .xor-extra {
+        fill: none;
+        stroke: var(--xor-color);
+        stroke-width: 2;
       }
 
-      const level = L.gateLevel[gi] !== undefined ? L.gateLevel[gi] : 0;
-      h += `<path id="w-${ref.type[0]}${ref.index}-g${gi}p${ri}"
+      .bottom-bar {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 16px 28px 24px;
+      }
+      .status-text {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        color: var(--text-dim);
+        min-width: 200px;
+        text-align: center;
+      }
+      .status-text .val-high {
+        color: var(--wire-high);
+      }
+      .status-text .val-low {
+        color: var(--wire-low);
+      }
+      /* Touch device adjustments (won't affect mouse/desktop) */
+      @media (pointer: coarse) {
+        .gate-toggle {
+          padding: 10px 16px;
+          min-height: 44px;
+        }
+        .btn {
+          padding: 12px 22px;
+          min-height: 44px;
+        }
+        .count-select {
+          padding: 10px 14px;
+          min-height: 44px;
+        }
+        .config {
+          gap: 16px;
+          row-gap: 12px;
+        }
+      }
+
+      /* iPad portrait */
+      @media (max-width: 820px) {
+        .config {
+          gap: 14px;
+          row-gap: 10px;
+          padding: 14px 20px;
+        }
+        header {
+          padding: 16px 20px 0;
+        }
+        .circuit-container {
+          padding: 8px 16px 16px;
+        }
+      }
+
+      /* Focus-visible styles for keyboard users */
+      .gate-toggle:focus-visible,
+      .btn:focus-visible,
+      .speed-btn:focus-visible,
+      .lang-btn:focus-visible,
+      .theme-toggle-btn:focus-visible,
+      .count-select:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* Reduced motion fallback — high specificity avoids !important */
+      @media (prefers-reduced-motion: reduce) {
+        html body *,
+        html body *::before,
+        html body *::after {
+          animation-duration: 0.01ms;
+          animation-iteration-count: 1;
+          transition-duration: 0.01ms;
+        }
+      }
+
+      /* Inline style replacements */
+      .home-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+      #speedGroup {
+        display: flex;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>
+        <a href="/learn/"><span class="home-icon">⚡</span></a>
+        <span id="titleText">Logic Gate Trainer</span>
+      </h1>
+      <p id="subtitleText">
+        Practice solving circuits — set inputs, predict the output, then reveal!
+      </p>
+      <div class="header-right">
+        <button
+          type="button"
+          class="lang-btn"
+          id="langBtn"
+          title="Switch language"
+        >
+          PL
+        </button>
+        <button
+          type="button"
+          class="theme-toggle-btn theme-toggle"
+          id="themeToggleBtn"
+          aria-label="Toggle color theme"
+        >
+          <span class="theme-toggle-icon" id="themeIcon">☀</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div class="config">
+        <div class="config-group">
+          <span id="lblGates" class="config-label">Gates:</span>
+          <div class="gate-toggles" id="gateToggles">
+            <button type="button" class="gate-toggle active" data-gate="NOT">
+              NOT
+            </button>
+            <button type="button" class="gate-toggle active" data-gate="AND">
+              AND
+            </button>
+            <button type="button" class="gate-toggle active" data-gate="OR">
+              OR
+            </button>
+            <button type="button" class="gate-toggle active" data-gate="XOR">
+              XOR
+            </button>
+          </div>
+        </div>
+        <div class="config-group">
+          <label id="lblCount" for="gateCount">Count:</label>
+          <select class="count-select" id="gateCount">
+            <option value="2">2</option>
+            <option value="3" selected="">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+          </select>
+        </div>
+        <button type="button" class="btn" id="generateBtn">Generate</button>
+        <button type="button" class="btn randomize" id="randomBtn">
+          Random Inputs
+        </button>
+        <button type="button" class="btn reveal" id="revealBtn">Check</button>
+        <div class="config-group" id="speedGroup">
+          <span id="lblSpeed" class="config-label">Speed:</span>
+          <div class="speed-toggle" id="speedToggle">
+            <button
+              type="button"
+              class="speed-btn"
+              data-speed="0"
+              aria-label="Slow speed"
+            >
+              ▶
+            </button>
+            <button
+              type="button"
+              class="speed-btn active"
+              data-speed="1"
+              aria-label="Normal speed"
+            >
+              ▶▶
+            </button>
+            <button
+              type="button"
+              class="speed-btn"
+              data-speed="2"
+              aria-label="Fast speed"
+            >
+              ▶▶▶
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn wire-toggle"
+          id="wireLabelsBtn"
+          data-i18n="wireLabels"
+        >
+          Wire #
+        </button>
+      </div>
+
+      <div class="circuit-container" id="circuitContainer"></div>
+
+      <div class="bottom-bar">
+        <div class="status-text" id="statusText"></div>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+        // ══════════════════════════════════════════════
+        // STATE
+        // ══════════════════════════════════════════════
+        let circuit = null,
+          layoutData = null,
+          revealed = false,
+          revealTimeouts = [],
+          userGuess = null;
+        let lang = navigator.language?.startsWith("pl") ? "pl" : "en";
+
+        // Parse an SVG markup string and append all resulting nodes into a target SVG element.
+        const _svgParser = new DOMParser();
+        function appendSvgMarkup(target, markup) {
+          const doc = _svgParser.parseFromString(
+            '<svg xmlns="http://www.w3.org/2000/svg">' + markup + "</svg>",
+            "image/svg+xml",
+          );
+          const src = doc.documentElement;
+          while (src.firstChild)
+            target.appendChild(
+              target.ownerDocument.importNode(src.firstChild, true),
+            );
+        }
+
+        // ══════════════════════════════════════════════
+        // I18N
+        // ══════════════════════════════════════════════
+        const I18N = {
+          en: {
+            title: "Logic Gate Trainer",
+            subtitle:
+              "Practice solving circuits — set inputs, predict the output, then reveal!",
+            gates: "Gates:",
+            count: "Count:",
+            speed: "Speed:",
+            generate: "Generate",
+            randomInputs: "Random Inputs",
+            check: "Check",
+            reset: "Reset",
+            wireLabels: "Wire #",
+            outputPrefix: "Output = ",
+            high: "HIGH (1)",
+            low: "LOW (0)",
+            outLabel: "OUT",
+            pickGuess: [
+              "Pick ",
+              "0",
+              " or ",
+              "1",
+              " next to the output first!",
+            ],
+            pickGuessPlain: "Pick 0 or 1 next to the output first!",
+            instructions: [
+              "Set inputs, pick your answer, then hit ",
+              "Check",
+              ".",
+            ],
+            instructionsPlain: "Set inputs, pick your answer, then hit Check.",
+            revealing: "Revealing\u2026",
+            correct: "Correct!",
+            wrong: "Wrong!",
+            dismiss: "click to dismiss",
+            selectGates: "Select at least one gate type!",
+          },
+          pl: {
+            title: "Trener Bramek Logicznych",
+            subtitle:
+              "\u0106wicz rozwi\u0105zywanie obwod\u00f3w \u2014 ustaw wej\u015bcia, przewid\u017a wyj\u015bcie, a potem sprawdź!",
+            gates: "Bramki:",
+            count: "Liczba:",
+            speed: "Pr\u0119dko\u015b\u0107:",
+            generate: "Generuj",
+            randomInputs: "Losowe wej\u015bcia",
+            check: "Sprawdź",
+            reset: "Reset",
+            wireLabels: "Nr ścieżki",
+            outputPrefix: "Wyj\u015bcie = ",
+            high: "WYS (1)",
+            low: "NIS (0)",
+            outLabel: "WYJŚCIE",
+            pickGuess: [
+              "Najpierw wybierz ",
+              "0",
+              " lub ",
+              "1",
+              " obok wyj\u015bcia!",
+            ],
+            pickGuessPlain: "Najpierw wybierz 0 lub 1 obok wyj\u015bcia!",
+            instructions: [
+              "Ustaw wej\u015bcia, wybierz odpowied\u017a, a potem kliknij ",
+              "Sprawdź",
+              ".",
+            ],
+            instructionsPlain:
+              "Ustaw wej\u015bcia, wybierz odpowied\u017a, a potem kliknij Sprawdź.",
+            revealing: "Ujawnianie\u2026",
+            correct: "Dobrze!",
+            wrong: "\u0179le!",
+            dismiss: "kliknij, aby zamkn\u0105\u0107",
+            selectGates: "Wybierz co najmniej jeden typ bramki!",
+          },
+        };
+
+        function T(key) {
+          return I18N[lang][key];
+        }
+
+        // Build a status text node with accent-highlighted segments.
+        // parts is an array where odd-indexed items are highlighted.
+        function buildAccentText(parts) {
+          const frag = document.createDocumentFragment();
+          parts.forEach(function (text, i) {
+            if (i % 2 === 1) {
+              const span = document.createElement("span");
+              span.style.color = "#e3b341";
+              span.textContent = text;
+              frag.appendChild(span);
+            } else {
+              frag.appendChild(document.createTextNode(text));
+            }
+          });
+          return frag;
+        }
+
+        // Build an output status node: "Output = <span class=val-high>HIGH (1)</span>"
+        function buildOutputStatus(v) {
+          const frag = document.createDocumentFragment();
+          frag.appendChild(document.createTextNode(T("outputPrefix")));
+          const span = document.createElement("span");
+          span.className = v ? "val-high" : "val-low";
+          span.textContent = v ? T("high") : T("low");
+          frag.appendChild(span);
+          return frag;
+        }
+
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = lang;
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          document.getElementById("lblGates").textContent = T("gates");
+          document.getElementById("lblCount").textContent = T("count");
+          document.getElementById("lblSpeed").textContent = T("speed");
+          document.getElementById("generateBtn").textContent = T("generate");
+          document.getElementById("randomBtn").textContent = T("randomInputs");
+          document.getElementById("wireLabelsBtn").textContent =
+            T("wireLabels");
+
+          // Check/Reset button
+          const revBtn = document.getElementById("revealBtn");
+          revBtn.textContent = revealed ? T("reset") : T("check");
+
+          // Status text
+          const st = document.getElementById("statusText");
+          st.textContent = "";
+          if (revealed && circuit) {
+            const v = circuit.gates[circuit.outputGateIdx].value;
+            st.appendChild(buildOutputStatus(v));
+          } else {
+            st.appendChild(buildAccentText(T("instructions")));
+          }
+
+          // Re-render the output label in SVG if circuit is rendered
+          const outLbl = document.querySelector(".output-label");
+          if (outLbl) outLbl.textContent = T("outLabel");
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function toggleLang() {
+          lang = lang === "en" ? "pl" : "en";
+          document.getElementById("langBtn").textContent =
+            lang === "en" ? "PL" : "EN";
+          applyTranslations();
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function setGuess(v) {
+          if (revealed) return;
+          userGuess = v;
+          document.querySelectorAll(".guess-btn").forEach((el) => {
+            el.classList.remove("selected-high", "selected-low");
+            if (+el.dataset.val === v)
+              el.classList.add(v ? "selected-high" : "selected-low");
+          });
+        }
+
+        function showResultOverlay(correct) {
+          const existing = document.querySelector(".result-overlay");
+          if (existing) existing.remove();
+
+          const overlay = document.createElement("div");
+          overlay.className = "result-overlay";
+
+          const emoji = correct ? "\uD83C\uDF89" : "\uD83D\uDC4E\uD83C\uDFFB";
+          const msg = correct ? T("correct") : T("wrong");
+          overlay.style.background = correct
+            ? "rgba(63,185,80,0.88)"
+            : "rgba(249,117,131,0.88)";
+
+          const emojiDiv = document.createElement("div");
+          emojiDiv.className = "overlay-emoji";
+          emojiDiv.textContent = emoji;
+          const msgDiv = document.createElement("div");
+          msgDiv.className = "overlay-msg";
+          msgDiv.textContent = msg;
+          const hintDiv = document.createElement("div");
+          hintDiv.className = "overlay-hint";
+          hintDiv.textContent = T("dismiss");
+          overlay.append(emojiDiv, msgDiv, hintDiv);
+
+          overlay.addEventListener("click", () => overlay.remove());
+          document.body.appendChild(overlay);
+        }
+
+        // eslint-disable-next-line no-unused-vars
+        function toggleTheme() {
+          const html = document.documentElement;
+          const isLight = html.getAttribute("data-theme") === "light";
+          if (isLight) {
+            html.removeAttribute("data-theme");
+            document.getElementById("themeIcon").textContent = "☀";
+          } else {
+            html.setAttribute("data-theme", "light");
+            document.getElementById("themeIcon").textContent = "☽";
+          }
+        }
+
+        function getSelectedGates() {
+          return Array.from(
+            document.querySelectorAll(".gate-toggle.active"),
+          ).map((b) => b.dataset.gate);
+        }
+        function toggleGateType(btn) {
+          btn.classList.toggle("active");
+          if (!getSelectedGates().length) btn.classList.add("active");
+        }
+
+        // ══════════════════════════════════════════════
+        // CIRCUIT GENERATION — pure tree
+        // ══════════════════════════════════════════════
+        function pinsFor(t) {
+          return t === "NOT" ? 1 : 2;
+        }
+
+        function generateCircuit(types, n) {
+          const gates = [];
+          for (let i = 0; i < n; i++)
+            gates.push({
+              id: i,
+              type: types[Math.floor(Math.random() * types.length)],
+              inputRefs: [],
+              value: null,
+            });
+
+          const outIdx = n - 1;
+          const pool = Array.from({ length: n - 1 }, (_, i) => i);
+          for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+          }
+
+          const inputs = [];
+          const LABELS = "ABCDEFGHIJKLMNOP";
+          const queue = [outIdx];
+
+          while (queue.length) {
+            const gi = queue.shift();
+            const g = gates[gi];
+            for (let p = 0; p < pinsFor(g.type); p++) {
+              if (pool.length) {
+                const ci = pool.pop();
+                g.inputRefs.push({ type: "gate", index: ci });
+                queue.push(ci);
+              } else {
+                const ii = inputs.length;
+                inputs.push({
+                  id: ii,
+                  label: LABELS[ii] || "I" + ii,
+                  value: 0,
+                });
+                g.inputRefs.push({ type: "input", index: ii });
+              }
+            }
+          }
+          return { gates, inputs, outputGateIdx: outIdx };
+        }
+
+        // ══════════════════════════════════════════════
+        // EVALUATION
+        // ══════════════════════════════════════════════
+        function evalGate(t, v) {
+          if (t === "NOT") return v[0] ? 0 : 1;
+          if (t === "AND") return v[0] && v[1] ? 1 : 0;
+          if (t === "OR") return v[0] || v[1] ? 1 : 0;
+          return v[0] !== v[1] ? 1 : 0;
+        }
+
+        function evaluateCircuit(c) {
+          const vals = new Map();
+          function calc(i) {
+            if (vals.has(i)) return vals.get(i);
+            const g = c.gates[i];
+            const iv = g.inputRefs.map((r) =>
+              r.type === "input" ? c.inputs[r.index].value : calc(r.index),
+            );
+            const v = evalGate(g.type, iv);
+            vals.set(i, v);
+            g.value = v;
+            return v;
+          }
+          calc(c.outputGateIdx);
+          return vals;
+        }
+
+        // ══════════════════════════════════════════════
+        // LAYOUT — dagre (Sugiyama algorithm)
+        //
+        // Dagre handles:
+        //  1. Layer assignment (longest-path)
+        //  2. Crossing minimisation (barycenter heuristic)
+        //  3. Coordinate assignment (Brandes-Köpf)
+        //
+        // We feed it every input, gate, and the output LED
+        // as nodes, with edges flowing left → right.
+        // ══════════════════════════════════════════════
+        function computeLayout(circ) {
+          const g = new dagre.graphlib.Graph();
+
+          g.setGraph({
+            rankdir: "LR", // left-to-right
+            nodesep: 50, // vertical gap between nodes in same rank
+            ranksep: 140, // horizontal gap between ranks
+            marginx: 40,
+            marginy: 40,
+            ranker: "longest-path",
+          });
+
+          g.setDefaultEdgeLabel(() => ({}));
+
+          // -- add input nodes --
+          circ.inputs.forEach((inp, i) => {
+            g.setNode("inp_" + i, {
+              width: 36,
+              height: 36,
+              nodeType: "input",
+              index: i,
+            });
+          });
+
+          // -- add gate nodes --
+          circ.gates.forEach((gate, i) => {
+            g.setNode("gate_" + i, {
+              width: 70,
+              height: 46,
+              nodeType: "gate",
+              index: i,
+            });
+          });
+
+          // -- add output node --
+          g.setNode("output", { width: 32, height: 32, nodeType: "output" });
+
+          // -- add edges (source → target, following signal flow) --
+          circ.gates.forEach((gate, gi) => {
+            gate.inputRefs.forEach((ref) => {
+              const srcId =
+                ref.type === "input" ? "inp_" + ref.index : "gate_" + ref.index;
+              g.setEdge(srcId, "gate_" + gi);
+            });
+          });
+
+          // output gate → output LED
+          g.setEdge("gate_" + circ.outputGateIdx, "output");
+
+          // -- run layout --
+          dagre.layout(g);
+
+          // -- extract positions --
+          const inputPos = {};
+          const gatePos = {};
+          let outputPos = { x: 0, y: 0 };
+
+          g.nodes().forEach((id) => {
+            const n = g.node(id);
+            if (n.nodeType === "input") inputPos[n.index] = { x: n.x, y: n.y };
+            if (n.nodeType === "gate") gatePos[n.index] = { x: n.x, y: n.y };
+            if (n.nodeType === "output") outputPos = { x: n.x, y: n.y };
+          });
+
+          // -- extract edge routing points from dagre --
+          const edgePoints = {};
+          g.edges().forEach((e) => {
+            const edge = g.edge(e);
+            edgePoints[e.v + "->" + e.w] = edge.points; // array of {x,y}
+          });
+
+          // -- compute depth of each gate for reveal ordering --
+          const depthOf = new Map();
+          function calcDepth(i) {
+            if (depthOf.has(i)) return depthOf.get(i);
+            let mx = 0;
+            for (const r of circ.gates[i].inputRefs)
+              if (r.type === "gate") mx = Math.max(mx, calcDepth(r.index) + 1);
+              else mx = Math.max(mx, 1);
+            depthOf.set(i, mx);
+            return mx;
+          }
+          const maxDepth = calcDepth(circ.outputGateIdx);
+
+          // assign level (0 = output gate, higher = closer to inputs)
+          const gateLevel = {};
+          circ.gates.forEach((_, i) => {
+            if (depthOf.has(i)) gateLevel[i] = maxDepth - depthOf.get(i);
+          });
+
+          // viewbox
+          const graph = g.graph();
+          const svgW = graph.width + 120;
+          const svgH = graph.height + 40;
+
+          return {
+            inputPos,
+            gatePos,
+            outputPos,
+            edgePoints,
+            gateLevel,
+            maxDepth,
+            svgW,
+            svgH,
+          };
+        }
+
+        // ══════════════════════════════════════════════
+        // GATE SVG SHAPES (drawn centred at x,y)
+        // ══════════════════════════════════════════════
+        function gateShapeSVG(type, x, y) {
+          const gc = type.toLowerCase() + "-gate";
+          let s = "";
+          switch (type) {
+            case "NOT": {
+              s += `<path d="M ${x - 26} ${y - 20} L ${x + 20} ${y} L ${x - 26} ${y + 20} Z" class="gate-body ${gc}" />`;
+              s += `<circle cx="${x + 26}" cy="${y}" r="5" class="not-bubble" />`;
+              break;
+            }
+            case "AND": {
+              s += `<path d="M ${x - 24} ${y - 20} L ${x} ${y - 20} A 20 20 0 0 1 ${x} ${y + 20} L ${x - 24} ${y + 20} Z" class="gate-body ${gc}" />`;
+              break;
+            }
+            case "OR": {
+              s += `<path d="M ${x - 26} ${y - 20} Q ${x - 12} ${y} ${x - 26} ${y + 20} Q ${x + 4} ${y + 20} ${x + 28} ${y} Q ${x + 4} ${y - 20} ${x - 26} ${y - 20} Z" class="gate-body ${gc}" />`;
+              break;
+            }
+            case "XOR": {
+              s += `<path d="M ${x - 26} ${y - 20} Q ${x - 12} ${y} ${x - 26} ${y + 20} Q ${x + 4} ${y + 20} ${x + 28} ${y} Q ${x + 4} ${y - 20} ${x - 26} ${y - 20} Z" class="gate-body ${gc}" />`;
+              s += `<path d="M ${x - 32} ${y - 20} Q ${x - 18} ${y} ${x - 32} ${y + 20}" class="xor-extra" />`;
+              break;
+            }
+          }
+          return s;
+        }
+
+        function labelXY(type, x, y) {
+          if (type === "NOT") return { x: x - 10, y };
+          if (type === "AND") return { x: x - 6, y };
+          return { x: x - 2, y };
+        }
+
+        function outputPinXY(type, x, y) {
+          if (type === "NOT") return { x: x + 32, y };
+          if (type === "AND") return { x: x + 20, y };
+          return { x: x + 28, y };
+        }
+
+        function inputPinXY(type, x, y, pinIndex) {
+          if (type === "NOT") return { x: x - 26, y };
+          if (type === "AND")
+            return [
+              { x: x - 24, y: y - 10 },
+              { x: x - 24, y: y + 10 },
+            ][pinIndex];
+          return [
+            { x: x - 22, y: y - 10 },
+            { x: x - 22, y: y + 10 },
+          ][pinIndex];
+        }
+
+        // ══════════════════════════════════════════════
+        // WIRE PATH — uses dagre's routed points,
+        // converted to a smooth cubic bezier spline
+        // ══════════════════════════════════════════════
+        function pointsToPath(points) {
+          if (!points || points.length < 2) return "";
+
+          // Start from first point
+          let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+
+          if (points.length === 2) {
+            // Simple curve between two points
+            const p0 = points[0],
+              p1 = points[1];
+            const cp = Math.max(30, Math.abs(p1.x - p0.x) * 0.4);
+            d += ` C ${(p0.x + cp).toFixed(1)} ${p0.y.toFixed(1)}, ${(p1.x - cp).toFixed(1)} ${p1.y.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+          } else {
+            // Catmull-Rom → cubic Bezier through all dagre waypoints
+            // This produces a smooth curve that passes through every point
+            for (let i = 0; i < points.length - 1; i++) {
+              const p0 = points[Math.max(0, i - 1)];
+              const p1 = points[i];
+              const p2 = points[i + 1];
+              const p3 = points[Math.min(points.length - 1, i + 2)];
+
+              const cp1x = p1.x + (p2.x - p0.x) / 6;
+              const cp1y = p1.y + (p2.y - p0.y) / 6;
+              const cp2x = p2.x - (p3.x - p1.x) / 6;
+              const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+              d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+            }
+          }
+          return d;
+        }
+
+        // ══════════════════════════════════════════════
+        // RENDER
+        // ══════════════════════════════════════════════
+        function renderCircuit(c, L) {
+          const box = document.getElementById("circuitContainer");
+          box.replaceChildren();
+
+          const svg = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg",
+          );
+          svg.id = "circuit";
+          svg.setAttribute("viewBox", `0 0 ${L.svgW} ${L.svgH}`);
+          svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+          if (
+            !document
+              .getElementById("wireLabelsBtn")
+              .classList.contains("active")
+          )
+            svg.classList.add("wire-labels-hidden");
+
+          let h = "";
+          const wireMids = [];
+          let wireNum = 1;
+
+          // ── wires (dagre-routed, behind everything) ──
+          c.gates.forEach((gate, gi) => {
+            gate.inputRefs.forEach((ref, ri) => {
+              const srcId =
+                ref.type === "input" ? "inp_" + ref.index : "gate_" + ref.index;
+              const edgeKey = srcId + "->gate_" + gi;
+              const pts = L.edgePoints[edgeKey];
+
+              // Adjust endpoints to connect to actual pin positions on shapes
+              if (pts && pts.length >= 2) {
+                // Snap start point to source output pin
+                if (ref.type === "input") {
+                  const ip = L.inputPos[ref.index];
+                  pts[0] = { x: ip.x + 16, y: ip.y };
+                } else {
+                  const sp = L.gatePos[ref.index];
+                  const op = outputPinXY(c.gates[ref.index].type, sp.x, sp.y);
+                  pts[0] = { x: op.x, y: op.y };
+                }
+                // Snap end point to target input pin
+                const gp = L.gatePos[gi];
+                const ip = inputPinXY(gate.type, gp.x, gp.y, ri);
+                pts[pts.length - 1] = { x: ip.x, y: ip.y };
+              }
+
+              if (pts && pts.length >= 2) {
+                const mid = pts[Math.floor(pts.length / 2)];
+                wireMids.push({ x: mid.x, y: mid.y, n: wireNum++ });
+              }
+
+              const level = L.gateLevel[gi] !== undefined ? L.gateLevel[gi] : 0;
+              h += `<path id="w-${ref.type[0]}${ref.index}-g${gi}p${ri}"
                    d="${pointsToPath(pts)}"
                    class="wire"
                    data-src-type="${ref.type}" data-src-idx="${ref.index}"
                    data-level="${level}" />`;
-    });
-  });
+            });
+          });
 
-  // output wire
-  {
-    const edgeKey = 'gate_' + c.outputGateIdx + '->output';
-    const pts = L.edgePoints[edgeKey];
-    if (pts && pts.length >= 2) {
-      const ogp = L.gatePos[c.outputGateIdx];
-      const oop = outputPinXY(c.gates[c.outputGateIdx].type, ogp.x, ogp.y);
-      pts[0] = { x: oop.x, y: oop.y };
-      pts[pts.length - 1] = { x: L.outputPos.x - 14, y: L.outputPos.y };
-      const mid = pts[Math.floor(pts.length / 2)];
-      wireMids.push({ x: mid.x, y: mid.y, n: wireNum++ });
-    }
-    h += `<path id="wire-output" d="${pointsToPath(pts)}"
+          // output wire
+          {
+            const edgeKey = "gate_" + c.outputGateIdx + "->output";
+            const pts = L.edgePoints[edgeKey];
+            if (pts && pts.length >= 2) {
+              const ogp = L.gatePos[c.outputGateIdx];
+              const oop = outputPinXY(
+                c.gates[c.outputGateIdx].type,
+                ogp.x,
+                ogp.y,
+              );
+              pts[0] = { x: oop.x, y: oop.y };
+              pts[pts.length - 1] = { x: L.outputPos.x - 14, y: L.outputPos.y };
+              const mid = pts[Math.floor(pts.length / 2)];
+              wireMids.push({ x: mid.x, y: mid.y, n: wireNum++ });
+            }
+            h += `<path id="wire-output" d="${pointsToPath(pts)}"
                  class="wire" data-level="${L.maxDepth + 1}" />`;
-  }
+          }
 
-  // ── wire labels (rendered on top of wires) ──
-  wireMids.forEach(w => {
-    h += `<g class="wire-label">
+          // ── wire labels (rendered on top of wires) ──
+          wireMids.forEach((w) => {
+            h += `<g class="wire-label">
       <circle cx="${w.x}" cy="${w.y}" r="8" />
       <text x="${w.x}" y="${w.y}">${w.n}</text>
     </g>`;
-  });
+          });
 
-  // ── gates ──
-  c.gates.forEach((gate, gi) => {
-    const gp = L.gatePos[gi];
-    h += gateShapeSVG(gate.type, gp.x, gp.y);
-    const lp = labelXY(gate.type, gp.x, gp.y);
-    h += `<text x="${lp.x}" y="${lp.y}" class="gate-label">${gate.type}</text>`;
-    const vp = outputPinXY(gate.type, gp.x, gp.y);
-    h += `<text id="gv-${gi}" x="${vp.x}" y="${gp.y - 22}" class="gate-value">?</text>`;
-  });
+          // ── gates ──
+          c.gates.forEach((gate, gi) => {
+            const gp = L.gatePos[gi];
+            h += gateShapeSVG(gate.type, gp.x, gp.y);
+            const lp = labelXY(gate.type, gp.x, gp.y);
+            h += `<text x="${lp.x}" y="${lp.y}" class="gate-label">${gate.type}</text>`;
+            const vp = outputPinXY(gate.type, gp.x, gp.y);
+            h += `<text id="gv-${gi}" x="${vp.x}" y="${gp.y - 22}" class="gate-value">?</text>`;
+          });
 
-  // ── inputs ──
-  c.inputs.forEach((inp, i) => {
-    const p = L.inputPos[i];
-    const cls = inp.value ? 'high' : 'low';
-    h += `<g class="input-toggle" onclick="toggleInput(${i})">
+          // ── inputs ──
+          c.inputs.forEach((inp, i) => {
+            const p = L.inputPos[i];
+            const cls = inp.value ? "high" : "low";
+            h += `<g class="input-toggle" onclick="toggleInput(${i})">
       <circle cx="${p.x}" cy="${p.y}" r="24" fill="transparent" />
       <circle cx="${p.x}" cy="${p.y}" r="15" class="input-ring ${cls}" id="ir-${i}" />
       <circle cx="${p.x}" cy="${p.y}" r="11" class="input-circle ${cls}" id="ic-${i}" />
       <text x="${p.x}" y="${p.y}" class="input-label">${inp.label}</text>
       <text x="${p.x}" y="${p.y + 26}" class="input-value-label ${cls}" id="iv-${i}">${inp.value}</text>
     </g>`;
-  });
+          });
 
-  // ── output LED ──
-  h += `<circle cx="${L.outputPos.x}" cy="${L.outputPos.y}" r="14" class="output-led idle" id="output-led" />
-        <text x="${L.outputPos.x}" y="${L.outputPos.y + 28}" class="output-label">${T('outLabel')}</text>
+          // ── output LED ──
+          h += `<circle cx="${L.outputPos.x}" cy="${L.outputPos.y}" r="14" class="output-led idle" id="output-led" />
+        <text x="${L.outputPos.x}" y="${L.outputPos.y + 28}" class="output-label">${T("outLabel")}</text>
         <text x="${L.outputPos.x}" y="${L.outputPos.y}" class="output-value" id="output-val">?</text>`;
 
-  // ── guess buttons ──
-  const gx = L.outputPos.x + 30, gy = L.outputPos.y;
-  h += `<g class="guess-btn" data-val="0" onclick="setGuess(0)">
+          // ── guess buttons ──
+          const gx = L.outputPos.x + 30,
+            gy = L.outputPos.y;
+          h += `<g class="guess-btn" data-val="0" onclick="setGuess(0)">
           <rect x="${gx}" y="${gy - 12}" width="24" height="24" />
           <text x="${gx + 12}" y="${gy}">0</text>
         </g>
@@ -912,197 +1549,273 @@ function renderCircuit(c, L) {
           <text x="${gx + 42}" y="${gy}">1</text>
         </g>`;
 
-  svg.innerHTML = h;
-  box.appendChild(svg);
-}
-
-// ══════════════════════════════════════════════
-// INTERACTION
-// ══════════════════════════════════════════════
-const SPEED_STEPS = [840, 630, 250]; // button 0-2 → ms per level
-let currentSpeed = 1;
-
-function getStepDelay() {
-  return SPEED_STEPS[currentSpeed];
-}
-
-// eslint-disable-next-line no-unused-vars
-function setSpeed(idx) {
-  currentSpeed = idx;
-  document.querySelectorAll('.speed-btn').forEach(function(b) {
-    b.classList.toggle('active', +b.dataset.speed === idx);
-  });
-}
-
-// eslint-disable-next-line no-unused-vars
-function toggleWireLabels() {
-  const btn = document.getElementById('wireLabelsBtn');
-  btn.classList.toggle('active');
-  document.getElementById('circuit').classList.toggle('wire-labels-hidden', !btn.classList.contains('active'));
-}
-
-// eslint-disable-next-line no-unused-vars
-function randomizeInputs() {
-  if (!circuit || revealed) return;
-  circuit.inputs.forEach((inp, i) => {
-    const v = Math.random() < 0.5 ? 1 : 0;
-    inp.value = v;
-    const hi = v === 1;
-    ['ic', 'ir'].forEach(p => {
-      const el = document.getElementById(`${p}-${i}`);
-      el.classList.toggle('high', hi); el.classList.toggle('low', !hi);
-    });
-    const lbl = document.getElementById(`iv-${i}`);
-    lbl.textContent = v; lbl.classList.toggle('high', hi); lbl.classList.toggle('low', !hi);
-  });
-}
-
-// eslint-disable-next-line no-unused-vars
-function toggleInput(i) {
-  if (!circuit || revealed) return;
-  const v = circuit.inputs[i].value = circuit.inputs[i].value ? 0 : 1;
-  const hi = v === 1;
-  ['ic', 'ir'].forEach(p => {
-    const el = document.getElementById(`${p}-${i}`);
-    el.classList.toggle('high', hi); el.classList.toggle('low', !hi);
-  });
-  const lbl = document.getElementById(`iv-${i}`);
-  lbl.textContent = v; lbl.classList.toggle('high', hi); lbl.classList.toggle('low', !hi);
-}
-
-// eslint-disable-next-line no-unused-vars
-function handleRevealReset() {
-  if (!circuit) return;
-  if (revealed) resetCircuit();
-  else {
-    if (userGuess === null) {
-      document.getElementById('statusText').innerHTML = T('pickGuess');
-      document.querySelectorAll('.guess-btn').forEach(el => {
-        el.style.animation = 'overlayPop 0.4s ease';
-        setTimeout(() => el.style.animation = '', 400);
-      });
-      return;
-    }
-    reveal();
-  }
-}
-
-function resetCircuit() {
-  // Cancel any in-progress reveal animation
-  revealTimeouts.forEach(clearTimeout);
-  revealTimeouts = [];
-
-  // Dismiss overlay if present
-  document.querySelectorAll('.result-overlay').forEach(el => el.remove());
-
-  revealed = false;
-
-  // Reset all gate values
-  circuit.gates.forEach(g => g.value = null);
-
-  // Re-render the circuit with current input values preserved
-  renderCircuit(circuit, layoutData);
-
-  // Reset guess
-  userGuess = null;
-
-  // Restore button
-  const btn = document.getElementById('revealBtn');
-  btn.textContent = T('check');
-  btn.classList.remove('revealed');
-
-  document.getElementById('statusText').innerHTML = T('instructions');
-}
-
-// ══════════════════════════════════════════════
-// REVEAL — cascade from inputs → output
-// ══════════════════════════════════════════════
-function reveal() {
-  if (!circuit || revealed) return;
-  revealed = true;
-  const btn = document.getElementById('revealBtn');
-  btn.classList.add('revealed');
-  btn.textContent = T('reset');
-  document.querySelectorAll('.guess-btn').forEach(el => el.classList.add('disabled'));
-  document.getElementById('statusText').innerHTML = T('revealing');
-
-  evaluateCircuit(circuit);
-
-  const STEP = getStepDelay();
-
-  for (let lvl = layoutData.maxDepth; lvl >= 0; lvl--) {
-    const s = layoutData.maxDepth - lvl;
-
-    revealTimeouts.push(setTimeout(() => {
-      document.querySelectorAll(`.wire[data-level="${lvl}"]`).forEach(w => {
-        const st = w.dataset.srcType, si = +w.dataset.srcIdx;
-        const v = st === 'input' ? circuit.inputs[si].value : circuit.gates[si].value;
-        w.classList.add(v ? 'high' : 'low');
-      });
-    }, s * STEP));
-
-    revealTimeouts.push(setTimeout(() => {
-      circuit.gates.forEach((g, gi) => {
-        if (layoutData.gateLevel[gi] === lvl) {
-          const el = document.getElementById(`gv-${gi}`);
-          el.textContent = g.value;
-          el.classList.add('visible', g.value ? 'high' : 'low');
+          appendSvgMarkup(svg, h);
+          box.appendChild(svg);
         }
-      });
-    }, s * STEP + 200));
-  }
 
-  const fin = (layoutData.maxDepth + 1) * STEP;
+        // ══════════════════════════════════════════════
+        // INTERACTION
+        // ══════════════════════════════════════════════
+        const SPEED_STEPS = [840, 630, 250]; // button 0-2 → ms per level
+        let currentSpeed = 1;
 
-  revealTimeouts.push(setTimeout(() => {
-    const v = circuit.gates[circuit.outputGateIdx].value;
-    document.getElementById('wire-output').classList.add(v ? 'high' : 'low');
-  }, fin));
+        function getStepDelay() {
+          return SPEED_STEPS[currentSpeed];
+        }
 
-  revealTimeouts.push(setTimeout(() => {
-    const v = circuit.gates[circuit.outputGateIdx].value;
-    const led = document.getElementById('output-led');
-    led.classList.remove('idle'); led.classList.add(v ? 'high' : 'low');
-    const vt = document.getElementById('output-val');
-    vt.textContent = v; vt.classList.add('visible', v ? 'high' : 'low');
-    document.getElementById('statusText').innerHTML =
-      T('outputPrefix') + `<span class="${v ? 'val-high' : 'val-low'}">${v ? T('high') : T('low')}</span>`;
-  }, fin + 250));
+        // eslint-disable-next-line no-unused-vars
+        function setSpeed(idx) {
+          currentSpeed = idx;
+          document.querySelectorAll(".speed-btn").forEach(function (b) {
+            b.classList.toggle("active", +b.dataset.speed === idx);
+          });
+        }
 
-  // Show result overlay
-  revealTimeouts.push(setTimeout(() => {
-    const v = circuit.gates[circuit.outputGateIdx].value;
-    showResultOverlay(userGuess === v);
-  }, fin + 700));
-}
+        // eslint-disable-next-line no-unused-vars
+        function toggleWireLabels() {
+          const btn = document.getElementById("wireLabelsBtn");
+          btn.classList.toggle("active");
+          document
+            .getElementById("circuit")
+            .classList.toggle(
+              "wire-labels-hidden",
+              !btn.classList.contains("active"),
+            );
+        }
 
-// ══════════════════════════════════════════════
-// GENERATE
-// ══════════════════════════════════════════════
-function generate() {
-  revealTimeouts.forEach(clearTimeout); revealTimeouts = [];
-  const types = getSelectedGates(), n = +document.getElementById('gateCount').value;
-  if (!types.length) { alert(T('selectGates')); return; }
+        // eslint-disable-next-line no-unused-vars
+        function randomizeInputs() {
+          if (!circuit || revealed) return;
+          circuit.inputs.forEach((inp, i) => {
+            const v = Math.random() < 0.5 ? 1 : 0;
+            inp.value = v;
+            const hi = v === 1;
+            ["ic", "ir"].forEach((p) => {
+              const el = document.getElementById(`${p}-${i}`);
+              el.classList.toggle("high", hi);
+              el.classList.toggle("low", !hi);
+            });
+            const lbl = document.getElementById(`iv-${i}`);
+            lbl.textContent = v;
+            lbl.classList.toggle("high", hi);
+            lbl.classList.toggle("low", !hi);
+          });
+        }
 
-  circuit = generateCircuit(types, n);
-  layoutData = computeLayout(circuit);
-  revealed = false;
-  userGuess = null;
+        // eslint-disable-next-line no-unused-vars
+        function toggleInput(i) {
+          if (!circuit || revealed) return;
+          const v = (circuit.inputs[i].value = circuit.inputs[i].value ? 0 : 1);
+          const hi = v === 1;
+          ["ic", "ir"].forEach((p) => {
+            const el = document.getElementById(`${p}-${i}`);
+            el.classList.toggle("high", hi);
+            el.classList.toggle("low", !hi);
+          });
+          const lbl = document.getElementById(`iv-${i}`);
+          lbl.textContent = v;
+          lbl.classList.toggle("high", hi);
+          lbl.classList.toggle("low", !hi);
+        }
 
-  renderCircuit(circuit, layoutData);
+        // eslint-disable-next-line no-unused-vars
+        function handleRevealReset() {
+          if (!circuit) return;
+          if (revealed) resetCircuit();
+          else {
+            if (userGuess === null) {
+              document.getElementById("statusText").textContent =
+                T("pickGuess");
+              document.querySelectorAll(".guess-btn").forEach((el) => {
+                el.style.animation = "overlayPop 0.4s ease";
+                setTimeout(() => (el.style.animation = ""), 400);
+              });
+              return;
+            }
+            reveal();
+          }
+        }
 
-  const btn = document.getElementById('revealBtn');
-  btn.style.display = ''; btn.classList.remove('revealed');
-  btn.textContent = T('check');
-  document.getElementById('randomBtn').style.display = '';
-  document.getElementById('speedGroup').style.display = '';
-  document.getElementById('statusText').innerHTML = T('instructions');
-}
+        function resetCircuit() {
+          // Cancel any in-progress reveal animation
+          revealTimeouts.forEach(clearTimeout);
+          revealTimeouts = [];
 
-document.getElementById('langBtn').textContent = lang === 'en' ? 'PL' : 'EN';
-applyTranslations();
-generate();
-</script>
+          // Dismiss overlay if present
+          document
+            .querySelectorAll(".result-overlay")
+            .forEach((el) => el.remove());
 
+          revealed = false;
 
-</body></html>
+          // Reset all gate values
+          circuit.gates.forEach((g) => (g.value = null));
+
+          // Re-render the circuit with current input values preserved
+          renderCircuit(circuit, layoutData);
+
+          // Reset guess
+          userGuess = null;
+
+          // Restore button
+          const btn = document.getElementById("revealBtn");
+          btn.textContent = T("check");
+          btn.classList.remove("revealed");
+
+          document.getElementById("statusText").textContent = T("instructions");
+        }
+
+        // ══════════════════════════════════════════════
+        // REVEAL — cascade from inputs → output
+        // ══════════════════════════════════════════════
+        function reveal() {
+          if (!circuit || revealed) return;
+          revealed = true;
+          const btn = document.getElementById("revealBtn");
+          btn.classList.add("revealed");
+          btn.textContent = T("reset");
+          document
+            .querySelectorAll(".guess-btn")
+            .forEach((el) => el.classList.add("disabled"));
+          document.getElementById("statusText").textContent = T("revealing");
+
+          evaluateCircuit(circuit);
+
+          const STEP = getStepDelay();
+
+          for (let lvl = layoutData.maxDepth; lvl >= 0; lvl--) {
+            const s = layoutData.maxDepth - lvl;
+
+            revealTimeouts.push(
+              setTimeout(() => {
+                document
+                  .querySelectorAll(`.wire[data-level="${lvl}"]`)
+                  .forEach((w) => {
+                    const st = w.dataset.srcType,
+                      si = +w.dataset.srcIdx;
+                    const v =
+                      st === "input"
+                        ? circuit.inputs[si].value
+                        : circuit.gates[si].value;
+                    w.classList.add(v ? "high" : "low");
+                  });
+              }, s * STEP),
+            );
+
+            revealTimeouts.push(
+              setTimeout(
+                () => {
+                  circuit.gates.forEach((g, gi) => {
+                    if (layoutData.gateLevel[gi] === lvl) {
+                      const el = document.getElementById(`gv-${gi}`);
+                      el.textContent = g.value;
+                      el.classList.add("visible", g.value ? "high" : "low");
+                    }
+                  });
+                },
+                s * STEP + 200,
+              ),
+            );
+          }
+
+          const fin = (layoutData.maxDepth + 1) * STEP;
+
+          revealTimeouts.push(
+            setTimeout(() => {
+              const v = circuit.gates[circuit.outputGateIdx].value;
+              document
+                .getElementById("wire-output")
+                .classList.add(v ? "high" : "low");
+            }, fin),
+          );
+
+          revealTimeouts.push(
+            setTimeout(() => {
+              const v = circuit.gates[circuit.outputGateIdx].value;
+              const led = document.getElementById("output-led");
+              led.classList.remove("idle");
+              led.classList.add(v ? "high" : "low");
+              const vt = document.getElementById("output-val");
+              vt.textContent = v;
+              vt.classList.add("visible", v ? "high" : "low");
+              const st = document.getElementById("statusText");
+              st.textContent = "";
+              st.appendChild(buildOutputStatus(v));
+            }, fin + 250),
+          );
+
+          // Show result overlay
+          revealTimeouts.push(
+            setTimeout(() => {
+              const v = circuit.gates[circuit.outputGateIdx].value;
+              showResultOverlay(userGuess === v);
+            }, fin + 700),
+          );
+        }
+
+        // ══════════════════════════════════════════════
+        // GENERATE
+        // ══════════════════════════════════════════════
+        function generate() {
+          revealTimeouts.forEach(clearTimeout);
+          revealTimeouts = [];
+          const types = getSelectedGates(),
+            n = +document.getElementById("gateCount").value;
+          if (!types.length) {
+            alert(T("selectGates"));
+            return;
+          }
+
+          circuit = generateCircuit(types, n);
+          layoutData = computeLayout(circuit);
+          revealed = false;
+          userGuess = null;
+
+          renderCircuit(circuit, layoutData);
+
+          const btn = document.getElementById("revealBtn");
+          btn.style.display = "";
+          btn.classList.remove("revealed");
+          btn.textContent = T("check");
+          document.getElementById("randomBtn").style.display = "";
+          document.getElementById("speedGroup").style.display = "";
+          document.getElementById("statusText").textContent = T("instructions");
+        }
+
+        document.getElementById("langBtn").textContent =
+          lang === "en" ? "PL" : "EN";
+        document
+          .getElementById("langBtn")
+          .addEventListener("click", toggleLang);
+        document
+          .getElementById("themeToggleBtn")
+          .addEventListener("click", toggleTheme);
+        document
+          .getElementById("generateBtn")
+          .addEventListener("click", generate);
+        document
+          .getElementById("randomBtn")
+          .addEventListener("click", randomizeInputs);
+        document.getElementById("revealBtn").addEventListener("click", reveal);
+        document
+          .getElementById("wireLabelsBtn")
+          .addEventListener("click", toggleWireLabels);
+        document.querySelectorAll(".gate-toggle").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            toggleGateType(btn);
+          });
+        });
+        document.querySelectorAll(".speed-btn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            setSpeed(Number(btn.dataset.speed));
+          });
+        });
+        applyTranslations();
+        generate();
+
+        window.toggleInput = toggleInput;
+        window.setGuess = setGuess;
+      })();
+    </script>
+  </body>
+</html>

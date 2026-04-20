@@ -163,45 +163,19 @@ function uniqueSortedPaths(files) {
 }
 
 async function buildRepoIndex(files) {
-  const cssRuleIndex = new Map();
-  const fontLinkIndex = new Map();
   const titleIndex = new Map();
 
   await Promise.all(files.map(async (file) => {
     const content = normalizeNewlines(await fs.readFile(file, "utf8"));
-    const lineStarts = buildLineStarts(content);
     const parsed = parseDocument(content);
 
     const titleText = collectDocumentTitle(parsed.document);
     if (titleText) {
       pushIndexed(titleIndex, titleText, file);
     }
-
-    for (const href of collectFontLinks(parsed.document)) {
-      pushIndexed(fontLinkIndex, href, file);
-    }
-
-    const styleBlocks = collectBlocks(parsed.document, content, lineStarts, "style");
-    for (const block of styleBlocks) {
-      const root = parseCssRoot(block.text);
-      if (!root) {
-        continue;
-      }
-
-      for (const signature of collectCssRuleSignatures(root, block)) {
-        if (signature.declarationCount < 3 || signature.serialized.length < 80) {
-          continue;
-        }
-        pushIndexed(cssRuleIndex, signature.key, {
-          file,
-          line: signature.line,
-          selector: signature.selector
-        });
-      }
-    }
   }));
 
-  return { cssRuleIndex, fontLinkIndex, titleIndex };
+  return { titleIndex };
 }
 
 async function reviewFile(file, cwd, repoIndex) {
@@ -236,7 +210,7 @@ async function reviewFile(file, cwd, repoIndex) {
   }
 
   await analyzeFormatting(relativeFile, content, findings);
-  analyzeDuplication(relativeFile, file, htmlState, cssSignatures, repoIndex, findings);
+  analyzeDuplication(relativeFile, file, htmlState, repoIndex, findings);
   await analyzeSingleFilePolicy(relativeFile, file, findings);
 
   findings.sort(compareFindings);
@@ -272,7 +246,6 @@ function parseDocument(content) {
 function analyzeHtml(file, document, findings) {
   const doctypeNode = (document.childNodes || []).find((node) => node.nodeName === "#documentType") || null;
   const ids = new Map();
-  const fontLinks = [];
   const labelsByFor = new Map();
   const labelNodes = [];
   const formControls = [];
@@ -354,8 +327,15 @@ function analyzeHtml(file, document, findings) {
 
     if (node.tagName === "link") {
       const href = attributeValue(node, "href");
-      if (href && EXTERNAL_FONT_RE.test(href)) {
-        fontLinks.push(href);
+      if (href && EXTERNAL_FONT_RE.test(href) && !/[?&]display=swap\b/.test(href)) {
+        findings.push(makeFinding(file, {
+          severity: "medium",
+          category: "html",
+          ruleId: "html/font-link-missing-display-swap",
+          line: node.sourceCodeLocation?.startLine ?? null,
+          column: node.sourceCodeLocation?.startCol ?? null,
+          message: `Google Fonts link is missing \`display=swap\` parameter — text may be invisible during font load.`
+        }));
       }
 
       if (hasRelToken(node, "stylesheet") && isLocalProjectAssetUrl(href)) {
@@ -385,6 +365,20 @@ function analyzeHtml(file, document, findings) {
 
     if (isLabelableControl(node)) {
       formControls.push(node);
+    }
+
+    if (node.tagName === "a" && attributeValue(node, "target") === "_blank") {
+      const rel = (attributeValue(node, "rel") || "").toLowerCase().split(/\s+/);
+      if (!rel.includes("noopener") && !rel.includes("noreferrer")) {
+        findings.push(makeFinding(file, {
+          severity: "medium",
+          category: "html",
+          ruleId: "html/target-blank-no-rel-noopener",
+          line: node.sourceCodeLocation?.startLine ?? null,
+          column: node.sourceCodeLocation?.startCol ?? null,
+          message: `${formatElement(node)} opens a new tab without \`rel="noopener"\` or \`rel="noreferrer"\`.`
+        }));
+      }
     }
 
     for (const attribute of node.attrs || []) {
@@ -481,7 +475,8 @@ function analyzeHtml(file, document, findings) {
     }
 
     if (node.tagName === "script" && isCrossOriginUrl(attributeValue(node, "src"), documentOrigin)) {
-      if (!attributeValue(node, "integrity")) {
+      const sriValue = attributeValue(node, "integrity");
+      if (!sriValue) {
         findings.push(makeFinding(file, {
           severity: "medium",
           category: "html",
@@ -489,6 +484,15 @@ function analyzeHtml(file, document, findings) {
           line: node.sourceCodeLocation?.startLine ?? null,
           column: node.sourceCodeLocation?.startCol ?? null,
           message: `External script ${attributeValue(node, "src")} is missing Subresource Integrity metadata.`
+        }));
+      } else if (!/^sha(256|384|512)-[A-Za-z0-9+/]{43,}=*$/.test(sriValue)) {
+        findings.push(makeFinding(file, {
+          severity: "high",
+          category: "html",
+          ruleId: "html/invalid-integrity-hash",
+          line: node.sourceCodeLocation?.startLine ?? null,
+          column: node.sourceCodeLocation?.startCol ?? null,
+          message: `External script ${attributeValue(node, "src")} has an invalid SRI hash: \`${sriValue}\`.`
         }));
       } else if (!attributeValue(node, "crossorigin")) {
         findings.push(makeFinding(file, {
@@ -586,6 +590,17 @@ function analyzeHtml(file, document, findings) {
       line: descriptionNode?.sourceCodeLocation?.startLine ?? 1,
       column: descriptionNode?.sourceCodeLocation?.startCol ?? 1,
       message: "Document is missing a non-empty `<meta name=\"description\">`."
+    }));
+  }
+
+  if (viewportContent == null) {
+    findings.push(makeFinding(file, {
+      severity: "high",
+      category: "html",
+      ruleId: "html/missing-viewport",
+      line: 1,
+      column: 1,
+      message: "Document is missing a `<meta name=\"viewport\">` tag."
     }));
   }
 
@@ -690,22 +705,10 @@ function analyzeHtml(file, document, findings) {
     }));
   }
 
-  return { fontLinks, titleText };
+  return { titleText };
 }
 
 function analyzeCss(file, block, findings, cssSignatures) {
-  const lineCount = countLines(block.text);
-  if (lineCount > 250) {
-    findings.push(makeFinding(file, {
-      severity: "low",
-      category: "css",
-      ruleId: "css/large-inline-style-block",
-      line: block.startLine,
-      column: block.startColumn,
-      message: `Inline style block is ${lineCount} lines long. Refactor and deduplicate it within this HTML file instead of splitting styles into sidecar files.`
-    }));
-  }
-
   const root = parseCssRoot(block.text, block, findings, file);
   if (!root) {
     return;
@@ -750,6 +753,44 @@ function analyzeCss(file, block, findings, cssSignatures) {
       hasMotion = true;
     }
   });
+
+  const outlineNoneLines = [];
+
+  root.walkRules((rule) => {
+    let removesOutline = false;
+    let hasVisibleReplacement = false;
+
+    rule.walkDecls((decl) => {
+      const prop = decl.prop.toLowerCase();
+      const val = normalizeCssValue(decl.value);
+      if (prop === "outline" && (val === "none" || val === "0")) {
+        removesOutline = true;
+      }
+      if (prop === "outline-style" && val === "none") {
+        removesOutline = true;
+      }
+      if (prop === "box-shadow" || prop === "border" || prop === "border-color" ||
+          prop === "outline-color" || prop === "text-decoration" || prop === "background-color") {
+        hasVisibleReplacement = true;
+      }
+    });
+
+    if (removesOutline && !hasVisibleReplacement) {
+      outlineNoneLines.push(toBlockLine(block, rule.source?.start?.line));
+    }
+  });
+
+  if (outlineNoneLines.length > 0) {
+    findings.push(makeFinding(file, {
+      severity: "medium",
+      category: "css",
+      ruleId: "css/outline-none-without-focus-replacement",
+      line: outlineNoneLines[0] ?? block.startLine,
+      column: null,
+      message: `CSS removes \`outline\` without providing a visible focus replacement in ${outlineNoneLines.length} rule(s).`,
+      detail: `Lines ${formatLineList(outlineNoneLines)}.`
+    }));
+  }
 
   root.walkDecls((decl) => {
     if (decl.important) {
@@ -813,18 +854,6 @@ function analyzeCss(file, block, findings, cssSignatures) {
 }
 
 function analyzeScript(file, block, findings) {
-  const lineCount = countLines(block.text);
-  if (lineCount > 350) {
-    findings.push(makeFinding(file, {
-      severity: "low",
-      category: "js",
-      ruleId: "js/large-inline-script-block",
-      line: block.startLine,
-      column: block.startColumn,
-      message: `Inline script block is ${lineCount} lines long. Refactor it within this HTML file instead of splitting logic into sidecar scripts.`
-    }));
-  }
-
   const trimmed = block.text.trim();
   if (!trimmed) {
     return;
@@ -870,6 +899,8 @@ function analyzeScript(file, block, findings) {
   const stringTimerLines = [];
   const withLines = [];
   let topLevelDeclarations = 0;
+  let hasAnimationLoop = false;
+  let hasVisibilityHandling = false;
 
   for (const statement of ast.body) {
     topLevelDeclarations += countTopLevelDeclarations(statement);
@@ -908,6 +939,15 @@ function analyzeScript(file, block, findings) {
       stringTimerLines.push(toBlockLine(block, node.loc?.start?.line));
     }
 
+    if (node.type === "CallExpression" && node.callee.type === "Identifier" &&
+        (node.callee.name === "requestAnimationFrame" || node.callee.name === "setInterval")) {
+      hasAnimationLoop = true;
+    }
+
+    if (node.type === "Literal" && node.value === "visibilitychange") {
+      hasVisibilityHandling = true;
+    }
+
     if (isLocalModuleReferenceNode(node)) {
       findings.push(makeFinding(file, {
         severity: "high",
@@ -919,6 +959,17 @@ function analyzeScript(file, block, findings) {
       }));
     }
   });
+
+  if (hasAnimationLoop && !hasVisibilityHandling) {
+    findings.push(makeFinding(file, {
+      severity: "medium",
+      category: "js",
+      ruleId: "js/animation-loop-no-visibility-handling",
+      line: block.startLine,
+      column: block.startColumn,
+      message: "Script uses `requestAnimationFrame` or `setInterval` but never listens for `visibilitychange` — wastes CPU when the tab is hidden."
+    }));
+  }
 
   if (sourceType !== "module" && topLevelDeclarations > 15) {
     findings.push(makeFinding(file, {
@@ -1032,7 +1083,7 @@ async function analyzeFormatting(file, content, findings) {
   }
 }
 
-function analyzeDuplication(file, absoluteFile, htmlState, cssSignatures, repoIndex, findings) {
+function analyzeDuplication(file, absoluteFile, htmlState, repoIndex, findings) {
   if (htmlState.titleText) {
     const duplicateTitles = (repoIndex.titleIndex.get(htmlState.titleText) || [])
       .filter((entry) => entry !== absoluteFile);
@@ -1048,56 +1099,6 @@ function analyzeDuplication(file, absoluteFile, htmlState, cssSignatures, repoIn
         detail: `Also used in ${summarizePaths(duplicateTitles, absoluteFile)}.`
       }));
     }
-  }
-
-  const repeatedFontLinks = [];
-
-  for (const href of new Set(htmlState.fontLinks)) {
-    const matches = (repoIndex.fontLinkIndex.get(href) || []).filter((entry) => entry !== absoluteFile);
-    if (matches.length > 1) {
-      repeatedFontLinks.push({ href, files: matches });
-    }
-  }
-
-  for (const repeated of repeatedFontLinks) {
-    findings.push(makeFinding(file, {
-      severity: "low",
-      category: "duplication",
-      ruleId: "duplication/shared-font-import",
-      line: 1,
-      column: 1,
-      message: `Google Fonts import is duplicated in ${repeated.files.length + 1} app files.`,
-      detail: `Also used in ${summarizePaths(repeated.files, absoluteFile)}.`
-    }));
-  }
-
-  const duplicateRules = [];
-
-  for (const signature of cssSignatures) {
-    const matches = (repoIndex.cssRuleIndex.get(signature.key) || [])
-      .filter((entry) => entry.file !== absoluteFile);
-    if (matches.length === 0) {
-      continue;
-    }
-
-    duplicateRules.push({
-      line: signature.line,
-      selector: signature.selectorLabel,
-      files: matches.map((entry) => entry.file)
-    });
-  }
-
-  const uniqueDuplicateRules = dedupeDuplicateRules(duplicateRules).slice(0, 8);
-  for (const duplicate of uniqueDuplicateRules) {
-    findings.push(makeFinding(file, {
-      severity: duplicate.files.length >= 4 ? "medium" : "low",
-      category: "duplication",
-      ruleId: "duplication/repeated-css-rule",
-      line: duplicate.line,
-      column: null,
-      message: `CSS rule \`${duplicate.selector}\` is duplicated across ${duplicate.files.length + 1} app files.`,
-      detail: `Also used in ${summarizePaths(duplicate.files, absoluteFile)}.`
-    }));
   }
 }
 
@@ -1153,22 +1154,6 @@ function collectBlocks(document, content, lineStarts, tagName, options = {}) {
   });
 
   return blocks;
-}
-
-function collectFontLinks(document) {
-  const hrefs = [];
-
-  walkHtml(document, (node) => {
-    if (!isElementNode(node) || node.tagName !== "link") {
-      return;
-    }
-    const href = attributeValue(node, "href");
-    if (href && EXTERNAL_FONT_RE.test(href)) {
-      hrefs.push(href);
-    }
-  });
-
-  return hrefs;
 }
 
 function collectDocumentTitle(document) {
@@ -1268,8 +1253,26 @@ function extractCssImportTarget(params) {
 }
 
 function hasUseStrict(ast) {
-  return ast.body.some((statement) =>
-    statement.type === "ExpressionStatement" && statement.directive === "use strict");
+  if (ast.body.some((statement) =>
+    statement.type === "ExpressionStatement" && statement.directive === "use strict")) {
+    return true;
+  }
+
+  if (ast.body.length === 1 && ast.body[0].type === "ExpressionStatement") {
+    const expr = ast.body[0].expression;
+    const callee = expr.type === "CallExpression" ? expr.callee : null;
+    const fn = callee?.type === "FunctionExpression" || callee?.type === "ArrowFunctionExpression"
+      ? callee
+      : callee?.type === "MemberExpression" && callee.object?.type === "FunctionExpression"
+        ? callee.object
+        : null;
+    if (fn?.body?.type === "BlockStatement") {
+      return fn.body.body.some((statement) =>
+        statement.type === "ExpressionStatement" && statement.directive === "use strict");
+    }
+  }
+
+  return false;
 }
 
 function countTopLevelDeclarations(statement) {
@@ -1726,7 +1729,7 @@ function offsetToLineCol(lineStarts, offset) {
 }
 
 function toBlockLine(block, relativeLine) {
-  if (!relativeLine) {
+  if (relativeLine == null) {
     return block.startLine;
   }
   return block.startLine + relativeLine - 1;
@@ -1740,10 +1743,6 @@ function toBlockColumn(block, relativeLine, relativeColumn) {
     return block.startColumn + relativeColumn - 1;
   }
   return relativeColumn;
-}
-
-function countLines(text) {
-  return normalizeNewlines(text).split("\n").length;
 }
 
 function formatLineList(lines, limit = 12) {
@@ -1764,22 +1763,6 @@ function cssContext(rule) {
     current = current.parent;
   }
   return parts.join(" ");
-}
-
-function dedupeDuplicateRules(duplicates) {
-  const seen = new Set();
-  const output = [];
-
-  for (const duplicate of duplicates) {
-    const key = `${duplicate.selector}|${duplicate.files.join("|")}`;
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    output.push(duplicate);
-  }
-
-  return output.sort((left, right) => right.files.length - left.files.length);
 }
 
 function summarizePaths(files, currentFile, limit = 6) {

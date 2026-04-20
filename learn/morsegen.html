@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run cr -- morsegen.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- morsegen.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -375,6 +375,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
     <!-- prettier-ignore -->
     <script type="module">
+/* global pdfMake */
 const state = {
   lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
   sequence: [],

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { runCli } from "./review-html.js";
+import { runCli } from "./code-review-engine.js";
 
 runCli(process.argv.slice(2)).catch((error) => {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(`cr: ${message}`);
+  console.error(`code-review: ${message}`);
   process.exit(2);
 });
