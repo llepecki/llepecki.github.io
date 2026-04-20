@@ -268,6 +268,58 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: #fff;
       }
 
+      .histogram-wrap {
+        padding: 12px 24px 16px;
+        display: flex;
+        justify-content: center;
+      }
+      .histogram {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        max-width: 900px;
+        width: 100%;
+        height: 80px;
+      }
+      .hist-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        min-width: 0;
+      }
+      .hist-bar-wrap {
+        width: 100%;
+        height: 56px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+      }
+      .hist-bar {
+        width: 100%;
+        max-width: 24px;
+        border-radius: 2px 2px 0 0;
+        background: var(--accent);
+        transition: height 0.2s;
+      }
+      .hist-bar.zero {
+        background: var(--panel-border);
+      }
+      .hist-letter {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-dim);
+        line-height: 1;
+      }
+      .hist-count {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 9px;
+        color: var(--text-label);
+        line-height: 1;
+      }
+
       @media (max-width: 700px) {
         .toolbar {
           padding: 10px 16px;
@@ -295,6 +347,120 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         .preview-frame {
           min-height: 60vh;
         }
+        .words-controls {
+          gap: 12px;
+        }
+        .ctrl-group {
+          gap: 4px;
+        }
+        input[type="range"] {
+          width: 60px;
+        }
+      }
+
+      .type-toggle {
+        display: flex;
+        gap: 4px;
+      }
+      .type-btn {
+        background: transparent;
+        border: 1.5px solid var(--panel-border);
+        border-radius: 6px;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        transition:
+          border-color 0.15s,
+          color 0.15s,
+          background 0.15s;
+        touch-action: manipulation;
+        line-height: 1;
+      }
+      .type-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .type-btn.active {
+        background: var(--text-head);
+        border-color: var(--text-head);
+        color: #fff;
+      }
+
+      .words-controls {
+        display: none;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .words-controls.visible {
+        display: flex;
+      }
+
+      .ctrl-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .ctrl-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-label);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .slider-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+        min-width: 18px;
+        text-align: right;
+      }
+      .range-sep {
+        color: var(--text-label);
+        font-size: 12px;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 72px;
+        height: 4px;
+        background: var(--panel-border);
+        border-radius: 2px;
+        cursor: pointer;
+        touch-action: none;
+      }
+      input[type="range"]:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 4px;
+        border-radius: 2px;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--text-head);
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--text-head);
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
       }
     </style>
   </head>
@@ -340,6 +506,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           />
         </div>
         <div class="toolbar-row">
+          <div class="type-toggle" id="modeToggle">
+            <button
+              class="type-btn active"
+              type="button"
+              data-mode="letters"
+              id="modeLettersBtn"
+            >
+              Letters
+            </button>
+            <button
+              class="type-btn"
+              type="button"
+              data-mode="words"
+              id="modeWordsBtn"
+            >
+              Words
+            </button>
+          </div>
           <button class="action-btn" type="button" id="generateBtn">
             &#x1F3B2; Generate
           </button>
@@ -364,12 +548,64 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             <span class="value" id="dateVal">----/--/--</span>
           </span>
         </div>
+        <div class="toolbar-row words-controls" id="wordsControls">
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="wordLangLbl">Lang</span>
+            <div class="type-toggle" id="wordLangToggle">
+              <button class="type-btn" type="button" data-wlang="pl">PL</button>
+              <button class="type-btn active" type="button" data-wlang="en">
+                EN
+              </button>
+              <button class="type-btn" type="button" data-wlang="both">
+                PL+EN
+              </button>
+            </div>
+          </div>
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="wordLenLbl">Length</span>
+            <input
+              type="range"
+              id="minLenSlider"
+              min="3"
+              max="10"
+              value="3"
+              aria-label="Minimum word length"
+            />
+            <span class="slider-val" id="minLenVal">3</span>
+            <span class="range-sep">&ndash;</span>
+            <input
+              type="range"
+              id="maxLenSlider"
+              min="3"
+              max="10"
+              value="6"
+              aria-label="Maximum word length"
+            />
+            <span class="slider-val" id="maxLenVal">6</span>
+          </div>
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="wordCountLbl">Count</span>
+            <input
+              type="range"
+              id="wordCountSlider"
+              min="1"
+              max="6"
+              value="6"
+              aria-label="Number of words"
+            />
+            <span class="slider-val" id="wordCountVal">6</span>
+          </div>
+        </div>
       </div>
 
       <div class="preview-wrap">
         <div class="preview-frame">
           <iframe id="previewFrame" title="PDF preview"></iframe>
         </div>
+      </div>
+
+      <div class="histogram-wrap" id="histogramWrap">
+        <div class="histogram" id="histogram"></div>
       </div>
     </main>
 
@@ -378,16 +614,26 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 /* global pdfMake */
 const state = {
   lang: navigator.language?.startsWith('pl') ? 'pl' : 'en',
+  mode: 'letters',
   sequence: [],
   sessionId: '#-----',
   senderName: '',
   receiverName: '',
   pdfReady: false,
+  wordMinLen: 3,
+  wordMaxLen: 6,
+  wordCount: 6,
+  wordLang: 'en',
 };
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const COLS = 4;
 const ROWS = 7;
+
+const WORD_LISTS = {
+  en: 'ACE,AXE,BOX,BUG,CUP,DIG,ELF,FOX,GEM,GYM,HUB,INK,JAM,JET,KEY,OWL,RAY,SKY,SUN,VAN,WAX,YAK,ZAP,AXLE,BIRD,BOLT,CAVE,COZY,DRUM,DUSK,FAWN,FISH,FLAG,FROG,GIFT,GOAT,HIVE,IRON,JADE,JUMP,KITE,LAMP,LYNX,MAZE,QUIZ,SILK,VEIL,WOLF,ZINC,BADGE,BLAZE,BRICK,CHALK,CLIFF,CRAFT,CROWN,DWARF,FLAME,FLINT,GLOBE,GRAIN,HAZEL,IVORY,JEWEL,KNACK,LEMON,MIXER,NOVEL,OXIDE,PIXEL,PLANK,QUILT,RAVEN,STORM,SWAMP,TIGER,VAULT,VIXEN,WALTZ,BASKET,BREEZE,BRIDGE,BRONZE,CANDLE,COBALT,DRAGON,FALCON,GARDEN,HAMMER,INSECT,JACKET,JAGUAR,JUNGLE,KITTEN,KNIGHT,MAGNET,MUSEUM,OXYGEN,PALACE,PLANET,PLUNGE,PYTHON,QUARTZ,ROCKET,SIGNAL,STREAM,VELVET,WALNUT,ZIPPER,BALCONY,BLANKET,CAPTAIN,COMPASS,CRYSTAL,DIAMOND,DOLPHIN,ECLIPSE,FEATHER,FICTION,GLACIER,HABITAT,HARVEST,LANTERN,NETWORK,PADDOCK,PENGUIN,PUMPKIN,QUARTER,RAINBOW,SPARKLE,SUNBEAM,TRUMPET,VOLCANO,BACKPACK,BLIZZARD,CAMPFIRE,CONQUEST,CRESCENT,DINOSAUR,ELEPHANT,FIREWORK,GOLDFISH,HOMEWORK,KANGAROO,KEYBOARD,LEMONADE,MUSHROOM,SANDWICH,SKELETON,SNAPSHOT,TEXTBOOK,TREASURE,ADVENTURE,BUTTERFLY,CHAMELEON,CLOCKWORK,CROSSWIND,DANDELION,DISCOVERY,DRAGONFLY,EVOLUTION,FRAMEWORK,GOLDFINCH,HURRICANE,JELLYFISH,LABYRINTH,PINEAPPLE,QUICKSAND,SNOWFLAKE,SUBMARINE,TELESCOPE,BASKETBALL,BIRTHSTONE,BLACKSMITH,FLASHPOINT,LIGHTHOUSE,PLAYGROUND,THUMBPRINT,TRAMPOLINE,WATERMELON,WOODPECKER'.split(','),
+  pl: 'BUK,BUT,BYK,DYM,HAK,JAR,KIJ,KOD,KOS,KOT,LAS,LEW,LIS,LOT,MAK,MUR,NOS,PAN,RAK,SEN,SOK,SUM,SYN,TOR,WIR,BANK,BRAT,FILM,GOLF,KARP,KLAN,KLIF,KLON,KLUB,KRAN,KREM,KROK,KULA,KURA,LIST,MAPA,MOST,PIES,PLAN,PORT,PROM,RYBA,SKOK,SMAK,WILK,BASEN,BLASK,BURZA,DESKA,EKRAN,FORMA,ISKRA,KORAL,KWIAT,MELON,METAL,MOTOR,PANDA,PILOT,PLAMA,RADAR,ROBOT,ROWER,SALON,SKALA,SPORT,TENIS,TRASA,TRAWA,WIRUS,ZAMEK,ANTENA,APARAT,FENIKS,GAZETA,GITARA,HANGAR,HORROR,INDEKS,KABINA,KANTOR,KOSZYK,KRATER,KROKUS,MALINA,METEOR,MISTRZ,MUZEUM,ORBITA,PIASEK,PLAKAT,SZAFKA,TYGRYS,WULKAN,ZIEMIA,ELEMENT,EKSPRES,GALERIA,HAMSTER,KAPITAN,KOMFORT,KONTAKT,KULTURA,MAKARON,MONITOR,PROBLEM,PROGRAM,PROJEKT,STADION,STUDENT,TELEFON,TORNADO,TRAKTOR,TRAMWAJ,TURNIEJ,WIATRAK,ZEGAREK,AKWARIUM,ALGORYTM,BAKTERIA,DINOZAUR,DYREKTOR,ELEKTRON,INTERNET,KOMPUTER,KROKODYL,LABIRYNT,MARZENIE,MARYNARZ,PIRAMIDA,PODUSZKA,SKARBNIK,DEKORATOR,FLAMASTER,GENERATOR,INSPEKTOR,KRASNOLUD,MINIATURA,NAWIGATOR,SYMULATOR,TRANSPORT,AKUMULATOR,HELIKOPTER,KLAWIATURA,LOKOMOTYWA'.split(','),
+};
 
 const I18N = {
   en: {
@@ -402,6 +648,11 @@ const I18N = {
     receiverLabel: 'Receiver',
     senderPlaceholder: 'Sender name',
     receiverPlaceholder: 'Receiver name',
+    modeLetters: 'Letters',
+    modeWords: 'Words',
+    wordLangLabel: 'Lang',
+    wordLengthLabel: 'Length',
+    wordCountLabel: 'Count',
   },
   pl: {
     title: 'Arkusze \u0107wicze\u0144 z kodu Morse\u2019a',
@@ -415,6 +666,11 @@ const I18N = {
     receiverLabel: 'Odbiorca',
     senderPlaceholder: 'Imi\u0119 nadawcy',
     receiverPlaceholder: 'Imi\u0119 odbiorcy',
+    modeLetters: 'Litery',
+    modeWords: 'S\u0142owa',
+    wordLangLabel: 'J\u0119zyk',
+    wordLengthLabel: 'D\u0142ugo\u015B\u0107',
+    wordCountLabel: 'Ilo\u015B\u0107',
   },
 };
 
@@ -436,6 +692,11 @@ function applyTranslations() {
   senderInput.setAttribute('aria-label', l.senderPlaceholder);
   receiverInput.placeholder = l.receiverPlaceholder;
   receiverInput.setAttribute('aria-label', l.receiverPlaceholder);
+  document.getElementById('modeLettersBtn').textContent = l.modeLetters;
+  document.getElementById('modeWordsBtn').textContent = l.modeWords;
+  document.getElementById('wordLangLbl').textContent = l.wordLangLabel;
+  document.getElementById('wordLenLbl').textContent = l.wordLengthLabel;
+  document.getElementById('wordCountLbl').textContent = l.wordCountLabel;
 }
 
 function toggleLang() {
@@ -452,6 +713,69 @@ function fisherYates(arr) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+function histogramScore(hist) {
+  let sum = 0;
+  let cnt = 0;
+  for (let i = 0; i < 26; i++) {
+    if (hist[i] > 0) { sum += hist[i]; cnt++; }
+  }
+  if (cnt === 0) return 0;
+  const mean = sum / cnt;
+  let variance = 0;
+  for (let i = 0; i < 26; i++) {
+    if (hist[i] > 0) { const d = hist[i] - mean; variance += d * d; }
+  }
+  return Math.sqrt(variance / cnt);
+}
+
+function getFilteredWordPool() {
+  let pool;
+  if (state.wordLang === 'both') {
+    pool = WORD_LISTS.en.concat(WORD_LISTS.pl);
+  } else {
+    pool = WORD_LISTS[state.wordLang].slice();
+  }
+  return pool.filter((w) => w.length >= state.wordMinLen && w.length <= state.wordMaxLen);
+}
+
+function selectWordsFlat(pool, count) {
+  if (pool.length === 0) return [];
+  if (pool.length <= count) return fisherYates(pool);
+  const hist = new Array(26).fill(0);
+  const selected = [];
+  const used = new Set();
+  for (let i = 0; i < count; i++) {
+    let bestWord = null;
+    let bestScore = Infinity;
+    let ties = 0;
+    for (const word of pool) {
+      if (used.has(word)) continue;
+      const trial = hist.slice();
+      for (let c = 0; c < word.length; c++) {
+        const ci = word.charCodeAt(c) - 65;
+        if (ci >= 0 && ci < 26) trial[ci]++;
+      }
+      const score = histogramScore(trial);
+      if (score < bestScore) {
+        bestScore = score;
+        bestWord = word;
+        ties = 1;
+      } else if (score === bestScore) {
+        ties++;
+        if (Math.random() < 1 / ties) bestWord = word;
+      }
+    }
+    if (!bestWord) break;
+    selected.push(bestWord);
+    used.add(bestWord);
+    for (let c = 0; c < bestWord.length; c++) {
+      const ci = bestWord.charCodeAt(c) - 65;
+      if (ci >= 0 && ci < 26) hist[ci]++;
+    }
+  }
+  return fisherYates(selected);
 }
 
 function newSessionId() {
@@ -494,6 +818,45 @@ function emptyCell() {
   return { text: '', border: [false, false, false, false] };
 }
 
+function buildWordSenderRow(word, idx, fontSize, vPad) {
+  return [
+    {
+      stack: [
+        { text: String(idx + 1), fontSize: 11, color: '#90A4AE', characterSpacing: 0.5 },
+        { text: word, fontSize: fontSize, bold: true, color: '#263238', margin: [8, vPad, 0, 0] },
+      ],
+    },
+  ];
+}
+
+function buildWordReceiverRow(idx) {
+  return [
+    {
+      stack: [
+        { text: String(idx + 1), fontSize: 11, bold: true, color: '#263238', characterSpacing: 0.5 },
+      ],
+    },
+  ];
+}
+
+function wordsTableLayout() {
+  return {
+    hLineWidth: () => 0.6, vLineWidth: () => 0.6,
+    hLineColor: () => '#B0BEC5', vLineColor: () => '#B0BEC5',
+    paddingLeft: () => 4, paddingRight: () => 4,
+    paddingTop: () => 2, paddingBottom: () => 2,
+  };
+}
+
+function wordsReceiverLayout() {
+  return {
+    hLineWidth: () => 0.6, vLineWidth: () => 0.6,
+    hLineColor: () => '#B0BEC5', vLineColor: () => '#B0BEC5',
+    paddingLeft: () => 4, paddingRight: () => 4,
+    paddingTop: () => 2, paddingBottom: () => 2,
+  };
+}
+
 function buildGridBody(cellBuilder) {
   const total = COLS * ROWS;
   const body = [];
@@ -522,8 +885,6 @@ function gridLayout() {
 }
 
 function buildDocDefinition() {
-  const senderBody = buildGridBody((idx) => buildSenderCell(state.sequence[idx], idx));
-  const receiverBody = buildGridBody((idx) => buildReceiverCell(idx));
   const headerBand = (labelKey, name) => {
     const label = T(labelKey);
     const titleParts = name
@@ -537,15 +898,44 @@ function buildDocDefinition() {
       margin: [0, 0, 0, 6],
     };
   };
+  const foldLine = { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.6, dash: { length: 3, space: 3 }, lineColor: '#90A4AE' }], absolutePosition: { x: 40, y: 421 } };
+
+  if (state.mode === 'letters') {
+    const senderBody = buildGridBody((idx) => buildSenderCell(state.sequence[idx], idx));
+    const receiverBody = buildGridBody((idx) => buildReceiverCell(idx));
+    return {
+      pageSize: 'A4', pageOrientation: 'portrait', pageMargins: [40, 36, 40, 24],
+      content: [
+        headerBand('senderLabel', state.senderName),
+        { table: { widths: ['*', '*', '*', '*'], heights: () => 42, body: senderBody }, layout: gridLayout() },
+        foldLine,
+        { text: '\u00A0', fontSize: 1, margin: [0, 16, 0, 16] },
+        headerBand('receiverLabel', state.receiverName),
+        { table: { widths: ['*', '*', '*', '*'], heights: () => 42, body: receiverBody }, layout: gridLayout() },
+      ],
+      defaultStyle: { font: 'Roboto', fontSize: 10, color: '#263238' },
+    };
+  }
+
+  const count = state.sequence.length || 1;
+  const rowHeight = Math.min(50, Math.floor(352 / count));
+  const wordFontSize = Math.min(18, Math.max(13, Math.floor(rowHeight * 0.4)));
+  const vPad = Math.max(0, Math.floor((rowHeight - wordFontSize - 6) / 2));
+  const senderBody = state.sequence.map((w, i) => buildWordSenderRow(w, i, wordFontSize, vPad));
+  const receiverBody = state.sequence.map((_, i) => buildWordReceiverRow(i));
+  const senderTableH = rowHeight * count;
+  const spacerH = Math.max(16, Math.round(669 - 2 * senderTableH));
+  const spacerTopM = Math.floor(spacerH / 2);
+  const spacerBotM = spacerH - spacerTopM;
   return {
     pageSize: 'A4', pageOrientation: 'portrait', pageMargins: [40, 36, 40, 24],
     content: [
       headerBand('senderLabel', state.senderName),
-      { table: { widths: ['*', '*', '*', '*'], heights: () => 42, body: senderBody }, layout: gridLayout() },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.6, dash: { length: 3, space: 3 }, lineColor: '#90A4AE' }], absolutePosition: { x: 40, y: 421 } },
-      { text: '\u00A0', fontSize: 1, margin: [0, 16, 0, 16] },
+      { table: { widths: ['*'], heights: () => rowHeight, body: senderBody }, layout: wordsTableLayout() },
+      foldLine,
+      { text: '\u00A0', fontSize: 1, margin: [0, spacerTopM, 0, spacerBotM] },
       headerBand('receiverLabel', state.receiverName),
-      { table: { widths: ['*', '*', '*', '*'], heights: () => 42, body: receiverBody }, layout: gridLayout() },
+      { table: { widths: ['*'], heights: () => rowHeight, body: receiverBody }, layout: wordsReceiverLayout() },
     ],
     defaultStyle: { font: 'Roboto', fontSize: 10, color: '#263238' },
   };
@@ -560,11 +950,56 @@ function refreshPreview() {
   });
 }
 
+function renderHistogram() {
+  const hist = new Array(26).fill(0);
+  const chars = state.mode === 'letters' ? state.sequence : state.sequence.join('').split('');
+  for (const ch of chars) {
+    const ci = ch.charCodeAt(0) - 65;
+    if (ci >= 0 && ci < 26) hist[ci]++;
+  }
+  const maxVal = Math.max(1, ...hist);
+  const el = document.getElementById('histogram');
+  el.textContent = '';
+  for (let i = 0; i < 26; i++) {
+    const col = document.createElement('div');
+    col.className = 'hist-col';
+    const countEl = document.createElement('div');
+    countEl.className = 'hist-count';
+    countEl.textContent = hist[i] || '';
+    const barWrap = document.createElement('div');
+    barWrap.className = 'hist-bar-wrap';
+    const bar = document.createElement('div');
+    bar.className = hist[i] === 0 ? 'hist-bar zero' : 'hist-bar';
+    bar.style.height = (hist[i] > 0 ? Math.max(4, Math.round((hist[i] / maxVal) * 56)) : 0) + 'px';
+    barWrap.appendChild(bar);
+    const letterEl = document.createElement('div');
+    letterEl.className = 'hist-letter';
+    letterEl.textContent = ALPHABET[i];
+    col.appendChild(countEl);
+    col.appendChild(barWrap);
+    col.appendChild(letterEl);
+    el.appendChild(col);
+  }
+}
+
 function regenerate() {
-  state.sequence = fisherYates(ALPHABET);
+  if (state.mode === 'letters') {
+    state.sequence = fisherYates(ALPHABET);
+  } else {
+    const pool = getFilteredWordPool();
+    if (pool.length === 0) {
+      const btn = document.getElementById('generateBtn');
+      btn.style.background = '#C62828';
+      setTimeout(() => { btn.style.background = ''; }, 1200);
+      return;
+    }
+    const count = Math.min(state.wordCount, pool.length);
+    state.sequence = selectWordsFlat(pool, count);
+  }
   state.sessionId = newSessionId();
   document.getElementById('sessionIdVal').textContent = state.sessionId;
   document.getElementById('dateVal').textContent = todayStr();
+  renderHistogram();
   refreshPreview();
 }
 
@@ -634,8 +1069,8 @@ function runLayoutTest() {
         const items = textContent.items
           .map((t) => ({ text: t.str, y: ph - t.transform[5], fs: Math.abs(t.transform[3]) }))
           .filter((t) => t.text.trim());
-        const senderLetters = items.filter((t) => t.fs > 20 && t.fs < 30);
-        const lastSender = senderLetters.reduce((a, b) => (b.y > a.y ? b : a), senderLetters[0]);
+        const senderItems = items.filter((t) => t.y < CUT_LINE_Y && t.y > 50);
+        const lastSender = senderItems.reduce((a, b) => (b.y > a.y ? b : a), senderItems[0]);
         const firstReceiver = items.filter((t) => t.y > CUT_LINE_Y).reduce((a, b) => (b.y < a.y ? b : a), { y: ph });
         const foldOffset = Math.abs(CUT_LINE_Y - mid);
         const gapAbove = CUT_LINE_Y - lastSender.y;
@@ -673,6 +1108,40 @@ function runLayoutTest() {
   });
 }
 
+function setMode(mode) {
+  state.mode = mode;
+  document.getElementById('modeLettersBtn').classList.toggle('active', mode === 'letters');
+  document.getElementById('modeWordsBtn').classList.toggle('active', mode === 'words');
+  document.getElementById('wordsControls').classList.toggle('visible', mode === 'words');
+  regenerate();
+}
+
+function onWordLangChange(lang) {
+  state.wordLang = lang;
+  document.querySelectorAll('#wordLangToggle .type-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.wlang === lang);
+  });
+  regenerate();
+}
+
+let sliderDebounceTimer = null;
+function onSliderChange() {
+  const min = parseInt(document.getElementById('minLenSlider').value, 10);
+  let max = parseInt(document.getElementById('maxLenSlider').value, 10);
+  if (min > max) {
+    max = min;
+    document.getElementById('maxLenSlider').value = max;
+  }
+  state.wordMinLen = min;
+  state.wordMaxLen = max;
+  state.wordCount = parseInt(document.getElementById('wordCountSlider').value, 10);
+  document.getElementById('minLenVal').textContent = min;
+  document.getElementById('maxLenVal').textContent = max;
+  document.getElementById('wordCountVal').textContent = state.wordCount;
+  clearTimeout(sliderDebounceTimer);
+  sliderDebounceTimer = setTimeout(regenerate, 300);
+}
+
 function init() {
   document.getElementById('langBtn').textContent = state.lang === 'en' ? 'PL' : 'EN';
   document.getElementById('langBtn').addEventListener('click', toggleLang);
@@ -682,6 +1151,14 @@ function init() {
   document.getElementById('downloadBtn').addEventListener('click', downloadPdf);
   document.getElementById('printBtn').addEventListener('click', printPdf);
   document.getElementById('testBtn').addEventListener('click', runLayoutTest);
+  document.getElementById('modeLettersBtn').addEventListener('click', () => setMode('letters'));
+  document.getElementById('modeWordsBtn').addEventListener('click', () => setMode('words'));
+  document.querySelectorAll('#wordLangToggle .type-btn').forEach((b) => {
+    b.addEventListener('click', () => onWordLangChange(b.dataset.wlang));
+  });
+  document.getElementById('minLenSlider').addEventListener('input', onSliderChange);
+  document.getElementById('maxLenSlider').addEventListener('input', onSliderChange);
+  document.getElementById('wordCountSlider').addEventListener('input', onSliderChange);
   applyTranslations();
   regenerate();
 }
