@@ -258,6 +258,37 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
 
+      .preset-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 4px;
+      }
+
+      .preset-btn {
+        padding: 8px 2px;
+        border-radius: 4px;
+        border: 1px solid var(--panel-border);
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+        touch-action: manipulation;
+        text-align: center;
+      }
+
+      .preset-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .preset-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #fff;
+      }
+
       .slider-row {
         display: flex;
         align-items: center;
@@ -615,19 +646,56 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             </div>
           </div>
 
-          <div class="ctrl-group" id="responseGroup">
-            <span class="ctrl-label" id="lblResponse">Response Strength</span>
+          <div class="ctrl-group" id="presetGroup">
+            <span class="ctrl-label" id="lblPresets">Presets</span>
+            <div class="preset-row" id="presetRow"></div>
+          </div>
+
+          <div class="ctrl-group" id="kpGroup">
+            <span class="ctrl-label" id="lblKp">Proportional (Kp)</span>
             <div class="slider-row">
               <input
                 type="range"
-                id="responseSlider"
-                min="4"
-                max="40"
-                value="16"
+                id="kpSlider"
+                min="0"
+                max="50"
+                value="10"
                 step="1"
-                aria-label="Response strength"
+                aria-label="Proportional gain"
               />
-              <span class="slider-val" id="responseVal">1.6</span>
+              <span class="slider-val" id="kpVal">1.00</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group" id="kiGroup">
+            <span class="ctrl-label" id="lblKi">Integral (Ki)</span>
+            <div class="slider-row">
+              <input
+                type="range"
+                id="kiSlider"
+                min="0"
+                max="50"
+                value="4"
+                step="1"
+                aria-label="Integral gain"
+              />
+              <span class="slider-val" id="kiVal">0.40</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group" id="kdGroup">
+            <span class="ctrl-label" id="lblKd">Derivative (Kd)</span>
+            <div class="slider-row">
+              <input
+                type="range"
+                id="kdSlider"
+                min="0"
+                max="50"
+                value="0"
+                step="1"
+                aria-label="Derivative gain"
+              />
+              <span class="slider-val" id="kdVal">0.00</span>
             </div>
           </div>
 
@@ -757,6 +825,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 <span class="readout-val" id="rdError">0%</span>
               </div>
               <div class="readout-row">
+                <span class="readout-label" id="lblRdPterm">P Term</span>
+                <span class="readout-val" id="rdPterm">+0.00</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdIterm">I Term</span>
+                <span class="readout-val" id="rdIterm">+0.00</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdDterm">D Term</span>
+                <span class="readout-val" id="rdDterm">+0.00</span>
+              </div>
+              <div class="readout-row">
                 <span class="readout-label" id="lblRdBalance"
                   >Control Balance</span
                 >
@@ -838,7 +918,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         const DEF_S = 0.6;
         const DEF_H = 0.6;
         const DEF_LEAK = 0;
-        const DEF_K = 1.6;
+        const DEF_KP = 1.0;
+        const DEF_KI = 0.4;
+        const DEF_KD = 0.0;
         const DEF_BALANCE = 0;
 
         const state = {
@@ -853,7 +935,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           uOut: 0,
           uManual: 0,
           leak: DEF_LEAK,
-          K: DEF_K,
+          Kp: DEF_KP,
+          Ki: DEF_KI,
+          Kd: DEF_KD,
+          prevM: DEF_H,
+          pTerm: 0,
+          iTerm: 0,
+          dTerm: 0,
           delaySeconds: 0,
           inletForced: false,
           drainForced: false,
@@ -865,6 +953,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           qOut: 0,
           qLeak: 0,
           qControlOut: 0,
+          qOverflow: 0,
         };
 
         const I18N = {
@@ -874,7 +963,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "Watch a visible mechanism compare the water level to a target.",
             setpoint: "Target Level",
             manualDrain: "Manual Drain",
-            responseStrength: "Response Strength",
+            presets: "Presets",
+            presetPonly: "P only",
+            presetPI: "PI",
+            presetAggressive: "Aggressive",
+            presetDamped: "Damped",
+            presetSluggish: "Sluggish",
+            kpGain: "Proportional (Kp)",
+            kiGain: "Integral (Ki)",
+            kdGain: "Derivative (Kd)",
+            pTerm: "P Term",
+            iTerm: "I Term",
+            dTerm: "D Term",
             delay: "Delay",
             pause: "Pause",
             run: "Run",
@@ -931,13 +1031,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             explainDelay:
               "With delay, the controller reacts to the amber measured marker instead of the real float. That lag can cause overshoot and wobble.",
             explainUnderdamped:
-              "The response strength is high relative to the system, causing the controller to overcorrect. Lowering response strength will reduce the wobble.",
+              "The proportional gain (Kp) is high, causing the controller to overcorrect. Reducing Kp or increasing Kd will reduce the wobble.",
             inv1: "Open the manual drain. Watch the actual float fall first, then the fill valve open.",
             inv2: "Raise the target. The green reference carriage moves immediately, but the water catches up later.",
-            inv3: "Increase response strength. The controller reacts more aggressively and can overshoot.",
+            inv3: "Increase Kp. The controller reacts more aggressively and can overshoot. Then add some Kd to dampen the oscillations.",
             inv4: "Add delay. Compare the real float to the amber measured marker when the tank wobbles.",
-            inv5: "Click and hold a valve in the diagram to force it fully open. Watch how the level reacts without feedback control.",
-            inv6: "Set a high response strength and add delay. Compare how fast the actual level moves versus how late the measured marker follows.",
+            inv5: "Click and hold a valve in the diagram to force it fully open. Watch how the controller responds when one actuator is manually overridden.",
+            inv6: "Set high Kp and add delay. Compare how fast the actual level moves versus how late the measured marker follows.",
+            inv7: "The controller computes: e = target \u2212 measured, then u = Kp\u00b7e + I \u2212 Kd\u00b7d(measured)/dt. The integral I accumulates Ki\u00b7e\u00b7dt, subject to anti-windup limits and paused during manual valve override. Positive u opens fill, negative u opens drain. The D term acts on the measured level, not the setpoint.",
             intro: "Intro",
             introTitle: "Introduction",
             introExit: "Exit",
@@ -979,7 +1080,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "Zobacz mechanizm, który porównuje poziom wody z poziomem docelowym.",
             setpoint: "Poziom Docelowy",
             manualDrain: "R\u0119czny Odp\u0142yw",
-            responseStrength: "Siła Reakcji",
+            presets: "Ustawienia",
+            presetPonly: "Tylko P",
+            presetPI: "PI",
+            presetAggressive: "Agresywny",
+            presetDamped: "T\u0142umiony",
+            presetSluggish: "Powolny",
+            kpGain: "Proporcjonalny (Kp)",
+            kiGain: "Ca\u0142kuj\u0105cy (Ki)",
+            kdGain: "R\u00f3\u017cniczkuj\u0105cy (Kd)",
+            pTerm: "Cz\u0142on P",
+            iTerm: "Cz\u0142on I",
+            dTerm: "Cz\u0142on D",
             delay: "Opóźnienie",
             pause: "Pauza",
             run: "Start",
@@ -1036,13 +1148,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             explainDelay:
               "Przy opóźnieniu sterowanie reaguje na bursztynowy znacznik mierzony, a nie na prawdziwy pływak. To może wywołać przeregulowanie i kołysanie.",
             explainUnderdamped:
-              "Siła reakcji jest wysoka w stosunku do systemu, co powoduje nadmierną korekcję. Zmniejszenie siły reakcji zmniejszy kołysanie.",
+              "Wzmocnienie proporcjonalne (Kp) jest zbyt wysokie, co powoduje nadmierną korekcję. Zmniejszenie Kp lub zwiększenie Kd zmniejszy kołysanie.",
             inv1: "Otw\u00f3rz r\u0119czny odp\u0142yw. Najpierw opada prawdziwy p\u0142ywak, a dopiero potem bardziej otwiera si\u0119 zaw\u00f3r dop\u0142ywu.",
             inv2: "Podnieś cel. Zielony wózek odniesienia rusza od razu, ale woda dogania go później.",
-            inv3: "Zwiększ siłę reakcji. Sterownik reaguje agresywniej i może przeregulować.",
+            inv3: "Zwiększ Kp. Sterownik reaguje agresywniej i może przeregulować. Dodaj trochę Kd, aby stłumić oscylacje.",
             inv4: "Dodaj opóźnienie. Porównaj prawdziwy pływak z bursztynowym znacznikiem mierzonym, gdy zbiornik zaczyna się kołysać.",
-            inv5: "Kliknij i przytrzymaj zawór na diagramie, aby go całkowicie otworzyć. Obserwuj jak poziom reaguje bez sterowania sprzężeniem.",
-            inv6: "Ustaw wysoką siłę reakcji i dodaj opóźnienie. Porównaj jak szybko zmienia się rzeczywisty poziom, a jak późno podąża za nim znacznik mierzony.",
+            inv5: "Kliknij i przytrzymaj zaw\u00f3r na diagramie, aby go ca\u0142kowicie otworzy\u0107. Obserwuj jak sterownik reaguje, gdy jeden z element\u00f3w wykonawczych jest r\u0119cznie wymuszony.",
+            inv6: "Ustaw wysokie Kp i dodaj op\u00f3\u017anienie. Por\u00f3wnaj jak szybko zmienia si\u0119 rzeczywisty poziom, a jak p\u00f3\u017ano pod\u0105\u017ca za nim znacznik mierzony.",
+            inv7: "Sterownik oblicza: e = cel \u2212 mierzony, nast\u0119pnie u = Kp\u00b7e + I \u2212 Kd\u00b7d(mierzony)/dt. Ca\u0142ka I kumuluje Ki\u00b7e\u00b7dt z ograniczeniem anti-windup, wstrzymana podczas r\u0119cznego wymuszenia zaworu. Dodatnie u otwiera dop\u0142yw, ujemne u otwiera odp\u0142yw. Cz\u0142on D dzia\u0142a na poziom mierzony, nie na warto\u015b\u0107 zadan\u0105.",
             intro: "Wst\u0119p",
             introTitle: "Wprowadzenie",
             introExit: "Zamknij",
@@ -1105,10 +1218,23 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         const setpointVal = document.getElementById("setpointVal");
         const drainSlider = document.getElementById("drainSlider");
         const drainVal = document.getElementById("drainVal");
-        const responseSlider = document.getElementById("responseSlider");
-        const responseVal = document.getElementById("responseVal");
+        const kpSlider = document.getElementById("kpSlider");
+        const kpVal = document.getElementById("kpVal");
+        const kiSlider = document.getElementById("kiSlider");
+        const kiVal = document.getElementById("kiVal");
+        const kdSlider = document.getElementById("kdSlider");
+        const kdVal = document.getElementById("kdVal");
         const delaySlider = document.getElementById("delaySlider");
         const delayValEl = document.getElementById("delayVal");
+        const setpointGroup =
+          document.getElementById("lblSetpoint").parentElement;
+        const drainGroup = document.getElementById("lblDrain").parentElement;
+        const kpGroup = document.getElementById("lblKp").parentElement;
+        const kiGroup = document.getElementById("lblKi").parentElement;
+        const kdGroup = document.getElementById("lblKd").parentElement;
+        const presetGroup = document.getElementById("lblPresets").parentElement;
+        const presetRow = document.getElementById("presetRow");
+        const delayGroup = document.getElementById("lblDelay").parentElement;
         const btnPause = document.getElementById("btnPause");
         const btnReset = document.getElementById("btnReset");
         const boardSvg = document.getElementById("boardSvg");
@@ -1125,11 +1251,70 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         const rdActual = document.getElementById("rdActual");
         const rdMeasured = document.getElementById("rdMeasured");
         const rdError = document.getElementById("rdError");
+        const rdPterm = document.getElementById("rdPterm");
+        const rdIterm = document.getElementById("rdIterm");
+        const rdDterm = document.getElementById("rdDterm");
         const rdBalance = document.getElementById("rdBalance");
         const rdInletValve = document.getElementById("rdInletValve");
         const rdDrainValve = document.getElementById("rdDrainValve");
         const rdInflow = document.getElementById("rdInflow");
         const rdOutflow = document.getElementById("rdOutflow");
+
+        const PID_PRESETS = [
+          { key: "presetPonly", kp: 1.0, ki: 0, kd: 0 },
+          { key: "presetPI", kp: 1.0, ki: 0.4, kd: 0 },
+          { key: "presetAggressive", kp: 2.0, ki: 0.8, kd: 0 },
+          { key: "presetDamped", kp: 2.0, ki: 0.8, kd: 1.0 },
+          { key: "presetSluggish", kp: 0.2, ki: 0.1, kd: 0 },
+        ];
+
+        function applyPreset(p) {
+          state.Kp = p.kp;
+          state.Ki = p.ki;
+          state.Kd = p.kd;
+          state.integral = 0;
+          state.pTerm = 0;
+          state.iTerm = 0;
+          state.dTerm = 0;
+          kpSlider.value = Math.round(p.kp * 10);
+          kpVal.textContent = p.kp.toFixed(2);
+          kiSlider.value = Math.round(p.ki * 10);
+          kiVal.textContent = p.ki.toFixed(2);
+          kdSlider.value = Math.round(p.kd * 10);
+          kdVal.textContent = p.kd.toFixed(2);
+          updatePresetHighlight();
+        }
+
+        function updatePresetHighlight() {
+          const btns = presetRow.children;
+          for (let i = 0; i < btns.length; i++) {
+            const p = PID_PRESETS[i];
+            const match =
+              state.Kp === p.kp && state.Ki === p.ki && state.Kd === p.kd;
+            btns[i].classList.toggle("active", match);
+          }
+        }
+
+        function buildPresetButtons() {
+          presetRow.replaceChildren();
+          for (let i = 0; i < PID_PRESETS.length; i++) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "preset-btn";
+            btn.textContent = T(PID_PRESETS[i].key);
+            btn.setAttribute("data-preset", i);
+            btn.addEventListener(
+              "click",
+              (function (idx) {
+                return function () {
+                  applyPreset(PID_PRESETS[idx]);
+                };
+              })(i),
+            );
+            presetRow.appendChild(btn);
+          }
+          updatePresetHighlight();
+        }
 
         const delayBuffer = new Float64Array(DELAY_BUF_SIZE);
         let delayWriteIdx = 0;
@@ -2683,6 +2868,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           return Math.round(value * 100) + "%";
         }
 
+        function formatSigned(value) {
+          return (value >= 0 ? "+" : "") + value.toFixed(2);
+        }
+
         function updatePauseIcon() {
           if (state.running) {
             btnPause.textContent = "\u23F8";
@@ -2699,6 +2888,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           rdActual.textContent = formatPercent(state.h);
           rdMeasured.textContent = formatPercent(state.m);
           rdError.textContent = formatSignedPercent(error);
+          rdPterm.textContent = formatSigned(state.pTerm);
+          rdIterm.textContent = formatSigned(state.iTerm);
+          rdDterm.textContent = formatSigned(state.dTerm);
           rdBalance.textContent = formatSignedPercent(state.balance);
           rdInletValve.textContent = formatPercent(state.uIn);
           rdDrainValve.textContent = formatPercent(state.uOut);
@@ -2736,7 +2928,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         function updateInvestigations() {
           invList.replaceChildren();
-          for (let i = 1; i <= 6; i++) {
+          for (let i = 1; i <= 7; i++) {
             const card = document.createElement("div");
             card.className = "inv-card";
             card.textContent = T("inv" + i);
@@ -2765,8 +2957,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           langBtn.textContent = state.lang === "en" ? "PL" : "EN";
           document.getElementById("lblSetpoint").textContent = T("setpoint");
           document.getElementById("lblDrain").textContent = T("manualDrain");
-          document.getElementById("lblResponse").textContent =
-            T("responseStrength");
+          document.getElementById("lblPresets").textContent = T("presets");
+          document.getElementById("lblKp").textContent = T("kpGain");
+          document.getElementById("lblKi").textContent = T("kiGain");
+          document.getElementById("lblKd").textContent = T("kdGain");
           document.getElementById("lblDelay").textContent = T("delay");
           updatePauseIcon();
           document.getElementById("lblIntroBack").textContent = T("introBack");
@@ -2776,6 +2970,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           document.getElementById("lblRdMeasured").textContent =
             T("measuredLevel");
           document.getElementById("lblRdError").textContent = T("error");
+          document.getElementById("lblRdPterm").textContent = T("pTerm");
+          document.getElementById("lblRdIterm").textContent = T("iTerm");
+          document.getElementById("lblRdDterm").textContent = T("dTerm");
           document.getElementById("lblRdBalance").textContent =
             T("controlBalance");
           document.getElementById("lblRdInletValve").textContent =
@@ -2801,6 +2998,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
           updateSvgLabels();
           updateInvestigations();
+          buildPresetButtons();
           updateReadouts();
           updateStatus();
         }
@@ -2871,7 +3069,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             const show = visible.has(allNames[g]);
             const nodes = ig[allNames[g]];
             for (let i = 0; i < nodes.length; i++) {
-              nodes[i].setAttribute("display", show ? "" : "none");
+              if (nodes[i])
+                nodes[i].setAttribute("display", show ? "" : "none");
             }
           }
         }
@@ -2883,7 +3082,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           for (let g = 0; g < allNames.length; g++) {
             const nodes = ig[allNames[g]];
             for (let i = 0; i < nodes.length; i++) {
-              nodes[i].setAttribute("display", "");
+              if (nodes[i]) nodes[i].setAttribute("display", "");
             }
           }
         }
@@ -2906,6 +3105,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.qOut = 0;
           state.qLeak = 0;
           state.qControlOut = 0;
+          state.qOverflow = 0;
           state.leak = 0;
           state.delaySeconds = 0;
           state.inletForced = false;
@@ -2937,26 +3137,25 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           state.m = state.h;
+          state.prevM = state.h;
+          state.pTerm = 0;
+          state.iTerm = 0;
+          state.dTerm = 0;
           delayBuffer.fill(state.h);
 
           introControls.replaceChildren();
           if (step >= 6) {
-            introControls.appendChild(
-              document.getElementById("lblSetpoint").parentElement,
-            );
+            introControls.appendChild(setpointGroup);
           }
           if (step >= 9) {
-            introControls.appendChild(
-              document.getElementById("lblResponse").parentElement,
-            );
+            introControls.appendChild(presetGroup);
+            introControls.appendChild(kpGroup);
+            introControls.appendChild(kiGroup);
+            introControls.appendChild(kdGroup);
           }
           if (step >= 10) {
-            introControls.appendChild(
-              document.getElementById("lblDrain").parentElement,
-            );
-            introControls.appendChild(
-              document.getElementById("lblDelay").parentElement,
-            );
+            introControls.appendChild(drainGroup);
+            introControls.appendChild(delayGroup);
           }
         }
 
@@ -2976,15 +3175,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.introActive = false;
           introPanel.classList.remove("active");
           const btnRow = controlsDiv.querySelector(".btn-row");
-          const sliderIds = [
-            "lblSetpoint",
-            "lblDrain",
-            "lblResponse",
-            "lblDelay",
+          const groups = [
+            setpointGroup,
+            drainGroup,
+            presetGroup,
+            kpGroup,
+            kiGroup,
+            kdGroup,
+            delayGroup,
           ];
-          for (let i = 0; i < sliderIds.length; i++) {
-            const el = document.getElementById(sliderIds[i]);
-            if (el) controlsDiv.insertBefore(el.parentElement, btnRow);
+          for (let i = 0; i < groups.length; i++) {
+            controlsDiv.insertBefore(groups[i], btnRow);
           }
           controlsDiv.style.display = "";
           infoDiv.style.display = "";
@@ -3134,9 +3335,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           /* ── overflow streams ─────────────────────────────── */
           const overflowFlow =
-            state.h >= 0.995 && state.qIn > state.qOut
-              ? clamp((state.qIn - state.qOut) / Q_IN_MAX, 0, 1)
-              : 0;
+            state.qOverflow > 0 ? clamp(state.qOverflow / Q_IN_MAX, 0, 1) : 0;
           setStreamWidth(
             parts.overflowStream,
             overflowFlow,
@@ -3163,21 +3362,34 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const error = state.s - state.m;
 
           if (!state.introActive || state.introStep >= 9) {
-            const R = state.K;
-            const Kp = 0.6 * R;
-            const Ki = 0.28 * R;
+            const pTerm = state.Kp * error;
+            const dM = state.m - state.prevM;
+            const dTerm = state.Kd > 0 && dt > 0 ? (-state.Kd * dM) / dt : 0;
 
-            const candidateIntegral = state.integral + Ki * error * dt;
-            const candidateCommand = Kp * error + candidateIntegral;
-            if (candidateCommand >= -1 && candidateCommand <= 1) {
-              state.integral = candidateIntegral;
-            } else if (candidateCommand > 1 && error < 0) {
-              state.integral = candidateIntegral;
-            } else if (candidateCommand < -1 && error > 0) {
-              state.integral = candidateIntegral;
+            /* Freeze integral while a valve is manually forced open.
+               The forced actuator decouples controller output from plant
+               input, so integrating would wind up against the wrong
+               actuator reality.  Do NOT freeze for the manual drain
+               slider — that is a plant disturbance, not an override. */
+            const actuatorOverride = state.inletForced || state.drainForced;
+            if (!actuatorOverride) {
+              const candidateIntegral = state.integral + state.Ki * error * dt;
+              const candidateCommand = pTerm + candidateIntegral + dTerm;
+              if (candidateCommand >= -1 && candidateCommand <= 1) {
+                state.integral = candidateIntegral;
+              } else if (candidateCommand > 1 && error < 0) {
+                state.integral = candidateIntegral;
+              } else if (candidateCommand < -1 && error > 0) {
+                state.integral = candidateIntegral;
+              }
             }
-            state.balance = clamp(Kp * error + state.integral, -1, 1);
+
+            state.pTerm = pTerm;
+            state.iTerm = state.integral;
+            state.dTerm = dTerm;
+            state.balance = clamp(pTerm + state.integral + dTerm, -1, 1);
           }
+          state.prevM = state.m;
 
           state.uIn = state.inletForced ? 1 : Math.max(0, state.balance);
           state.uOut = state.drainForced ? 1 : Math.max(0, -state.balance);
@@ -3186,9 +3398,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.qIn = Q_IN_MAX * state.uIn;
           state.qLeak = Q_LEAK_MAX * state.uManual * Math.sqrt(hSafe);
           state.qControlOut = Q_CONTROL_DRAIN * state.uOut * Math.sqrt(hSafe);
-          state.qOut = state.qLeak + state.qControlOut;
+          const drainTotal = state.qLeak + state.qControlOut;
 
-          state.h = clamp(state.h + (state.qIn - state.qOut) * dt, 0, 1);
+          /* Explicit overflow: route excess inflow into qOverflow
+             so mass balance is conserved in readouts. */
+          const rawH = state.h + (state.qIn - drainTotal) * dt;
+          if (rawH > 1) {
+            state.qOverflow = (rawH - 1) / dt;
+          } else {
+            state.qOverflow = 0;
+          }
+          state.qOut = drainTotal + state.qOverflow;
+          state.h = clamp(rawH, 0, 1);
 
           delayBuffer[delayWriteIdx] = state.h;
           delayWriteIdx = (delayWriteIdx + 1) % DELAY_BUF_SIZE;
@@ -3249,9 +3470,20 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           drainVal.textContent = drainSlider.value + "%";
         });
 
-        responseSlider.addEventListener("input", function () {
-          state.K = responseSlider.value / 10;
-          responseVal.textContent = state.K.toFixed(1);
+        kpSlider.addEventListener("input", function () {
+          state.Kp = kpSlider.value / 10;
+          kpVal.textContent = state.Kp.toFixed(2);
+          updatePresetHighlight();
+        });
+        kiSlider.addEventListener("input", function () {
+          state.Ki = kiSlider.value / 10;
+          kiVal.textContent = state.Ki.toFixed(2);
+          updatePresetHighlight();
+        });
+        kdSlider.addEventListener("input", function () {
+          state.Kd = kdSlider.value / 10;
+          kdVal.textContent = state.Kd.toFixed(2);
+          updatePresetHighlight();
         });
 
         delaySlider.addEventListener("input", function () {
@@ -3277,7 +3509,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.uIn = 0;
           state.uOut = 0;
           state.leak = DEF_LEAK;
-          state.K = DEF_K;
+          state.Kp = DEF_KP;
+          state.Ki = DEF_KI;
+          state.Kd = DEF_KD;
+          state.prevM = DEF_H;
+          state.pTerm = 0;
+          state.iTerm = 0;
+          state.dTerm = 0;
           state.delaySeconds = 0;
           state.inletForced = false;
           state.drainForced = false;
@@ -3286,14 +3524,20 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.qIn = 0;
           state.qLeak = 0;
           state.qControlOut = 0;
+          state.qOverflow = 0;
           state.qOut = 0;
 
           setpointSlider.value = 60;
           setpointVal.textContent = "60%";
           drainSlider.value = 0;
           drainVal.textContent = "0%";
-          responseSlider.value = 16;
-          responseVal.textContent = "1.6";
+          kpSlider.value = Math.round(DEF_KP * 10);
+          kpVal.textContent = DEF_KP.toFixed(2);
+          kiSlider.value = Math.round(DEF_KI * 10);
+          kiVal.textContent = DEF_KI.toFixed(2);
+          kdSlider.value = Math.round(DEF_KD * 10);
+          kdVal.textContent = DEF_KD.toFixed(2);
+          updatePresetHighlight();
           delaySlider.value = 0;
           delayValEl.textContent = "0.0s";
           updatePauseIcon();
