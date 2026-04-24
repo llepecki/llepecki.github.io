@@ -1,0 +1,2612 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- friction.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Friction Ramp Lab — change the materials and angle to see when the brick slips. An interactive simulation for children aged 10-16."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/friction.html" />
+    <meta property="og:title" content="Friction Ramp Lab" />
+    <meta
+      property="og:description"
+      content="Friction Ramp Lab — change the materials and angle to see when the brick slips."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/friction.html" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Friction Ramp Lab" />
+    <meta
+      name="twitter:description"
+      content="Friction Ramp Lab — change the materials and angle to see when the brick slips."
+    />
+    <title>Friction Ramp Lab</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --force-gravity: #283593;
+        --force-downhill: #1565c0;
+        --force-friction: #7b1fa2;
+      }
+
+      body {
+        min-height: 100vh;
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* ── Header ── */
+
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .header-text {
+        flex: 1;
+        min-width: 0;
+      }
+
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+        transition: opacity 0.2s;
+      }
+
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+
+      .header-emoji {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .lang-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ── Main Layout ── */
+
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+
+      .sim-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+      }
+
+      .board-wrap {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: visible;
+        position: relative;
+        z-index: 1;
+      }
+
+      .board-wrap svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        cursor: grab;
+        overflow: visible;
+      }
+
+      .board-wrap svg.dragging {
+        cursor: grabbing;
+      }
+
+      .charts-area {
+        display: flex;
+        height: 150px;
+        border-top: 1px solid var(--panel-border);
+      }
+
+      .chart-wrap {
+        position: relative;
+        min-width: 0;
+        flex: 2;
+      }
+
+      .chart-wrap + .chart-wrap {
+        flex: 1;
+        border-left: 1px solid var(--panel-border);
+      }
+
+      .chart-label {
+        position: absolute;
+        top: 4px;
+        left: 8px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 10px;
+        color: var(--text-label);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      .chart-wrap canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      /* ── Panel ── */
+
+      .panel {
+        width: 300px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .controls {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .ctrl-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+
+      .mat-select {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .mat-select:focus {
+        border-color: var(--accent);
+      }
+
+      .mat-select:disabled {
+        opacity: 0.4;
+      }
+
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .slider-row input[type="range"] {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        background: #e0ddd6;
+        border-radius: 3px;
+        outline: none;
+        box-shadow: none;
+        touch-action: none;
+      }
+
+      .slider-row input[type="range"]:focus-visible {
+        box-shadow: 0 0 0 2px var(--accent);
+      }
+
+      .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+
+      .slider-row input[type="range"]::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+
+      .slider-row input[type="range"]:disabled {
+        opacity: 0.4;
+      }
+
+      .slider-val {
+        min-width: 56px;
+        text-align: right;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+
+      .step-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        touch-action: manipulation;
+      }
+
+      .step-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .step-btn:active {
+        background: var(--accent);
+        color: var(--bg);
+      }
+
+      .step-btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .step-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .type-toggle {
+        display: flex;
+        gap: 6px;
+      }
+
+      .type-btn {
+        flex: 1;
+        padding: 10px 4px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .type-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .type-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .type-btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .type-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ── Readouts ── */
+
+      .readout-area {
+        padding: 12px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .section-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+        padding-bottom: 2px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+
+      .readout-section {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 2px 0;
+      }
+
+      .readout-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+
+      .readout-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+
+      /* ── Info ── */
+
+      .info {
+        padding: 12px 20px;
+        flex: 1;
+      }
+
+      .info-text {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.6;
+      }
+
+      .info-text + .info-text {
+        margin-top: 4px;
+      }
+
+      /* ── Bottom Bar ── */
+
+      .bottom-bar {
+        text-align: center;
+        padding: 5px 20px;
+        border-top: 1px solid var(--panel-border);
+      }
+
+      .status-text {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      /* ── Investigations ── */
+
+      .investigations {
+        padding: 0 20px 12px;
+      }
+
+      .inv-toggle {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px 0;
+        transition: color 0.15s;
+      }
+
+      .inv-toggle:hover {
+        color: var(--accent);
+      }
+
+      .inv-toggle::before {
+        content: "\25B8 ";
+      }
+
+      .inv-toggle.open::before {
+        content: "\25BE ";
+      }
+
+      .inv-list {
+        display: none;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 6px;
+      }
+
+      .inv-list.open {
+        display: flex;
+      }
+
+      .inv-card {
+        font-size: 12px;
+        color: #546e7a;
+        line-height: 1.5;
+        padding: 6px 10px;
+        background: var(--accent-light);
+        border-radius: 6px;
+        border-left: 3px solid var(--accent);
+      }
+
+      /* ── Responsive ── */
+
+      @media (max-width: 700px) {
+        .main {
+          flex-direction: column;
+          height: auto;
+          min-height: calc(100vh - 46px);
+        }
+
+        .sim-area {
+          min-height: 320px;
+          height: 50vh;
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+        }
+
+        .panel {
+          width: 100%;
+        }
+
+        .controls {
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 12px;
+          padding: 12px 16px;
+        }
+
+        .ctrl-group {
+          min-width: 120px;
+          flex: 1;
+        }
+
+        .readout-area {
+          padding: 12px 16px;
+        }
+
+        .info {
+          padding: 12px 16px;
+        }
+      }
+
+      @media (pointer: coarse) {
+        .type-btn {
+          min-height: 44px;
+        }
+
+        .step-btn {
+          width: 36px;
+          height: 36px;
+        }
+
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+          width: 28px;
+          height: 28px;
+        }
+
+        .slider-row input[type="range"]::-moz-range-thumb {
+          width: 28px;
+          height: 28px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html body *,
+        html body *::before,
+        html body *::after {
+          animation-duration: 0.01ms;
+          animation-iteration-count: 1;
+          transition-duration: 0.01ms;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/" aria-label="Back to Learn"
+            ><span class="header-emoji">&#x1F9F1;</span></a
+          >
+          <span id="titleText">Friction Ramp Lab</span>
+        </h1>
+        <p id="subtitleText">
+          Change the materials and angle to see when the brick slips.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="sim-area">
+        <div class="board-wrap">
+          <svg
+            id="boardSvg"
+            viewBox="0 0 920 520"
+            preserveAspectRatio="xMidYMid meet"
+            aria-label="Friction ramp simulation"
+          ></svg>
+        </div>
+        <div class="charts-area">
+          <div class="chart-wrap">
+            <span class="chart-label" id="lblChart">Force vs Angle</span>
+            <canvas id="forceChart" aria-label="Force vs angle chart"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <span class="chart-label" id="lblSpeedChart">Speed</span>
+            <canvas
+              id="speedChart"
+              aria-label="Current speed bar chart"
+            ></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="controls">
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblBrickMat">Brick Material</span>
+            <select class="mat-select" id="brickMatSelect" aria-label="Brick">
+              <option value="ice">Ice</option>
+              <option value="wood" selected>Wood</option>
+              <option value="steel">Steel</option>
+              <option value="rubber">Rubber</option>
+              <option value="concrete">Concrete</option>
+              <option value="glass">Glass</option>
+              <option value="teflon">Teflon</option>
+            </select>
+          </div>
+
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblRampMat">Ramp Material</span>
+            <select class="mat-select" id="rampMatSelect" aria-label="Ramp">
+              <option value="ice">Ice</option>
+              <option value="wood" selected>Wood</option>
+              <option value="steel">Steel</option>
+              <option value="rubber">Rubber</option>
+              <option value="concrete">Concrete</option>
+              <option value="glass">Glass</option>
+              <option value="teflon">Teflon</option>
+            </select>
+          </div>
+
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblAngle">Angle</span>
+            <div class="slider-row">
+              <button
+                type="button"
+                class="step-btn"
+                id="angleMinus"
+                aria-label="Decrease angle"
+              >
+                &minus;
+              </button>
+              <input
+                type="range"
+                id="angleSlider"
+                min="0"
+                max="60"
+                value="20"
+                step="0.5"
+                aria-label="Ramp angle"
+              />
+              <button
+                type="button"
+                class="step-btn"
+                id="anglePlus"
+                aria-label="Increase angle"
+              >
+                +
+              </button>
+              <span class="slider-val" id="angleVal">20.0&deg;</span>
+            </div>
+          </div>
+
+          <div class="type-toggle">
+            <button
+              type="button"
+              class="type-btn"
+              id="btnReset"
+              aria-label="Stop"
+            >
+              &#x25A0;
+            </button>
+          </div>
+        </div>
+
+        <div class="readout-area">
+          <span class="section-label" id="lblPairInfo">Pair Info</span>
+          <div class="readout-section">
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdMuS"
+                >Static Friction &mu;s</span
+              >
+              <span class="readout-val" id="rdMuS">0.40</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdMuK"
+                >Kinetic Friction &mu;k</span
+              >
+              <span class="readout-val" id="rdMuK">0.25</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdSlipAngle">Slip Angle</span>
+              <span class="readout-val" id="rdSlipAngle">&asymp;22&deg;</span>
+            </div>
+          </div>
+
+          <span class="section-label" id="lblForces">Forces</span>
+          <div class="readout-section">
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdAngle">Angle</span>
+              <span class="readout-val" id="rdAngle">20.0&deg;</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdFpar">Downhill Force</span>
+              <span class="readout-val" id="rdFpar">3.4 N</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdFsMax"
+                >Max Static Friction</span
+              >
+              <span class="readout-val" id="rdFsMax">3.7 N</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdFact">Actual Friction</span>
+              <span class="readout-val" id="rdFact">3.4 N</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdFk">Kinetic Friction</span>
+              <span class="readout-val" id="rdFk">2.3 N</span>
+            </div>
+          </div>
+
+          <span class="section-label" id="lblMotion">Motion</span>
+          <div class="readout-section">
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdAccel">Acceleration</span>
+              <span class="readout-val" id="rdAccel">0.00 m/s&sup2;</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdVbot">Speed At Bottom</span>
+              <span class="readout-val" id="rdVbot">&mdash;</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblRdTbot">Time To Bottom</span>
+              <span class="readout-val" id="rdTbot">&mdash;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info">
+          <span class="info-text" id="approxNote"
+            >These friction values are approximate teaching values.</span
+          >
+          <span class="info-text" id="pairNote"
+            >Friction depends on the pair of materials in contact.</span
+          >
+          <span class="info-text" id="precisionNote"
+            >Hold Shift while dragging for 0.1&deg; precision.</span
+          >
+        </div>
+      </div>
+    </main>
+
+    <div class="bottom-bar">
+      <span class="status-text" id="statusText"></span>
+    </div>
+
+    <div class="investigations">
+      <button type="button" class="inv-toggle" id="invToggle">
+        Investigations
+      </button>
+      <div class="inv-list" id="invList"></div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        // ══════════════════════════════════════════════
+        //  CONSTANTS
+        // ══════════════════════════════════════════════
+
+        const G = 9.81;
+        const M = 1.0;
+        const L = 4.0;
+        const SIM_DT = 1 / 120;
+        const MAX_STEPS = 12;
+        const TOLERANCE = 1e-9;
+        const DEG = Math.PI / 180;
+
+        // Board geometry — ramp extends LEFT from pivot, brick slides left-to-right
+        const PIVOT_X = 740;
+        const PIVOT_Y = 470;
+        const RAMP_LEN = 520;
+        const BRICK_W = 74;
+        const BRICK_H = 46;
+        const BRICK_TOP = 483;
+        const BRICK_BOT = 37;
+        const RAMP_THICK = 14;
+        const ARROW_SCALE = 18;
+        const ARROW_HEAD = 16;
+        const ARROW_WING = 0.4;
+        const ARROW_SHAFT_GAP = 13;
+        const ARROW_ROOT_R = 4;
+        const ARC_R = 55;
+
+        // ══════════════════════════════════════════════
+        //  COEFFICIENT TABLE
+        // ══════════════════════════════════════════════
+
+        const COEFF = {
+          "ice|ice": { s: 0.03, k: 0.02 },
+          "ice|rubber": { s: 0.12, k: 0.08 },
+          "ice|steel": { s: 0.04, k: 0.03 },
+          "ice|teflon": { s: 0.03, k: 0.02 },
+          "ice|wood": { s: 0.05, k: 0.04 },
+          "concrete|concrete": { s: 0.75, k: 0.55 },
+          "concrete|glass": { s: 0.65, k: 0.45 },
+          "concrete|ice": { s: 0.1, k: 0.05 },
+          "concrete|rubber": { s: 1.0, k: 0.8 },
+          "concrete|steel": { s: 0.55, k: 0.4 },
+          "concrete|teflon": { s: 0.15, k: 0.12 },
+          "concrete|wood": { s: 0.6, k: 0.45 },
+          "glass|glass": { s: 0.9, k: 0.4 },
+          "glass|ice": { s: 0.05, k: 0.03 },
+          "glass|rubber": { s: 0.75, k: 0.6 },
+          "glass|steel": { s: 0.5, k: 0.35 },
+          "glass|teflon": { s: 0.1, k: 0.08 },
+          "glass|wood": { s: 0.35, k: 0.25 },
+          "rubber|rubber": { s: 1.1, k: 0.9 },
+          "rubber|steel": { s: 0.8, k: 0.6 },
+          "rubber|teflon": { s: 0.25, k: 0.2 },
+          "rubber|wood": { s: 0.7, k: 0.55 },
+          "steel|steel": { s: 0.6, k: 0.42 },
+          "steel|teflon": { s: 0.04, k: 0.04 },
+          "steel|wood": { s: 0.45, k: 0.3 },
+          "teflon|teflon": { s: 0.04, k: 0.04 },
+          "teflon|wood": { s: 0.2, k: 0.15 },
+          "wood|wood": { s: 0.4, k: 0.25 },
+        };
+
+        function lookupCoeff(a, b) {
+          return COEFF[[a, b].sort().join("|")];
+        }
+
+        // ══════════════════════════════════════════════
+        //  STATE
+        // ══════════════════════════════════════════════
+
+        const state = {
+          mode: "idle",
+          running: false,
+          angleDeg: 20,
+          brickMat: "wood",
+          rampMat: "wood",
+          muS: 0,
+          muK: 0,
+          posAlongRamp: 0,
+          velocity: 0,
+          accel: 0,
+        };
+
+        let lang = navigator.language?.startsWith("pl") ? "pl" : "en";
+        let simAccum = 0;
+        let lastTime = 0;
+
+        // Drag-to-tilt state
+        let dragInfo = null;
+        let shiftHeld = false;
+
+        // ══════════════════════════════════════════════
+        //  I18N
+        // ══════════════════════════════════════════════
+
+        const I18N = {
+          en: {
+            title: "Friction Ramp Lab",
+            subtitle:
+              "Change the materials and angle to see when the brick slips.",
+            brickMaterial: "Brick Material",
+            rampMaterial: "Ramp Material",
+            angle: "Angle",
+            release: "Release",
+            tiltSlowly: "Tilt Slowly",
+            pause: "Pause",
+            run: "Run",
+            reset: "Reset",
+            precisionHint: "Hold Shift while dragging for 0.1\u00B0 precision.",
+            ice: "Ice",
+            wood: "Wood",
+            steel: "Steel",
+            rubber: "Rubber",
+            concrete: "Concrete",
+            glass: "Glass",
+            teflon: "Teflon",
+            pairInfo: "Pair Info",
+            forces: "Forces",
+            motion: "Motion",
+            muStatic: "Static Friction \u03BCs",
+            muKinetic: "Kinetic Friction \u03BCk",
+            slipAngle: "Slip Angle",
+            observedSlipAngle: "Observed Slip Angle",
+            downhillForce: "Downhill Force",
+            maxStatic: "Max Static Friction",
+            actualFriction: "Actual Friction",
+            kineticForce: "Kinetic Friction",
+            acceleration: "Acceleration",
+            bottomSpeed: "Speed At Bottom",
+            timeToBottom: "Time To Bottom",
+            stateStuck: "Stuck",
+            stateThreshold: "Just Slipping",
+            stateSliding: "Sliding",
+            statusTilting:
+              "The ramp is tilting upward. Watch for the slip point.",
+            statusSliding:
+              "The brick is sliding. Kinetic friction is acting now.",
+            statusWillSlide:
+              "At this angle, the brick will slide when released.",
+            statusThreshold: "The brick is at the edge of slipping.",
+            statusStuck:
+              "The brick is stuck because static friction is strong enough.",
+            statusObservedSlip: "Observed slip angle: {value}.",
+            approxValues:
+              "These friction values are approximate teaching values.",
+            pairRule: "Friction depends on the pair of materials in contact.",
+            forceVsAngle: "Force vs Angle",
+            speed: "Speed",
+            investigations: "Investigations",
+            prompt1:
+              "Which material pair slips first as you increase the angle?",
+            prompt2: "Can you find a pair that still stays stuck at 40\u00B0?",
+            prompt3: "Compare Wood on Wood and Ice on Steel at the same angle.",
+            prompt4:
+              "Why does the brick stay still even though gravity is pulling it down?",
+            prompt5:
+              "What changes after the brick starts sliding: static friction or kinetic friction?",
+            prompt6:
+              "Use Tilt Slowly and compare the observed slip angle to the predicted one.",
+          },
+          pl: {
+            title: "Laboratorium Tarcia Na R\u00F3wni",
+            subtitle:
+              "Zmieniaj materia\u0142y i k\u0105t, aby zobaczy\u0107, kiedy ceg\u0142a zaczyna si\u0119 \u015Blizga\u0107.",
+            brickMaterial: "Materia\u0142 Ceg\u0142y",
+            rampMaterial: "Materia\u0142 R\u00F3wni",
+            angle: "K\u0105t",
+            release: "Pu\u015B\u0107",
+            tiltSlowly: "Przechylaj Powoli",
+            pause: "Pauza",
+            run: "Start",
+            reset: "Reset",
+            precisionHint:
+              "Przytrzymaj Shift podczas przeci\u0105gania, aby uzyska\u0107 dok\u0142adno\u015B\u0107 0,1\u00B0.",
+            ice: "L\u00F3d",
+            wood: "Drewno",
+            steel: "Stal",
+            rubber: "Guma",
+            concrete: "Beton",
+            glass: "Szk\u0142o",
+            teflon: "Teflon",
+            pairInfo: "Info O Parze",
+            forces: "Si\u0142y",
+            motion: "Ruch",
+            muStatic: "Tarcie Statyczne \u03BCs",
+            muKinetic: "Tarcie Kinetyczne \u03BCk",
+            slipAngle: "K\u0105t Po\u015Blizgu",
+            observedSlipAngle: "Zaobserwowany K\u0105t Po\u015Blizgu",
+            downhillForce: "Si\u0142a W D\u00F3\u0142 R\u00F3wni",
+            maxStatic: "Maks. Tarcie Statyczne",
+            actualFriction: "Rzeczywiste Tarcie",
+            kineticForce: "Tarcie Kinetyczne",
+            acceleration: "Przyspieszenie",
+            bottomSpeed: "Pr\u0119dko\u015B\u0107 Na Dole",
+            timeToBottom: "Czas Do Do\u0142u",
+            stateStuck: "Trzyma Si\u0119",
+            stateThreshold: "Prawie Si\u0119 \u015Alizga",
+            stateSliding: "\u015Alizga Si\u0119",
+            statusTilting:
+              "R\u00F3wnia przechyla si\u0119 coraz bardziej. Wypatruj momentu po\u015Blizgu.",
+            statusSliding:
+              "Ceg\u0142a si\u0119 \u015Blizga. Teraz dzia\u0142a tarcie kinetyczne.",
+            statusWillSlide:
+              "Przy tym k\u0105cie ceg\u0142a zacznie si\u0119 \u015Blizga\u0107 po puszczeniu.",
+            statusThreshold: "Ceg\u0142a jest na granicy po\u015Blizgu.",
+            statusStuck:
+              "Ceg\u0142a trzyma si\u0119, bo tarcie statyczne jest wystarczaj\u0105co du\u017Ce.",
+            statusObservedSlip:
+              "Zaobserwowany k\u0105t po\u015Blizgu: {value}.",
+            approxValues:
+              "Te warto\u015Bci tarcia s\u0105 przybli\u017Conymi warto\u015Bciami do nauki.",
+            pairRule:
+              "Tarcie zale\u017Cy od pary stykaj\u0105cych si\u0119 materia\u0142\u00F3w.",
+            forceVsAngle: "Si\u0142a vs K\u0105t",
+            speed: "Pr\u0119dko\u015B\u0107",
+            investigations: "Eksperymenty",
+            prompt1:
+              "Kt\u00F3ra para materia\u0142\u00F3w zaczyna \u015Blizga\u0107 si\u0119 jako pierwsza, gdy zwi\u0119kszasz k\u0105t?",
+            prompt2:
+              "Czy znajdziesz par\u0119, kt\u00F3ra nadal si\u0119 trzyma przy 40\u00B0?",
+            prompt3:
+              "Por\u00F3wnaj Drewno na Drewnie i L\u00F3d na Stali przy tym samym k\u0105cie.",
+            prompt4:
+              "Dlaczego ceg\u0142a stoi w miejscu, cho\u0107 grawitacja ci\u0105gnie j\u0105 w d\u00F3\u0142?",
+            prompt5:
+              "Kt\u00F3re tarcie rz\u0105dzi ruchem, gdy ceg\u0142a ju\u017C si\u0119 \u015Blizga: statyczne czy kinetyczne?",
+            prompt6:
+              "U\u017Cyj Przechylaj Powoli i por\u00F3wnaj zaobserwowany k\u0105t po\u015Blizgu z przewidywanym.",
+          },
+        };
+
+        function T(key) {
+          return I18N[lang][key];
+        }
+
+        // ══════════════════════════════════════════════
+        //  DOM REFERENCES
+        // ══════════════════════════════════════════════
+
+        const boardSvg = document.getElementById("boardSvg");
+        const angleSlider = document.getElementById("angleSlider");
+        const angleVal = document.getElementById("angleVal");
+        const btnReset = document.getElementById("btnReset");
+        const angleMinus = document.getElementById("angleMinus");
+        const anglePlus = document.getElementById("anglePlus");
+        const brickMatSelect = document.getElementById("brickMatSelect");
+        const rampMatSelect = document.getElementById("rampMatSelect");
+        const invToggle = document.getElementById("invToggle");
+        const invList = document.getElementById("invList");
+        const forceChart = document.getElementById("forceChart");
+        const speedChart = document.getElementById("speedChart");
+        const precisionNote = document.getElementById("precisionNote");
+
+        // ══════════════════════════════════════════════
+        //  SVG HELPERS
+        // ══════════════════════════════════════════════
+
+        const SVG_NS = "http://www.w3.org/2000/svg";
+
+        function svgEl(tag, attrs) {
+          const el = document.createElementNS(SVG_NS, tag);
+          if (attrs) {
+            for (const k in attrs) {
+              el.setAttribute(k, attrs[k]);
+            }
+          }
+          return el;
+        }
+
+        // ══════════════════════════════════════════════
+        //  PHYSICS
+        // ══════════════════════════════════════════════
+
+        function computeForces(angleDeg, muS, muK) {
+          const theta = angleDeg * DEG;
+          const ct = Math.cos(theta);
+          const st = Math.sin(theta);
+          return {
+            N: M * G * ct,
+            Fpar: M * G * st,
+            FsMax: muS * M * G * ct,
+            Fk: muK * M * G * ct,
+          };
+        }
+
+        function classifyState(Fpar, FsMax) {
+          if (Fpar > FsMax + TOLERANCE) return "sliding";
+          if (Math.abs(Fpar - FsMax) <= TOLERANCE) return "threshold";
+          return "stuck";
+        }
+
+        function computeAccel(angleDeg, muK) {
+          const theta = angleDeg * DEG;
+          return Math.max(0, G * (Math.sin(theta) - muK * Math.cos(theta)));
+        }
+
+        function computeSlipAngle(muS) {
+          return Math.atan(muS) / DEG;
+        }
+
+        function computeTimeToBottom(a, posAlongRamp, v0) {
+          const s = Math.max(0, L - posAlongRamp);
+          if (s <= 0) return 0;
+          if (a <= 0) return v0 > 0 ? s / v0 : null;
+          const vBot = Math.sqrt(v0 * v0 + 2 * a * s);
+          return (vBot - v0) / a;
+        }
+
+        function computeBottomSpeed(a, posAlongRamp, v0) {
+          const s = Math.max(0, L - posAlongRamp);
+          if (s <= 0) return v0;
+          if (a <= 0) return v0;
+          return Math.sqrt(Math.max(0, v0 * v0 + 2 * a * s));
+        }
+
+        function updateCoefficients() {
+          const c = lookupCoeff(state.brickMat, state.rampMat);
+          state.muS = c.s;
+          state.muK = c.k;
+        }
+
+        // ══════════════════════════════════════════════
+        //  SVG BOARD — ELEMENT REFS
+        // ══════════════════════════════════════════════
+
+        let groundLine, pivotDot, supportPoly;
+        let rampGroup, rampBody;
+        let brickShadow, brickBody;
+        // Arrow elements: each arrow has line + root circle + head polygon
+        let arrowGravLine, arrowGravRoot, arrowGravHead;
+        let arrowDownLine, arrowDownRoot, arrowDownHead;
+        let arrowFricLine, arrowFricRoot, arrowFricHead;
+        let angleArc, angleLabel;
+
+        // ══════════════════════════════════════════════
+        //  SVG BOARD — BUILD
+        // ══════════════════════════════════════════════
+
+        function buildBoard() {
+          while (boardSvg.firstChild) boardSvg.removeChild(boardSvg.firstChild);
+
+          const defs = svgEl("defs", {});
+
+          // Material patterns
+          const patIce = svgEl("pattern", {
+            id: "pat-ice",
+            patternUnits: "userSpaceOnUse",
+            width: "40",
+            height: "40",
+          });
+          patIce.appendChild(
+            svgEl("rect", { width: "40", height: "40", fill: "#B3E5FC" }),
+          );
+          patIce.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "10",
+              x2: "40",
+              y2: "8",
+              stroke: "#E1F5FE",
+              "stroke-width": "2",
+              opacity: "0.7",
+            }),
+          );
+          patIce.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "25",
+              x2: "40",
+              y2: "27",
+              stroke: "#E1F5FE",
+              "stroke-width": "1.5",
+              opacity: "0.5",
+            }),
+          );
+          patIce.appendChild(
+            svgEl("line", {
+              x1: "5",
+              y1: "38",
+              x2: "35",
+              y2: "36",
+              stroke: "#fff",
+              "stroke-width": "1",
+              opacity: "0.4",
+            }),
+          );
+          defs.appendChild(patIce);
+
+          const patWood = svgEl("pattern", {
+            id: "pat-wood",
+            patternUnits: "userSpaceOnUse",
+            width: "60",
+            height: "20",
+          });
+          patWood.appendChild(
+            svgEl("rect", { width: "60", height: "20", fill: "#D7A86E" }),
+          );
+          patWood.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "4",
+              x2: "60",
+              y2: "4",
+              stroke: "#C49A5A",
+              "stroke-width": "1.5",
+              opacity: "0.6",
+            }),
+          );
+          patWood.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "10",
+              x2: "60",
+              y2: "10",
+              stroke: "#C49A5A",
+              "stroke-width": "1",
+              opacity: "0.4",
+            }),
+          );
+          patWood.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "16",
+              x2: "60",
+              y2: "16",
+              stroke: "#C49A5A",
+              "stroke-width": "0.8",
+              opacity: "0.3",
+            }),
+          );
+          defs.appendChild(patWood);
+
+          const patSteel = svgEl("pattern", {
+            id: "pat-steel",
+            patternUnits: "userSpaceOnUse",
+            width: "30",
+            height: "6",
+          });
+          patSteel.appendChild(
+            svgEl("rect", { width: "30", height: "6", fill: "#B0BEC5" }),
+          );
+          patSteel.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "2",
+              x2: "30",
+              y2: "2",
+              stroke: "#90A4AE",
+              "stroke-width": "0.5",
+              opacity: "0.5",
+            }),
+          );
+          patSteel.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "5",
+              x2: "30",
+              y2: "5",
+              stroke: "#CFD8DC",
+              "stroke-width": "0.5",
+              opacity: "0.3",
+            }),
+          );
+          defs.appendChild(patSteel);
+
+          const patRubber = svgEl("pattern", {
+            id: "pat-rubber",
+            patternUnits: "userSpaceOnUse",
+            width: "8",
+            height: "8",
+          });
+          patRubber.appendChild(
+            svgEl("rect", { width: "8", height: "8", fill: "#455A64" }),
+          );
+          patRubber.appendChild(
+            svgEl("circle", {
+              cx: "2",
+              cy: "2",
+              r: "0.8",
+              fill: "#546E7A",
+              opacity: "0.5",
+            }),
+          );
+          patRubber.appendChild(
+            svgEl("circle", {
+              cx: "6",
+              cy: "6",
+              r: "0.8",
+              fill: "#546E7A",
+              opacity: "0.5",
+            }),
+          );
+          patRubber.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "4",
+              x2: "8",
+              y2: "4",
+              stroke: "#546E7A",
+              "stroke-width": "0.3",
+              opacity: "0.3",
+            }),
+          );
+          patRubber.appendChild(
+            svgEl("line", {
+              x1: "4",
+              y1: "0",
+              x2: "4",
+              y2: "8",
+              stroke: "#546E7A",
+              "stroke-width": "0.3",
+              opacity: "0.3",
+            }),
+          );
+          defs.appendChild(patRubber);
+
+          // Concrete: gray with speckled aggregate dots
+          const patConcrete = svgEl("pattern", {
+            id: "pat-concrete",
+            patternUnits: "userSpaceOnUse",
+            width: "20",
+            height: "20",
+          });
+          patConcrete.appendChild(
+            svgEl("rect", { width: "20", height: "20", fill: "#9E9E9E" }),
+          );
+          patConcrete.appendChild(
+            svgEl("circle", {
+              cx: "4",
+              cy: "5",
+              r: "1.2",
+              fill: "#BDBDBD",
+              opacity: "0.6",
+            }),
+          );
+          patConcrete.appendChild(
+            svgEl("circle", {
+              cx: "14",
+              cy: "3",
+              r: "0.8",
+              fill: "#757575",
+              opacity: "0.5",
+            }),
+          );
+          patConcrete.appendChild(
+            svgEl("circle", {
+              cx: "9",
+              cy: "12",
+              r: "1",
+              fill: "#BDBDBD",
+              opacity: "0.5",
+            }),
+          );
+          patConcrete.appendChild(
+            svgEl("circle", {
+              cx: "17",
+              cy: "16",
+              r: "1.3",
+              fill: "#757575",
+              opacity: "0.4",
+            }),
+          );
+          patConcrete.appendChild(
+            svgEl("circle", {
+              cx: "3",
+              cy: "17",
+              r: "0.7",
+              fill: "#BDBDBD",
+              opacity: "0.5",
+            }),
+          );
+          defs.appendChild(patConcrete);
+
+          // Glass: light cyan with diagonal shine
+          const patGlass = svgEl("pattern", {
+            id: "pat-glass",
+            patternUnits: "userSpaceOnUse",
+            width: "40",
+            height: "40",
+          });
+          patGlass.appendChild(
+            svgEl("rect", { width: "40", height: "40", fill: "#E0F7FA" }),
+          );
+          patGlass.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "20",
+              x2: "40",
+              y2: "16",
+              stroke: "#fff",
+              "stroke-width": "3",
+              opacity: "0.5",
+            }),
+          );
+          patGlass.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "22",
+              x2: "40",
+              y2: "18",
+              stroke: "#B2EBF2",
+              "stroke-width": "1",
+              opacity: "0.4",
+            }),
+          );
+          defs.appendChild(patGlass);
+
+          // Teflon: almost white, very smooth
+          const patTeflon = svgEl("pattern", {
+            id: "pat-teflon",
+            patternUnits: "userSpaceOnUse",
+            width: "30",
+            height: "10",
+          });
+          patTeflon.appendChild(
+            svgEl("rect", { width: "30", height: "10", fill: "#F5F5F5" }),
+          );
+          patTeflon.appendChild(
+            svgEl("line", {
+              x1: "0",
+              y1: "5",
+              x2: "30",
+              y2: "5",
+              stroke: "#EEEEEE",
+              "stroke-width": "0.5",
+              opacity: "0.4",
+            }),
+          );
+          defs.appendChild(patTeflon);
+
+          boardSvg.appendChild(defs);
+
+          // Transparent hit target so all clicks register on the SVG
+          boardSvg.appendChild(
+            svgEl("rect", {
+              x: "0",
+              y: "0",
+              width: "920",
+              height: "520",
+              fill: "transparent",
+              "pointer-events": "all",
+            }),
+          );
+
+          // Ground line
+          groundLine = svgEl("line", {
+            x1: "100",
+            y1: String(PIVOT_Y),
+            x2: "860",
+            y2: String(PIVOT_Y),
+            stroke: "#B0BEC5",
+            "stroke-width": "2",
+            "stroke-dasharray": "6,4",
+          });
+          boardSvg.appendChild(groundLine);
+
+          // Support triangle (world coords)
+          supportPoly = svgEl("polygon", {
+            points: "0,0 0,0 0,0",
+            fill: "#ECEFF1",
+            stroke: "#CFD8DC",
+            "stroke-width": "1",
+            opacity: "0.7",
+          });
+          boardSvg.appendChild(supportPoly);
+
+          // Ramp group (rotated CW around pivot — lifts left end)
+          rampGroup = svgEl("g", {});
+          boardSvg.appendChild(rampGroup);
+
+          // Ramp body — extends LEFT from pivot
+          rampBody = svgEl("rect", {
+            x: String(PIVOT_X - RAMP_LEN),
+            y: String(PIVOT_Y),
+            width: String(RAMP_LEN),
+            height: String(RAMP_THICK),
+            fill: "url(#pat-" + state.rampMat + ")",
+            stroke: "#90A4AE",
+            "stroke-width": "1.5",
+            rx: "2",
+          });
+          rampGroup.appendChild(rampBody);
+
+          // Ramp surface line
+          rampGroup.appendChild(
+            svgEl("line", {
+              x1: String(PIVOT_X - RAMP_LEN),
+              y1: String(PIVOT_Y),
+              x2: String(PIVOT_X),
+              y2: String(PIVOT_Y),
+              stroke: "#78909C",
+              "stroke-width": "2",
+            }),
+          );
+
+          // Brick shadow
+          brickShadow = svgEl("rect", {
+            width: String(BRICK_W),
+            height: String(BRICK_H),
+            fill: "rgba(0,0,0,0.08)",
+            rx: "3",
+          });
+          rampGroup.appendChild(brickShadow);
+
+          // Brick body
+          brickBody = svgEl("rect", {
+            width: String(BRICK_W),
+            height: String(BRICK_H),
+            fill: "url(#pat-" + state.brickMat + ")",
+            stroke: "#78909C",
+            "stroke-width": "1.5",
+            rx: "3",
+            cursor: "pointer",
+          });
+          rampGroup.appendChild(brickBody);
+
+          // Pivot dot
+          pivotDot = svgEl("circle", {
+            cx: String(PIVOT_X),
+            cy: String(PIVOT_Y),
+            r: "5",
+            fill: "#78909C",
+          });
+          boardSvg.appendChild(pivotDot);
+
+          // Force arrows — world space (gravassist-style: shaft + root dot + head)
+          const arrowsGroup = svgEl("g", {});
+          boardSvg.appendChild(arrowsGroup);
+
+          function makeArrow(color) {
+            const line = svgEl("line", {
+              stroke: color,
+              "stroke-width": "3",
+              "stroke-linecap": "butt",
+            });
+            const root = svgEl("circle", {
+              r: String(ARROW_ROOT_R),
+              fill: color,
+            });
+            const head = svgEl("polygon", { fill: color });
+            arrowsGroup.appendChild(line);
+            arrowsGroup.appendChild(root);
+            arrowsGroup.appendChild(head);
+            return { line: line, root: root, head: head };
+          }
+
+          const ag = makeArrow("#283593");
+          arrowGravLine = ag.line;
+          arrowGravRoot = ag.root;
+          arrowGravHead = ag.head;
+
+          const ad = makeArrow("#1565C0");
+          arrowDownLine = ad.line;
+          arrowDownRoot = ad.root;
+          arrowDownHead = ad.head;
+
+          const af = makeArrow("#7B1FA2");
+          arrowFricLine = af.line;
+          arrowFricRoot = af.root;
+          arrowFricHead = af.head;
+
+          // Angle arc
+          angleArc = svgEl("path", {
+            fill: "none",
+            stroke: "#78909C",
+            "stroke-width": "1.5",
+          });
+          boardSvg.appendChild(angleArc);
+
+          angleLabel = svgEl("text", {
+            "font-family": "'Share Tech Mono', monospace",
+            "font-size": "14",
+            fill: "#546E7A",
+            "text-anchor": "middle",
+            "dominant-baseline": "middle",
+          });
+          boardSvg.appendChild(angleLabel);
+        }
+
+        // ══════════════════════════════════════════════
+        //  SVG BOARD — UPDATE
+        // ══════════════════════════════════════════════
+
+        function brickScreenDist() {
+          return BRICK_TOP - (state.posAlongRamp / L) * (BRICK_TOP - BRICK_BOT);
+        }
+
+        function brickWorldCenter() {
+          const dist = brickScreenDist();
+          const theta = state.angleDeg * DEG;
+          const ct = Math.cos(theta);
+          const st = Math.sin(theta);
+          // Ramp extends LEFT: dx = -dist, dy = -BRICK_H/2
+          // CW rotation by theta: x' = dx*ct - dy*st, y' = dx*st + dy*ct
+          return {
+            x: PIVOT_X + -dist * ct - (-BRICK_H / 2) * st,
+            y: PIVOT_Y + -dist * st + (-BRICK_H / 2) * ct,
+          };
+        }
+
+        function setArrow(line, root, head, x1, y1, x2, y2, len) {
+          if (len < 5) {
+            line.setAttribute("x1", "0");
+            line.setAttribute("y1", "0");
+            line.setAttribute("x2", "0");
+            line.setAttribute("y2", "0");
+            root.setAttribute("cx", "0");
+            root.setAttribute("cy", "0");
+            root.setAttribute("opacity", "0");
+            head.setAttribute("points", "");
+            return;
+          }
+          // Scale head and gap proportionally for short arrows
+          const ah = Math.min(ARROW_HEAD, len * 0.4);
+          const ag = Math.min(ARROW_SHAFT_GAP, len * 0.35);
+
+          root.setAttribute("cx", x1);
+          root.setAttribute("cy", y1);
+          root.setAttribute("opacity", "1");
+          const angle = Math.atan2(y2 - y1, x2 - x1);
+          const shaftEndX = x2 - ag * Math.cos(angle);
+          const shaftEndY = y2 - ag * Math.sin(angle);
+          line.setAttribute("x1", x1);
+          line.setAttribute("y1", y1);
+          line.setAttribute("x2", shaftEndX);
+          line.setAttribute("y2", shaftEndY);
+          const hx1 = x2 - ah * Math.cos(angle - ARROW_WING);
+          const hy1 = y2 - ah * Math.sin(angle - ARROW_WING);
+          const hx2 = x2 - ah * Math.cos(angle + ARROW_WING);
+          const hy2 = y2 - ah * Math.sin(angle + ARROW_WING);
+          head.setAttribute(
+            "points",
+            x2 + "," + y2 + " " + hx1 + "," + hy1 + " " + hx2 + "," + hy2,
+          );
+        }
+
+        function updateBoard() {
+          const theta = state.angleDeg * DEG;
+          const ct = Math.cos(theta);
+          const st = Math.sin(theta);
+
+          // Ramp rotation — CW lifts the left end
+          rampGroup.setAttribute(
+            "transform",
+            "rotate(" + state.angleDeg + "," + PIVOT_X + "," + PIVOT_Y + ")",
+          );
+
+          // Ramp material fill
+          rampBody.setAttribute("fill", "url(#pat-" + state.rampMat + ")");
+
+          // Support triangle (world coords)
+          if (state.angleDeg > 0.5) {
+            const endX = PIVOT_X - RAMP_LEN * ct;
+            const endY = PIVOT_Y - RAMP_LEN * st;
+            supportPoly.setAttribute(
+              "points",
+              PIVOT_X +
+                "," +
+                PIVOT_Y +
+                " " +
+                endX +
+                "," +
+                PIVOT_Y +
+                " " +
+                endX +
+                "," +
+                endY,
+            );
+            supportPoly.setAttribute("opacity", "0.7");
+          } else {
+            supportPoly.setAttribute("opacity", "0");
+          }
+
+          // Brick position (local ramp coords — left of pivot)
+          const dist = brickScreenDist();
+          const bx = PIVOT_X - dist - BRICK_W / 2;
+          const by = PIVOT_Y - BRICK_H;
+          brickBody.setAttribute("x", bx);
+          brickBody.setAttribute("y", by);
+          brickBody.setAttribute("fill", "url(#pat-" + state.brickMat + ")");
+          brickShadow.setAttribute("x", bx + 2);
+          brickShadow.setAttribute("y", by + 3);
+
+          // Force arrows (world space)
+          const forces = computeForces(state.angleDeg, state.muS, state.muK);
+          const cls = classifyState(forces.Fpar, forces.FsMax);
+          const bc = brickWorldCenter();
+
+          // Gravity — straight down
+          const gravLen = M * G * ARROW_SCALE;
+          setArrow(
+            arrowGravLine,
+            arrowGravRoot,
+            arrowGravHead,
+            bc.x,
+            bc.y,
+            bc.x,
+            bc.y + gravLen,
+            gravLen,
+          );
+
+          // Downhill — along ramp toward pivot (right and down)
+          const downLen = forces.Fpar * ARROW_SCALE;
+          setArrow(
+            arrowDownLine,
+            arrowDownRoot,
+            arrowDownHead,
+            bc.x,
+            bc.y,
+            bc.x + downLen * ct,
+            bc.y + downLen * st,
+            downLen,
+          );
+
+          // Friction — along ramp away from pivot (left and up)
+          // Stuck/threshold: friction matches the downhill pull exactly
+          // Actually sliding: kinetic friction applies
+          // Classified sliding but not yet moving: max static friction
+          const fricVal =
+            cls === "stuck" || cls === "threshold"
+              ? forces.Fpar
+              : state.mode === "sliding"
+                ? forces.Fk
+                : forces.FsMax;
+          const fricLen = fricVal * ARROW_SCALE;
+          setArrow(
+            arrowFricLine,
+            arrowFricRoot,
+            arrowFricHead,
+            bc.x,
+            bc.y,
+            bc.x - fricLen * ct,
+            bc.y - fricLen * st,
+            fricLen,
+          );
+
+          // Angle arc — from horizontal up to ramp, through the gap below the ramp
+          if (state.angleDeg > 0.5) {
+            const ax1 = PIVOT_X - ARC_R;
+            const ay1 = PIVOT_Y;
+            const ax2 = PIVOT_X - ARC_R * ct;
+            const ay2 = PIVOT_Y - ARC_R * st;
+            angleArc.setAttribute(
+              "d",
+              "M" +
+                ax1 +
+                "," +
+                ay1 +
+                " A" +
+                ARC_R +
+                "," +
+                ARC_R +
+                " 0 0,1 " +
+                ax2 +
+                "," +
+                ay2,
+            );
+            // Label below the ramp, in the triangular gap
+            angleLabel.setAttribute("x", PIVOT_X - 50);
+            angleLabel.setAttribute("y", PIVOT_Y + 22);
+            angleLabel.textContent = fmtAngle(state.angleDeg);
+          } else {
+            angleArc.setAttribute("d", "");
+            angleLabel.textContent = "";
+          }
+        }
+
+        // ══════════════════════════════════════════════
+        //  FORCE CHART
+        // ══════════════════════════════════════════════
+
+        let chartCtx = null;
+        let chartW = 0;
+        let chartH = 0;
+
+        function setupChart() {
+          const rect = forceChart.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          chartW = rect.width;
+          chartH = rect.height;
+          forceChart.width = chartW * dpr;
+          forceChart.height = chartH * dpr;
+          chartCtx = forceChart.getContext("2d");
+          chartCtx.scale(dpr, dpr);
+        }
+
+        function drawForceChart() {
+          if (!chartCtx) return;
+          const w = chartW;
+          const h = chartH;
+
+          const ctx = chartCtx;
+          ctx.clearRect(0, 0, w, h);
+          ctx.fillStyle = "#f5f3ee";
+          ctx.fillRect(0, 0, w, h);
+
+          const pad = { top: 16, bottom: 22, left: 42, right: 14 };
+          const pw = w - pad.left - pad.right;
+          const ph = h - pad.top - pad.bottom;
+
+          // Dynamic y-axis: accommodate all curves for current material pair
+          const rawYMax = Math.ceil(
+            Math.max(M * G, state.muS * M * G, state.muK * M * G),
+          );
+          const chartYMax = Math.max(
+            10,
+            rawYMax % 2 === 0 ? rawYMax : rawYMax + 1,
+          );
+          const yStep = chartYMax <= 12 ? 2 : Math.ceil(chartYMax / 6);
+
+          function tx(deg) {
+            return pad.left + (deg / 60) * pw;
+          }
+          function ty(n) {
+            return pad.top + ph - (n / chartYMax) * ph;
+          }
+
+          ctx.strokeStyle = "#E0DDD6";
+          ctx.lineWidth = 0.5;
+          for (let d = 0; d <= 60; d += 10) {
+            ctx.beginPath();
+            ctx.moveTo(tx(d), pad.top);
+            ctx.lineTo(tx(d), pad.top + ph);
+            ctx.stroke();
+          }
+          for (let n = 0; n <= chartYMax; n += yStep) {
+            ctx.beginPath();
+            ctx.moveTo(pad.left, ty(n));
+            ctx.lineTo(pad.left + pw, ty(n));
+            ctx.stroke();
+          }
+
+          ctx.font = "10px 'Share Tech Mono', monospace";
+          ctx.fillStyle = "#90A4AE";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          for (let d = 0; d <= 60; d += 10) {
+            ctx.fillText(d + "\u00B0", tx(d), pad.top + ph + 4);
+          }
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          for (let n = 0; n <= chartYMax; n += yStep) {
+            ctx.fillText(n + " N", pad.left - 4, ty(n));
+          }
+
+          ctx.beginPath();
+          ctx.strokeStyle = "#1565C0";
+          ctx.lineWidth = 2;
+          for (let d = 0; d <= 60; d += 0.5) {
+            const v = M * G * Math.sin(d * DEG);
+            if (d === 0) ctx.moveTo(tx(d), ty(v));
+            else ctx.lineTo(tx(d), ty(v));
+          }
+          ctx.stroke();
+
+          // Determine active friction regime
+          const chartForces = computeForces(
+            state.angleDeg,
+            state.muS,
+            state.muK,
+          );
+          const isSliding =
+            classifyState(chartForces.Fpar, chartForces.FsMax) === "sliding" ||
+            state.mode === "sliding";
+
+          // F_static_max curve — solid when stuck, dashed when sliding
+          ctx.beginPath();
+          ctx.strokeStyle = "#7B1FA2";
+          if (isSliding) {
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 4]);
+          } else {
+            ctx.lineWidth = 2;
+          }
+          for (let d = 0; d <= 60; d += 0.5) {
+            const v = state.muS * M * G * Math.cos(d * DEG);
+            if (d === 0) ctx.moveTo(tx(d), ty(v));
+            else ctx.lineTo(tx(d), ty(v));
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // F_kinetic curve — solid when sliding, dashed when stuck
+          ctx.beginPath();
+          ctx.strokeStyle = "#7B1FA2";
+          if (isSliding) {
+            ctx.lineWidth = 2;
+          } else {
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 4]);
+          }
+          for (let d = 0; d <= 60; d += 0.5) {
+            const v = state.muK * M * G * Math.cos(d * DEG);
+            if (d === 0) ctx.moveTo(tx(d), ty(v));
+            else ctx.lineTo(tx(d), ty(v));
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Curve labels
+          ctx.font = "10px 'Share Tech Mono', monospace";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "bottom";
+          const labelDeg = 52;
+          ctx.fillStyle = "#1565C0";
+          ctx.fillText(
+            "F\u2193",
+            tx(labelDeg) + 4,
+            ty(M * G * Math.sin(labelDeg * DEG)),
+          );
+          ctx.fillStyle = "#7B1FA2";
+          ctx.fillText(
+            "\u03BCs\u00B7N",
+            tx(labelDeg) + 4,
+            ty(state.muS * M * G * Math.cos(labelDeg * DEG)),
+          );
+          ctx.fillText(
+            "\u03BCk\u00B7N",
+            tx(labelDeg) + 4,
+            ty(state.muK * M * G * Math.cos(labelDeg * DEG)),
+          );
+
+          const slipDeg = computeSlipAngle(state.muS);
+          if (slipDeg <= 60) {
+            const sv = M * G * Math.sin(slipDeg * DEG);
+            ctx.beginPath();
+            ctx.arc(tx(slipDeg), ty(sv), 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#455A64";
+            ctx.fill();
+          }
+
+          ctx.setLineDash([4, 3]);
+          ctx.strokeStyle = "#455A64";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(tx(state.angleDeg), pad.top);
+          ctx.lineTo(tx(state.angleDeg), pad.top + ph);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // ══════════════════════════════════════════════
+        //  SPEED BAR CHART
+        // ══════════════════════════════════════════════
+
+        let speedCtx = null;
+        let speedW = 0;
+        let speedH = 0;
+        let frozenSpeed = null;
+
+        function setupSpeedChart() {
+          const rect = speedChart.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          speedW = rect.width;
+          speedH = rect.height;
+          speedChart.width = speedW * dpr;
+          speedChart.height = speedH * dpr;
+          speedCtx = speedChart.getContext("2d");
+          speedCtx.scale(dpr, dpr);
+        }
+
+        function drawSpeedChart() {
+          if (!speedCtx) return;
+          const w = speedW;
+          const h = speedH;
+
+          const ctx = speedCtx;
+          ctx.clearRect(0, 0, w, h);
+          ctx.fillStyle = "#f5f3ee";
+          ctx.fillRect(0, 0, w, h);
+
+          // Compute current and max speed
+          const accel = computeAccel(state.angleDeg, state.muK);
+          const v0 = state.mode === "sliding" ? state.velocity : 0;
+          const vBottom = computeBottomSpeed(accel, state.posAlongRamp, v0);
+          const maxSpeed = vBottom != null ? vBottom : 0;
+
+          let currentSpeed = 0;
+          if (state.mode === "sliding") {
+            currentSpeed = state.velocity;
+          } else if (
+            state.mode === "idle" &&
+            state.posAlongRamp >= L &&
+            frozenSpeed != null
+          ) {
+            currentSpeed = frozenSpeed;
+          }
+
+          // Freeze speed when brick reaches the bottom
+          if (state.mode === "sliding") {
+            frozenSpeed = state.velocity;
+          } else if (state.posAlongRamp === 0) {
+            frozenSpeed = null;
+          }
+
+          const pad = { top: 20, bottom: 14, left: 10, right: 14 };
+          const barAreaW = w - pad.left - pad.right;
+          const barH = 22;
+          const barY = pad.top + 16;
+
+          // Scale: bar fills full width at vBottom
+          const scale = maxSpeed > 0 ? barAreaW / maxSpeed : 0;
+          const barW = Math.max(0, currentSpeed * scale);
+
+          // Bar background
+          ctx.fillStyle = "#E0DDD6";
+          ctx.beginPath();
+          ctx.roundRect(pad.left, barY, barAreaW, barH, 4);
+          ctx.fill();
+
+          // Speed bar
+          if (barW > 0) {
+            ctx.fillStyle = "#1565C0";
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.roundRect(pad.left, barY, Math.min(barW, barAreaW), barH, 4);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          }
+
+          // Speed value text
+          ctx.font = "12px 'Share Tech Mono', monospace";
+          ctx.fillStyle = "#37474F";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          const displaySpeed =
+            currentSpeed > 0 ? currentSpeed.toFixed(1) + " m/s" : "\u2014";
+          ctx.fillText(displaySpeed, w / 2, barY + barH + 6);
+
+          // Max speed label
+          if (maxSpeed > 0) {
+            ctx.font = "10px 'Share Tech Mono', monospace";
+            ctx.fillStyle = "#90A4AE";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "bottom";
+            ctx.fillText(maxSpeed.toFixed(1) + " m/s", w - pad.right, barY - 2);
+          }
+        }
+
+        // ══════════════════════════════════════════════
+        //  READOUTS
+        // ══════════════════════════════════════════════
+
+        function updateReadouts() {
+          const forces = computeForces(state.angleDeg, state.muS, state.muK);
+          const cls = classifyState(forces.Fpar, forces.FsMax);
+          const accel = computeAccel(state.angleDeg, state.muK);
+
+          document.getElementById("rdMuS").textContent = state.muS.toFixed(2);
+          document.getElementById("rdMuK").textContent = state.muK.toFixed(2);
+
+          const slipDeg = computeSlipAngle(state.muS);
+          document.getElementById("rdSlipAngle").textContent =
+            slipDeg > 60
+              ? ">60\u00B0"
+              : "\u2248" + Math.round(slipDeg) + "\u00B0";
+
+          document.getElementById("rdAngle").textContent = fmtAngle(
+            state.angleDeg,
+          );
+
+          document.getElementById("rdFpar").textContent =
+            forces.Fpar.toFixed(1) + " N";
+          document.getElementById("rdFsMax").textContent =
+            forces.FsMax.toFixed(1) + " N";
+          document.getElementById("rdFk").textContent =
+            forces.Fk.toFixed(1) + " N";
+
+          let actualFricText;
+          if (cls === "stuck" || cls === "threshold") {
+            actualFricText = forces.Fpar.toFixed(1) + " N";
+          } else if (state.mode === "sliding") {
+            actualFricText = forces.Fk.toFixed(1) + " N";
+          } else {
+            actualFricText = forces.FsMax.toFixed(1) + " N";
+          }
+          document.getElementById("rdFact").textContent = actualFricText;
+
+          if (cls === "stuck" || cls === "threshold") {
+            document.getElementById("rdAccel").textContent = "0.00 m/s\u00B2";
+          } else {
+            document.getElementById("rdAccel").textContent =
+              accel.toFixed(2) + " m/s\u00B2";
+          }
+
+          if (cls === "sliding") {
+            const v0 = state.mode === "sliding" ? state.velocity : 0;
+            const tBot = computeTimeToBottom(accel, state.posAlongRamp, v0);
+            const vBot = computeBottomSpeed(accel, state.posAlongRamp, v0);
+            document.getElementById("rdVbot").textContent =
+              vBot != null ? vBot.toFixed(2) + " m/s" : "\u2014";
+            document.getElementById("rdTbot").textContent =
+              tBot != null ? tBot.toFixed(2) + " s" : "\u2014";
+          } else {
+            document.getElementById("rdVbot").textContent = "\u2014";
+            document.getElementById("rdTbot").textContent = "\u2014";
+          }
+        }
+
+        // Lightweight readout update during sliding — only fields that change
+        function updateSlidingReadouts() {
+          const accel = state.accel;
+          const tBot = computeTimeToBottom(
+            accel,
+            state.posAlongRamp,
+            state.velocity,
+          );
+          const vBot = computeBottomSpeed(
+            accel,
+            state.posAlongRamp,
+            state.velocity,
+          );
+          document.getElementById("rdVbot").textContent =
+            vBot != null ? vBot.toFixed(2) + " m/s" : "\u2014";
+          document.getElementById("rdTbot").textContent =
+            tBot != null ? tBot.toFixed(2) + " s" : "\u2014";
+        }
+
+        // ══════════════════════════════════════════════
+        //  STATUS
+        // ══════════════════════════════════════════════
+
+        function updateStatus() {
+          const forces = computeForces(state.angleDeg, state.muS, state.muK);
+          const cls = classifyState(forces.Fpar, forces.FsMax);
+          let msg;
+
+          if (state.mode === "sliding") {
+            msg = T("statusSliding");
+          } else if (cls === "sliding") {
+            msg = T("statusWillSlide");
+          } else if (cls === "threshold") {
+            msg = T("statusThreshold");
+          } else {
+            msg = T("statusStuck");
+          }
+
+          document.getElementById("statusText").textContent = msg;
+        }
+
+        // ══════════════════════════════════════════════
+        //  INVESTIGATIONS
+        // ══════════════════════════════════════════════
+
+        function buildInvestigations() {
+          while (invList.firstChild) invList.removeChild(invList.firstChild);
+          for (let i = 1; i <= 6; i++) {
+            const card = document.createElement("div");
+            card.className = "inv-card";
+            card.textContent = T("prompt" + i);
+            invList.appendChild(card);
+          }
+        }
+
+        invToggle.addEventListener("click", function () {
+          invToggle.classList.toggle("open");
+          invList.classList.toggle("open");
+        });
+
+        // ══════════════════════════════════════════════
+        //  CONTROL STATE
+        // ══════════════════════════════════════════════
+
+        function updateControls() {
+          const isSliding = state.mode === "sliding";
+
+          brickMatSelect.disabled = isSliding;
+          rampMatSelect.disabled = isSliding;
+
+          angleSlider.disabled = isSliding;
+          angleMinus.disabled = isSliding;
+          anglePlus.disabled = isSliding;
+        }
+
+        // ══════════════════════════════════════════════
+        //  TRANSLATION
+        // ══════════════════════════════════════════════
+
+        function populateSelect(sel, currentVal) {
+          const opts = sel.querySelectorAll("option");
+          opts.forEach(function (opt) {
+            opt.textContent = T(opt.value);
+          });
+          sel.value = currentVal;
+        }
+
+        function applyTranslations() {
+          document.documentElement.lang = lang === "pl" ? "pl" : "en";
+          document.title = T("title");
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          document.getElementById("langBtn").textContent =
+            lang === "en" ? "PL" : "EN";
+
+          document.getElementById("lblBrickMat").textContent =
+            T("brickMaterial");
+          document.getElementById("lblRampMat").textContent = T("rampMaterial");
+          document.getElementById("lblAngle").textContent = T("angle");
+
+          precisionNote.textContent = T("precisionHint");
+          updateControls();
+
+          populateSelect(brickMatSelect, state.brickMat);
+          populateSelect(rampMatSelect, state.rampMat);
+
+          document.getElementById("lblPairInfo").textContent = T("pairInfo");
+          document.getElementById("lblForces").textContent = T("forces");
+          document.getElementById("lblMotion").textContent = T("motion");
+          document.getElementById("lblRdMuS").textContent = T("muStatic");
+          document.getElementById("lblRdMuK").textContent = T("muKinetic");
+          document.getElementById("lblRdSlipAngle").textContent =
+            T("slipAngle");
+          document.getElementById("lblRdAngle").textContent = T("angle");
+          document.getElementById("lblRdFpar").textContent = T("downhillForce");
+          document.getElementById("lblRdFsMax").textContent = T("maxStatic");
+          document.getElementById("lblRdFact").textContent =
+            T("actualFriction");
+          document.getElementById("lblRdFk").textContent = T("kineticForce");
+          document.getElementById("lblRdAccel").textContent = T("acceleration");
+          document.getElementById("lblRdVbot").textContent = T("bottomSpeed");
+          document.getElementById("lblRdTbot").textContent = T("timeToBottom");
+
+          document.getElementById("approxNote").textContent = T("approxValues");
+          document.getElementById("pairNote").textContent = T("pairRule");
+
+          document.getElementById("lblChart").textContent = T("forceVsAngle");
+          document.getElementById("lblSpeedChart").textContent = T("speed");
+
+          invToggle.childNodes[invToggle.childNodes.length - 1].textContent =
+            T("investigations");
+          buildInvestigations();
+
+          updateReadouts();
+          updateStatus();
+        }
+
+        // ══════════════════════════════════════════════
+        //  EVENT HANDLERS
+        // ══════════════════════════════════════════════
+
+        function checkAutoSlide() {
+          if (dragInfo) return;
+          const forces = computeForces(state.angleDeg, state.muS, state.muK);
+          const cls = classifyState(forces.Fpar, forces.FsMax);
+          if (
+            cls === "sliding" &&
+            state.mode === "idle" &&
+            state.posAlongRamp < L
+          ) {
+            state.accel = computeAccel(state.angleDeg, state.muK);
+            if (state.accel > 0) {
+              state.velocity = 0;
+              state.mode = "sliding";
+              state.running = true;
+              simAccum = 0;
+              drawForceChart();
+              updateReadouts();
+              updateStatus();
+              updateControls();
+            }
+          }
+        }
+
+        function recompute() {
+          updateCoefficients();
+          updateReadouts();
+          updateBoard();
+          drawForceChart();
+          updateStatus();
+          updateControls();
+          checkAutoSlide();
+        }
+
+        function handleMaterialChange(which) {
+          if (which === "brick") {
+            state.brickMat = brickMatSelect.value;
+          } else {
+            state.rampMat = rampMatSelect.value;
+          }
+          if (state.mode !== "idle") {
+            state.mode = "idle";
+            state.running = false;
+          }
+          state.posAlongRamp = 0;
+          state.velocity = 0;
+          recompute();
+        }
+
+        brickMatSelect.addEventListener("change", function () {
+          handleMaterialChange("brick");
+        });
+        rampMatSelect.addEventListener("change", function () {
+          handleMaterialChange("ramp");
+        });
+
+        function handleAngleChange(newAngle) {
+          newAngle = Math.max(0, Math.min(60, newAngle));
+          if (state.mode === "sliding") {
+            state.mode = "idle";
+            state.running = false;
+            state.posAlongRamp = 0;
+            state.velocity = 0;
+          }
+          state.angleDeg = newAngle;
+          angleSlider.value = newAngle;
+          angleVal.textContent = fmtAngle(newAngle);
+          recompute();
+        }
+
+        function fmtAngle(deg) {
+          return deg.toFixed(1) + "\u00B0";
+        }
+
+        angleSlider.addEventListener("input", function () {
+          handleAngleChange(parseFloat(angleSlider.value));
+        });
+        angleMinus.addEventListener("click", function () {
+          handleAngleChange(state.angleDeg - 0.5);
+        });
+        anglePlus.addEventListener("click", function () {
+          handleAngleChange(state.angleDeg + 0.5);
+        });
+
+        // Stop / Reset
+        btnReset.addEventListener("click", function () {
+          state.mode = "idle";
+          state.running = false;
+          state.angleDeg = 20;
+          state.brickMat = "wood";
+          state.rampMat = "wood";
+          state.posAlongRamp = 0;
+          state.velocity = 0;
+          state.accel = 0;
+          simAccum = 0;
+          lastTime = 0;
+          frozenSpeed = null;
+
+          brickMatSelect.value = "wood";
+          rampMatSelect.value = "wood";
+          angleSlider.value = 20;
+          angleVal.textContent = "20.0\u00B0";
+
+          recompute();
+        });
+
+        // Language
+        document
+          .getElementById("langBtn")
+          .addEventListener("click", function () {
+            lang = lang === "en" ? "pl" : "en";
+            applyTranslations();
+          });
+
+        // Shift key tracking
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Shift") shiftHeld = true;
+        });
+        document.addEventListener("keyup", function (e) {
+          if (e.key === "Shift") shiftHeld = false;
+        });
+
+        // ══════════════════════════════════════════════
+        //  DRAG-TO-TILT
+        // ══════════════════════════════════════════════
+
+        function screenToSvg(clientX, clientY) {
+          const pt = boardSvg.createSVGPoint();
+          pt.x = clientX;
+          pt.y = clientY;
+          return pt.matrixTransform(boardSvg.getScreenCTM().inverse());
+        }
+
+        function mouseAngleDeg(clientX, clientY) {
+          const svgPt = screenToSvg(clientX, clientY);
+          const dx = PIVOT_X - svgPt.x;
+          const dy = PIVOT_Y - svgPt.y;
+          return Math.atan2(dy, dx) / DEG;
+        }
+
+        function projectOntoRamp(clientX, clientY) {
+          const svgPt = screenToSvg(clientX, clientY);
+          const theta = state.angleDeg * DEG;
+          const ct = Math.cos(theta);
+          const st = Math.sin(theta);
+          // Distance from pivot along the ramp axis (left/up direction)
+          const dist = (PIVOT_X - svgPt.x) * ct + (PIVOT_Y - svgPt.y) * st;
+          // Map: far from pivot (BRICK_TOP) = pos 0, near pivot (BRICK_BOT) = pos L
+          return ((BRICK_TOP - dist) / (BRICK_TOP - BRICK_BOT)) * L;
+        }
+
+        function isClickOnBrick(clientX, clientY) {
+          const svgPt = screenToSvg(clientX, clientY);
+          const bc = brickWorldCenter();
+          const dx = svgPt.x - bc.x;
+          const dy = svgPt.y - bc.y;
+          // Generous hit area — brick is 74x46, use ~60px radius
+          return dx * dx + dy * dy < 60 * 60;
+        }
+
+        function startDrag(clientX, clientY) {
+          if (state.mode === "sliding") {
+            state.mode = "idle";
+            state.running = false;
+            state.velocity = 0;
+            updateControls();
+          }
+
+          if (isClickOnBrick(clientX, clientY)) {
+            dragInfo = {
+              type: "brick",
+              startPos: state.posAlongRamp,
+              startRampDist: projectOntoRamp(clientX, clientY),
+            };
+          } else {
+            dragInfo = {
+              type: "tilt",
+              startAngle: state.angleDeg,
+              startMouseAngle: mouseAngleDeg(clientX, clientY),
+            };
+          }
+          boardSvg.classList.add("dragging");
+        }
+
+        function moveDrag(clientX, clientY) {
+          if (!dragInfo) return;
+          const fine = shiftHeld;
+
+          if (dragInfo.type === "brick") {
+            const current = projectOntoRamp(clientX, clientY);
+            let delta = current - dragInfo.startRampDist;
+            if (fine) delta *= 0.2;
+            let newPos = dragInfo.startPos + delta;
+            newPos = Math.max(0, Math.min(L, newPos));
+            state.posAlongRamp = newPos;
+            state.velocity = 0;
+            recompute();
+          } else {
+            const current = mouseAngleDeg(clientX, clientY);
+            let delta = current - dragInfo.startMouseAngle;
+            if (fine) delta *= 0.2;
+            const snap = fine ? 10 : 2; // 0.1° in precision mode, 0.5° normal
+            let newAngle =
+              Math.round((dragInfo.startAngle + delta) * snap) / snap;
+            newAngle = Math.max(0, Math.min(60, newAngle));
+            if (newAngle !== state.angleDeg) {
+              state.angleDeg = newAngle;
+              angleSlider.value = newAngle;
+              angleVal.textContent = fmtAngle(newAngle);
+              recompute();
+            }
+          }
+        }
+
+        function endDrag() {
+          if (!dragInfo) return;
+          dragInfo = null;
+          boardSvg.classList.remove("dragging");
+          checkAutoSlide();
+        }
+
+        boardSvg.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          startDrag(e.clientX, e.clientY);
+        });
+        document.addEventListener("mousemove", function (e) {
+          moveDrag(e.clientX, e.clientY);
+        });
+        document.addEventListener("mouseup", function () {
+          endDrag();
+        });
+
+        boardSvg.addEventListener(
+          "touchstart",
+          function (e) {
+            if (e.touches.length === 1) {
+              e.preventDefault();
+              startDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          },
+          { passive: false },
+        );
+        document.addEventListener(
+          "touchmove",
+          function (e) {
+            if (dragInfo && e.touches.length === 1) {
+              e.preventDefault();
+              moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          },
+          { passive: false },
+        );
+        document.addEventListener("touchend", function () {
+          endDrag();
+        });
+
+        // ══════════════════════════════════════════════
+        //  SIMULATION STEP
+        // ══════════════════════════════════════════════
+
+        function simStep(dt) {
+          if (state.mode === "sliding") {
+            state.velocity += state.accel * dt;
+            state.posAlongRamp += state.velocity * dt;
+            if (state.posAlongRamp >= L) {
+              state.posAlongRamp = L;
+              state.velocity = 0;
+              state.mode = "idle";
+              state.running = false;
+              updateControls();
+            }
+          }
+        }
+
+        // ══════════════════════════════════════════════
+        //  ANIMATION LOOP
+        // ══════════════════════════════════════════════
+
+        function animate(now) {
+          now /= 1000;
+          const frameDt = lastTime ? Math.min(now - lastTime, 0.05) : 0;
+          lastTime = now;
+
+          if (state.running) {
+            simAccum += frameDt;
+            let steps = 0;
+            while (simAccum >= SIM_DT && steps < MAX_STEPS) {
+              simStep(SIM_DT);
+              simAccum -= SIM_DT;
+              steps++;
+            }
+            if (steps >= MAX_STEPS) simAccum = 0;
+          }
+
+          updateBoard();
+          drawSpeedChart();
+          if (state.running) {
+            updateSlidingReadouts();
+          } else {
+            drawForceChart();
+            updateReadouts();
+            updateStatus();
+          }
+          requestAnimationFrame(animate);
+        }
+
+        // ══════════════════════════════════════════════
+        //  VISIBILITY CHANGE
+        // ══════════════════════════════════════════════
+
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) {
+            lastTime = 0;
+            simAccum = 0;
+          }
+        });
+
+        // ══════════════════════════════════════════════
+        //  RESIZE
+        // ══════════════════════════════════════════════
+
+        window.addEventListener("resize", function () {
+          setupChart();
+          setupSpeedChart();
+          drawForceChart();
+          drawSpeedChart();
+        });
+
+        // ══════════════════════════════════════════════
+        //  INITIALIZATION
+        // ══════════════════════════════════════════════
+
+        updateCoefficients();
+        buildBoard();
+        setupChart();
+        setupSpeedChart();
+        applyTranslations();
+        requestAnimationFrame(animate);
+      })();
+    </script>
+  </body>
+</html>

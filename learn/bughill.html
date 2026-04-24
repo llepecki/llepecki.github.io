@@ -1,0 +1,2422 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bug Hill Work Lab</title>
+    <meta
+      name="description"
+      content="Draw a route for a cartoon bug climbing a hill and discover the difference between force, distance, and work."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --route-active: #263238;
+        --route-a: #d32f2f;
+        --route-b: #1565c0;
+        --route-c: #00897b;
+        --hill-low: #c8e6c9;
+        --hill-high: #d7ccc8;
+        --contour: #a5b5a0;
+        --summit: #d32f2f;
+        --bug: #263238;
+        --target-ring: #ff6f00;
+        --chart-net: #1565c0;
+        --chart-up: #d32f2f;
+        --chart-total: #00897b;
+      }
+      body {
+        min-height: 100vh;
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+        -webkit-tap-highlight-color: transparent;
+      }
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .header-emoji {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* ── Main layout ── */
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+      .board-wrap {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+      }
+      .controls {
+        padding: 8px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        border-bottom: 1px solid var(--panel-border);
+        background: var(--panel);
+      }
+      .ctrl-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .ctrl-group-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .ctrl-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+      .type-toggle {
+        display: flex;
+        gap: 4px;
+      }
+      .type-btn {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 2px solid transparent;
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Outfit", sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+      .type-btn.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+      .type-btn:hover {
+        background: #f0ede6;
+      }
+      .type-btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .slider-row input[type="range"] {
+        width: 90px;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        background: #e0ddd6;
+        border-radius: 3px;
+        outline: none;
+        touch-action: none;
+      }
+      .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+      .slider-row input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+      .slider-val {
+        min-width: 36px;
+        text-align: right;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .action-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 2px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+      .action-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .action-btn:disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+      .action-btn.primary {
+        background: var(--text-head);
+        color: #fff;
+        border-color: var(--text-head);
+      }
+      .action-btn.primary:hover {
+        background: #37474f;
+        border-color: #37474f;
+      }
+      .action-btn.primary:disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+      .sep {
+        width: 1px;
+        height: 24px;
+        background: var(--panel-border);
+        flex-shrink: 0;
+      }
+      .svg-wrap {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+      }
+      #board {
+        width: 100%;
+        height: 100%;
+        max-height: 70vh;
+      }
+
+      /* ── Right panel ── */
+      .panel {
+        width: 260px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .metrics-section {
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .section-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+        padding-bottom: 2px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 1px 0;
+      }
+      .readout-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+      .readout-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .explanation-card {
+        padding: 10px 12px;
+        border-radius: 6px;
+        background: #f5f3ee;
+        font-size: 12px;
+        color: #546e7a;
+        line-height: 1.5;
+      }
+
+      /* ── Chart section ── */
+      .chart-section {
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 100px;
+      }
+      .chart-wrap canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border-radius: 4px;
+      }
+      .chart-legend {
+        display: flex;
+        gap: 12px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+      }
+      .chart-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 10px;
+        color: var(--text-dim);
+      }
+      .chart-legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      /* ── Comparison table ── */
+      .comparison-section {
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .comp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+      }
+      .comp-table th {
+        text-align: right;
+        padding: 3px 6px;
+        font-weight: 700;
+        color: var(--text-label);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .comp-table th:first-child {
+        text-align: left;
+      }
+      .comp-table td {
+        text-align: right;
+        padding: 3px 6px;
+        color: var(--text-head);
+        font-weight: 700;
+      }
+      .comp-table td:first-child {
+        text-align: left;
+        color: var(--text-label);
+        font-weight: 400;
+      }
+      .comp-table .col-a {
+        color: var(--route-a);
+      }
+      .comp-table .col-b {
+        color: var(--route-b);
+      }
+      .comp-table .col-c {
+        color: var(--route-c);
+      }
+
+      /* ── Investigations ── */
+      .investigations {
+        padding: 10px 16px;
+      }
+      .inv-toggle {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        color: var(--text-dim);
+        cursor: pointer;
+        background: none;
+        border: none;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        padding: 0;
+      }
+      .inv-toggle:hover {
+        color: var(--accent);
+      }
+      .inv-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .inv-cards.hidden {
+        display: none;
+      }
+      .inv-card {
+        padding: 8px 10px;
+        background: #f5f3ee;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #546e7a;
+        line-height: 1.4;
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .inv-card .inv-num {
+        font-family: "Share Tech Mono", monospace;
+        font-weight: 700;
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+      .inv-card .inv-dismiss {
+        margin-left: auto;
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0 2px;
+        flex-shrink: 0;
+      }
+      .inv-card .inv-dismiss:hover {
+        color: var(--text-head);
+      }
+
+      /* ── Status bar ── */
+      .status-bar {
+        padding: 6px 16px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        color: var(--text-dim);
+        text-align: center;
+        border-top: 1px solid var(--panel-border);
+        background: var(--panel);
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 800px) {
+        .main {
+          flex-direction: column;
+          height: auto;
+          min-height: calc(100vh - 46px);
+        }
+        .board-wrap {
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+        }
+        .svg-wrap {
+          min-height: 300px;
+          height: 50vh;
+        }
+        #board {
+          max-height: none;
+        }
+        .panel {
+          width: 100%;
+        }
+        .controls {
+          padding: 8px 12px;
+          gap: 6px;
+        }
+      }
+      @media (pointer: coarse) {
+        .type-btn {
+          min-height: 40px;
+          padding: 8px 10px;
+        }
+        .action-btn {
+          min-height: 40px;
+        }
+      }
+      .lang-btn:focus-visible,
+      .type-btn:focus-visible,
+      .action-btn:focus-visible,
+      .inv-toggle:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      input[type="range"]:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      .hidden {
+        display: none !important;
+      }
+      .friction-only {
+        display: none;
+      }
+      .friction-mode .friction-only {
+        display: flex;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-emoji">&#x1F41B;</span></a>
+          <span id="titleText">Bug Hill Work Lab</span>
+        </h1>
+        <p id="subtitleText">
+          Draw a route uphill and compare force, distance, and work.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="board-wrap">
+        <div class="controls" id="controlStrip">
+          <div class="ctrl-row">
+            <div class="ctrl-group">
+              <span class="ctrl-label" id="lblAngle">Hill Angle</span>
+              <div class="slider-row">
+                <input
+                  type="range"
+                  id="angleSlider"
+                  min="5"
+                  max="60"
+                  value="30"
+                  step="1"
+                />
+                <span class="slider-val" id="angleVal">30°</span>
+              </div>
+            </div>
+            <div class="ctrl-group">
+              <span class="ctrl-label" id="lblMode">Mode</span>
+              <div class="type-toggle">
+                <button type="button" class="type-btn active" id="idealBtn">
+                  Ideal
+                </button>
+                <button type="button" class="type-btn" id="frictionBtn">
+                  With Friction
+                </button>
+              </div>
+            </div>
+            <div class="ctrl-group friction-only" id="frictionGroup">
+              <span class="ctrl-label" id="lblFriction">Friction</span>
+              <div class="slider-row">
+                <input
+                  type="range"
+                  id="muSlider"
+                  min="0"
+                  max="0.50"
+                  value="0.15"
+                  step="0.01"
+                />
+                <span class="slider-val" id="muVal">0.15</span>
+              </div>
+            </div>
+            <div class="ctrl-group">
+              <span class="ctrl-label" id="lblSpeed">Speed</span>
+              <div class="type-toggle">
+                <button type="button" class="type-btn" id="speedSlow">
+                  Slow
+                </button>
+                <button type="button" class="type-btn active" id="speedNormal">
+                  Normal
+                </button>
+                <button type="button" class="type-btn" id="speedFast">
+                  Fast
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="ctrl-row">
+            <button type="button" class="type-btn" id="presetDirect">
+              Direct
+            </button>
+            <button type="button" class="type-btn" id="presetSwitchback">
+              45° Switchback
+            </button>
+            <button type="button" class="type-btn" id="presetZigzag">
+              Wide Zigzag
+            </button>
+            <button type="button" class="type-btn" id="presetDip">
+              Wasteful Dip
+            </button>
+            <div class="sep"></div>
+            <button type="button" class="action-btn" id="undoBtn" disabled>
+              Undo
+            </button>
+            <button type="button" class="action-btn" id="clearBtn">
+              Clear
+            </button>
+            <button
+              type="button"
+              class="action-btn primary"
+              id="runBtn"
+              disabled
+            >
+              Run
+            </button>
+            <div class="sep"></div>
+            <button type="button" class="action-btn" id="saveABtn" disabled>
+              Save A
+            </button>
+            <button type="button" class="action-btn" id="saveBBtn" disabled>
+              Save B
+            </button>
+            <button type="button" class="action-btn" id="saveCBtn" disabled>
+              Save C
+            </button>
+          </div>
+        </div>
+
+        <div class="svg-wrap">
+          <svg
+            id="board"
+            viewBox="0 0 700 600"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <defs>
+              <linearGradient
+                id="hillGrad"
+                x1="0"
+                y1="1"
+                x2="0"
+                y2="0"
+                gradientUnits="objectBoundingBox"
+              >
+                <stop offset="0%" stop-color="#c8e6c9" />
+                <stop offset="100%" stop-color="#d7ccc8" />
+              </linearGradient>
+              <marker
+                id="arrowHead"
+                markerWidth="8"
+                markerHeight="6"
+                refX="8"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L8,3 L0,6 Z" fill="#ff6f00" />
+              </marker>
+            </defs>
+          </svg>
+        </div>
+
+        <div class="status-bar">
+          <span id="statusText">Draw from START to PEAK.</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="metrics-section">
+          <span class="section-label" id="lblMetrics">Metrics</span>
+          <div class="readout-row">
+            <span class="readout-label" id="lblRAngle">Angle</span>
+            <span class="readout-val" id="readAngle">30°</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblRHeight">Height</span>
+            <span class="readout-val" id="readHeight">6.00 m</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblRDistance">Distance</span>
+            <span class="readout-val" id="readDistance">— m</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblRPeakForce">Peak Force</span>
+            <span class="readout-val" id="readPeakForce">— N</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblRNetWork">Net Work</span>
+            <span class="readout-val" id="readNetWork">— J</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblRClimbWork"
+              >Total Climb Work</span
+            >
+            <span class="readout-val" id="readClimbWork">— J</span>
+          </div>
+          <div class="readout-row friction-only">
+            <span class="readout-label" id="lblRFrictionLoss"
+              >Friction Loss</span
+            >
+            <span class="readout-val" id="readFrictionLoss">— J</span>
+          </div>
+          <div class="readout-row friction-only">
+            <span class="readout-label" id="lblRTotalWork">Total Work</span>
+            <span class="readout-val" id="readTotalWork">— J</span>
+          </div>
+        </div>
+
+        <div class="metrics-section">
+          <span class="section-label" id="lblExplanation">Explanation</span>
+          <div class="explanation-card" id="explanationCard">—</div>
+        </div>
+
+        <div class="chart-section">
+          <span class="section-label" id="lblChart">Cumulative Work</span>
+          <div class="chart-wrap">
+            <canvas id="chart"></canvas>
+          </div>
+          <div class="chart-legend">
+            <span class="chart-legend-item"
+              ><span
+                class="chart-legend-dot"
+                style="background: var(--chart-net)"
+              ></span>
+              <span id="lblChartNet">W net</span></span
+            >
+            <span class="chart-legend-item"
+              ><span
+                class="chart-legend-dot"
+                style="background: var(--chart-up)"
+              ></span>
+              <span id="lblChartUp">W climb</span></span
+            >
+            <span class="chart-legend-item friction-only"
+              ><span
+                class="chart-legend-dot"
+                style="background: var(--chart-total)"
+              ></span>
+              <span id="lblChartTotal">W total</span></span
+            >
+          </div>
+        </div>
+
+        <div class="comparison-section" id="compSection">
+          <span class="section-label" id="lblComparison">Comparison</span>
+          <table class="comp-table" id="compTable">
+            <thead>
+              <tr>
+                <th></th>
+                <th id="compThCurrent">Now</th>
+                <th class="col-a">A</th>
+                <th class="col-b">B</th>
+                <th class="col-c">C</th>
+              </tr>
+            </thead>
+            <tbody id="compBody"></tbody>
+          </table>
+        </div>
+
+        <div class="investigations">
+          <button type="button" class="inv-toggle" id="invToggle">
+            &#9654; Investigations
+          </button>
+          <div class="inv-cards hidden" id="invCards"></div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        /* ───────── SVG NAMESPACE ───────── */
+        var SVG_NS = "http://www.w3.org/2000/svg";
+
+        /* ───────── I18N ───────── */
+        var lang =
+          navigator.language && navigator.language.startsWith("pl")
+            ? "pl"
+            : "en";
+
+        var I18N = {
+          en: {
+            title: "Bug Hill Work Lab",
+            subtitle:
+              "Draw a route uphill and compare force, distance, and work.",
+            angle: "Hill Angle",
+            ideal: "Ideal",
+            withFriction: "With Friction",
+            friction: "Friction",
+            speed: "Speed",
+            slow: "Slow",
+            normal: "Normal",
+            fast: "Fast",
+            direct: "Direct",
+            switchback45: "45\u00B0 Switchback",
+            wideZigzag: "Wide Zigzag",
+            wastefulDip: "Wasteful Dip",
+            undo: "Undo",
+            clear: "Clear",
+            run: "Run",
+            saveA: "Save A",
+            saveB: "Save B",
+            saveC: "Save C",
+            start: "START",
+            peak: "PEAK",
+            height: "Height",
+            distance: "Distance",
+            peakForce: "Peak Force",
+            netWork: "Net Work",
+            climbWork: "Total Climb Work",
+            frictionLoss: "Friction Loss",
+            totalWork: "Total Work",
+            metrics: "Metrics",
+            explanation: "Explanation",
+            cumulativeWork: "Cumulative Work",
+            comparison: "Comparison",
+            now: "Now",
+            mode: "Mode",
+            wNet: "W net",
+            wClimb: "W climb",
+            wTotal: "W total",
+            investigations: "Investigations",
+            sameSummit: "Same summit, same ideal work.",
+            gentlerForce: "Gentler route, smaller force.",
+            extraClimb: "This route climbs extra height.",
+            statusDraw: "Draw from START to PEAK.",
+            statusReady:
+              "Route ready. Press Run to watch the bug climb.",
+            statusSameWork:
+              "Same summit, same ideal work. Only the force and distance changed.",
+            statusExtraClimb:
+              "This route drops once, so the bug must climb extra height later.",
+            statusFriction:
+              "With friction on, longer routes waste extra energy.",
+            inv1: "Load Direct, then load 45\u00B0 Switchback. Which route has the bigger peak force?",
+            inv2: "Do they finish with the same ideal net work?",
+            inv3: "Load Wide Zigzag. What changed: distance, force, or net work?",
+            inv4: "Load Wasteful Dip. Why is total climb work now larger?",
+            inv5: "Turn on friction. Which route now costs the most total work?",
+          },
+          pl: {
+            title: "Laboratorium Pracy Na Wzg\u00F3rzu",
+            subtitle:
+              "Narysuj drog\u0119 pod g\u00F3r\u0119 i por\u00F3wnaj si\u0142\u0119, drog\u0119 i prac\u0119.",
+            angle: "K\u0105t Wzg\u00F3rza",
+            ideal: "Idealnie",
+            withFriction: "Z Tarciem",
+            friction: "Tarcie",
+            speed: "Pr\u0119dko\u015B\u0107",
+            slow: "Wolno",
+            normal: "Normalnie",
+            fast: "Szybko",
+            direct: "Prosto",
+            switchback45: "Zakosy 45\u00B0",
+            wideZigzag: "Szeroki Zygzak",
+            wastefulDip: "Niepotrzebny Spadek",
+            undo: "Cofnij",
+            clear: "Wyczy\u015B\u0107",
+            run: "Start",
+            saveA: "Zapisz A",
+            saveB: "Zapisz B",
+            saveC: "Zapisz C",
+            start: "START",
+            peak: "SZCZYT",
+            height: "Wysoko\u015B\u0107",
+            distance: "Droga",
+            peakForce: "Maks. Si\u0142a",
+            netWork: "Praca Netto",
+            climbWork: "Ca\u0142kowita Praca Wspinania",
+            frictionLoss: "Strata Na Tarcie",
+            totalWork: "Praca Ca\u0142kowita",
+            metrics: "Metryki",
+            explanation: "Wyja\u015Bnienie",
+            cumulativeWork: "Skumulowana Praca",
+            comparison: "Por\u00F3wnanie",
+            now: "Teraz",
+            mode: "Tryb",
+            wNet: "W netto",
+            wClimb: "W wspinania",
+            wTotal: "W ca\u0142kowita",
+            investigations: "Badania",
+            sameSummit:
+              "Ten sam szczyt, ta sama idealna praca.",
+            gentlerForce:
+              "\u0141agodniejsza droga, mniejsza si\u0142a.",
+            extraClimb:
+              "Ta droga wymaga dodatkowego wspinania.",
+            statusDraw:
+              "Narysuj drog\u0119 od START do SZCZYTU.",
+            statusReady:
+              "Droga gotowa. Naci\u015Bnij Start, aby obejrze\u0107 wspinaczk\u0119 robaka.",
+            statusSameWork:
+              "Ten sam szczyt, ta sama idealna praca. Zmieni\u0142y si\u0119 tylko si\u0142a i droga.",
+            statusExtraClimb:
+              "Ta droga raz opada, wi\u0119c robak musi p\u00F3\u017Aniej odrobi\u0107 dodatkow\u0105 wysoko\u015B\u0107.",
+            statusFriction:
+              "Gdy tarcie jest w\u0142\u0105czone, d\u0142u\u017Csze drogi trac\u0105 wi\u0119cej energii.",
+            inv1: "Za\u0142aduj Prosto, potem Zakosy 45\u00B0. Kt\u00F3ra trasa ma wi\u0119ksz\u0105 szczytow\u0105 si\u0142\u0119?",
+            inv2: "Czy obie ko\u0144cz\u0105 si\u0119 t\u0105 sam\u0105 idealn\u0105 prac\u0105 netto?",
+            inv3: "Za\u0142aduj Szeroki Zygzak. Co si\u0119 zmieni\u0142o: droga, si\u0142a czy praca netto?",
+            inv4: "Za\u0142aduj Niepotrzebny Spadek. Dlaczego ca\u0142kowita praca wspinania jest teraz wi\u0119ksza?",
+            inv5: "W\u0142\u0105cz tarcie. Kt\u00F3ra trasa kosztuje teraz najwi\u0119cej ca\u0142kowitej pracy?",
+          },
+        };
+
+        function T(key) {
+          return I18N[lang][key];
+        }
+
+        /* ───────── CONSTANTS ───────── */
+        var M = 1.0;
+        var G = 9.81;
+        var MAX_SEGMENTS = 48;
+        var GRID_MIN_X = -5,
+          GRID_MAX_X = 5;
+        var GRID_MIN_Y = 0,
+          GRID_MAX_Y = 12;
+        var HILL_X = 70,
+          HILL_Y = 50,
+          HILL_W = 560,
+          HILL_H = 500;
+        var PROFILE_W = 160,
+          PROFILE_H = 90;
+        var PROFILE_X = HILL_X + HILL_W - PROFILE_W - 12;
+        var PROFILE_Y = HILL_Y + HILL_H - PROFILE_H - 12;
+        var SPEED_MS = { slow: 700, normal: 350, fast: 120 };
+        var SAVED_COLORS = ["#d32f2f", "#1565c0", "#00897b"];
+        var NUM_CONTOURS = 7;
+
+        /* ───────── STATE ───────── */
+        var state = {
+          angleDeg: 30,
+          mode: "ideal",
+          mu: 0.15,
+          speed: "normal",
+          route: [{ x: 0, y: 0 }],
+          complete: false,
+          savedRoutes: { A: null, B: null, C: null },
+          animating: false,
+          animStartTime: 0,
+          animRafId: null,
+          ranOnce: false,
+          metrics: null,
+          cumData: null,
+          invOpen: false,
+          dismissedInv: {},
+          statusKey: "draw",
+        };
+
+        /* ───────── DOM REFS ───────── */
+        var boardSvg = document.getElementById("board");
+        var angleSlider = document.getElementById("angleSlider");
+        var angleVal = document.getElementById("angleVal");
+        var muSlider = document.getElementById("muSlider");
+        var muVal = document.getElementById("muVal");
+        var runBtn = document.getElementById("runBtn");
+        var undoBtn = document.getElementById("undoBtn");
+        var clearBtn = document.getElementById("clearBtn");
+        var chartCanvas = document.getElementById("chart");
+        var chartCtx = chartCanvas.getContext("2d");
+
+        /* ───────── PHYSICS ───────── */
+        function degToRad(d) {
+          return (d * Math.PI) / 180;
+        }
+
+        function summitHeight(angleDeg) {
+          return 12 * Math.sin(degToRad(angleDeg));
+        }
+
+        function computeSegment(p1, p2, angleDeg) {
+          var dx = p2.x - p1.x;
+          var dy = p2.y - p1.y;
+          var ds = Math.sqrt(dx * dx + dy * dy);
+          var sinA = Math.sin(degToRad(angleDeg));
+          var cosA = Math.cos(degToRad(angleDeg));
+          var dh = dy * sinA;
+          var forceIdeal =
+            ds > 0 ? M * G * sinA * Math.max(0, dy / ds) : 0;
+          return { dx: dx, dy: dy, ds: ds, dh: dh, forceIdeal: forceIdeal, sinA: sinA, cosA: cosA };
+        }
+
+        function computeRouteMetrics(points, angleDeg, mode, mu) {
+          if (points.length < 2) return null;
+          var sinA = Math.sin(degToRad(angleDeg));
+          var cosA = Math.cos(degToRad(angleDeg));
+          var distance = 0;
+          var peakForce = 0;
+          var hUp = 0;
+          var monotone = true;
+          var cumNet = [0];
+          var cumUp = [0];
+          var cumFric = [0];
+
+          for (var i = 0; i < points.length - 1; i++) {
+            var seg = computeSegment(points[i], points[i + 1], angleDeg);
+            distance += seg.ds;
+            if (seg.forceIdeal > peakForce) peakForce = seg.forceIdeal;
+            if (seg.dh > 0) hUp += seg.dh;
+            if (seg.dy < 0) monotone = false;
+
+            var wFricSeg = mu * M * G * cosA * seg.ds;
+            cumNet.push(cumNet[i] + M * G * seg.dh);
+            cumUp.push(cumUp[i] + M * G * Math.max(seg.dh, 0));
+            cumFric.push(cumFric[i] + wFricSeg);
+          }
+
+          var hNet =
+            (points[points.length - 1].y - points[0].y) * sinA;
+          var netWork = M * G * hNet;
+          var climbWork = M * G * hUp;
+          var frictionWork = mu * M * G * cosA * distance;
+          var totalWork = climbWork + frictionWork;
+
+          return {
+            distance: distance,
+            summitHeight: summitHeight(angleDeg),
+            peakForce: peakForce,
+            netWork: netWork,
+            climbWork: climbWork,
+            frictionWork: frictionWork,
+            totalWork: totalWork,
+            monotone: monotone,
+            cumNet: cumNet,
+            cumUp: cumUp,
+            cumFric: cumFric,
+          };
+        }
+
+        /* ───────── PRESETS ───────── */
+        var PRESET_WAYPOINTS = {
+          direct: [
+            { x: 0, y: 0 },
+            { x: 0, y: 12 },
+          ],
+          switchback: [
+            { x: 0, y: 0 },
+            { x: 3, y: 3 },
+            { x: 0, y: 6 },
+            { x: -3, y: 9 },
+            { x: 0, y: 12 },
+          ],
+          zigzag: [
+            { x: 0, y: 0 },
+            { x: 4, y: 2 },
+            { x: -4, y: 4 },
+            { x: 4, y: 6 },
+            { x: -4, y: 8 },
+            { x: 4, y: 10 },
+            { x: 0, y: 12 },
+          ],
+          dip: [
+            { x: 0, y: 0 },
+            { x: 2, y: 4 },
+            { x: 0, y: 3 },
+            { x: -2, y: 7 },
+            { x: 0, y: 12 },
+          ],
+        };
+
+        function expandWaypoints(waypoints) {
+          var result = [{ x: waypoints[0].x, y: waypoints[0].y }];
+          for (var w = 1; w < waypoints.length; w++) {
+            var bx = waypoints[w].x;
+            var by = waypoints[w].y;
+            var cx = result[result.length - 1].x;
+            var cy = result[result.length - 1].y;
+            while (cx !== bx || cy !== by) {
+              if (cx !== bx) cx += cx < bx ? 1 : -1;
+              if (cy !== by) cy += cy < by ? 1 : -1;
+              result.push({ x: cx, y: cy });
+            }
+          }
+          return result;
+        }
+
+        function loadPreset(name) {
+          if (state.animating) stopAnimation();
+          state.route = expandWaypoints(PRESET_WAYPOINTS[name]);
+          state.complete = true;
+          state.ranOnce = false;
+          recomputeAndRedraw();
+          updateStatus("ready");
+          updateButtonStates();
+        }
+
+        /* ───────── COORDINATE MAPPING ───────── */
+        function gridToSvg(gx, gy) {
+          return {
+            sx: HILL_X + ((gx - GRID_MIN_X) / (GRID_MAX_X - GRID_MIN_X)) * HILL_W,
+            sy: HILL_Y + (1 - (gy - GRID_MIN_Y) / (GRID_MAX_Y - GRID_MIN_Y)) * HILL_H,
+          };
+        }
+
+        /* ───────── SVG HELPERS ───────── */
+        function svgEl(tag, attrs) {
+          var e = document.createElementNS(SVG_NS, tag);
+          if (attrs) {
+            var keys = Object.keys(attrs);
+            for (var i = 0; i < keys.length; i++) {
+              e.setAttribute(keys[i], attrs[keys[i]]);
+            }
+          }
+          return e;
+        }
+
+        function clearGroup(g) {
+          while (g.lastChild) g.removeChild(g.lastChild);
+        }
+
+        /* persistent layer groups */
+        var layerBg, layerContours, layerGrid, layerSaved;
+        var layerRoute, layerTargets, layerMarkers, layerBug, layerProfile;
+
+        function initLayers() {
+          var names = [
+            "layerBg",
+            "layerContours",
+            "layerGrid",
+            "layerSaved",
+            "layerRoute",
+            "layerTargets",
+            "layerMarkers",
+            "layerBug",
+            "layerProfile",
+          ];
+          var groups = {};
+          for (var i = 0; i < names.length; i++) {
+            var g = svgEl("g", { id: names[i] });
+            boardSvg.appendChild(g);
+            groups[names[i]] = g;
+          }
+          layerBg = groups.layerBg;
+          layerContours = groups.layerContours;
+          layerGrid = groups.layerGrid;
+          layerSaved = groups.layerSaved;
+          layerRoute = groups.layerRoute;
+          layerTargets = groups.layerTargets;
+          layerMarkers = groups.layerMarkers;
+          layerBug = groups.layerBug;
+          layerProfile = groups.layerProfile;
+        }
+
+        /* ───────── BOARD RENDERING ───────── */
+        function drawHillBackground() {
+          clearGroup(layerBg);
+          layerBg.appendChild(
+            svgEl("rect", {
+              x: HILL_X,
+              y: HILL_Y,
+              width: HILL_W,
+              height: HILL_H,
+              fill: "url(#hillGrad)",
+              rx: 4,
+            })
+          );
+          layerBg.appendChild(
+            svgEl("rect", {
+              x: HILL_X,
+              y: HILL_Y,
+              width: HILL_W,
+              height: HILL_H,
+              fill: "none",
+              stroke: "#b0bfa8",
+              "stroke-width": 1.5,
+              rx: 4,
+            })
+          );
+        }
+
+        function drawContourLines() {
+          clearGroup(layerContours);
+          var sinA = Math.sin(degToRad(state.angleDeg));
+          for (var i = 1; i <= NUM_CONTOURS; i++) {
+            var gy = (i * GRID_MAX_Y) / (NUM_CONTOURS + 1);
+            var pt = gridToSvg(0, gy);
+            layerContours.appendChild(
+              svgEl("line", {
+                x1: HILL_X + 1,
+                y1: pt.sy,
+                x2: HILL_X + HILL_W - 1,
+                y2: pt.sy,
+                stroke: "#a5b5a0",
+                "stroke-width": 0.8,
+                "stroke-dasharray": "4,3",
+                opacity: 0.6,
+              })
+            );
+            var h = (gy * sinA).toFixed(1);
+            var label = svgEl("text", {
+              x: HILL_X - 4,
+              y: pt.sy + 3,
+              "text-anchor": "end",
+              fill: "#90a4ae",
+              "font-family": "'Share Tech Mono', monospace",
+              "font-size": "9",
+            });
+            label.textContent = h + "m";
+            layerContours.appendChild(label);
+          }
+        }
+
+        function drawGrid() {
+          clearGroup(layerGrid);
+          for (var gx = GRID_MIN_X; gx <= GRID_MAX_X; gx++) {
+            for (var gy = GRID_MIN_Y; gy <= GRID_MAX_Y; gy++) {
+              var pt = gridToSvg(gx, gy);
+              layerGrid.appendChild(
+                svgEl("circle", {
+                  cx: pt.sx,
+                  cy: pt.sy,
+                  r: 2,
+                  fill: "#b0bfa8",
+                  opacity: 0.5,
+                })
+              );
+            }
+          }
+        }
+
+        function drawSavedRoutes() {
+          clearGroup(layerSaved);
+          var slots = ["A", "B", "C"];
+          for (var s = 0; s < slots.length; s++) {
+            var saved = state.savedRoutes[slots[s]];
+            if (!saved) continue;
+            var pts = saved.points;
+            var d = "";
+            for (var i = 0; i < pts.length; i++) {
+              var p = gridToSvg(pts[i].x, pts[i].y);
+              d += (i === 0 ? "M" : "L") + p.sx + "," + p.sy;
+            }
+            layerSaved.appendChild(
+              svgEl("path", {
+                d: d,
+                fill: "none",
+                stroke: SAVED_COLORS[s],
+                "stroke-width": 2.5,
+                opacity: 0.3,
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round",
+              })
+            );
+          }
+        }
+
+        function drawActiveRoute() {
+          clearGroup(layerRoute);
+          if (state.route.length < 2) return;
+          var d = "";
+          for (var i = 0; i < state.route.length; i++) {
+            var p = gridToSvg(state.route[i].x, state.route[i].y);
+            d += (i === 0 ? "M" : "L") + p.sx + "," + p.sy;
+          }
+          layerRoute.appendChild(
+            svgEl("path", {
+              d: d,
+              fill: "none",
+              stroke: "#37474f",
+              "stroke-width": 3,
+              "stroke-linecap": "round",
+              "stroke-linejoin": "round",
+            })
+          );
+          /* route dots */
+          for (var j = 0; j < state.route.length; j++) {
+            var pp = gridToSvg(state.route[j].x, state.route[j].y);
+            layerRoute.appendChild(
+              svgEl("circle", {
+                cx: pp.sx,
+                cy: pp.sy,
+                r: j === state.route.length - 1 && !state.complete ? 4.5 : 3,
+                fill:
+                  j === state.route.length - 1 && !state.complete
+                    ? "#ff6f00"
+                    : "#37474f",
+              })
+            );
+          }
+        }
+
+        function drawLegalTargets() {
+          clearGroup(layerTargets);
+          if (state.complete || state.animating) return;
+          if (state.route.length - 1 >= MAX_SEGMENTS) return;
+          var last = state.route[state.route.length - 1];
+          var moves = getLegalMoves(last);
+          for (var i = 0; i < moves.length; i++) {
+            var m = moves[i];
+            var pt = gridToSvg(m.x, m.y);
+            /* highlight ring */
+            layerTargets.appendChild(
+              svgEl("circle", {
+                cx: pt.sx,
+                cy: pt.sy,
+                r: 7,
+                fill: "#ff6f00",
+                opacity: 0.25,
+              })
+            );
+            /* center dot */
+            layerTargets.appendChild(
+              svgEl("circle", {
+                cx: pt.sx,
+                cy: pt.sy,
+                r: 3.5,
+                fill: "#ff6f00",
+                opacity: 0.7,
+              })
+            );
+            /* hit target */
+            var hit = svgEl("circle", {
+              cx: pt.sx,
+              cy: pt.sy,
+              r: 18,
+              fill: "transparent",
+              "pointer-events": "all",
+              "data-gx": m.x,
+              "data-gy": m.y,
+            });
+            hit.style.cursor = "pointer";
+            hit.addEventListener("click", makeClickHandler(m.x, m.y));
+            layerTargets.appendChild(hit);
+          }
+        }
+
+        function makeClickHandler(gx, gy) {
+          return function () {
+            onGridClick(gx, gy);
+          };
+        }
+
+        function drawStartAndPeak() {
+          clearGroup(layerMarkers);
+          /* START pad */
+          var sp = gridToSvg(0, 0);
+          layerMarkers.appendChild(
+            svgEl("circle", {
+              cx: sp.sx,
+              cy: sp.sy,
+              r: 10,
+              fill: "#4caf50",
+              opacity: 0.3,
+            })
+          );
+          var stLabel = svgEl("text", {
+            x: sp.sx,
+            y: sp.sy + 22,
+            "text-anchor": "middle",
+            fill: "#4caf50",
+            "font-family": "'Share Tech Mono', monospace",
+            "font-size": "10",
+            "font-weight": "700",
+          });
+          stLabel.textContent = T("start");
+          layerMarkers.appendChild(stLabel);
+
+          /* PEAK flag */
+          var pk = gridToSvg(0, 12);
+          /* flag pole */
+          layerMarkers.appendChild(
+            svgEl("line", {
+              x1: pk.sx,
+              y1: pk.sy,
+              x2: pk.sx,
+              y2: pk.sy - 22,
+              stroke: "#d32f2f",
+              "stroke-width": 2,
+            })
+          );
+          /* flag */
+          layerMarkers.appendChild(
+            svgEl("polygon", {
+              points:
+                pk.sx +
+                "," +
+                (pk.sy - 22) +
+                " " +
+                (pk.sx + 14) +
+                "," +
+                (pk.sy - 16) +
+                " " +
+                pk.sx +
+                "," +
+                (pk.sy - 10),
+              fill: "#d32f2f",
+            })
+          );
+          var pkLabel = svgEl("text", {
+            x: pk.sx,
+            y: pk.sy - 26,
+            "text-anchor": "middle",
+            fill: "#d32f2f",
+            "font-family": "'Share Tech Mono', monospace",
+            "font-size": "10",
+            "font-weight": "700",
+          });
+          pkLabel.textContent = T("peak");
+          layerMarkers.appendChild(pkLabel);
+        }
+
+        function drawBugAt(gx, gy, segIdx) {
+          clearGroup(layerBug);
+          var pt = gridToSvg(gx, gy);
+          /* body */
+          layerBug.appendChild(
+            svgEl("circle", {
+              cx: pt.sx,
+              cy: pt.sy,
+              r: 7,
+              fill: "#263238",
+            })
+          );
+          /* head */
+          var headDir = 0;
+          if (segIdx !== undefined && segIdx < state.route.length - 1) {
+            var np = gridToSvg(
+              state.route[segIdx + 1].x,
+              state.route[segIdx + 1].y
+            );
+            headDir = Math.atan2(np.sy - pt.sy, np.sx - pt.sx);
+          } else if (state.route.length >= 2) {
+            var lp = gridToSvg(
+              state.route[state.route.length - 2].x,
+              state.route[state.route.length - 2].y
+            );
+            headDir = Math.atan2(pt.sy - lp.sy, pt.sx - lp.sx);
+          }
+          var hx = pt.sx + Math.cos(headDir) * 9;
+          var hy = pt.sy + Math.sin(headDir) * 9;
+          layerBug.appendChild(
+            svgEl("circle", { cx: hx, cy: hy, r: 3.5, fill: "#455a64" })
+          );
+          /* legs */
+          var perpX = -Math.sin(headDir);
+          var perpY = Math.cos(headDir);
+          var legPhase = segIdx !== undefined ? segIdx * 0.8 : 0;
+          for (var l = -1; l <= 1; l++) {
+            var along = l * 5;
+            var bx = pt.sx + Math.cos(headDir) * along;
+            var by = pt.sy + Math.sin(headDir) * along;
+            var wiggle = Math.sin(legPhase + l * 2) * 2;
+            layerBug.appendChild(
+              svgEl("line", {
+                x1: bx,
+                y1: by,
+                x2: bx + perpX * (8 + wiggle),
+                y2: by + perpY * (8 + wiggle),
+                stroke: "#263238",
+                "stroke-width": 1.2,
+              })
+            );
+            layerBug.appendChild(
+              svgEl("line", {
+                x1: bx,
+                y1: by,
+                x2: bx - perpX * (8 - wiggle),
+                y2: by - perpY * (8 - wiggle),
+                stroke: "#263238",
+                "stroke-width": 1.2,
+              })
+            );
+          }
+
+          /* force arrow */
+          if (
+            state.animating &&
+            segIdx !== undefined &&
+            segIdx < state.route.length - 1
+          ) {
+            var seg = computeSegment(
+              state.route[segIdx],
+              state.route[segIdx + 1],
+              state.angleDeg
+            );
+            if (seg.forceIdeal > 0.01) {
+              var arrowLen = 15 + (seg.forceIdeal / (M * G)) * 40;
+              var ax = pt.sx - Math.cos(headDir) * 12;
+              var ay = pt.sy - Math.sin(headDir) * 12;
+              layerBug.appendChild(
+                svgEl("line", {
+                  x1: ax,
+                  y1: ay,
+                  x2: ax - Math.cos(headDir) * arrowLen,
+                  y2: ay - Math.sin(headDir) * arrowLen,
+                  stroke: "#ff6f00",
+                  "stroke-width": 2.5,
+                  "marker-end": "url(#arrowHead)",
+                  opacity: 0.8,
+                })
+              );
+            }
+          }
+        }
+
+        function drawSideProfile(bugGy) {
+          clearGroup(layerProfile);
+          var px = PROFILE_X;
+          var py = PROFILE_Y;
+          var pw = PROFILE_W;
+          var ph = PROFILE_H;
+
+          /* background */
+          layerProfile.appendChild(
+            svgEl("rect", {
+              x: px,
+              y: py,
+              width: pw,
+              height: ph,
+              fill: "#fff",
+              opacity: 0.85,
+              rx: 4,
+              stroke: "#e0ddd6",
+              "stroke-width": 1,
+            })
+          );
+
+          var sinA = Math.sin(degToRad(state.angleDeg));
+          var cosA = Math.cos(degToRad(state.angleDeg));
+          var surfLen = 12; /* meters */
+          var horzLen = surfLen * cosA;
+          var vertH = surfLen * sinA;
+
+          /* scale to fit */
+          var margin = 14;
+          var scaleX = (pw - margin * 2) / Math.max(horzLen, 0.1);
+          var scaleY = (ph - margin * 2) / Math.max(vertH, 0.1);
+          var scale = Math.min(scaleX, scaleY);
+          var ox = px + margin;
+          var baseY = py + ph - margin;
+
+          /* triangle */
+          var topX = ox + horzLen * scale;
+          var topY = baseY - vertH * scale;
+          layerProfile.appendChild(
+            svgEl("polygon", {
+              points:
+                ox + "," + baseY + " " + topX + "," + baseY + " " + topX + "," + topY,
+              fill: "#e8f5e9",
+              stroke: "#a5b5a0",
+              "stroke-width": 1,
+            })
+          );
+          /* slope line */
+          layerProfile.appendChild(
+            svgEl("line", {
+              x1: ox,
+              y1: baseY,
+              x2: topX,
+              y2: topY,
+              stroke: "#78909c",
+              "stroke-width": 1.5,
+            })
+          );
+          /* angle arc */
+          var arcR = 18;
+          var arcEndX = ox + arcR;
+          var arcEndY = baseY;
+          var arcTopX = ox + Math.cos(degToRad(state.angleDeg)) * arcR;
+          var arcTopY = baseY - Math.sin(degToRad(state.angleDeg)) * arcR;
+          layerProfile.appendChild(
+            svgEl("path", {
+              d:
+                "M" +
+                arcEndX +
+                "," +
+                arcEndY +
+                " A" +
+                arcR +
+                "," +
+                arcR +
+                " 0 0,0 " +
+                arcTopX +
+                "," +
+                arcTopY,
+              fill: "none",
+              stroke: "#78909c",
+              "stroke-width": 0.8,
+            })
+          );
+          var aLabel = svgEl("text", {
+            x: ox + arcR + 4,
+            y: baseY - 4,
+            fill: "#78909c",
+            "font-family": "'Share Tech Mono', monospace",
+            "font-size": "8",
+          });
+          aLabel.textContent = state.angleDeg + "\u00B0";
+          layerProfile.appendChild(aLabel);
+
+          /* height label */
+          var hLabel = svgEl("text", {
+            x: topX + 4,
+            y: (topY + baseY) / 2 + 3,
+            fill: "#78909c",
+            "font-family": "'Share Tech Mono', monospace",
+            "font-size": "8",
+          });
+          hLabel.textContent = vertH.toFixed(1) + "m";
+          layerProfile.appendChild(hLabel);
+
+          /* bug height marker */
+          if (bugGy !== undefined) {
+            var bugH = bugGy * sinA;
+            var markerY = baseY - bugH * scale;
+            if (markerY >= topY && markerY <= baseY) {
+              layerProfile.appendChild(
+                svgEl("line", {
+                  x1: ox,
+                  y1: markerY,
+                  x2: topX,
+                  y2: markerY,
+                  stroke: "#ff6f00",
+                  "stroke-width": 1,
+                  "stroke-dasharray": "3,2",
+                  opacity: 0.7,
+                })
+              );
+              var bugDot = svgEl("circle", {
+                cx: topX,
+                cy: markerY,
+                r: 3,
+                fill: "#ff6f00",
+              });
+              layerProfile.appendChild(bugDot);
+            }
+          }
+        }
+
+        function redrawBoard() {
+          drawHillBackground();
+          drawContourLines();
+          drawGrid();
+          drawSavedRoutes();
+          drawActiveRoute();
+          drawLegalTargets();
+          drawStartAndPeak();
+          if (!state.animating) {
+            var lastPt = state.route[state.route.length - 1];
+            if (state.route.length >= 2) {
+              drawBugAt(lastPt.x, lastPt.y, state.route.length - 2);
+            }
+            drawSideProfile(lastPt.y);
+          }
+        }
+
+        /* ───────── ROUTE EDITOR ───────── */
+        function getLegalMoves(current) {
+          var moves = [];
+          for (var dx = -1; dx <= 1; dx++) {
+            for (var dy = -1; dy <= 1; dy++) {
+              if (dx === 0 && dy === 0) continue;
+              var nx = current.x + dx;
+              var ny = current.y + dy;
+              if (
+                nx >= GRID_MIN_X &&
+                nx <= GRID_MAX_X &&
+                ny >= GRID_MIN_Y &&
+                ny <= GRID_MAX_Y
+              ) {
+                moves.push({ x: nx, y: ny });
+              }
+            }
+          }
+          return moves;
+        }
+
+        function onGridClick(gx, gy) {
+          if (state.complete || state.animating) return;
+          if (state.route.length - 1 >= MAX_SEGMENTS) return;
+          state.route.push({ x: gx, y: gy });
+          if (gx === 0 && gy === 12) {
+            state.complete = true;
+            state.ranOnce = false;
+            recomputeAndRedraw();
+            updateStatus("ready");
+          } else {
+            recomputeAndRedraw();
+            updateStatus("draw");
+          }
+          updateButtonStates();
+        }
+
+        function undoStep() {
+          if (state.animating) return;
+          if (state.route.length <= 1) return;
+          state.route.pop();
+          state.complete = false;
+          state.ranOnce = false;
+          recomputeAndRedraw();
+          updateStatus("draw");
+          updateButtonStates();
+        }
+
+        function clearRoute() {
+          if (state.animating) stopAnimation();
+          state.route = [{ x: 0, y: 0 }];
+          state.complete = false;
+          state.ranOnce = false;
+          state.metrics = null;
+          recomputeAndRedraw();
+          updateStatus("draw");
+          updateButtonStates();
+        }
+
+        /* ───────── ANIMATION ───────── */
+        function startAnimation() {
+          if (!state.complete || state.animating) return;
+          state.animating = true;
+          state.animStartTime = performance.now();
+          updateButtonStates();
+          drawLegalTargets(); /* clears targets */
+          scheduleAnimTick();
+        }
+
+        function scheduleAnimTick() {
+          state.animRafId = setTimeout(function () {
+            animFrame(performance.now());
+          }, 30);
+        }
+
+        function stopAnimation() {
+          state.animating = false;
+          if (state.animRafId) {
+            clearTimeout(state.animRafId);
+            state.animRafId = null;
+          }
+          updateButtonStates();
+        }
+
+        function animFrame(ts) {
+          if (!state.animating) return;
+          var totalSegs = state.route.length - 1;
+          var segDur = SPEED_MS[state.speed];
+          var totalDur = totalSegs * segDur;
+          var elapsed = ts - state.animStartTime;
+          var progress = Math.min(elapsed / totalDur, 1);
+
+          var exactSeg = progress * totalSegs;
+          var segIdx = Math.min(Math.floor(exactSeg), totalSegs - 1);
+          var segProg = exactSeg - segIdx;
+
+          var p1 = state.route[segIdx];
+          var p2 = state.route[Math.min(segIdx + 1, totalSegs)];
+          var cx = p1.x + (p2.x - p1.x) * segProg;
+          var cy = p1.y + (p2.y - p1.y) * segProg;
+
+          drawActiveRoute();
+          drawBugAt(cx, cy, segIdx);
+          drawSideProfile(cy);
+          updateChartProgress(progress);
+
+          if (progress >= 1) {
+            finishAnimation();
+            return;
+          }
+          scheduleAnimTick();
+        }
+
+        function finishAnimation() {
+          state.animating = false;
+          state.ranOnce = true;
+          state.animRafId = null;
+          var m = state.metrics;
+          if (state.mode === "friction") {
+            updateStatus("friction");
+          } else if (m && !m.monotone) {
+            updateStatus("extraClimb");
+          } else {
+            updateStatus("sameWork");
+          }
+          redrawBoard();
+          drawChart();
+          updateButtonStates();
+        }
+
+        /* ───────── METRICS DISPLAY ───────── */
+        function fmtNum(v, decimals) {
+          if (v === null || v === undefined) return "\u2014";
+          return v.toFixed(decimals !== undefined ? decimals : 2);
+        }
+
+        function updateMetrics() {
+          document.getElementById("readAngle").textContent =
+            state.angleDeg + "\u00B0";
+          document.getElementById("readHeight").textContent =
+            fmtNum(summitHeight(state.angleDeg)) + " m";
+
+          var m = state.metrics;
+          if (!m || state.route.length < 2) {
+            document.getElementById("readDistance").textContent = "\u2014 m";
+            document.getElementById("readPeakForce").textContent = "\u2014 N";
+            document.getElementById("readNetWork").textContent = "\u2014 J";
+            document.getElementById("readClimbWork").textContent = "\u2014 J";
+            document.getElementById("readFrictionLoss").textContent = "\u2014 J";
+            document.getElementById("readTotalWork").textContent = "\u2014 J";
+            document.getElementById("explanationCard").textContent = "\u2014";
+            return;
+          }
+          document.getElementById("readDistance").textContent =
+            fmtNum(m.distance) + " m";
+          document.getElementById("readPeakForce").textContent =
+            fmtNum(m.peakForce) + " N";
+          document.getElementById("readNetWork").textContent =
+            fmtNum(m.netWork) + " J";
+          document.getElementById("readClimbWork").textContent =
+            fmtNum(m.climbWork) + " J";
+          document.getElementById("readFrictionLoss").textContent =
+            fmtNum(m.frictionWork) + " J";
+          document.getElementById("readTotalWork").textContent =
+            fmtNum(m.totalWork) + " J";
+
+          /* explanation card */
+          var explanation = getExplanation(m);
+          document.getElementById("explanationCard").textContent = explanation;
+        }
+
+        function getExplanation(m) {
+          if (!m) return "\u2014";
+          if (state.mode === "friction") {
+            return T("statusFriction");
+          }
+          if (!m.monotone) {
+            return T("extraClimb");
+          }
+          if (m.peakForce < M * G * Math.sin(degToRad(state.angleDeg)) - 0.01) {
+            return T("gentlerForce");
+          }
+          return T("sameSummit");
+        }
+
+        function recomputeAndRedraw() {
+          if (state.route.length >= 2) {
+            state.metrics = computeRouteMetrics(
+              state.route,
+              state.angleDeg,
+              state.mode,
+              state.mu
+            );
+          } else {
+            state.metrics = null;
+          }
+          updateMetrics();
+          redrawBoard();
+          drawChart();
+          updateComparisonTable();
+        }
+
+        /* ───────── STATUS ───────── */
+        function updateStatus(key) {
+          state.statusKey = key;
+          var el = document.getElementById("statusText");
+          switch (key) {
+            case "draw":
+              el.textContent = T("statusDraw");
+              break;
+            case "ready":
+              el.textContent = T("statusReady");
+              break;
+            case "sameWork":
+              el.textContent = T("statusSameWork");
+              break;
+            case "extraClimb":
+              el.textContent = T("statusExtraClimb");
+              break;
+            case "friction":
+              el.textContent = T("statusFriction");
+              break;
+          }
+        }
+
+        /* ───────── BUTTON STATES ───────── */
+        function updateButtonStates() {
+          undoBtn.disabled = state.route.length <= 1 || state.animating;
+          clearBtn.disabled = state.animating;
+          runBtn.disabled = !state.complete || state.animating;
+          var canSave = state.complete && !state.animating;
+          document.getElementById("saveABtn").disabled = !canSave;
+          document.getElementById("saveBBtn").disabled = !canSave;
+          document.getElementById("saveCBtn").disabled = !canSave;
+
+          /* presets */
+          document.getElementById("presetDirect").disabled = state.animating;
+          document.getElementById("presetSwitchback").disabled = state.animating;
+          document.getElementById("presetZigzag").disabled = state.animating;
+          document.getElementById("presetDip").disabled = state.animating;
+        }
+
+        /* ───────── CHART ───────── */
+        function resizeChart() {
+          var wrap = chartCanvas.parentElement;
+          var rect = wrap.getBoundingClientRect();
+          var dpr = window.devicePixelRatio || 1;
+          chartCanvas.width = rect.width * dpr;
+          chartCanvas.height = rect.height * dpr;
+          chartCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawChart(progress) {
+          resizeChart();
+          var w = chartCanvas.width / (window.devicePixelRatio || 1);
+          var h = chartCanvas.height / (window.devicePixelRatio || 1);
+          chartCtx.clearRect(0, 0, w, h);
+
+          var m = state.metrics;
+          if (!m || !m.cumNet || m.cumNet.length < 2) {
+            chartCtx.fillStyle = "#90a4ae";
+            chartCtx.font = "11px 'Share Tech Mono', monospace";
+            chartCtx.textAlign = "center";
+            chartCtx.fillText("\u2014", w / 2, h / 2 + 4);
+            return;
+          }
+
+          var pad = { l: 40, r: 10, t: 10, b: 20 };
+          var cw = w - pad.l - pad.r;
+          var ch = h - pad.t - pad.b;
+          var n = m.cumNet.length;
+
+          /* determine y range */
+          var yMax = 0;
+          for (var i = 0; i < n; i++) {
+            yMax = Math.max(yMax, Math.abs(m.cumNet[i]), m.cumUp[i]);
+            if (state.mode === "friction") {
+              yMax = Math.max(yMax, m.cumUp[i] + m.cumFric[i]);
+            }
+          }
+          yMax = Math.max(yMax, 1) * 1.1;
+          var yMin = 0;
+          for (var j = 0; j < n; j++) {
+            yMin = Math.min(yMin, m.cumNet[j]);
+          }
+          yMin = yMin < 0 ? yMin * 1.1 : 0;
+
+          function px(idx) {
+            return pad.l + (idx / (n - 1)) * cw;
+          }
+          function py(val) {
+            return pad.t + ch - ((val - yMin) / (yMax - yMin)) * ch;
+          }
+
+          var limit = progress !== undefined ? Math.round(progress * (n - 1)) + 1 : n;
+          limit = Math.min(limit, n);
+
+          /* axis */
+          chartCtx.strokeStyle = "#e0ddd6";
+          chartCtx.lineWidth = 1;
+          chartCtx.beginPath();
+          chartCtx.moveTo(pad.l, pad.t);
+          chartCtx.lineTo(pad.l, pad.t + ch);
+          chartCtx.lineTo(pad.l + cw, pad.t + ch);
+          chartCtx.stroke();
+
+          /* zero line if needed */
+          if (yMin < 0) {
+            chartCtx.strokeStyle = "#e0ddd6";
+            chartCtx.setLineDash([3, 3]);
+            chartCtx.beginPath();
+            chartCtx.moveTo(pad.l, py(0));
+            chartCtx.lineTo(pad.l + cw, py(0));
+            chartCtx.stroke();
+            chartCtx.setLineDash([]);
+          }
+
+          /* y labels */
+          chartCtx.fillStyle = "#90a4ae";
+          chartCtx.font = "9px 'Share Tech Mono', monospace";
+          chartCtx.textAlign = "right";
+          chartCtx.fillText(yMax.toFixed(0) + "J", pad.l - 4, pad.t + 8);
+          chartCtx.fillText("0", pad.l - 4, py(0) + 3);
+          if (yMin < 0) {
+            chartCtx.fillText(yMin.toFixed(0), pad.l - 4, pad.t + ch + 1);
+          }
+
+          /* x label */
+          chartCtx.textAlign = "center";
+          chartCtx.fillText("0%", pad.l, pad.t + ch + 14);
+          chartCtx.fillText("100%", pad.l + cw, pad.t + ch + 14);
+
+          /* draw lines */
+          function drawLine(data, color) {
+            chartCtx.strokeStyle = color;
+            chartCtx.lineWidth = 2;
+            chartCtx.beginPath();
+            for (var k = 0; k < limit; k++) {
+              var x = px(k);
+              var y = py(data[k]);
+              if (k === 0) chartCtx.moveTo(x, y);
+              else chartCtx.lineTo(x, y);
+            }
+            chartCtx.stroke();
+          }
+
+          drawLine(m.cumNet, "#1565c0");
+          drawLine(m.cumUp, "#d32f2f");
+
+          if (state.mode === "friction") {
+            var cumTotal = [];
+            for (var t = 0; t < n; t++) {
+              cumTotal.push(m.cumUp[t] + m.cumFric[t]);
+            }
+            drawLine(cumTotal, "#00897b");
+          }
+        }
+
+        function updateChartProgress(progress) {
+          drawChart(progress);
+        }
+
+        /* ───────── SAVE & COMPARISON ───────── */
+        function saveRoute(slot) {
+          if (!state.complete) return;
+          var m = computeRouteMetrics(
+            state.route,
+            state.angleDeg,
+            state.mode,
+            state.mu
+          );
+          state.savedRoutes[slot] = {
+            label: slot,
+            points: state.route.slice(),
+            angleDeg: state.angleDeg,
+            mode: state.mode,
+            mu: state.mu,
+            metrics: m,
+          };
+          drawSavedRoutes();
+          updateComparisonTable();
+        }
+
+        function updateComparisonTable() {
+          var tbody = document.getElementById("compBody");
+          while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+          var rows = [
+            { key: "distance", label: T("distance"), unit: "m", dec: 2 },
+            { key: "summitHeight", label: T("height"), unit: "m", dec: 2 },
+            { key: "peakForce", label: T("peakForce"), unit: "N", dec: 2 },
+            { key: "netWork", label: T("netWork"), unit: "J", dec: 1 },
+            { key: "climbWork", label: T("climbWork"), unit: "J", dec: 1 },
+          ];
+
+          /* show friction rows if any route uses friction */
+          var anyFriction = state.mode === "friction";
+          var slots = ["A", "B", "C"];
+          for (var s = 0; s < slots.length; s++) {
+            if (
+              state.savedRoutes[slots[s]] &&
+              state.savedRoutes[slots[s]].mode === "friction"
+            )
+              anyFriction = true;
+          }
+          if (anyFriction) {
+            rows.push({
+              key: "frictionWork",
+              label: T("frictionLoss"),
+              unit: "J",
+              dec: 1,
+            });
+            rows.push({
+              key: "totalWork",
+              label: T("totalWork"),
+              unit: "J",
+              dec: 1,
+            });
+          }
+
+          for (var r = 0; r < rows.length; r++) {
+            var row = rows[r];
+            var tr = document.createElement("tr");
+            var tdLabel = document.createElement("td");
+            tdLabel.textContent = row.label;
+            tr.appendChild(tdLabel);
+
+            /* current */
+            var tdCur = document.createElement("td");
+            tdCur.textContent =
+              state.metrics
+                ? fmtNum(state.metrics[row.key], row.dec) + " " + row.unit
+                : "\u2014";
+            tr.appendChild(tdCur);
+
+            /* saved slots */
+            for (var si = 0; si < slots.length; si++) {
+              var td = document.createElement("td");
+              td.className = "col-" + slots[si].toLowerCase();
+              var saved = state.savedRoutes[slots[si]];
+              td.textContent =
+                saved && saved.metrics
+                  ? fmtNum(saved.metrics[row.key], row.dec) + " " + row.unit
+                  : "\u2014";
+              tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+          }
+        }
+
+        /* ───────── INVESTIGATIONS ───────── */
+        function buildInvestigations() {
+          var container = document.getElementById("invCards");
+          while (container.firstChild) container.removeChild(container.firstChild);
+          var keys = ["inv1", "inv2", "inv3", "inv4", "inv5"];
+          for (var i = 0; i < keys.length; i++) {
+            if (state.dismissedInv[keys[i]]) continue;
+            var card = document.createElement("div");
+            card.className = "inv-card";
+            var num = document.createElement("span");
+            num.className = "inv-num";
+            num.textContent = (i + 1) + ".";
+            card.appendChild(num);
+            var txt = document.createElement("span");
+            txt.textContent = T(keys[i]);
+            card.appendChild(txt);
+            var dismiss = document.createElement("button");
+            dismiss.className = "inv-dismiss";
+            dismiss.textContent = "\u00D7";
+            dismiss.setAttribute("data-key", keys[i]);
+            dismiss.addEventListener("click", makeDismissHandler(keys[i]));
+            card.appendChild(dismiss);
+            container.appendChild(card);
+          }
+        }
+
+        function makeDismissHandler(key) {
+          return function () {
+            state.dismissedInv[key] = true;
+            buildInvestigations();
+          };
+        }
+
+        /* ───────── I18N APPLICATION ───────── */
+        function applyTranslations() {
+          document.documentElement.lang = lang;
+          document.title = T("title");
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          document.getElementById("langBtn").textContent =
+            lang === "en" ? "PL" : "EN";
+
+          /* control labels */
+          document.getElementById("lblAngle").textContent = T("angle");
+          document.getElementById("lblMode").textContent = T("mode");
+          document.getElementById("idealBtn").textContent = T("ideal");
+          document.getElementById("frictionBtn").textContent = T("withFriction");
+          document.getElementById("lblFriction").textContent = T("friction");
+          document.getElementById("lblSpeed").textContent = T("speed");
+          document.getElementById("speedSlow").textContent = T("slow");
+          document.getElementById("speedNormal").textContent = T("normal");
+          document.getElementById("speedFast").textContent = T("fast");
+
+          /* presets */
+          document.getElementById("presetDirect").textContent = T("direct");
+          document.getElementById("presetSwitchback").textContent =
+            T("switchback45");
+          document.getElementById("presetZigzag").textContent =
+            T("wideZigzag");
+          document.getElementById("presetDip").textContent = T("wastefulDip");
+
+          /* action buttons */
+          document.getElementById("undoBtn").textContent = T("undo");
+          document.getElementById("clearBtn").textContent = T("clear");
+          document.getElementById("runBtn").textContent = T("run");
+          document.getElementById("saveABtn").textContent = T("saveA");
+          document.getElementById("saveBBtn").textContent = T("saveB");
+          document.getElementById("saveCBtn").textContent = T("saveC");
+
+          /* metrics labels */
+          document.getElementById("lblMetrics").textContent = T("metrics");
+          document.getElementById("lblRAngle").textContent = T("angle");
+          document.getElementById("lblRHeight").textContent = T("height");
+          document.getElementById("lblRDistance").textContent = T("distance");
+          document.getElementById("lblRPeakForce").textContent = T("peakForce");
+          document.getElementById("lblRNetWork").textContent = T("netWork");
+          document.getElementById("lblRClimbWork").textContent = T("climbWork");
+          document.getElementById("lblRFrictionLoss").textContent =
+            T("frictionLoss");
+          document.getElementById("lblRTotalWork").textContent = T("totalWork");
+          document.getElementById("lblExplanation").textContent =
+            T("explanation");
+
+          /* chart */
+          document.getElementById("lblChart").textContent = T("cumulativeWork");
+          document.getElementById("lblChartNet").textContent = T("wNet");
+          document.getElementById("lblChartUp").textContent = T("wClimb");
+          document.getElementById("lblChartTotal").textContent = T("wTotal");
+
+          /* comparison */
+          document.getElementById("lblComparison").textContent =
+            T("comparison");
+          document.getElementById("compThCurrent").textContent = T("now");
+
+          /* investigations */
+          document.getElementById("invToggle").textContent =
+            (state.invOpen ? "\u25BC " : "\u25B6 ") + T("investigations");
+          buildInvestigations();
+
+          /* refresh dynamic text */
+          drawStartAndPeak();
+          updateStatus(state.statusKey);
+          updateMetrics();
+          updateComparisonTable();
+        }
+
+        function toggleLang() {
+          lang = lang === "en" ? "pl" : "en";
+          applyTranslations();
+        }
+
+        /* ───────── FRICTION MODE TOGGLE ───────── */
+        function setMode(mode) {
+          state.mode = mode;
+          document.getElementById("idealBtn").classList.toggle(
+            "active",
+            mode === "ideal"
+          );
+          document.getElementById("frictionBtn").classList.toggle(
+            "active",
+            mode === "friction"
+          );
+          if (mode === "friction") {
+            document.body.classList.add("friction-mode");
+          } else {
+            document.body.classList.remove("friction-mode");
+          }
+          recomputeAndRedraw();
+        }
+
+        /* ───────── SPEED TOGGLE ───────── */
+        function setSpeed(speed) {
+          state.speed = speed;
+          document.getElementById("speedSlow").classList.toggle(
+            "active",
+            speed === "slow"
+          );
+          document.getElementById("speedNormal").classList.toggle(
+            "active",
+            speed === "normal"
+          );
+          document.getElementById("speedFast").classList.toggle(
+            "active",
+            speed === "fast"
+          );
+        }
+
+        /* ───────── EVENT WIRING ───────── */
+        function wireEvents() {
+          document
+            .getElementById("langBtn")
+            .addEventListener("click", toggleLang);
+
+          /* angle slider */
+          angleSlider.addEventListener("input", function () {
+            state.angleDeg = parseInt(angleSlider.value, 10);
+            angleVal.textContent = state.angleDeg + "\u00B0";
+            recomputeAndRedraw();
+          });
+
+          /* mode toggle */
+          document
+            .getElementById("idealBtn")
+            .addEventListener("click", function () {
+              setMode("ideal");
+            });
+          document
+            .getElementById("frictionBtn")
+            .addEventListener("click", function () {
+              setMode("friction");
+            });
+
+          /* friction slider */
+          muSlider.addEventListener("input", function () {
+            state.mu = parseFloat(muSlider.value);
+            muVal.textContent = state.mu.toFixed(2);
+            recomputeAndRedraw();
+          });
+
+          /* speed toggle */
+          document
+            .getElementById("speedSlow")
+            .addEventListener("click", function () {
+              setSpeed("slow");
+            });
+          document
+            .getElementById("speedNormal")
+            .addEventListener("click", function () {
+              setSpeed("normal");
+            });
+          document
+            .getElementById("speedFast")
+            .addEventListener("click", function () {
+              setSpeed("fast");
+            });
+
+          /* presets */
+          document
+            .getElementById("presetDirect")
+            .addEventListener("click", function () {
+              loadPreset("direct");
+            });
+          document
+            .getElementById("presetSwitchback")
+            .addEventListener("click", function () {
+              loadPreset("switchback");
+            });
+          document
+            .getElementById("presetZigzag")
+            .addEventListener("click", function () {
+              loadPreset("zigzag");
+            });
+          document
+            .getElementById("presetDip")
+            .addEventListener("click", function () {
+              loadPreset("dip");
+            });
+
+          /* action buttons */
+          undoBtn.addEventListener("click", undoStep);
+          clearBtn.addEventListener("click", clearRoute);
+          runBtn.addEventListener("click", startAnimation);
+          document
+            .getElementById("saveABtn")
+            .addEventListener("click", function () {
+              saveRoute("A");
+            });
+          document
+            .getElementById("saveBBtn")
+            .addEventListener("click", function () {
+              saveRoute("B");
+            });
+          document
+            .getElementById("saveCBtn")
+            .addEventListener("click", function () {
+              saveRoute("C");
+            });
+
+          /* investigations toggle */
+          document
+            .getElementById("invToggle")
+            .addEventListener("click", function () {
+              state.invOpen = !state.invOpen;
+              var cards = document.getElementById("invCards");
+              if (state.invOpen) {
+                cards.classList.remove("hidden");
+              } else {
+                cards.classList.add("hidden");
+              }
+              document.getElementById("invToggle").textContent =
+                (state.invOpen ? "\u25BC " : "\u25B6 ") + T("investigations");
+            });
+
+          /* keyboard shortcuts */
+          document.addEventListener("keydown", function (e) {
+            if (
+              e.key === "z" &&
+              (e.ctrlKey || e.metaKey) &&
+              !state.animating
+            ) {
+              e.preventDefault();
+              undoStep();
+            }
+          });
+
+          /* resize */
+          window.addEventListener("resize", function () {
+            drawChart();
+          });
+        }
+
+        /* ───────── INIT ───────── */
+        function init() {
+          initLayers();
+          wireEvents();
+          applyTranslations();
+          loadPreset("direct");
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

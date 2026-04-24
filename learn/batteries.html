@@ -1,0 +1,4337 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- batteries.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Interactive battery connection lab. Learn how batteries connect in series, parallel, and mixed configurations."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/batteries.html" />
+    <meta property="og:title" content="Battery Connection Lab" />
+    <meta
+      property="og:description"
+      content="Interactive battery connection lab. Learn how batteries connect in series, parallel, and mixed configurations."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://lepecki.com/learn/batteries.html"
+    />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Battery Connection Lab" />
+    <meta
+      name="twitter:description"
+      content="Interactive battery connection lab. Learn how batteries connect in series, parallel, and mixed configurations."
+    />
+    <title>Battery Connection Lab</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0a0e1a;
+        --panel: #111827;
+        --panel-border: #1e2a3a;
+        --text: #c9d1d9;
+        --text-dim: #6e7a8a;
+        --text-head: #e6edf3;
+        --accent: #f59e0b;
+        --accent-series: #f59e0b;
+        --accent-parallel: #06b6d4;
+        --accent-mixed: #84cc16;
+        --error: #ef4444;
+        --success: #22c55e;
+        --wire: #b87333;
+        --wire-dim: #8b5e3c;
+        --wire-glow: #d4956a;
+        --slot-bg: #0f1520;
+        --slot-border: #b8733366;
+        --slot-hover: #b8733355;
+        --tray-bg: #0c1018;
+        --tray-border: #b8733344;
+        --bulb-off: #1a1a2a;
+        --bulb-dim: #d4a017;
+        --bulb-good: #fbbf24;
+        --bulb-bright: #fef9c3;
+        --danger: #ef4444;
+        --bar-bg: #1e2a3a;
+        --bar-fill: #f59e0b;
+        --bar-life: #06b6d4;
+        --star-on: #fbbf24;
+        --star-off: #2a3040;
+        --board-bg: #080c16;
+        --dot-color: #1a2535;
+        --bus-color: #b87333;
+      }
+
+      [data-theme="light"] {
+        --bg: #f0f2f5;
+        --panel: #ffffff;
+        --panel-border: #d0d5dd;
+        --text: #1a1a2e;
+        --text-dim: #6b7280;
+        --text-head: #111827;
+        --accent: #d97706;
+        --accent-series: #d97706;
+        --accent-parallel: #0891b2;
+        --accent-mixed: #65a30d;
+        --error: #dc2626;
+        --success: #16a34a;
+        --wire: #8b5e3c;
+        --wire-dim: #a0826455;
+        --wire-glow: #b87333;
+        --slot-bg: #fef9f0;
+        --slot-border: #92400e66;
+        --slot-hover: #92400e33;
+        --tray-bg: #fdf6ec;
+        --tray-border: #92400e44;
+        --bulb-off: #d0d5dd;
+        --bulb-dim: #d4a017;
+        --bulb-good: #f59e0b;
+        --bulb-bright: #fef3c7;
+        --danger: #dc2626;
+        --bar-bg: #e5e7eb;
+        --bar-fill: #d97706;
+        --bar-life: #0891b2;
+        --star-on: #f59e0b;
+        --star-off: #d0d5dd;
+        --board-bg: #faf8f5;
+        --dot-color: #e5e0d8;
+        --bus-color: #92400e;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+      }
+
+      header {
+        padding: 10px 20px;
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 4px 16px;
+        position: relative;
+        z-index: 2;
+      }
+
+      header h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      header h1 a {
+        text-decoration: none;
+        color: inherit;
+        transition: opacity 0.2s;
+      }
+
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+
+      .home-icon {
+        font-size: 1.3rem;
+      }
+
+      header p {
+        font-size: 0.85rem;
+        color: var(--text-dim);
+        flex-basis: 100%;
+      }
+
+      .header-right {
+        position: absolute;
+        right: 16px;
+        top: 10px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .lang-btn {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 0.8rem;
+        background: transparent;
+        border: 1px solid var(--text-dim);
+        color: var(--text);
+        padding: 3px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          color 0.2s;
+      }
+
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .lang-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .theme-toggle {
+        font-size: 1.1rem;
+        background: transparent;
+        border: none;
+        color: var(--text);
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: transform 0.2s;
+      }
+
+      .theme-toggle:hover {
+        transform: scale(1.15);
+      }
+
+      .theme-toggle:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 0 16px 12px;
+      }
+
+      .config {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: center;
+        padding: 8px 0 10px;
+      }
+
+      .config-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .config-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        white-space: nowrap;
+      }
+
+      .mode-toggles,
+      .topic-toggles,
+      .diff-toggles {
+        display: flex;
+        gap: 4px;
+      }
+
+      .toggle-btn {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        background: transparent;
+        color: var(--text-dim);
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          border-color 0.2s,
+          color 0.2s;
+      }
+
+      .toggle-btn:hover {
+        border-color: var(--text);
+        color: var(--text);
+      }
+
+      .toggle-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .toggle-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+      }
+
+      .toggle-btn.active[data-topic="series"] {
+        border-color: var(--accent-series);
+        color: var(--accent-series);
+        background: color-mix(in srgb, var(--accent-series) 12%, transparent);
+      }
+
+      .toggle-btn.active[data-topic="parallel"] {
+        border-color: var(--accent-parallel);
+        color: var(--accent-parallel);
+        background: color-mix(in srgb, var(--accent-parallel) 12%, transparent);
+      }
+
+      .toggle-btn.active[data-topic="mixed"] {
+        border-color: var(--accent-mixed);
+        color: var(--accent-mixed);
+        background: color-mix(in srgb, var(--accent-mixed) 12%, transparent);
+      }
+
+      .toggle-btn:disabled {
+        opacity: 0.35;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .btn {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 0.78rem;
+        padding: 5px 14px;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        background: transparent;
+        color: var(--text);
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          border-color 0.2s,
+          color 0.2s;
+      }
+
+      .btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+      }
+
+      .btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .btn:disabled {
+        opacity: 0.35;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .btn-test {
+        border-color: var(--success);
+        color: var(--success);
+      }
+
+      .btn-test:hover {
+        background: color-mix(in srgb, var(--success) 12%, transparent);
+        border-color: var(--success);
+        color: var(--success);
+      }
+
+      .btn-next {
+        border-color: var(--accent);
+        color: var(--accent);
+        animation: pulseBtn 1.5s ease infinite;
+      }
+
+      @keyframes pulseBtn {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+        50% {
+          box-shadow: 0 0 8px 2px
+            color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+      }
+
+      .main-area {
+        flex: 1;
+        display: flex;
+        gap: 12px;
+        min-height: 0;
+      }
+
+      .board-wrap {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--board-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .board-wrap svg {
+        width: 100%;
+        height: auto;
+        max-height: 72vh;
+        display: block;
+      }
+
+      .panel {
+        width: 240px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        overflow-y: auto;
+      }
+
+      .panel-section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .panel-title {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .goal-value {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 1rem;
+        color: var(--text-head);
+      }
+
+      .meter {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .meter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+
+      .meter-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 0.72rem;
+        color: var(--text-dim);
+      }
+
+      .meter-value {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 0.85rem;
+        color: var(--text-head);
+      }
+
+      .meter-bar {
+        height: 8px;
+        background: var(--bar-bg);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .meter-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+        background: var(--bar-fill);
+      }
+
+      .meter-fill.life {
+        background: var(--bar-life);
+      }
+
+      .structure-value {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 0.85rem;
+        color: var(--text-head);
+      }
+
+      .tip-text {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        line-height: 1.45;
+      }
+
+      .lesson-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-head);
+      }
+
+      .stars {
+        font-size: 1.1rem;
+        letter-spacing: 2px;
+      }
+
+      .star-on {
+        color: var(--star-on);
+      }
+
+      .star-off {
+        color: var(--star-off);
+      }
+
+      .safety-note {
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        border-top: 1px solid var(--panel-border);
+        padding-top: 8px;
+        line-height: 1.4;
+      }
+
+      .bottom-bar {
+        padding: 6px 0 2px;
+        text-align: center;
+      }
+
+      .status-text {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 0.82rem;
+        color: var(--text);
+        min-height: 1.3em;
+        transition: color 0.3s;
+      }
+
+      .status-text.verdict-correct {
+        color: var(--success);
+      }
+
+      .status-text.verdict-error {
+        color: var(--error);
+      }
+
+      .status-text.verdict-warn {
+        color: var(--accent);
+      }
+
+      /* SVG styles */
+      .slot-outline {
+        fill: var(--slot-bg);
+        stroke: var(--slot-border);
+        stroke-width: 1.5;
+        rx: 6;
+        cursor: pointer;
+        transition:
+          fill 0.2s,
+          stroke 0.2s;
+      }
+
+      .slot-outline:hover {
+        fill: var(--slot-hover);
+        stroke: var(--wire);
+      }
+
+      .slot-outline.armed-target {
+        stroke: var(--accent);
+        stroke-dasharray: none;
+        animation: slotPulse 1s ease infinite;
+      }
+
+      @keyframes slotPulse {
+        0%,
+        100% {
+          stroke-opacity: 0.6;
+        }
+        50% {
+          stroke-opacity: 1;
+        }
+      }
+
+      .slot-outline.occupied {
+        stroke-dasharray: none;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .danger-outline {
+        fill: color-mix(in srgb, var(--danger) 8%, var(--slot-bg));
+        stroke: var(--danger);
+        stroke-width: 2;
+        stroke-dasharray: 6 4;
+        rx: 6;
+        cursor: pointer;
+      }
+
+      .wire-trace {
+        fill: none;
+        stroke: var(--wire-dim);
+        stroke-width: 3;
+        stroke-linecap: round;
+        transition:
+          stroke 0.4s ease,
+          filter 0.4s ease;
+      }
+
+      .wire-trace.active {
+        stroke: var(--wire-glow);
+        filter: drop-shadow(0 0 4px var(--wire-glow));
+        stroke-dasharray: 10 10;
+        animation: currentPulse 0.5s linear infinite;
+      }
+
+      .wire-trace.error {
+        stroke: var(--danger);
+        filter: drop-shadow(0 0 4px var(--danger));
+      }
+
+      @keyframes currentPulse {
+        from {
+          stroke-dashoffset: 20;
+        }
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      .bus-line {
+        fill: none;
+        stroke: var(--bus-color);
+        stroke-width: 4;
+        stroke-linecap: round;
+        transition:
+          stroke 0.4s,
+          filter 0.4s;
+      }
+
+      .bus-line.active {
+        filter: drop-shadow(0 0 4px var(--wire-glow));
+      }
+
+      .bus-line.error {
+        stroke: var(--danger);
+        filter: drop-shadow(0 0 6px var(--danger));
+      }
+
+      .tray-cell {
+        cursor: grab;
+        transition: filter 0.15s;
+      }
+
+      .tray-cell:hover {
+        filter: brightness(1.15);
+      }
+
+      .tray-cell.armed {
+        filter: brightness(1.3) drop-shadow(0 0 6px var(--accent));
+      }
+
+      .tray-cell.disabled {
+        opacity: 0.3;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .placed-battery {
+        cursor: pointer;
+        transition: filter 0.15s;
+      }
+
+      .placed-battery:hover {
+        filter: brightness(1.1);
+      }
+
+      .placed-battery.pulse-red {
+        animation: pulseRed 0.5s ease 3;
+      }
+
+      @keyframes pulseRed {
+        0%,
+        100% {
+          filter: none;
+        }
+        50% {
+          filter: brightness(0.7) sepia(1) hue-rotate(-30deg) saturate(3);
+        }
+      }
+
+      .placed-wire {
+        cursor: pointer;
+        transition: filter 0.15s;
+      }
+
+      .placed-wire:hover {
+        filter: brightness(1.15);
+      }
+
+      .tray-wire {
+        cursor: grab;
+        transition: filter 0.15s;
+      }
+
+      .tray-wire:hover {
+        filter: brightness(1.15);
+      }
+
+      .tray-wire.armed {
+        filter: brightness(1.3) drop-shadow(0 0 6px var(--accent));
+      }
+
+      .tray-wire.disabled {
+        opacity: 0.3;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .remove-btn {
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+
+      .placed-battery:hover .remove-btn {
+        opacity: 1;
+      }
+
+      .placed-wire:hover .remove-btn {
+        opacity: 1;
+      }
+
+      .bulb-body {
+        transition:
+          fill 0.4s,
+          filter 0.4s;
+      }
+
+      .bulb-body.off {
+        fill: url(#bulbGlass);
+        filter: none;
+      }
+
+      .bulb-body.dim {
+        fill: color-mix(in srgb, var(--bulb-dim) 25%, transparent);
+        filter: drop-shadow(
+          0 0 8px color-mix(in srgb, var(--bulb-dim) 50%, transparent)
+        );
+      }
+
+      .bulb-body.good {
+        fill: color-mix(in srgb, var(--bulb-good) 35%, transparent);
+        filter: drop-shadow(
+          0 0 18px color-mix(in srgb, var(--bulb-good) 70%, transparent)
+        );
+      }
+
+      .bulb-body.bright {
+        fill: color-mix(in srgb, var(--bulb-bright) 50%, transparent);
+        filter: drop-shadow(
+          0 0 28px color-mix(in srgb, var(--bulb-bright) 80%, transparent)
+        );
+      }
+
+      .bulb-warning-ring {
+        fill: none;
+        stroke: var(--danger);
+        stroke-width: 3;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .bulb-warning-ring.visible {
+        opacity: 0.8;
+      }
+
+      .hint-ghost {
+        opacity: 0.3;
+        pointer-events: none;
+      }
+
+      .hint-highlight {
+        stroke: var(--accent);
+        stroke-width: 3;
+        stroke-dasharray: none;
+        animation: slotPulse 1s ease infinite;
+      }
+
+      .drag-ghost {
+        pointer-events: none;
+        opacity: 0.85;
+        filter: drop-shadow(0 0 8px var(--accent));
+      }
+
+      .polarity-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        fill: var(--text);
+        pointer-events: none;
+      }
+
+      .dot-pattern {
+        fill: var(--dot-color);
+      }
+
+      @media (max-width: 700px) {
+        header {
+          padding: 8px 14px;
+        }
+
+        .config {
+          gap: 6px 10px;
+          padding: 6px 0 8px;
+        }
+
+        .toggle-btn {
+          padding: 5px 8px;
+          font-size: 0.72rem;
+        }
+
+        .btn {
+          padding: 6px 10px;
+          font-size: 0.75rem;
+        }
+
+        .main-area {
+          flex-direction: column;
+        }
+
+        .board-wrap svg {
+          max-height: 55vh;
+        }
+
+        .panel {
+          width: 100%;
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 8px 16px;
+          padding: 10px;
+        }
+
+        .panel-section {
+          min-width: 100px;
+          flex: 1;
+        }
+
+        .safety-note {
+          flex-basis: 100%;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .wire-trace,
+        .bus-line,
+        .bulb-body,
+        .bulb-warning-ring,
+        .slot-outline,
+        .toggle-btn,
+        .btn,
+        .meter-fill,
+        .placed-battery,
+        .tray-cell,
+        .remove-btn {
+          animation: none;
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>
+        <a href="/learn/" aria-label="Back to Learn"
+          ><span class="home-icon">&#x1F50B;</span></a
+        >
+        <span id="titleText">Battery Connection Lab</span>
+      </h1>
+      <p id="subtitleText">Build packs in series, parallel, and mixed.</p>
+      <div class="header-right">
+        <button
+          type="button"
+          class="lang-btn"
+          id="langBtn"
+          title="Switch language"
+        >
+          PL
+        </button>
+        <button
+          type="button"
+          class="theme-toggle"
+          id="themeToggleBtn"
+          aria-label="Toggle color theme"
+        >
+          <span id="themeIcon">&#9728;</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div class="config" id="configBar">
+        <div class="config-group">
+          <span class="config-label" id="lblMode">Mode:</span>
+          <div class="mode-toggles" id="modeToggles">
+            <button
+              type="button"
+              class="toggle-btn active"
+              data-mode="learn"
+              id="btnLearn"
+            >
+              Learn
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              data-mode="challenge"
+              id="btnChallenge"
+            >
+              Challenge
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              data-mode="sandbox"
+              id="btnSandbox"
+            >
+              Sandbox
+            </button>
+          </div>
+        </div>
+        <div class="config-group">
+          <span class="config-label" id="lblTopic">Topic:</span>
+          <div class="topic-toggles" id="topicToggles">
+            <button
+              type="button"
+              class="toggle-btn active"
+              data-topic="series"
+              id="btnSeries"
+            >
+              Series
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              data-topic="parallel"
+              id="btnParallel"
+            >
+              Parallel
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              data-topic="mixed"
+              id="btnMixed"
+            >
+              Mixed
+            </button>
+          </div>
+        </div>
+        <div class="config-group" id="diffGroup">
+          <span class="config-label" id="lblDiff">Difficulty:</span>
+          <div class="diff-toggles" id="diffToggles">
+            <button
+              type="button"
+              class="toggle-btn active"
+              data-diff="easy"
+              id="btnEasy"
+            >
+              Easy
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              data-diff="medium"
+              id="btnMedium"
+            >
+              Medium
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              data-diff="hard"
+              id="btnHard"
+            >
+              Hard
+            </button>
+          </div>
+        </div>
+        <button type="button" class="btn" id="btnNew">New</button>
+        <button type="button" class="btn btn-test" id="btnTest">Test</button>
+        <button type="button" class="btn" id="btnHint">Hint</button>
+        <button type="button" class="btn" id="btnReset">Reset</button>
+        <button type="button" class="btn btn-next hidden" id="btnNext">
+          Next
+        </button>
+      </div>
+
+      <div class="main-area">
+        <div class="board-wrap" id="boardWrap">
+          <svg
+            id="boardSvg"
+            viewBox="0 0 960 560"
+            preserveAspectRatio="xMidYMid meet"
+            aria-label="Battery connection board"
+          ></svg>
+        </div>
+
+        <div class="panel" id="panel">
+          <div class="panel-section" id="goalSection">
+            <span class="panel-title" id="lblGoal">Goal</span>
+            <div class="lesson-title" id="lessonTitle"></div>
+            <div class="goal-value" id="goalVoltage"></div>
+            <div class="goal-value" id="goalLife"></div>
+            <div class="tip-text" id="introText"></div>
+          </div>
+          <div class="panel-section">
+            <span class="panel-title" id="lblReadouts">Readouts</span>
+            <div class="meter" id="voltageMeter">
+              <div class="meter-header">
+                <span class="meter-label" id="lblVoltage">Voltage</span>
+                <span class="meter-value" id="valVoltage">0 V</span>
+              </div>
+              <div class="meter-bar">
+                <div class="meter-fill" id="fillVoltage"></div>
+              </div>
+            </div>
+            <div class="meter" id="lifeMeter">
+              <div class="meter-header">
+                <span class="meter-label" id="lblLife">Battery Life</span>
+                <span class="meter-value" id="valLife">x0</span>
+              </div>
+              <div class="meter-bar">
+                <div class="meter-fill life" id="fillLife"></div>
+              </div>
+            </div>
+            <div class="meter-header">
+              <span class="meter-label" id="lblStructure">Structure</span>
+              <span class="structure-value" id="valStructure">--</span>
+            </div>
+          </div>
+          <div class="panel-section hidden" id="starsSection">
+            <div class="stars" id="starsDisplay"></div>
+          </div>
+          <div class="panel-section">
+            <div class="tip-text" id="takeawayText"></div>
+          </div>
+          <div class="safety-note" id="safetyNote">
+            Real batteries can get hot if connected the wrong way. This app is a
+            safe simulation.
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-bar">
+        <div class="status-text" id="statusText"></div>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        // ══════════════════════════════════════════════
+        // CONSTANTS
+        // ══════════════════════════════════════════════
+        const CELL_VOLTAGE = 1.5;
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        const SLOT_W = 118;
+        const SLOT_H = 44;
+        const BULB_CX = 844;
+        const BULB_CY = 280;
+        const BULB_R = 34;
+        const TRAY_X = 24;
+        const TRAY_Y = 112;
+        const TRAY_W = 144;
+        const TRAY_H = 336;
+        const ANIM_DURATION = 1100;
+
+        // ══════════════════════════════════════════════
+        // I18N
+        // ══════════════════════════════════════════════
+        const I18N = {
+          en: {
+            title: "Battery Connection Lab",
+            subtitle: "Build packs in series, parallel, and mixed.",
+            mode: "Mode:",
+            topic: "Topic:",
+            difficulty: "Difficulty:",
+            learn: "Learn",
+            challenge: "Challenge",
+            sandbox: "Sandbox",
+            series: "Series",
+            parallel: "Parallel",
+            mixed: "Mixed",
+            easy: "Easy",
+            medium: "Medium",
+            hard: "Hard",
+            new: "New",
+            test: "Test",
+            hint: "Hint",
+            reset: "Reset",
+            next: "Next",
+            goal: "Goal",
+            readouts: "Readouts",
+            needVoltage: "Need",
+            needLife: "Battery Life",
+            currentVoltage: "Voltage",
+            currentLife: "Battery Life",
+            currentStructure: "Structure",
+            statusReady: "Build your pack and press Test.",
+            statusSandbox: "Try ideas and watch what changes.",
+            correct: "Correct",
+            tooLittleVoltage: "Too little voltage",
+            tooMuchVoltage: "Too much voltage",
+            needMoreLife: "Need more battery life",
+            batteryBackwards: "Battery backwards",
+            openCircuit: "Open circuit",
+            shortCircuit: "Short circuit",
+            needBothBranches: "Need both branches",
+            branchesMismatch: "Parallel branches do not match",
+            structureSeries: "Series",
+            structureParallel: "Parallel",
+            structureMixed: "Mixed",
+            structureIncomplete: "Incomplete",
+            structureInvalid: "Invalid",
+            bulbOff: "Bulb is off",
+            bulbDim: "Bulb is dim",
+            bulbGood: "Bulb is bright enough",
+            bulbTooBright: "Bulb is too bright",
+            safetyNote:
+              "Real batteries can get hot if connected the wrong way. This app is a safe simulation.",
+            hintSeries1: "Series means one battery pushes after another.",
+            hintParallel1:
+              "Parallel means every branch starts at + and ends at \u2212.",
+            hintMixed1: "Mixed means equal series branches placed in parallel.",
+            hintShort1:
+              "Remove the battery that connects + straight to \u2212.",
+            mixedStartsAtMedium: "Mixed starts at Medium.",
+            wire: "Wire",
+            wireLabel: "WIRE",
+            lesson01Title: "One Battery",
+            lesson02Title: "Two In Series",
+            lesson03Title: "Fix The Direction",
+            lesson04Title: "Two In Parallel",
+            lesson05Title: "Match The Branches",
+            lesson06Title: "Build A Mixed Pack",
+            lesson07Title: "Finish The Second Branch",
+            lesson08Title: "Remove The Short Circuit",
+            lesson01Intro: "Place one battery to light the bulb.",
+            lesson02Intro:
+              "Build a 3.0 V pack by putting two batteries in series.",
+            lesson03Intro: "One battery is backwards. Flip it.",
+            lesson04Intro:
+              "Build a pack that stays at 1.5 V but lasts twice as long.",
+            lesson05Intro:
+              "Both branches must point the same way. Fix the pack.",
+            lesson06Intro: "Build two equal 3.0 V branches side by side.",
+            lesson07Intro:
+              "This mixed pack is missing one battery. Finish the second branch.",
+            lesson08Intro:
+              "Remove the dangerous battery that connects + straight to \u2212.",
+            lesson01Takeaway: "One battery gives one small push.",
+            lesson02Takeaway: "Series adds voltage.",
+            lesson03Takeaway: "Battery direction matters.",
+            lesson04Takeaway: "Parallel adds battery life.",
+            lesson05Takeaway:
+              "Parallel branches share the same + and the same \u2212.",
+            lesson06Takeaway: "Mixed uses series inside parallel.",
+            lesson07Takeaway: "Mixed branches must match.",
+            lesson08Takeaway:
+              "A short circuit is unsafe and does not help the bulb.",
+          },
+          pl: {
+            title: "Laboratorium \u0141\u0105czenia Baterii",
+            subtitle:
+              "Buduj pakiety szeregowe, r\u00f3wnoleg\u0142e i mieszane.",
+            mode: "Tryb:",
+            topic: "Typ:",
+            difficulty: "Poziom:",
+            learn: "Nauka",
+            challenge: "Wyzwanie",
+            sandbox: "Piaskownica",
+            series: "Szeregowo",
+            parallel: "R\u00f3wnolegle",
+            mixed: "Mieszane",
+            easy: "\u0141atwy",
+            medium: "\u015aredni",
+            hard: "Trudny",
+            new: "Nowe",
+            test: "Sprawd\u017a",
+            hint: "Podpowied\u017a",
+            reset: "Reset",
+            next: "Dalej",
+            goal: "Cel",
+            readouts: "Odczyty",
+            needVoltage: "Potrzeba",
+            needLife: "Czas pracy",
+            currentVoltage: "Napi\u0119cie",
+            currentLife: "Czas pracy",
+            currentStructure: "Uk\u0142ad",
+            statusReady: "Zbuduj pakiet i naci\u015bnij Sprawd\u017a.",
+            statusSandbox:
+              "Pr\u00f3buj pomys\u0142\u00f3w i patrz, co si\u0119 zmienia.",
+            correct: "Dobrze",
+            tooLittleVoltage: "Za ma\u0142e napi\u0119cie",
+            tooMuchVoltage: "Za du\u017ce napi\u0119cie",
+            needMoreLife: "Potrzeba d\u0142u\u017cszego czasu pracy",
+            batteryBackwards: "Bateria jest odwrotnie",
+            openCircuit: "Obw\u00f3d jest przerwany",
+            shortCircuit: "Zwarcie",
+            needBothBranches: "Potrzebne s\u0105 obie ga\u0142\u0119zie",
+            branchesMismatch:
+              "Ga\u0142\u0119zie r\u00f3wnoleg\u0142e nie pasuj\u0105 do siebie",
+            structureSeries: "Szeregowy",
+            structureParallel: "R\u00f3wnoleg\u0142y",
+            structureMixed: "Mieszany",
+            structureIncomplete: "Niepe\u0142ny",
+            structureInvalid: "B\u0142\u0119dny",
+            bulbOff: "\u017bar\u00f3wka nie \u015bwieci",
+            bulbDim: "\u017bar\u00f3wka \u015bwieci s\u0142abo",
+            bulbGood: "\u017bar\u00f3wka \u015bwieci dobrze",
+            bulbTooBright: "\u017bar\u00f3wka \u015bwieci za mocno",
+            safetyNote:
+              "Prawdziwe baterie mog\u0105 si\u0119 nagrzewa\u0107, gdy s\u0105 \u017ale po\u0142\u0105czone. Ta aplikacja to bezpieczna symulacja.",
+            hintSeries1:
+              "Szeregowo oznacza, \u017ce jedna bateria pcha za drug\u0105.",
+            hintParallel1:
+              "R\u00f3wnolegle oznacza, \u017ce ka\u017cda ga\u0142\u0105\u017a zaczyna si\u0119 przy + i ko\u0144czy przy \u2212.",
+            hintMixed1:
+              "Mieszane oznacza r\u00f3wne szeregi po\u0142\u0105czone r\u00f3wnolegle.",
+            hintShort1:
+              "Usu\u0144 bateri\u0119, kt\u00f3ra \u0142\u0105czy + prosto z \u2212.",
+            mixedStartsAtMedium:
+              "Mieszane zaczyna si\u0119 od poziomu \u015aredni.",
+            wire: "Przew\u00f3d",
+            wireLabel: "PRZEW\u00d3D",
+            lesson01Title: "Jedna Bateria",
+            lesson02Title: "Dwie Szeregowo",
+            lesson03Title: "Popraw Kierunek",
+            lesson04Title: "Dwie R\u00f3wnolegle",
+            lesson05Title: "Ustaw Takie Same Ga\u0142\u0119zie",
+            lesson06Title: "Zbuduj Pakiet Mieszany",
+            lesson07Title: "Doko\u0144cz Drug\u0105 Ga\u0142\u0105\u017a",
+            lesson08Title: "Usu\u0144 Zwarcie",
+            lesson01Intro:
+              "Umie\u015b\u0107 jedn\u0105 bateri\u0119, aby za\u015bwieci\u0107 \u017car\u00f3wk\u0119.",
+            lesson02Intro:
+              "Zbuduj pakiet 3.0 V, \u0142\u0105cz\u0105c dwie baterie szeregowo.",
+            lesson03Intro:
+              "Jedna bateria jest odwr\u00f3cona. Obr\u00f3\u0107 j\u0105.",
+            lesson04Intro:
+              "Zbuduj pakiet 1.5 V, kt\u00f3ry dzia\u0142a dwa razy d\u0142u\u017cej.",
+            lesson05Intro:
+              "Obie ga\u0142\u0119zie musz\u0105 by\u0107 takie same. Napraw pakiet.",
+            lesson06Intro:
+              "Zbuduj dwie r\u00f3wne ga\u0142\u0119zie 3.0 V obok siebie.",
+            lesson07Intro:
+              "W pakiecie mieszanym brakuje jednej baterii. Doko\u0144cz drug\u0105 ga\u0142\u0105\u017a.",
+            lesson08Intro:
+              "Usu\u0144 niebezpieczn\u0105 bateri\u0119, kt\u00f3ra \u0142\u0105czy + prosto z \u2212.",
+            lesson01Takeaway:
+              "Jedna bateria daje jedno ma\u0142e pchn\u0119cie.",
+            lesson02Takeaway: "Szeregowo dodaje napi\u0119cie.",
+            lesson03Takeaway: "Kierunek baterii ma znaczenie.",
+            lesson04Takeaway: "R\u00f3wnolegle dodaje czas pracy.",
+            lesson05Takeaway:
+              "Ga\u0142\u0119zie r\u00f3wnoleg\u0142e maj\u0105 ten sam + i ten sam \u2212.",
+            lesson06Takeaway:
+              "Mieszane u\u017cywa szereg\u00f3w wewn\u0105trz po\u0142\u0105czenia r\u00f3wnoleg\u0142ego.",
+            lesson07Takeaway:
+              "Ga\u0142\u0119zie mieszane musz\u0105 by\u0107 takie same.",
+            lesson08Takeaway:
+              "Zwarcie jest niebezpieczne i nie pomaga \u017car\u00f3wce.",
+          },
+        };
+
+        function T(key) {
+          return I18N[state.lang][key];
+        }
+
+        // ══════════════════════════════════════════════
+        // TEMPLATES
+        // ══════════════════════════════════════════════
+        const TEMPLATES = {
+          series_1: {
+            kind: "series",
+            slots: [{ id: "s1", x: 430, y: 280, branch: "main" }],
+            buses: null,
+            dangerSlots: null,
+          },
+          series_2: {
+            kind: "series",
+            slots: [
+              { id: "s1", x: 360, y: 280, branch: "main" },
+              { id: "s2", x: 520, y: 280, branch: "main" },
+            ],
+            buses: null,
+            dangerSlots: null,
+          },
+          series_3: {
+            kind: "series",
+            slots: [
+              { id: "s1", x: 300, y: 280, branch: "main" },
+              { id: "s2", x: 460, y: 280, branch: "main" },
+              { id: "s3", x: 620, y: 280, branch: "main" },
+            ],
+            buses: null,
+            dangerSlots: null,
+          },
+          series_4: {
+            kind: "series",
+            slots: [
+              { id: "s1", x: 250, y: 280, branch: "main" },
+              { id: "s2", x: 380, y: 280, branch: "main" },
+              { id: "s3", x: 510, y: 280, branch: "main" },
+              { id: "s4", x: 640, y: 280, branch: "main" },
+            ],
+            buses: null,
+            dangerSlots: null,
+          },
+          parallel_2: {
+            kind: "parallel",
+            slots: [
+              { id: "a1", x: 465, y: 210, branch: "a" },
+              { id: "b1", x: 465, y: 350, branch: "b" },
+            ],
+            buses: {
+              left: { x: 310, y1: 160, y2: 400 },
+              right: { x: 620, y1: 160, y2: 400 },
+            },
+            dangerSlots: null,
+          },
+          parallel_3: {
+            kind: "parallel",
+            slots: [
+              { id: "a1", x: 465, y: 170, branch: "a" },
+              { id: "b1", x: 465, y: 280, branch: "b" },
+              { id: "c1", x: 465, y: 390, branch: "c" },
+            ],
+            buses: {
+              left: { x: 310, y1: 130, y2: 430 },
+              right: { x: 620, y1: 130, y2: 430 },
+            },
+            dangerSlots: null,
+          },
+          mixed_2s2p: {
+            kind: "mixed",
+            slots: [
+              { id: "a1", x: 380, y: 210, branch: "a" },
+              { id: "a2", x: 550, y: 210, branch: "a" },
+              { id: "b1", x: 380, y: 350, branch: "b" },
+              { id: "b2", x: 550, y: 350, branch: "b" },
+            ],
+            buses: {
+              left: { x: 290, y1: 160, y2: 400 },
+              right: { x: 640, y1: 160, y2: 400 },
+            },
+            dangerSlots: null,
+          },
+          repair_short_bypass: {
+            kind: "parallel",
+            slots: [
+              { id: "a1", x: 465, y: 210, branch: "a" },
+              { id: "b1", x: 465, y: 350, branch: "b" },
+            ],
+            buses: {
+              left: { x: 310, y1: 160, y2: 400 },
+              right: { x: 620, y1: 160, y2: 400 },
+            },
+            dangerSlots: [{ id: "d1", x: 465, y: 280, bypass: true }],
+          },
+        };
+
+        const REPAIR_PRESETS = {
+          repair_series_backwards: {
+            template: "series_2",
+            prefilled: { s1: "forward", s2: "reverse" },
+            trayCount: 0,
+          },
+          repair_parallel_backwards: {
+            template: "parallel_2",
+            prefilled: { a1: "forward", b1: "reverse" },
+            trayCount: 0,
+          },
+          repair_mixed_missing: {
+            template: "mixed_2s2p",
+            prefilled: {
+              a1: "forward",
+              a2: "forward",
+              b1: "forward",
+              b2: "empty",
+            },
+            trayCount: 1,
+          },
+          repair_short_parallel: {
+            template: "repair_short_bypass",
+            prefilled: {
+              a1: "forward",
+              b1: "forward",
+              d1: "forward",
+            },
+            trayCount: 0,
+          },
+        };
+
+        // ══════════════════════════════════════════════
+        // LESSONS
+        // ══════════════════════════════════════════════
+        const LESSONS = [
+          {
+            id: "learn_01_single",
+            template: "series_1",
+            topic: "series",
+            trayCount: 1,
+            targetVoltage: 1.5,
+            targetLife: 1,
+            expectedStructure: "Series",
+            titleKey: "lesson01Title",
+            introKey: "lesson01Intro",
+            takeawayKey: "lesson01Takeaway",
+          },
+          {
+            id: "learn_02_series_two",
+            template: "series_2",
+            topic: "series",
+            trayCount: 2,
+            targetVoltage: 3.0,
+            targetLife: 1,
+            expectedStructure: "Series",
+            titleKey: "lesson02Title",
+            introKey: "lesson02Intro",
+            takeawayKey: "lesson02Takeaway",
+          },
+          {
+            id: "learn_03_series_fix",
+            template: "repair_series_backwards",
+            topic: "series",
+            trayCount: 0,
+            targetVoltage: 3.0,
+            targetLife: 1,
+            expectedStructure: "Series",
+            titleKey: "lesson03Title",
+            introKey: "lesson03Intro",
+            takeawayKey: "lesson03Takeaway",
+          },
+          {
+            id: "learn_04_parallel_two",
+            template: "parallel_2",
+            topic: "parallel",
+            trayCount: 2,
+            targetVoltage: 1.5,
+            targetLife: 2,
+            expectedStructure: "Parallel",
+            titleKey: "lesson04Title",
+            introKey: "lesson04Intro",
+            takeawayKey: "lesson04Takeaway",
+          },
+          {
+            id: "learn_05_parallel_fix",
+            template: "repair_parallel_backwards",
+            topic: "parallel",
+            trayCount: 0,
+            targetVoltage: 1.5,
+            targetLife: 2,
+            expectedStructure: "Parallel",
+            titleKey: "lesson05Title",
+            introKey: "lesson05Intro",
+            takeawayKey: "lesson05Takeaway",
+          },
+          {
+            id: "learn_06_mixed_build",
+            template: "mixed_2s2p",
+            topic: "mixed",
+            trayCount: 4,
+            targetVoltage: 3.0,
+            targetLife: 2,
+            expectedStructure: "Mixed",
+            titleKey: "lesson06Title",
+            introKey: "lesson06Intro",
+            takeawayKey: "lesson06Takeaway",
+          },
+          {
+            id: "learn_07_mixed_fix",
+            template: "repair_mixed_missing",
+            topic: "mixed",
+            trayCount: 1,
+            targetVoltage: 3.0,
+            targetLife: 2,
+            expectedStructure: "Mixed",
+            titleKey: "lesson07Title",
+            introKey: "lesson07Intro",
+            takeawayKey: "lesson07Takeaway",
+          },
+          {
+            id: "learn_08_short_warning",
+            template: "repair_short_parallel",
+            topic: "parallel",
+            trayCount: 0,
+            targetVoltage: 1.5,
+            targetLife: 2,
+            expectedStructure: "Parallel",
+            titleKey: "lesson08Title",
+            introKey: "lesson08Intro",
+            takeawayKey: "lesson08Takeaway",
+          },
+        ];
+
+        // ══════════════════════════════════════════════
+        // CHALLENGE POOLS
+        // ══════════════════════════════════════════════
+        const CHALLENGE_POOLS = {
+          series: {
+            easy: [
+              {
+                id: "ch_s1e",
+                template: "series_1",
+                targetVoltage: 1.5,
+                targetLife: 1,
+                trayCount: 1,
+                minimalCells: 1,
+                expectedStructure: "Series",
+              },
+              {
+                id: "ch_s2e",
+                template: "series_2",
+                targetVoltage: 3.0,
+                targetLife: 1,
+                trayCount: 2,
+                minimalCells: 2,
+                expectedStructure: "Series",
+              },
+              {
+                id: "ch_s3e",
+                template: "series_3",
+                targetVoltage: 4.5,
+                targetLife: 1,
+                trayCount: 3,
+                minimalCells: 3,
+                expectedStructure: "Series",
+              },
+            ],
+            medium: [
+              {
+                id: "ch_s_repair_m",
+                template: "repair_series_backwards",
+                targetVoltage: 3.0,
+                targetLife: 1,
+                trayCount: 0,
+                minimalCells: 2,
+                expectedStructure: "Series",
+              },
+              {
+                id: "ch_s4m",
+                template: "series_4",
+                targetVoltage: 6.0,
+                targetLife: 1,
+                trayCount: 4,
+                minimalCells: 4,
+                expectedStructure: "Series",
+              },
+            ],
+            hard: [
+              {
+                id: "ch_s4h",
+                template: "series_4",
+                targetVoltage: 6.0,
+                targetLife: 1,
+                trayCount: 5,
+                minimalCells: 4,
+                expectedStructure: "Series",
+              },
+              {
+                id: "ch_s_repair_h",
+                template: "repair_series_backwards",
+                targetVoltage: 3.0,
+                targetLife: 1,
+                trayCount: 1,
+                minimalCells: 2,
+                expectedStructure: "Series",
+              },
+            ],
+          },
+          parallel: {
+            easy: [
+              {
+                id: "ch_p2e",
+                template: "parallel_2",
+                targetVoltage: 1.5,
+                targetLife: 2,
+                trayCount: 2,
+                minimalCells: 2,
+                expectedStructure: "Parallel",
+              },
+              {
+                id: "ch_p3e",
+                template: "parallel_3",
+                targetVoltage: 1.5,
+                targetLife: 3,
+                trayCount: 3,
+                minimalCells: 3,
+                expectedStructure: "Parallel",
+              },
+            ],
+            medium: [
+              {
+                id: "ch_p_repair_m",
+                template: "repair_parallel_backwards",
+                targetVoltage: 1.5,
+                targetLife: 2,
+                trayCount: 0,
+                minimalCells: 2,
+                expectedStructure: "Parallel",
+              },
+              {
+                id: "ch_p3m",
+                template: "parallel_3",
+                targetVoltage: 1.5,
+                targetLife: 2,
+                trayCount: 3,
+                minimalCells: 2,
+                expectedStructure: "Parallel",
+              },
+            ],
+            hard: [
+              {
+                id: "ch_p_short_h",
+                template: "repair_short_parallel",
+                targetVoltage: 1.5,
+                targetLife: 2,
+                trayCount: 0,
+                minimalCells: 2,
+                expectedStructure: "Parallel",
+              },
+              {
+                id: "ch_p3h",
+                template: "parallel_3",
+                targetVoltage: 1.5,
+                targetLife: 2,
+                trayCount: 4,
+                minimalCells: 2,
+                expectedStructure: "Parallel",
+              },
+            ],
+          },
+          mixed: {
+            easy: [],
+            medium: [
+              {
+                id: "ch_m_build_m",
+                template: "mixed_2s2p",
+                targetVoltage: 3.0,
+                targetLife: 2,
+                trayCount: 4,
+                minimalCells: 4,
+                expectedStructure: "Mixed",
+              },
+              {
+                id: "ch_m_repair_m",
+                template: "repair_mixed_missing",
+                targetVoltage: 3.0,
+                targetLife: 2,
+                trayCount: 1,
+                minimalCells: 4,
+                expectedStructure: "Mixed",
+              },
+            ],
+            hard: [
+              {
+                id: "ch_m_build_h",
+                template: "mixed_2s2p",
+                targetVoltage: 3.0,
+                targetLife: 2,
+                trayCount: 5,
+                minimalCells: 4,
+                expectedStructure: "Mixed",
+              },
+              {
+                id: "ch_m_repair_h",
+                template: "repair_mixed_missing",
+                targetVoltage: 3.0,
+                targetLife: 2,
+                trayCount: 2,
+                minimalCells: 4,
+                expectedStructure: "Mixed",
+              },
+            ],
+          },
+        };
+
+        // ══════════════════════════════════════════════
+        // STATE
+        // ══════════════════════════════════════════════
+        const state = {
+          lang: navigator.language?.startsWith("pl") ? "pl" : "en",
+          theme: localStorage.getItem("bat-theme") || "dark",
+          mode: "learn",
+          topic: "series",
+          difficulty: "easy",
+          lessonIdx: parseInt(localStorage.getItem("bat-lesson") || "0", 10),
+          maxLesson: parseInt(localStorage.getItem("bat-lesson") || "0", 10),
+          currentMission: null,
+          hintsUsed: 0,
+          hintLevel: 0,
+          stars: JSON.parse(localStorage.getItem("bat-stars") || "{}"),
+          templateId: null,
+          trayCount: 0,
+          trayMax: 0,
+          wireCount: 0,
+          wireMax: 0,
+          slots: {},
+          dangerSlots: {},
+          armedBattery: false,
+          armedWire: false,
+          editLocked: false,
+          lastVerdict: null,
+          packVoltage: 0,
+          packLife: 0,
+          currentStructure: "Incomplete",
+          targetVoltage: 0,
+          targetLife: 0,
+          expectedStructure: null,
+          lessonComplete: false,
+          animTimeouts: [],
+        };
+
+        // ══════════════════════════════════════════════
+        // DOM REFS
+        // ══════════════════════════════════════════════
+        const $ = (id) => document.getElementById(id);
+        const svg = $("boardSvg");
+
+        // ══════════════════════════════════════════════
+        // SVG HELPERS
+        // ══════════════════════════════════════════════
+        function svgEl(tag, attrs) {
+          const el = document.createElementNS(SVG_NS, tag);
+          if (attrs) {
+            for (const [k, v] of Object.entries(attrs)) {
+              el.setAttribute(k, v);
+            }
+          }
+          return el;
+        }
+
+        function svgText(x, y, text, cls, fontSize) {
+          const el = svgEl("text", {
+            x,
+            y,
+            class: cls || "",
+            "font-size": fontSize || 12,
+            "text-anchor": "middle",
+            "dominant-baseline": "central",
+            "font-family": "Share Tech Mono, monospace",
+            fill: "currentColor",
+          });
+          el.textContent = text;
+          return el;
+        }
+
+        function ptInRect(px, py, rx, ry, rw, rh) {
+          return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
+        }
+
+        function svgPoint(clientX, clientY) {
+          const pt = svg.createSVGPoint();
+          pt.x = clientX;
+          pt.y = clientY;
+          const ctm = svg.getScreenCTM();
+          if (!ctm) return { x: 0, y: 0 };
+          return pt.matrixTransform(ctm.inverse());
+        }
+
+        // ══════════════════════════════════════════════
+        // TEMPLATE RESOLVER
+        // ══════════════════════════════════════════════
+        function resolveTemplate(templateRef) {
+          if (TEMPLATES[templateRef]) {
+            return {
+              tplId: templateRef,
+              tpl: TEMPLATES[templateRef],
+              prefilled: null,
+            };
+          }
+          if (REPAIR_PRESETS[templateRef]) {
+            const preset = REPAIR_PRESETS[templateRef];
+            return {
+              tplId: preset.template,
+              tpl: TEMPLATES[preset.template],
+              prefilled: preset.prefilled,
+              presetTrayCount: preset.trayCount,
+            };
+          }
+          return null;
+        }
+
+        // ══════════════════════════════════════════════
+        // BOARD RENDERING
+        // ══════════════════════════════════════════════
+        function renderBoard() {
+          while (svg.firstChild) svg.removeChild(svg.firstChild);
+          const tpl = TEMPLATES[state.templateId];
+          if (!tpl) return;
+
+          // Defs: patterns and gradients
+          const defs = svgEl("defs");
+
+          // Dot grid pattern
+          const pat = svgEl("pattern", {
+            id: "dotGrid",
+            width: 20,
+            height: 20,
+            patternUnits: "userSpaceOnUse",
+          });
+          pat.appendChild(
+            svgEl("circle", {
+              cx: 10,
+              cy: 10,
+              r: 1,
+              class: "dot-pattern",
+            }),
+          );
+          defs.appendChild(pat);
+
+          // Battery body gradient (warm golden cylindrical)
+          const batGrad = svgEl("linearGradient", {
+            id: "batBody",
+            x1: "0",
+            y1: "0",
+            x2: "0",
+            y2: "1",
+          });
+          [
+            ["0%", "#f5c842"],
+            ["15%", "#e5a825"],
+            ["50%", "#d4910e"],
+            ["85%", "#b87a0a"],
+            ["100%", "#96640a"],
+          ].forEach(([o, c]) => {
+            const s = svgEl("stop", { offset: o, "stop-color": c });
+            batGrad.appendChild(s);
+          });
+          defs.appendChild(batGrad);
+
+          // Battery label band gradient
+          const lblGrad = svgEl("linearGradient", {
+            id: "batLabel",
+            x1: "0",
+            y1: "0",
+            x2: "0",
+            y2: "1",
+          });
+          [
+            ["0%", "#f59e0b"],
+            ["50%", "#e5a825"],
+            ["100%", "#d4910e"],
+          ].forEach(([o, c]) => {
+            const s = svgEl("stop", { offset: o, "stop-color": c });
+            lblGrad.appendChild(s);
+          });
+          defs.appendChild(lblGrad);
+
+          // Positive terminal gradient (brass)
+          const posGrad = svgEl("linearGradient", {
+            id: "batPos",
+            x1: "0",
+            y1: "0",
+            x2: "0",
+            y2: "1",
+          });
+          [
+            ["0%", "#fbbf24"],
+            ["40%", "#f59e0b"],
+            ["100%", "#b45309"],
+          ].forEach(([o, c]) => {
+            const s = svgEl("stop", { offset: o, "stop-color": c });
+            posGrad.appendChild(s);
+          });
+          defs.appendChild(posGrad);
+
+          // Bulb glass radial gradient
+          const bulbGlass = svgEl("radialGradient", {
+            id: "bulbGlass",
+            cx: "0.45",
+            cy: "0.4",
+            r: "0.55",
+          });
+          [
+            ["0%", "rgba(220,235,250,0.18)"],
+            ["60%", "rgba(180,200,220,0.10)"],
+            ["100%", "rgba(120,140,160,0.22)"],
+          ].forEach(([o, c]) => {
+            const s = svgEl("stop", { offset: o, "stop-color": c });
+            bulbGlass.appendChild(s);
+          });
+          defs.appendChild(bulbGlass);
+
+          // Screw base gradient (metallic)
+          const baseGrad = svgEl("linearGradient", {
+            id: "screwBase",
+            x1: "0",
+            y1: "0",
+            x2: "1",
+            y2: "0",
+          });
+          [
+            ["0%", "#6b7280"],
+            ["30%", "#9ca3af"],
+            ["50%", "#d1d5db"],
+            ["70%", "#9ca3af"],
+            ["100%", "#6b7280"],
+          ].forEach(([o, c]) => {
+            const s = svgEl("stop", { offset: o, "stop-color": c });
+            baseGrad.appendChild(s);
+          });
+          defs.appendChild(baseGrad);
+
+          // Wire trace highlight filter
+          const wireGlow = svgEl("filter", {
+            id: "wireHighlight",
+            x: "-10%",
+            y: "-50%",
+            width: "120%",
+            height: "200%",
+          });
+          const feFlood = svgEl("feFlood", {
+            "flood-color": "var(--wire-glow)",
+            "flood-opacity": "0.25",
+            result: "glow",
+          });
+          wireGlow.appendChild(feFlood);
+          const feComp = svgEl("feComposite", {
+            in: "glow",
+            in2: "SourceGraphic",
+            operator: "atop",
+          });
+          wireGlow.appendChild(feComp);
+          defs.appendChild(wireGlow);
+
+          svg.appendChild(defs);
+
+          // Background
+          svg.appendChild(
+            svgEl("rect", {
+              x: 0,
+              y: 0,
+              width: 960,
+              height: 560,
+              fill: "url(#dotGrid)",
+            }),
+          );
+
+          // Tray area
+          renderTray();
+
+          // Wiring
+          renderWiring(tpl);
+
+          // Slots
+          tpl.slots.forEach((slot) => {
+            renderSlotOutline(slot, false);
+          });
+
+          // Danger slots
+          if (tpl.dangerSlots) {
+            tpl.dangerSlots.forEach((ds) => {
+              renderSlotOutline(ds, true);
+            });
+          }
+
+          // Bulb
+          renderBulb();
+
+          // Polarity labels on rails
+          renderPolarityLabels(tpl);
+
+          // Place prefilled items
+          for (const [slotId, slotState] of Object.entries(state.slots)) {
+            const slotDef = findSlotDef(slotId);
+            if (!slotDef) continue;
+            if (slotState.type === "wire") {
+              renderPlacedWire(slotDef);
+            } else if (slotState.battery) {
+              renderPlacedBattery(
+                slotDef,
+                slotState.orientation,
+                slotState.isDanger,
+              );
+            }
+          }
+
+          // Update tray visuals
+          updateTrayVisuals();
+        }
+
+        function renderTray() {
+          const g = svgEl("g", { class: "tray-group" });
+
+          g.appendChild(
+            svgEl("rect", {
+              x: TRAY_X,
+              y: TRAY_Y,
+              width: TRAY_W,
+              height: TRAY_H,
+              rx: 8,
+              fill: "var(--tray-bg)",
+              stroke: "var(--tray-border)",
+              "stroke-width": 2,
+            }),
+          );
+
+          // Tray label
+          const lbl = svgText(
+            TRAY_X + TRAY_W / 2,
+            TRAY_Y + 18,
+            "1.5 V",
+            "polarity-label",
+            11,
+          );
+          lbl.setAttribute("fill", "var(--text-dim)");
+          g.appendChild(lbl);
+
+          // Tray battery slots (up to 6)
+          const cellW = 56;
+          const cellH = 24;
+          const cols = 2;
+          const padX = (TRAY_W - cols * cellW - (cols - 1) * 8) / 2;
+          const startY = TRAY_Y + 36;
+
+          for (let i = 0; i < 6; i++) {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const cx = TRAY_X + padX + col * (cellW + 8) + cellW / 2;
+            const cy = startY + row * (cellH + 14) + cellH / 2;
+
+            const cellG = svgEl("g", {
+              class: "tray-cell",
+              "data-tray-idx": i,
+            });
+
+            // Golden cell body
+            cellG.appendChild(
+              svgEl("rect", {
+                x: cx - cellW / 2,
+                y: cy - cellH / 2,
+                width: cellW,
+                height: cellH,
+                rx: 4,
+                fill: "url(#batBody)",
+                stroke: "#8b6914",
+                "stroke-width": 1,
+              }),
+            );
+
+            // Top highlight
+            cellG.appendChild(
+              svgEl("rect", {
+                x: cx - cellW / 2 + 2,
+                y: cy - cellH / 2 + 1,
+                width: cellW - 4,
+                height: 3,
+                rx: 1,
+                fill: "rgba(255,255,255,0.15)",
+                "pointer-events": "none",
+              }),
+            );
+
+            // + cap (right, red)
+            cellG.appendChild(
+              svgEl("rect", {
+                x: cx + cellW / 2 - 10,
+                y: cy - cellH / 2 + 2,
+                width: 10,
+                height: cellH - 4,
+                rx: 2,
+                fill: "#dc2626",
+              }),
+            );
+
+            // + nub
+            cellG.appendChild(
+              svgEl("rect", {
+                x: cx + cellW / 2 - 1,
+                y: cy - 3,
+                width: 3,
+                height: 6,
+                rx: 1,
+                fill: "url(#batPos)",
+              }),
+            );
+
+            // - cap (left, dark)
+            cellG.appendChild(
+              svgEl("rect", {
+                x: cx - cellW / 2,
+                y: cy - cellH / 2 + 2,
+                width: 8,
+                height: cellH - 4,
+                rx: 2,
+                fill: "#374151",
+              }),
+            );
+
+            // + label
+            const pLbl = svgText(cx + cellW / 2 - 5, cy, "+", "", 9);
+            pLbl.setAttribute("fill", "#fff");
+            pLbl.setAttribute("pointer-events", "none");
+            cellG.appendChild(pLbl);
+
+            // - label
+            const mLbl = svgText(cx - cellW / 2 + 4, cy, "\u2212", "", 9);
+            mLbl.setAttribute("fill", "#9ca3af");
+            mLbl.setAttribute("pointer-events", "none");
+            cellG.appendChild(mLbl);
+
+            g.appendChild(cellG);
+          }
+
+          // Wire tray item
+          const wireY = startY + 3 * (cellH + 14) + 14;
+          const wireG = svgEl("g", {
+            class: "tray-wire",
+            "data-tray-wire": "0",
+          });
+          const wireX1 = TRAY_X + 24;
+          const wireX2 = TRAY_X + TRAY_W - 24;
+
+          // Conductor line
+          wireG.appendChild(
+            svgEl("line", {
+              x1: wireX1,
+              y1: wireY,
+              x2: wireX2,
+              y2: wireY,
+              stroke: "var(--wire)",
+              "stroke-width": 5,
+              "stroke-linecap": "round",
+            }),
+          );
+
+          // Left connector dot
+          wireG.appendChild(
+            svgEl("circle", {
+              cx: wireX1,
+              cy: wireY,
+              r: 5,
+              fill: "var(--wire-glow)",
+              stroke: "var(--wire)",
+              "stroke-width": 1,
+            }),
+          );
+
+          // Right connector dot
+          wireG.appendChild(
+            svgEl("circle", {
+              cx: wireX2,
+              cy: wireY,
+              r: 5,
+              fill: "var(--wire-glow)",
+              stroke: "var(--wire)",
+              "stroke-width": 1,
+            }),
+          );
+          g.appendChild(wireG);
+
+          svg.appendChild(g);
+        }
+
+        function updateTrayVisuals() {
+          const cells = svg.querySelectorAll(".tray-cell");
+          cells.forEach((cell, i) => {
+            if (i < state.trayCount) {
+              cell.classList.remove("disabled");
+            } else {
+              cell.classList.add("disabled");
+            }
+          });
+          const wireEl = svg.querySelector(".tray-wire");
+          if (wireEl) {
+            if (state.wireCount > 0) {
+              wireEl.classList.remove("disabled");
+            } else {
+              wireEl.classList.add("disabled");
+            }
+          }
+        }
+
+        function renderSlotOutline(slotDef, isDanger) {
+          const sx = slotDef.x - SLOT_W / 2;
+          const sy = slotDef.y - SLOT_H / 2;
+
+          const rect = svgEl("rect", {
+            x: sx,
+            y: sy,
+            width: SLOT_W,
+            height: SLOT_H,
+            class: isDanger ? "danger-outline" : "slot-outline",
+            "data-slot": slotDef.id,
+          });
+          svg.appendChild(rect);
+
+          if (isDanger) {
+            // Lightning icon
+            const bolt = svgText(slotDef.x, slotDef.y, "\u26A1", "", 18);
+            bolt.setAttribute("fill", "var(--danger)");
+            bolt.setAttribute("pointer-events", "none");
+            bolt.setAttribute("opacity", "0.5");
+            bolt.setAttribute("data-slot-icon", slotDef.id);
+            svg.appendChild(bolt);
+          } else {
+            // Polarity hints inside empty slot
+            const minus = svgText(sx + 12, slotDef.y, "\u2212", "", 12);
+            minus.setAttribute("fill", "var(--text-dim)");
+            minus.setAttribute("opacity", "0.4");
+            minus.setAttribute("pointer-events", "none");
+            minus.setAttribute("data-slot-hint", slotDef.id);
+            svg.appendChild(minus);
+
+            const plus = svgText(sx + SLOT_W - 12, slotDef.y, "+", "", 12);
+            plus.setAttribute("fill", "var(--text-dim)");
+            plus.setAttribute("opacity", "0.4");
+            plus.setAttribute("pointer-events", "none");
+            plus.setAttribute("data-slot-hint", slotDef.id);
+            svg.appendChild(plus);
+          }
+        }
+
+        function renderWiring(tpl) {
+          const g = svgEl("g", { class: "wiring" });
+
+          if (tpl.kind === "series") {
+            // Single horizontal wire from left edge through slots to bulb
+            const slots = tpl.slots.sort((a, b) => a.x - b.x);
+            const leftX = Math.min(196, slots[0].x - SLOT_W / 2 - 30);
+            const rightX = BULB_CX - BULB_R - 10;
+            const y = 280;
+
+            // Left wire to first slot
+            const wl = svgEl("line", {
+              x1: leftX,
+              y1: y,
+              x2: slots[0].x - SLOT_W / 2,
+              y2: y,
+              class: "wire-trace",
+              "data-wire": "left",
+            });
+            g.appendChild(wl);
+
+            // Wires between slots
+            for (let i = 0; i < slots.length - 1; i++) {
+              const w = svgEl("line", {
+                x1: slots[i].x + SLOT_W / 2,
+                y1: y,
+                x2: slots[i + 1].x - SLOT_W / 2,
+                y2: y,
+                class: "wire-trace",
+                "data-wire": "inter-" + i,
+              });
+              g.appendChild(w);
+            }
+
+            // Right wire from last slot to bulb
+            const wr = svgEl("line", {
+              x1: slots[slots.length - 1].x + SLOT_W / 2,
+              y1: y,
+              x2: rightX,
+              y2: y,
+              class: "wire-trace",
+              "data-wire": "right",
+            });
+            g.appendChild(wr);
+
+            // Return wire (bottom path)
+            const retY = 420;
+            g.appendChild(
+              svgEl("line", {
+                x1: leftX,
+                y1: y,
+                x2: leftX,
+                y2: retY,
+                class: "wire-trace",
+                "data-wire": "ret-down-l",
+              }),
+            );
+            g.appendChild(
+              svgEl("line", {
+                x1: leftX,
+                y1: retY,
+                x2: BULB_CX,
+                y2: retY,
+                class: "wire-trace",
+                "data-wire": "ret-bottom",
+              }),
+            );
+            g.appendChild(
+              svgEl("line", {
+                x1: BULB_CX,
+                y1: retY,
+                x2: BULB_CX,
+                y2: BULB_CY + BULB_R + 10,
+                class: "wire-trace",
+                "data-wire": "ret-up-r",
+              }),
+            );
+
+            // Polarity labels: left rail = −, right rail = +
+            const mLbl = svgText(leftX, y - 16, "\u2212", "polarity-label", 16);
+            mLbl.setAttribute("fill", "var(--text-dim)");
+            g.appendChild(mLbl);
+            const pLbl = svgText(rightX, y - 16, "+", "polarity-label", 16);
+            pLbl.setAttribute("fill", "var(--error)");
+            g.appendChild(pLbl);
+          } else {
+            // Parallel / Mixed / Repair with buses
+            const buses = tpl.buses;
+            if (!buses) return;
+
+            // Left bus
+            g.appendChild(
+              svgEl("line", {
+                x1: buses.left.x,
+                y1: buses.left.y1,
+                x2: buses.left.x,
+                y2: buses.left.y2,
+                class: "bus-line",
+                "data-bus": "left",
+              }),
+            );
+
+            // Right bus
+            g.appendChild(
+              svgEl("line", {
+                x1: buses.right.x,
+                y1: buses.right.y1,
+                x2: buses.right.x,
+                y2: buses.right.y2,
+                class: "bus-line",
+                "data-bus": "right",
+              }),
+            );
+
+            // Branch wires for normal slots
+            const branches = {};
+            tpl.slots.forEach((s) => {
+              if (!branches[s.branch]) branches[s.branch] = [];
+              branches[s.branch].push(s);
+            });
+
+            for (const [brId, brSlots] of Object.entries(branches)) {
+              const sorted = brSlots.sort((a, b) => a.x - b.x);
+              const y = sorted[0].y;
+
+              // Left bus to first slot
+              g.appendChild(
+                svgEl("line", {
+                  x1: buses.left.x,
+                  y1: y,
+                  x2: sorted[0].x - SLOT_W / 2,
+                  y2: y,
+                  class: "wire-trace",
+                  "data-wire": brId + "-left",
+                  "data-branch": brId,
+                }),
+              );
+
+              // Between slots in same branch
+              for (let i = 0; i < sorted.length - 1; i++) {
+                g.appendChild(
+                  svgEl("line", {
+                    x1: sorted[i].x + SLOT_W / 2,
+                    y1: y,
+                    x2: sorted[i + 1].x - SLOT_W / 2,
+                    y2: y,
+                    class: "wire-trace",
+                    "data-wire": brId + "-inter-" + i,
+                    "data-branch": brId,
+                  }),
+                );
+              }
+
+              // Last slot to right bus
+              g.appendChild(
+                svgEl("line", {
+                  x1: sorted[sorted.length - 1].x + SLOT_W / 2,
+                  y1: y,
+                  x2: buses.right.x,
+                  y2: y,
+                  class: "wire-trace",
+                  "data-wire": brId + "-right",
+                  "data-branch": brId,
+                }),
+              );
+            }
+
+            // Danger slot wires
+            if (tpl.dangerSlots) {
+              tpl.dangerSlots.forEach((ds) => {
+                g.appendChild(
+                  svgEl("line", {
+                    x1: buses.left.x,
+                    y1: ds.y,
+                    x2: ds.x - SLOT_W / 2,
+                    y2: ds.y,
+                    class: "wire-trace",
+                    "data-wire": "danger-left",
+                    "data-danger": "true",
+                  }),
+                );
+                g.appendChild(
+                  svgEl("line", {
+                    x1: ds.x + SLOT_W / 2,
+                    y1: ds.y,
+                    x2: buses.right.x,
+                    y2: ds.y,
+                    class: "wire-trace",
+                    "data-wire": "danger-right",
+                    "data-danger": "true",
+                  }),
+                );
+              });
+            }
+
+            // Right bus to bulb
+            const midBusY = (buses.right.y1 + buses.right.y2) / 2;
+            g.appendChild(
+              svgEl("line", {
+                x1: buses.right.x,
+                y1: midBusY,
+                x2: BULB_CX - BULB_R - 10,
+                y2: BULB_CY,
+                class: "wire-trace",
+                "data-wire": "bus-to-bulb",
+              }),
+            );
+
+            // Bulb return to left bus
+            g.appendChild(
+              svgEl("line", {
+                x1: BULB_CX,
+                y1: BULB_CY + BULB_R + 10,
+                x2: BULB_CX,
+                y2: BULB_CY + BULB_R + 30,
+                class: "wire-trace",
+                "data-wire": "bulb-ret-down",
+              }),
+            );
+            g.appendChild(
+              svgEl("line", {
+                x1: BULB_CX,
+                y1: BULB_CY + BULB_R + 30,
+                x2: buses.left.x,
+                y2: BULB_CY + BULB_R + 30,
+                class: "wire-trace",
+                "data-wire": "bulb-ret-left",
+              }),
+            );
+            g.appendChild(
+              svgEl("line", {
+                x1: buses.left.x,
+                y1: BULB_CY + BULB_R + 30,
+                x2: buses.left.x,
+                y2: buses.left.y2,
+                class: "wire-trace",
+                "data-wire": "bulb-ret-up",
+              }),
+            );
+
+            // Polarity labels: left bus = −, right bus = +
+            const mLbl = svgText(
+              buses.left.x,
+              buses.left.y1 - 14,
+              "\u2212",
+              "polarity-label",
+              16,
+            );
+            mLbl.setAttribute("fill", "var(--text-dim)");
+            g.appendChild(mLbl);
+            const pLbl = svgText(
+              buses.right.x,
+              buses.right.y1 - 14,
+              "+",
+              "polarity-label",
+              16,
+            );
+            pLbl.setAttribute("fill", "var(--error)");
+            g.appendChild(pLbl);
+          }
+
+          svg.appendChild(g);
+        }
+
+        function renderPolarityLabels(tpl) {
+          // Additional polarity context is drawn inline in renderWiring
+        }
+
+        function renderBulb() {
+          const g = svgEl("g", { class: "bulb-group" });
+          const cx = BULB_CX;
+          const cy = BULB_CY;
+          const r = BULB_R;
+
+          // Screw base (below glass)
+          const baseW = 22;
+          const baseH = 20;
+          const baseY = cy + r - 8;
+          g.appendChild(
+            svgEl("rect", {
+              x: cx - baseW / 2,
+              y: baseY,
+              width: baseW,
+              height: baseH,
+              rx: 2,
+              fill: "url(#screwBase)",
+              stroke: "#4b5563",
+              "stroke-width": 0.8,
+            }),
+          );
+
+          // Screw threads (horizontal lines on base)
+          for (let i = 0; i < 3; i++) {
+            g.appendChild(
+              svgEl("line", {
+                x1: cx - baseW / 2 + 2,
+                y1: baseY + 5 + i * 6,
+                x2: cx + baseW / 2 - 2,
+                y2: baseY + 5 + i * 6,
+                stroke: "#4b5563",
+                "stroke-width": 0.8,
+              }),
+            );
+          }
+
+          // Contact point at bottom
+          g.appendChild(
+            svgEl("circle", {
+              cx,
+              cy: baseY + baseH + 3,
+              r: 4,
+              fill: "#374151",
+              stroke: "#4b5563",
+              "stroke-width": 0.5,
+            }),
+          );
+
+          // Glass envelope (bulb shape - ellipse wider at top, narrowing at neck)
+          const bulbPath = svgEl("path", {
+            d: `M${cx - 12},${baseY} Q${cx - r - 2},${baseY - 8} ${cx - r},${cy - 4} Q${cx - r - 1},${cy - r + 4} ${cx},${cy - r} Q${cx + r + 1},${cy - r + 4} ${cx + r},${cy - 4} Q${cx + r + 2},${baseY - 8} ${cx + 12},${baseY} Z`,
+            fill: "url(#bulbGlass)",
+            stroke: "rgba(150,170,190,0.35)",
+            "stroke-width": 1,
+            class: "bulb-body off",
+            id: "bulbBody",
+          });
+          g.appendChild(bulbPath);
+
+          // Glass highlight (specular)
+          g.appendChild(
+            svgEl("ellipse", {
+              cx: cx - 8,
+              cy: cy - 8,
+              rx: 6,
+              ry: 10,
+              fill: "rgba(255,255,255,0.08)",
+              transform: `rotate(-20,${cx - 8},${cy - 8})`,
+              "pointer-events": "none",
+            }),
+          );
+
+          // Filament supports (two thin lines going up from base)
+          g.appendChild(
+            svgEl("line", {
+              x1: cx - 5,
+              y1: baseY,
+              x2: cx - 6,
+              y2: cy + 4,
+              stroke: "#6b7280",
+              "stroke-width": 1,
+              opacity: 0.6,
+            }),
+          );
+          g.appendChild(
+            svgEl("line", {
+              x1: cx + 5,
+              y1: baseY,
+              x2: cx + 6,
+              y2: cy + 4,
+              stroke: "#6b7280",
+              "stroke-width": 1,
+              opacity: 0.6,
+            }),
+          );
+
+          // Filament (zigzag coil)
+          const filament = svgEl("path", {
+            d: `M${cx - 6},${cy + 4} L${cx - 4},${cy - 6} L${cx - 1},${cy + 2} L${cx + 2},${cy - 8} L${cx + 4},${cy + 2} L${cx + 6},${cy + 4}`,
+            fill: "none",
+            stroke: "#9ca3af",
+            "stroke-width": 1.5,
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+            id: "bulbFilament",
+          });
+          g.appendChild(filament);
+
+          // Warning ring (hidden by default)
+          g.appendChild(
+            svgEl("circle", {
+              cx,
+              cy,
+              r: r + 6,
+              class: "bulb-warning-ring",
+              id: "bulbWarning",
+            }),
+          );
+
+          svg.appendChild(g);
+        }
+
+        function renderPlacedBattery(slotDef, orientation, isDanger) {
+          const existingGroup = svg.querySelector(
+            `[data-placed="${slotDef.id}"]`,
+          );
+          if (existingGroup) existingGroup.remove();
+
+          const g = svgEl("g", {
+            class: "placed-battery",
+            "data-placed": slotDef.id,
+          });
+
+          const isForward = orientation === "forward";
+          const bx = slotDef.x - SLOT_W / 2 + 4;
+          const by = slotDef.y - SLOT_H / 2 + 3;
+          const bw = SLOT_W - 8;
+          const bh = SLOT_H - 6;
+
+          // Golden cell body with 3D gradient
+          g.appendChild(
+            svgEl("rect", {
+              x: bx,
+              y: by,
+              width: bw,
+              height: bh,
+              rx: 5,
+              fill: "url(#batBody)",
+              stroke: "#8b6914",
+              "stroke-width": 1.5,
+            }),
+          );
+
+          // Top highlight strip for cylindrical effect
+          g.appendChild(
+            svgEl("rect", {
+              x: bx + 2,
+              y: by + 1,
+              width: bw - 4,
+              height: 4,
+              rx: 2,
+              fill: "rgba(255,255,255,0.15)",
+              "pointer-events": "none",
+            }),
+          );
+
+          // Positive cap (red, prominent)
+          const plusX = isForward ? bx + bw - 16 : bx;
+          g.appendChild(
+            svgEl("rect", {
+              x: plusX,
+              y: by + 2,
+              width: 16,
+              height: bh - 4,
+              rx: 3,
+              fill: "#dc2626",
+              stroke: "#991b1b",
+              "stroke-width": 0.8,
+            }),
+          );
+
+          // Positive nub (small brass bump)
+          const nubX = isForward ? bx + bw - 1 : bx - 4;
+          g.appendChild(
+            svgEl("rect", {
+              x: nubX,
+              y: slotDef.y - 5,
+              width: 5,
+              height: 10,
+              rx: 2,
+              fill: "url(#batPos)",
+            }),
+          );
+
+          // Negative cap (dark flat)
+          const minusX = isForward ? bx : bx + bw - 14;
+          g.appendChild(
+            svgEl("rect", {
+              x: minusX,
+              y: by + 2,
+              width: 14,
+              height: bh - 4,
+              rx: 3,
+              fill: "#374151",
+              stroke: "#1f2937",
+              "stroke-width": 0.8,
+            }),
+          );
+
+          // + label on cap
+          const pLbl = svgText(
+            isForward ? plusX + 8 : plusX + 8,
+            slotDef.y,
+            "+",
+            "",
+            12,
+          );
+          pLbl.setAttribute("fill", "#fff");
+          pLbl.setAttribute("pointer-events", "none");
+          pLbl.setAttribute("font-weight", "700");
+          g.appendChild(pLbl);
+
+          // − label on cap
+          const mLbl = svgText(
+            isForward ? minusX + 7 : minusX + 7,
+            slotDef.y,
+            "\u2212",
+            "",
+            12,
+          );
+          mLbl.setAttribute("fill", "#9ca3af");
+          mLbl.setAttribute("pointer-events", "none");
+          g.appendChild(mLbl);
+
+          // 1.5V label centered on body
+          const vLbl = svgText(slotDef.x, slotDef.y, "1.5V", "", 11);
+          vLbl.setAttribute("fill", "#3d2200");
+          vLbl.setAttribute("pointer-events", "none");
+          vLbl.setAttribute("font-weight", "700");
+          g.appendChild(vLbl);
+
+          // Remove button (X)
+          const rmG = svgEl("g", { class: "remove-btn" });
+          rmG.appendChild(
+            svgEl("circle", {
+              cx: slotDef.x + SLOT_W / 2 - 8,
+              cy: slotDef.y - SLOT_H / 2 + 2,
+              r: 8,
+              fill: "var(--error)",
+              opacity: 0.8,
+            }),
+          );
+          const rmTxt = svgText(
+            slotDef.x + SLOT_W / 2 - 8,
+            slotDef.y - SLOT_H / 2 + 2,
+            "\u00d7",
+            "",
+            12,
+          );
+          rmTxt.setAttribute("fill", "#fff");
+          rmTxt.setAttribute("pointer-events", "none");
+          rmG.appendChild(rmTxt);
+          rmG.addEventListener("pointerdown", (e) => {
+            e.stopPropagation();
+            if (state.editLocked) return;
+            removeItem(slotDef.id);
+          });
+          g.appendChild(rmG);
+
+          // Click to flip
+          g.addEventListener("pointerdown", (e) => {
+            if (state.editLocked) return;
+            if (e.target.closest(".remove-btn")) return;
+            flipBattery(slotDef.id);
+          });
+
+          // Mark slot as occupied visually
+          const slotRect = svg.querySelector(`[data-slot="${slotDef.id}"]`);
+          if (slotRect) {
+            slotRect.classList.add("occupied");
+          }
+
+          // Hide polarity hints
+          svg
+            .querySelectorAll(`[data-slot-hint="${slotDef.id}"]`)
+            .forEach((el) => (el.style.display = "none"));
+
+          // Hide danger icon
+          const icon = svg.querySelector(`[data-slot-icon="${slotDef.id}"]`);
+          if (icon) icon.style.display = "none";
+
+          svg.appendChild(g);
+        }
+
+        // ══════════════════════════════════════════════
+        // SLOT FINDER
+        // ══════════════════════════════════════════════
+        function findSlotDef(slotId) {
+          const tpl = TEMPLATES[state.templateId];
+          if (!tpl) return null;
+          const found = tpl.slots.find((s) => s.id === slotId);
+          if (found) return found;
+          if (tpl.dangerSlots) {
+            return tpl.dangerSlots.find((s) => s.id === slotId);
+          }
+          return null;
+        }
+
+        function findSlotAtPoint(px, py) {
+          const tpl = TEMPLATES[state.templateId];
+          if (!tpl) return null;
+          for (const s of tpl.slots) {
+            if (
+              ptInRect(
+                px,
+                py,
+                s.x - SLOT_W / 2,
+                s.y - SLOT_H / 2,
+                SLOT_W,
+                SLOT_H,
+              )
+            ) {
+              return s;
+            }
+          }
+          if (tpl.dangerSlots) {
+            for (const s of tpl.dangerSlots) {
+              if (
+                ptInRect(
+                  px,
+                  py,
+                  s.x - SLOT_W / 2,
+                  s.y - SLOT_H / 2,
+                  SLOT_W,
+                  SLOT_H,
+                )
+              ) {
+                return { ...s, isDanger: true };
+              }
+            }
+          }
+          return null;
+        }
+
+        // ══════════════════════════════════════════════
+        // BATTERY PLACEMENT
+        // ══════════════════════════════════════════════
+        function placeBattery(slotId, orientation, isDanger) {
+          state.slots[slotId] = {
+            type: "battery",
+            battery: true,
+            orientation: orientation || "forward",
+            isDanger: !!isDanger,
+          };
+          if (!isDanger) state.trayCount = Math.max(0, state.trayCount - 1);
+          const slotDef = findSlotDef(slotId);
+          if (slotDef) {
+            renderPlacedBattery(slotDef, orientation || "forward", isDanger);
+          }
+          updateTrayVisuals();
+          computeReadouts();
+          clearTestState();
+        }
+
+        function placeWire(slotId) {
+          state.slots[slotId] = { type: "wire" };
+          state.wireCount = Math.max(0, state.wireCount - 1);
+          const slotDef = findSlotDef(slotId);
+          if (slotDef) {
+            renderPlacedWire(slotDef);
+          }
+          updateTrayVisuals();
+          computeReadouts();
+          clearTestState();
+        }
+
+        function renderPlacedWire(slotDef) {
+          const existing = svg.querySelector(`[data-placed="${slotDef.id}"]`);
+          if (existing) existing.remove();
+
+          const g = svgEl("g", {
+            class: "placed-wire",
+            "data-placed": slotDef.id,
+          });
+
+          const x1 = slotDef.x - SLOT_W / 2 + 8;
+          const x2 = slotDef.x + SLOT_W / 2 - 8;
+          const cy = slotDef.y;
+
+          // Conductor line
+          g.appendChild(
+            svgEl("line", {
+              x1,
+              y1: cy,
+              x2,
+              y2: cy,
+              stroke: "var(--wire)",
+              "stroke-width": 6,
+              "stroke-linecap": "round",
+            }),
+          );
+
+          // Left connector dot
+          g.appendChild(
+            svgEl("circle", {
+              cx: x1,
+              cy,
+              r: 6,
+              fill: "var(--wire-glow)",
+              stroke: "var(--wire)",
+              "stroke-width": 1.5,
+            }),
+          );
+
+          // Right connector dot
+          g.appendChild(
+            svgEl("circle", {
+              cx: x2,
+              cy,
+              r: 6,
+              fill: "var(--wire-glow)",
+              stroke: "var(--wire)",
+              "stroke-width": 1.5,
+            }),
+          );
+
+          // Remove button
+          const rmG = svgEl("g", { class: "remove-btn" });
+          rmG.appendChild(
+            svgEl("circle", {
+              cx: slotDef.x + SLOT_W / 2 - 8,
+              cy: slotDef.y - SLOT_H / 2 + 2,
+              r: 8,
+              fill: "var(--error)",
+              opacity: 0.8,
+            }),
+          );
+          const rmTxt = svgText(
+            slotDef.x + SLOT_W / 2 - 8,
+            slotDef.y - SLOT_H / 2 + 2,
+            "\u00d7",
+            "",
+            12,
+          );
+          rmTxt.setAttribute("fill", "#fff");
+          rmTxt.setAttribute("pointer-events", "none");
+          rmG.appendChild(rmTxt);
+          rmG.addEventListener("pointerdown", (e) => {
+            e.stopPropagation();
+            if (state.editLocked) return;
+            removeItem(slotDef.id);
+          });
+          g.appendChild(rmG);
+
+          // Mark slot as occupied
+          const slotRect = svg.querySelector(`[data-slot="${slotDef.id}"]`);
+          if (slotRect) slotRect.classList.add("occupied");
+
+          // Hide polarity hints
+          svg
+            .querySelectorAll(`[data-slot-hint="${slotDef.id}"]`)
+            .forEach((el) => (el.style.display = "none"));
+
+          svg.appendChild(g);
+        }
+
+        function removeItem(slotId) {
+          const slotState = state.slots[slotId];
+          if (!slotState) return;
+          const isWire = slotState.type === "wire";
+          const isDanger = slotState.isDanger;
+          delete state.slots[slotId];
+
+          if (isWire) {
+            state.wireCount = Math.min(state.wireMax, state.wireCount + 1);
+          } else if (!isDanger) {
+            state.trayCount = Math.min(state.trayMax, state.trayCount + 1);
+          }
+
+          // Remove visual
+          const el = svg.querySelector(`[data-placed="${slotId}"]`);
+          if (el) el.remove();
+
+          // Restore slot outline
+          const slotRect = svg.querySelector(`[data-slot="${slotId}"]`);
+          if (slotRect) slotRect.classList.remove("occupied");
+
+          // Show polarity hints again
+          svg
+            .querySelectorAll(`[data-slot-hint="${slotId}"]`)
+            .forEach((el) => (el.style.display = ""));
+
+          // Show danger icon
+          const icon = svg.querySelector(`[data-slot-icon="${slotId}"]`);
+          if (icon) icon.style.display = "";
+
+          updateTrayVisuals();
+          computeReadouts();
+          clearTestState();
+        }
+
+        function flipBattery(slotId) {
+          const slotState = state.slots[slotId];
+          if (!slotState || !slotState.battery) return;
+          slotState.orientation =
+            slotState.orientation === "forward" ? "reverse" : "forward";
+          const slotDef = findSlotDef(slotId);
+          if (slotDef) {
+            renderPlacedBattery(
+              slotDef,
+              slotState.orientation,
+              slotState.isDanger,
+            );
+          }
+          computeReadouts();
+          clearTestState();
+        }
+
+        // ══════════════════════════════════════════════
+        // DRAG & DROP + TAP
+        // ══════════════════════════════════════════════
+        let dragGhost = null;
+        let dragActive = false;
+        let dragType = "battery";
+
+        svg.addEventListener("pointerdown", (e) => {
+          if (state.editLocked) return;
+
+          const pt = svgPoint(e.clientX, e.clientY);
+          const trayCell = e.target.closest(".tray-cell");
+          const trayWire = e.target.closest(".tray-wire");
+
+          // Battery tray interaction
+          if (trayCell && !trayCell.classList.contains("disabled")) {
+            if (state.trayCount <= 0) return;
+            disarmAll();
+
+            if (e.pointerType === "touch") {
+              armBattery();
+              return;
+            }
+
+            // Desktop drag battery
+            dragActive = true;
+            dragType = "battery";
+            svg.setPointerCapture(e.pointerId);
+
+            dragGhost = svgEl("g", { class: "drag-ghost" });
+            const gw = 110;
+            const gh = 38;
+            dragGhost.appendChild(
+              svgEl("rect", {
+                x: pt.x - gw / 2,
+                y: pt.y - gh / 2,
+                width: gw,
+                height: gh,
+                rx: 5,
+                fill: "#e5a825",
+                stroke: "#b8861a",
+                "stroke-width": 1.5,
+              }),
+            );
+            dragGhost.appendChild(
+              svgEl("rect", {
+                x: pt.x + gw / 2 - 14,
+                y: pt.y - gh / 2 + 3,
+                width: 14,
+                height: gh - 6,
+                rx: 3,
+                fill: "#dc2626",
+              }),
+            );
+            dragGhost.appendChild(
+              svgEl("rect", {
+                x: pt.x - gw / 2,
+                y: pt.y - gh / 2 + 3,
+                width: 12,
+                height: gh - 6,
+                rx: 3,
+                fill: "#374151",
+              }),
+            );
+            dragGhost._ox = pt.x;
+            dragGhost._oy = pt.y;
+            svg.appendChild(dragGhost);
+            e.preventDefault();
+            return;
+          }
+
+          // Wire tray interaction
+          if (trayWire && !trayWire.classList.contains("disabled")) {
+            if (state.wireCount <= 0) return;
+            disarmAll();
+
+            if (e.pointerType === "touch") {
+              armWire();
+              return;
+            }
+
+            // Desktop drag wire
+            dragActive = true;
+            dragType = "wire";
+            svg.setPointerCapture(e.pointerId);
+
+            dragGhost = svgEl("g", { class: "drag-ghost" });
+            const wHalf = 50;
+            dragGhost.appendChild(
+              svgEl("line", {
+                x1: pt.x - wHalf,
+                y1: pt.y,
+                x2: pt.x + wHalf,
+                y2: pt.y,
+                stroke: "var(--wire)",
+                "stroke-width": 6,
+                "stroke-linecap": "round",
+              }),
+            );
+            dragGhost.appendChild(
+              svgEl("circle", {
+                cx: pt.x - wHalf,
+                cy: pt.y,
+                r: 5,
+                fill: "var(--wire-glow)",
+              }),
+            );
+            dragGhost.appendChild(
+              svgEl("circle", {
+                cx: pt.x + wHalf,
+                cy: pt.y,
+                r: 5,
+                fill: "var(--wire-glow)",
+              }),
+            );
+            dragGhost._ox = pt.x;
+            dragGhost._oy = pt.y;
+            svg.appendChild(dragGhost);
+            e.preventDefault();
+            return;
+          }
+
+          // Tap on empty slot when armed (touch)
+          if (state.armedBattery || state.armedWire) {
+            const slot = findSlotAtPoint(pt.x, pt.y);
+            if (slot && !state.slots[slot.id]) {
+              if (state.armedBattery) {
+                placeBattery(slot.id, "forward", slot.isDanger);
+              } else {
+                placeWire(slot.id);
+              }
+              disarmAll();
+            } else {
+              disarmAll();
+            }
+            return;
+          }
+        });
+
+        svg.addEventListener("pointermove", (e) => {
+          if (!dragActive || !dragGhost) return;
+          const pt = svgPoint(e.clientX, e.clientY);
+          const dx = pt.x - dragGhost._ox;
+          const dy = pt.y - dragGhost._oy;
+          dragGhost.setAttribute("transform", `translate(${dx},${dy})`);
+
+          // Highlight potential slot
+          const slot = findSlotAtPoint(pt.x, pt.y);
+          svg
+            .querySelectorAll(".slot-outline, .danger-outline")
+            .forEach((r) => {
+              r.classList.remove("armed-target");
+            });
+          if (slot && !state.slots[slot.id]?.battery) {
+            const r = svg.querySelector(`[data-slot="${slot.id}"]`);
+            if (r) r.classList.add("armed-target");
+          }
+        });
+
+        svg.addEventListener("pointerup", (e) => {
+          if (!dragActive) return;
+          dragActive = false;
+          svg.releasePointerCapture(e.pointerId);
+
+          const pt = svgPoint(e.clientX, e.clientY);
+          const slot = findSlotAtPoint(pt.x, pt.y);
+
+          if (dragGhost) {
+            dragGhost.remove();
+            dragGhost = null;
+          }
+
+          svg
+            .querySelectorAll(".slot-outline, .danger-outline")
+            .forEach((r) => {
+              r.classList.remove("armed-target");
+            });
+
+          if (slot && !state.slots[slot.id]) {
+            if (dragType === "wire") {
+              placeWire(slot.id);
+            } else {
+              placeBattery(slot.id, "forward", slot.isDanger);
+            }
+          }
+        });
+
+        svg.addEventListener("pointercancel", () => {
+          if (dragGhost) {
+            dragGhost.remove();
+            dragGhost = null;
+          }
+          dragActive = false;
+          svg
+            .querySelectorAll(".slot-outline, .danger-outline")
+            .forEach((r) => {
+              r.classList.remove("armed-target");
+            });
+        });
+
+        function highlightEmptySlots() {
+          const tpl = TEMPLATES[state.templateId];
+          if (!tpl) return;
+          const allSlots = [...tpl.slots, ...(tpl.dangerSlots || [])];
+          allSlots.forEach((s) => {
+            if (!state.slots[s.id]) {
+              const r = svg.querySelector(`[data-slot="${s.id}"]`);
+              if (r) r.classList.add("armed-target");
+            }
+          });
+        }
+
+        function armBattery() {
+          state.armedBattery = true;
+          svg
+            .querySelectorAll(".tray-cell:not(.disabled)")
+            .forEach((c) => c.classList.add("armed"));
+          highlightEmptySlots();
+        }
+
+        function armWire() {
+          state.armedWire = true;
+          const wireEl = svg.querySelector(".tray-wire");
+          if (wireEl) wireEl.classList.add("armed");
+          highlightEmptySlots();
+        }
+
+        function disarmAll() {
+          state.armedBattery = false;
+          state.armedWire = false;
+          svg
+            .querySelectorAll(".tray-cell")
+            .forEach((c) => c.classList.remove("armed"));
+          const wireEl = svg.querySelector(".tray-wire");
+          if (wireEl) wireEl.classList.remove("armed");
+          svg
+            .querySelectorAll(".slot-outline, .danger-outline")
+            .forEach((r) => r.classList.remove("armed-target"));
+        }
+
+        // ══════════════════════════════════════════════
+        // READOUTS
+        // ══════════════════════════════════════════════
+        function computeReadouts() {
+          const tpl = TEMPLATES[state.templateId];
+          if (!tpl) return;
+
+          const result = computePack(tpl);
+          state.packVoltage = result.voltage;
+          state.packLife = result.life;
+          state.currentStructure = result.structure;
+
+          // Update meters
+          const tgtV = state.targetVoltage || 4.5;
+          const tgtL = state.targetLife || 3;
+          const vRatio = Math.min(state.packVoltage / Math.max(tgtV, 4.5), 1);
+          const lRatio = Math.min(state.packLife / Math.max(tgtL, 3), 1);
+
+          $("valVoltage").textContent = state.packVoltage.toFixed(1) + " V";
+          $("fillVoltage").style.width = Math.round(vRatio * 100) + "%";
+          $("valLife").textContent = "x" + state.packLife;
+          $("fillLife").style.width = Math.round(lRatio * 100) + "%";
+
+          const structKey = {
+            Series: "structureSeries",
+            Parallel: "structureParallel",
+            Mixed: "structureMixed",
+            Incomplete: "structureIncomplete",
+            Invalid: "structureInvalid",
+          };
+          $("valStructure").textContent = T(
+            structKey[state.currentStructure] || "structureIncomplete",
+          );
+        }
+
+        function computePack(tpl) {
+          const branches = {};
+          tpl.slots.forEach((s) => {
+            if (!branches[s.branch]) branches[s.branch] = [];
+            branches[s.branch].push(s);
+          });
+
+          if (tpl.kind === "series") {
+            const main = branches["main"] || [];
+            let batteries = 0;
+            let hasReverse = false;
+            let hasEmpty = false;
+            for (const s of main) {
+              const ss = state.slots[s.id];
+              if (ss?.type === "battery") {
+                batteries++;
+                if (ss.orientation === "reverse") hasReverse = true;
+              } else if (ss?.type === "wire") {
+                // Wire fills position but adds no voltage
+              } else {
+                hasEmpty = true;
+              }
+            }
+            if (batteries === 0 && !hasEmpty)
+              return { voltage: 0, life: 0, structure: "Incomplete" };
+            if (hasEmpty)
+              return {
+                voltage: batteries * CELL_VOLTAGE,
+                life: 0,
+                structure: "Incomplete",
+              };
+            if (hasReverse)
+              return {
+                voltage: batteries * CELL_VOLTAGE,
+                life: 1,
+                structure: "Invalid",
+              };
+            return {
+              voltage: batteries * CELL_VOLTAGE,
+              life: batteries > 0 ? 1 : 0,
+              structure: "Series",
+            };
+          }
+
+          // Parallel / Mixed
+          const activeBranches = [];
+          let hasPartial = false;
+          let hasReverse = false;
+
+          for (const [brId, brSlots] of Object.entries(branches)) {
+            let batteries = 0;
+            let occupied = 0;
+            const total = brSlots.length;
+            let reversed = false;
+            for (const s of brSlots) {
+              const ss = state.slots[s.id];
+              if (ss?.type === "battery") {
+                batteries++;
+                occupied++;
+                if (ss.orientation === "reverse") reversed = true;
+              } else if (ss?.type === "wire") {
+                occupied++;
+              }
+            }
+            if (occupied > 0) {
+              if (occupied < total) hasPartial = true;
+              if (reversed) hasReverse = true;
+              activeBranches.push({
+                id: brId,
+                filled: occupied,
+                total,
+                reversed,
+                voltage: batteries * CELL_VOLTAGE,
+              });
+            }
+          }
+
+          if (activeBranches.length === 0)
+            return { voltage: 0, life: 0, structure: "Incomplete" };
+
+          if (hasPartial)
+            return {
+              voltage: activeBranches[0].voltage,
+              life: activeBranches.length,
+              structure: "Incomplete",
+            };
+
+          if (hasReverse)
+            return {
+              voltage: activeBranches[0].voltage,
+              life: activeBranches.length,
+              structure: "Invalid",
+            };
+
+          if (tpl.kind === "mixed") {
+            if (activeBranches.length < 2)
+              return {
+                voltage: activeBranches[0].voltage,
+                life: 1,
+                structure: "Incomplete",
+              };
+            const voltages = activeBranches.map((b) => b.voltage);
+            const allEqual = voltages.every((v) => v === voltages[0]);
+            if (!allEqual)
+              return {
+                voltage: voltages[0],
+                life: activeBranches.length,
+                structure: "Invalid",
+              };
+            return {
+              voltage: activeBranches[0].voltage,
+              life: activeBranches.length,
+              structure: "Mixed",
+            };
+          }
+
+          // Parallel
+          const voltages = activeBranches.map((b) => b.voltage);
+          const allEqual = voltages.every((v) => v === voltages[0]);
+          if (!allEqual)
+            return {
+              voltage: voltages[0],
+              life: activeBranches.length,
+              structure: "Invalid",
+            };
+          return {
+            voltage: activeBranches[0].voltage,
+            life: activeBranches.length,
+            structure: "Parallel",
+          };
+        }
+
+        // ══════════════════════════════════════════════
+        // EVALUATION
+        // ══════════════════════════════════════════════
+        function evaluate() {
+          const tpl = TEMPLATES[state.templateId];
+          if (!tpl) return "openCircuit";
+
+          // 1. Short circuit - any occupied danger slot
+          if (tpl.dangerSlots) {
+            for (const ds of tpl.dangerSlots) {
+              if (state.slots[ds.id]) {
+                return "shortCircuit";
+              }
+            }
+          }
+
+          // Gather branch info
+          const branches = {};
+          tpl.slots.forEach((s) => {
+            if (!branches[s.branch]) branches[s.branch] = [];
+            branches[s.branch].push(s);
+          });
+
+          if (tpl.kind === "series") {
+            const main = branches["main"] || [];
+            let hasEmpty = false;
+            let hasReverse = false;
+            let batteries = 0;
+
+            for (const s of main) {
+              const ss = state.slots[s.id];
+              if (!ss) {
+                hasEmpty = true;
+              } else if (ss.type === "battery") {
+                batteries++;
+                if (ss.orientation === "reverse") hasReverse = true;
+              }
+              // wire: occupied, not empty, no voltage
+            }
+
+            // 2. Open circuit
+            if (hasEmpty) return "openCircuit";
+            // 3. Battery backwards
+            if (hasReverse) return "batteryBackwards";
+
+            const packVoltage = batteries * CELL_VOLTAGE;
+            const packLife = batteries > 0 ? 1 : 0;
+
+            return compareGoal(packVoltage, packLife, "Series");
+          }
+
+          // Parallel / Mixed
+          const activeBranches = [];
+          let allBranchesEmpty = true;
+
+          for (const [brId, brSlots] of Object.entries(branches)) {
+            let batteries = 0;
+            let occupied = 0;
+            let reversed = false;
+            for (const s of brSlots) {
+              const ss = state.slots[s.id];
+              if (ss?.type === "battery") {
+                batteries++;
+                occupied++;
+                if (ss.orientation === "reverse") reversed = true;
+              } else if (ss?.type === "wire") {
+                occupied++;
+              }
+            }
+            if (occupied > 0) {
+              allBranchesEmpty = false;
+              activeBranches.push({
+                id: brId,
+                filled: occupied,
+                total: brSlots.length,
+                reversed,
+                voltage: batteries * CELL_VOLTAGE,
+              });
+            }
+          }
+
+          // 2. Open circuit
+          if (allBranchesEmpty) return "openCircuit";
+
+          // Check for partially filled active branches -> open circuit
+          for (const br of activeBranches) {
+            if (br.filled < br.total) return "openCircuit";
+          }
+
+          // 3. Battery backwards
+          for (const br of activeBranches) {
+            if (br.reversed) return "batteryBackwards";
+          }
+
+          if (tpl.kind === "mixed") {
+            // 4. Need both branches
+            if (activeBranches.length < 2) return "needBothBranches";
+
+            // 5. Branches mismatch
+            const voltages = activeBranches.map((b) => b.voltage);
+            const allEqual = voltages.every((v) => v === voltages[0]);
+            if (!allEqual) return "branchesMismatch";
+
+            const packVoltage = activeBranches[0].voltage;
+            const packLife = activeBranches.length;
+            return compareGoal(packVoltage, packLife, "Mixed");
+          }
+
+          // Parallel
+          // 5. Branches mismatch
+          const voltages = activeBranches.map((b) => b.voltage);
+          const allEqual = voltages.every((v) => v === voltages[0]);
+          if (!allEqual) return "branchesMismatch";
+
+          const packVoltage = activeBranches[0].voltage;
+          const packLife = activeBranches.length;
+          return compareGoal(packVoltage, packLife, "Parallel");
+        }
+
+        function compareGoal(packVoltage, packLife, structure) {
+          if (state.mode === "sandbox") return "correct";
+
+          const tv = state.targetVoltage;
+          const tl = state.targetLife;
+
+          // 6. Too little voltage
+          if (packVoltage < tv - 0.01) return "tooLittleVoltage";
+          // 7. Too much voltage
+          if (packVoltage > tv + 0.01) return "tooMuchVoltage";
+          // 8. Need more battery life
+          if (packLife < tl) return "needMoreLife";
+          // 9. Correct
+          return "correct";
+        }
+
+        // ══════════════════════════════════════════════
+        // TEST ANIMATION
+        // ══════════════════════════════════════════════
+        function runTest() {
+          if (state.editLocked) return;
+          state.editLocked = true;
+          disarmAll();
+
+          const verdict =
+            state.mode === "sandbox" ? sandboxBulbVerdict() : evaluate();
+          state.lastVerdict = verdict;
+
+          // Clear previous animation state
+          clearAnimState();
+
+          // Animate wires
+          const wires = svg.querySelectorAll(".wire-trace");
+          const buses = svg.querySelectorAll(".bus-line");
+
+          state.animTimeouts.push(
+            setTimeout(() => {
+              if (verdict !== "openCircuit" && verdict !== "shortCircuit") {
+                wires.forEach((w) => w.classList.add("active"));
+                buses.forEach((b) => b.classList.add("active"));
+              }
+
+              if (verdict === "shortCircuit") {
+                // Red danger wires
+                svg
+                  .querySelectorAll('[data-danger="true"]')
+                  .forEach((w) => w.classList.add("error"));
+                buses.forEach((b) => b.classList.add("error"));
+              }
+            }, 100),
+          );
+
+          // Update bulb
+          state.animTimeouts.push(
+            setTimeout(() => {
+              updateBulbState(verdict);
+            }, 500),
+          );
+
+          // Highlight problem batteries
+          state.animTimeouts.push(
+            setTimeout(() => {
+              if (verdict === "batteryBackwards") {
+                highlightReversed();
+              }
+            }, 400),
+          );
+
+          // Show verdict
+          state.animTimeouts.push(
+            setTimeout(() => {
+              showVerdict(verdict);
+              state.editLocked = false;
+
+              if (verdict === "correct") {
+                onCorrect();
+              }
+            }, ANIM_DURATION),
+          );
+        }
+
+        function clearAnimState() {
+          state.animTimeouts.forEach((t) => clearTimeout(t));
+          state.animTimeouts = [];
+          svg.querySelectorAll(".wire-trace").forEach((w) => {
+            w.classList.remove("active", "error");
+          });
+          svg.querySelectorAll(".bus-line").forEach((b) => {
+            b.classList.remove("active", "error");
+          });
+          svg
+            .querySelectorAll(".placed-battery")
+            .forEach((b) => b.classList.remove("pulse-red"));
+        }
+
+        function clearTestState() {
+          clearAnimState();
+          state.lastVerdict = null;
+          state.lessonComplete = false;
+          $("btnNext").classList.add("hidden");
+          updateBulbState(null);
+          setStatus(
+            state.mode === "sandbox" ? T("statusSandbox") : T("statusReady"),
+            "",
+          );
+          $("takeawayText").textContent = "";
+          $("starsSection").classList.add("hidden");
+        }
+
+        function updateBulbState(verdict) {
+          const bulb = $("bulbBody");
+          const warning = $("bulbWarning");
+          const filament = $("bulbFilament");
+          if (!bulb) return;
+
+          bulb.className.baseVal = "bulb-body";
+          warning.classList.remove("visible");
+          if (filament) filament.setAttribute("stroke", "#9ca3af");
+
+          if (!verdict) {
+            bulb.classList.add("off");
+            return;
+          }
+
+          switch (verdict) {
+            case "shortCircuit":
+            case "openCircuit":
+            case "batteryBackwards":
+              bulb.classList.add("off");
+              if (verdict === "shortCircuit" || verdict === "tooMuchVoltage") {
+                warning.classList.add("visible");
+              }
+              break;
+            case "needBothBranches":
+            case "branchesMismatch":
+            case "tooLittleVoltage":
+              bulb.classList.add("dim");
+              if (filament) filament.setAttribute("stroke", "#d4a017");
+              break;
+            case "tooMuchVoltage":
+              bulb.classList.add("bright");
+              warning.classList.add("visible");
+              if (filament) filament.setAttribute("stroke", "#fff");
+              break;
+            case "needMoreLife":
+            case "correct":
+              bulb.classList.add("good");
+              if (filament) filament.setAttribute("stroke", "#fbbf24");
+              break;
+            default:
+              bulb.classList.add("off");
+          }
+        }
+
+        function highlightReversed() {
+          const tpl = TEMPLATES[state.templateId];
+          if (!tpl) return;
+          for (const s of tpl.slots) {
+            const ss = state.slots[s.id];
+            if (ss?.battery && ss.orientation === "reverse") {
+              const el = svg.querySelector(`[data-placed="${s.id}"]`);
+              if (el) el.classList.add("pulse-red");
+            }
+          }
+        }
+
+        function showVerdict(verdict) {
+          const verdictKeys = {
+            correct: "correct",
+            tooLittleVoltage: "tooLittleVoltage",
+            tooMuchVoltage: "tooMuchVoltage",
+            needMoreLife: "needMoreLife",
+            batteryBackwards: "batteryBackwards",
+            openCircuit: "openCircuit",
+            shortCircuit: "shortCircuit",
+            needBothBranches: "needBothBranches",
+            branchesMismatch: "branchesMismatch",
+          };
+
+          const cls =
+            verdict === "correct"
+              ? "verdict-correct"
+              : verdict === "tooLittleVoltage" ||
+                  verdict === "needMoreLife" ||
+                  verdict === "needBothBranches" ||
+                  verdict === "branchesMismatch"
+                ? "verdict-warn"
+                : "verdict-error";
+
+          setStatus(T(verdictKeys[verdict] || verdict), cls);
+        }
+
+        function setStatus(text, cls) {
+          const el = $("statusText");
+          el.textContent = text;
+          el.className = "status-text" + (cls ? " " + cls : "");
+        }
+
+        // ══════════════════════════════════════════════
+        // CORRECT HANDLER
+        // ══════════════════════════════════════════════
+        function onCorrect() {
+          if (state.mode === "learn") {
+            state.lessonComplete = true;
+            const lesson = LESSONS[state.lessonIdx];
+            if (lesson) {
+              $("takeawayText").textContent = T(lesson.takeawayKey);
+            }
+            if (state.lessonIdx < LESSONS.length - 1) {
+              $("btnNext").classList.remove("hidden");
+            }
+            // Unlock next lesson
+            if (state.lessonIdx >= state.maxLesson) {
+              state.maxLesson = state.lessonIdx + 1;
+              localStorage.setItem("bat-lesson", String(state.maxLesson));
+            }
+          } else if (state.mode === "challenge") {
+            const mission = state.currentMission;
+            if (!mission) return;
+
+            const placed = countPlacedCells();
+            let earnedStars = 1;
+            if (state.hintsUsed === 0) earnedStars = 2;
+            if (state.hintsUsed === 0 && placed <= mission.minimalCells) {
+              earnedStars = 3;
+            }
+
+            // Persist best
+            const prev = state.stars[mission.id] || 0;
+            if (earnedStars > prev) {
+              state.stars[mission.id] = earnedStars;
+              localStorage.setItem("bat-stars", JSON.stringify(state.stars));
+            }
+
+            showStars(Math.max(earnedStars, prev));
+          }
+        }
+
+        function countPlacedCells() {
+          let count = 0;
+          for (const ss of Object.values(state.slots)) {
+            if (ss.battery) count++;
+          }
+          return count;
+        }
+
+        function showStars(count) {
+          $("starsSection").classList.remove("hidden");
+          const container = $("starsDisplay");
+          while (container.firstChild)
+            container.removeChild(container.firstChild);
+          for (let i = 0; i < 3; i++) {
+            const span = document.createElement("span");
+            span.className = i < count ? "star-on" : "star-off";
+            span.textContent = "\u2605";
+            container.appendChild(span);
+          }
+        }
+
+        // ══════════════════════════════════════════════
+        // HINT SYSTEM
+        // ══════════════════════════════════════════════
+        function giveHint() {
+          state.hintsUsed++;
+          state.hintLevel = Math.min(state.hintLevel + 1, 3);
+
+          const tpl = TEMPLATES[state.templateId];
+          if (!tpl) return;
+
+          // Clear previous hints
+          svg
+            .querySelectorAll(".hint-ghost, .hint-highlight")
+            .forEach((el) => el.remove());
+
+          // Determine topic-specific hint text
+          let hintKey = "hintSeries1";
+          if (state.topic === "parallel") hintKey = "hintParallel1";
+          if (state.topic === "mixed") hintKey = "hintMixed1";
+
+          // Check for danger slots
+          if (tpl.dangerSlots) {
+            for (const ds of tpl.dangerSlots) {
+              if (state.slots[ds.id]?.battery) {
+                hintKey = "hintShort1";
+                break;
+              }
+            }
+          }
+
+          $("takeawayText").textContent = T(hintKey);
+
+          if (state.hintLevel >= 1) {
+            // Highlight first problem slot
+            const problemSlot = findFirstProblem(tpl);
+            if (problemSlot) {
+              const r = svg.querySelector(`[data-slot="${problemSlot}"]`);
+              if (r) {
+                const highlight = r.cloneNode();
+                highlight.classList.add("hint-highlight");
+                highlight.removeAttribute("data-slot");
+                svg.appendChild(highlight);
+              }
+            }
+          }
+
+          if (state.hintLevel >= 3) {
+            // Ghost preview - show correct answer faintly
+            showGhostPreview(tpl);
+          }
+        }
+
+        function findFirstProblem(tpl) {
+          // Find first empty slot or reversed battery
+          for (const s of tpl.slots) {
+            const ss = state.slots[s.id];
+            if (!ss?.battery) return s.id;
+            if (ss.orientation === "reverse") return s.id;
+          }
+          // Check danger slots that should be empty
+          if (tpl.dangerSlots) {
+            for (const ds of tpl.dangerSlots) {
+              if (state.slots[ds.id]?.battery) return ds.id;
+            }
+          }
+          return null;
+        }
+
+        function showGhostPreview(tpl) {
+          // Show ghost batteries in correct positions
+          for (const s of tpl.slots) {
+            if (!state.slots[s.id]?.battery) {
+              const g = svgEl("g", { class: "hint-ghost" });
+              const bx = s.x - SLOT_W / 2 + 4;
+              const by = s.y - SLOT_H / 2 + 3;
+              const bw = SLOT_W - 8;
+              const bh = SLOT_H - 6;
+
+              g.appendChild(
+                svgEl("rect", {
+                  x: bx,
+                  y: by,
+                  width: bw,
+                  height: bh,
+                  rx: 5,
+                  fill: "#e5a825",
+                  stroke: "#b8861a",
+                  "stroke-width": 1,
+                }),
+              );
+
+              // + on right (forward)
+              g.appendChild(
+                svgEl("rect", {
+                  x: bx + bw - 14,
+                  y: by + 3,
+                  width: 14,
+                  height: bh - 6,
+                  rx: 3,
+                  fill: "#dc2626",
+                }),
+              );
+
+              svg.appendChild(g);
+            }
+          }
+        }
+
+        // ══════════════════════════════════════════════
+        // MODE MANAGEMENT
+        // ══════════════════════════════════════════════
+        function loadMode() {
+          clearTestState();
+          state.hintsUsed = 0;
+          state.hintLevel = 0;
+
+          const isLearn = state.mode === "learn";
+          const isChallenge = state.mode === "challenge";
+
+          // Show/hide difficulty
+          $("diffGroup").style.display = isChallenge ? "" : "none";
+
+          // Topic toggles
+          const topicBtns = document.querySelectorAll("[data-topic]");
+          topicBtns.forEach((b) => (b.disabled = isLearn));
+
+          // Button states
+          $("btnHint").style.display = isLearn || isChallenge ? "" : "none";
+          $("btnNext").classList.add("hidden");
+
+          if (isLearn) {
+            loadLesson(state.lessonIdx);
+          } else if (isChallenge) {
+            generateChallenge();
+          } else {
+            loadSandbox();
+          }
+        }
+
+        // ══════════════════════════════════════════════
+        // LEARN MODE
+        // ══════════════════════════════════════════════
+        function loadLesson(idx) {
+          clearTestState();
+          if (idx < 0 || idx >= LESSONS.length) idx = 0;
+          state.lessonIdx = idx;
+          const lesson = LESSONS[idx];
+
+          state.targetVoltage = lesson.targetVoltage;
+          state.targetLife = lesson.targetLife;
+          state.expectedStructure = lesson.expectedStructure;
+          state.topic = lesson.topic;
+
+          // Update topic buttons
+          document.querySelectorAll("[data-topic]").forEach((b) => {
+            b.classList.toggle("active", b.dataset.topic === lesson.topic);
+          });
+
+          // Resolve template
+          const resolved = resolveTemplate(lesson.template);
+          state.templateId = resolved.tplId;
+          state.slots = {};
+          state.dangerSlots = {};
+
+          // Set tray
+          if (resolved.presetTrayCount !== undefined) {
+            state.trayCount = resolved.presetTrayCount;
+            state.trayMax = resolved.presetTrayCount;
+          } else {
+            state.trayCount = lesson.trayCount;
+            state.trayMax = lesson.trayCount;
+          }
+          const lessonWires = lesson.wireCount || 0;
+          state.wireCount = lessonWires;
+          state.wireMax = lessonWires;
+
+          // Apply prefilled
+          if (resolved.prefilled) {
+            for (const [slotId, orient] of Object.entries(resolved.prefilled)) {
+              if (orient !== "empty") {
+                const isDanger =
+                  resolved.tpl.dangerSlots?.some((ds) => ds.id === slotId) ||
+                  false;
+                state.slots[slotId] = {
+                  battery: true,
+                  orientation: orient,
+                  isDanger,
+                };
+              }
+            }
+          }
+
+          renderBoard();
+          computeReadouts();
+
+          // Panel
+          $("lessonTitle").textContent = T(lesson.titleKey);
+          $("goalVoltage").textContent =
+            T("needVoltage") + ": " + lesson.targetVoltage.toFixed(1) + " V";
+          $("goalLife").textContent = T("needLife") + ": x" + lesson.targetLife;
+          $("introText").textContent = T(lesson.introKey);
+          $("takeawayText").textContent = "";
+          $("starsSection").classList.add("hidden");
+
+          setStatus(T("statusReady"), "");
+        }
+
+        // ══════════════════════════════════════════════
+        // CHALLENGE MODE
+        // ══════════════════════════════════════════════
+        function generateChallenge() {
+          const pool = CHALLENGE_POOLS[state.topic]?.[state.difficulty] || [];
+
+          if (pool.length === 0) {
+            // Empty pool (mixed+easy)
+            state.currentMission = null;
+            state.templateId = null;
+            while (svg.firstChild) svg.removeChild(svg.firstChild);
+            $("lessonTitle").textContent = "";
+            $("goalVoltage").textContent = "";
+            $("goalLife").textContent = "";
+            $("introText").textContent = T("mixedStartsAtMedium");
+            $("takeawayText").textContent = "";
+            $("starsSection").classList.add("hidden");
+            setStatus(T("mixedStartsAtMedium"), "verdict-warn");
+            return;
+          }
+
+          // Pick random, avoid repeat
+          let mission;
+          if (pool.length > 1 && state.currentMission) {
+            const filtered = pool.filter(
+              (m) => m.id !== state.currentMission.id,
+            );
+            mission = filtered[Math.floor(Math.random() * filtered.length)];
+          } else {
+            mission = pool[Math.floor(Math.random() * pool.length)];
+          }
+
+          state.currentMission = mission;
+          state.hintsUsed = 0;
+          state.hintLevel = 0;
+          state.targetVoltage = mission.targetVoltage;
+          state.targetLife = mission.targetLife;
+          state.expectedStructure = mission.expectedStructure;
+
+          const resolved = resolveTemplate(mission.template);
+          state.templateId = resolved.tplId;
+          state.slots = {};
+
+          if (resolved.presetTrayCount !== undefined) {
+            state.trayCount = resolved.presetTrayCount;
+            state.trayMax = resolved.presetTrayCount;
+          } else {
+            state.trayCount = mission.trayCount;
+            state.trayMax = mission.trayCount;
+          }
+          const missionWires = mission.wireCount || 0;
+          state.wireCount = missionWires;
+          state.wireMax = missionWires;
+
+          if (resolved.prefilled) {
+            for (const [slotId, orient] of Object.entries(resolved.prefilled)) {
+              if (orient !== "empty") {
+                const isDanger =
+                  resolved.tpl.dangerSlots?.some((ds) => ds.id === slotId) ||
+                  false;
+                state.slots[slotId] = {
+                  battery: true,
+                  orientation: orient,
+                  isDanger,
+                };
+              }
+            }
+          }
+
+          renderBoard();
+          computeReadouts();
+
+          $("lessonTitle").textContent = T(state.topic);
+          $("goalVoltage").textContent =
+            T("needVoltage") + ": " + mission.targetVoltage.toFixed(1) + " V";
+          $("goalLife").textContent =
+            T("needLife") + ": x" + mission.targetLife;
+          $("introText").textContent = "";
+          $("takeawayText").textContent = "";
+
+          // Show previous best stars
+          const best = state.stars[mission.id] || 0;
+          if (best > 0) {
+            showStars(best);
+          } else {
+            $("starsSection").classList.add("hidden");
+          }
+
+          setStatus(T("statusReady"), "");
+        }
+
+        // ══════════════════════════════════════════════
+        // SANDBOX MODE
+        // ══════════════════════════════════════════════
+        function loadSandbox() {
+          // Pick default template for topic
+          const defaults = {
+            series: "series_2",
+            parallel: "parallel_2",
+            mixed: "mixed_2s2p",
+          };
+          const tplId = defaults[state.topic] || "series_2";
+
+          state.templateId = tplId;
+          state.slots = {};
+          state.targetVoltage = 0;
+          state.targetLife = 0;
+          state.expectedStructure = null;
+          state.trayCount = 6;
+          state.trayMax = 6;
+          state.wireCount = 4;
+          state.wireMax = 4;
+          state.currentMission = null;
+
+          renderBoard();
+          computeReadouts();
+
+          $("lessonTitle").textContent = T("sandbox");
+          $("goalVoltage").textContent = "";
+          $("goalLife").textContent = "";
+          $("introText").textContent = "";
+          $("takeawayText").textContent = "";
+          $("starsSection").classList.add("hidden");
+
+          setStatus(T("statusSandbox"), "");
+        }
+
+        // ══════════════════════════════════════════════
+        // SANDBOX BULB (no target)
+        // ══════════════════════════════════════════════
+        function sandboxBulbVerdict() {
+          if (state.currentStructure === "Invalid") return "batteryBackwards";
+          if (state.currentStructure === "Incomplete") return "openCircuit";
+          if (state.packVoltage === 0) return "openCircuit";
+          if (state.packVoltage <= 1.5) return "tooLittleVoltage";
+          if (state.packVoltage <= 3.0) return "correct";
+          return "tooMuchVoltage";
+        }
+
+        // ══════════════════════════════════════════════
+        // TRANSLATIONS
+        // ══════════════════════════════════════════════
+        function applyTranslations() {
+          document.documentElement.lang = state.lang;
+
+          $("titleText").textContent = T("title");
+          $("subtitleText").textContent = T("subtitle");
+          $("langBtn").textContent = state.lang === "en" ? "PL" : "EN";
+          $("lblMode").textContent = T("mode");
+          $("lblTopic").textContent = T("topic");
+          $("lblDiff").textContent = T("difficulty");
+          $("btnLearn").textContent = T("learn");
+          $("btnChallenge").textContent = T("challenge");
+          $("btnSandbox").textContent = T("sandbox");
+          $("btnSeries").textContent = T("series");
+          $("btnParallel").textContent = T("parallel");
+          $("btnMixed").textContent = T("mixed");
+          $("btnEasy").textContent = T("easy");
+          $("btnMedium").textContent = T("medium");
+          $("btnHard").textContent = T("hard");
+          $("btnNew").textContent = T("new");
+          $("btnTest").textContent = T("test");
+          $("btnHint").textContent = T("hint");
+          $("btnReset").textContent = T("reset");
+          $("btnNext").textContent = T("next");
+          $("lblGoal").textContent = T("goal");
+          $("lblReadouts").textContent = T("readouts");
+          $("lblVoltage").textContent = T("currentVoltage");
+          $("lblLife").textContent = T("currentLife");
+          $("lblStructure").textContent = T("currentStructure");
+          $("safetyNote").textContent = T("safetyNote");
+
+          // Re-apply current mode content
+          loadMode();
+        }
+
+        // ══════════════════════════════════════════════
+        // EVENT HANDLERS
+        // ══════════════════════════════════════════════
+        $("langBtn").addEventListener("click", () => {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        });
+
+        $("themeToggleBtn").addEventListener("click", () => {
+          const html = document.documentElement;
+          const isLight = html.getAttribute("data-theme") === "light";
+          if (isLight) {
+            html.removeAttribute("data-theme");
+            state.theme = "dark";
+            $("themeIcon").textContent = "\u2600";
+          } else {
+            html.setAttribute("data-theme", "light");
+            state.theme = "light";
+            $("themeIcon").textContent = "\u263D";
+          }
+          localStorage.setItem("bat-theme", state.theme);
+        });
+
+        // Mode toggles
+        document.querySelectorAll("[data-mode]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("[data-mode]")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            state.mode = btn.dataset.mode;
+            loadMode();
+          });
+        });
+
+        // Topic toggles
+        document.querySelectorAll("[data-topic]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            if (btn.disabled) return;
+            document
+              .querySelectorAll("[data-topic]")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            state.topic = btn.dataset.topic;
+            if (state.mode === "challenge") {
+              generateChallenge();
+            } else if (state.mode === "sandbox") {
+              loadSandbox();
+            }
+          });
+        });
+
+        // Difficulty toggles
+        document.querySelectorAll("[data-diff]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("[data-diff]")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            state.difficulty = btn.dataset.diff;
+            if (state.mode === "challenge") {
+              generateChallenge();
+            }
+          });
+        });
+
+        // Action buttons
+        $("btnNew").addEventListener("click", () => {
+          if (state.mode === "learn") {
+            loadLesson(state.lessonIdx);
+          } else if (state.mode === "challenge") {
+            generateChallenge();
+          } else {
+            loadSandbox();
+          }
+        });
+
+        $("btnTest").addEventListener("click", runTest);
+
+        $("btnHint").addEventListener("click", giveHint);
+
+        $("btnReset").addEventListener("click", () => {
+          if (state.mode === "learn") {
+            loadLesson(state.lessonIdx);
+          } else if (state.mode === "challenge") {
+            // Re-load current mission
+            if (state.currentMission) {
+              const mission = state.currentMission;
+              state.hintsUsed = 0;
+              state.hintLevel = 0;
+              state.slots = {};
+
+              const resolved = resolveTemplate(mission.template);
+              state.templateId = resolved.tplId;
+
+              if (resolved.presetTrayCount !== undefined) {
+                state.trayCount = resolved.presetTrayCount;
+                state.trayMax = resolved.presetTrayCount;
+              } else {
+                state.trayCount = mission.trayCount;
+                state.trayMax = mission.trayCount;
+              }
+              const resetWires = mission.wireCount || 0;
+              state.wireCount = resetWires;
+              state.wireMax = resetWires;
+
+              if (resolved.prefilled) {
+                for (const [slotId, orient] of Object.entries(
+                  resolved.prefilled,
+                )) {
+                  if (orient !== "empty") {
+                    const isDanger =
+                      resolved.tpl.dangerSlots?.some(
+                        (ds) => ds.id === slotId,
+                      ) || false;
+                    state.slots[slotId] = {
+                      battery: true,
+                      orientation: orient,
+                      isDanger,
+                    };
+                  }
+                }
+              }
+
+              renderBoard();
+              computeReadouts();
+              clearTestState();
+            }
+          } else {
+            loadSandbox();
+          }
+        });
+
+        $("btnNext").addEventListener("click", () => {
+          if (state.mode === "learn" && state.lessonIdx < LESSONS.length - 1) {
+            state.lessonIdx++;
+            state.hintsUsed = 0;
+            state.hintLevel = 0;
+            loadLesson(state.lessonIdx);
+          }
+        });
+
+        // ══════════════════════════════════════════════
+        // INIT
+        // ══════════════════════════════════════════════
+        function init() {
+          // Apply saved theme
+          if (state.theme === "light") {
+            document.documentElement.setAttribute("data-theme", "light");
+            $("themeIcon").textContent = "\u263D";
+          }
+
+          applyTranslations();
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

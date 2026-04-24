@@ -13,7 +13,19 @@ Discover why total momentum never changes in a collision. Adjust mass, velocity,
 
 See how a spinning platform speeds up when you pull weights inward. Drag weights to change the moment of inertia and watch angular velocity respond — proving angular momentum is always conserved. Includes a challenge mode!
 
-### [Planet Cannon](canon.html) `Classical mechanics`
+### [The Coriolis Effect](coriolis.html) `Classical mechanics` `Under development`
+
+Launch projectiles on a spinning platform and watch them curve in the rotating frame while travelling in a straight line in the inertial frame. A side-by-side dual-frame view with live force vectors makes the Coriolis deflection click. Includes a target game mode!
+
+### [Friction Ramp Lab](friction.html) `Classical mechanics`
+
+Change the materials and angle to see when the brick slips. Explore how static and kinetic friction work on an inclined plane, compare material pairs, and watch force arrows and charts update in real time.
+
+### [Bug Hill Work Lab](bughill.html) `Classical mechanics` `Under development`
+
+Draw a route for a cartoon bug climbing a hill and discover the difference between force, distance, and work. Compare steep direct climbs with gentle zigzags to see why same height means same ideal work.
+
+### [Planet Cannon](canon.html) `Classical mechanics` `Under development`
 
 Fire a cannonball on the Moon, Mercury, Venus, Earth, or Mars and discover how gravity shapes the path. Drag the launch vector, adjust mass, and see why heavier cannonballs follow the same arc in a vacuum. Includes a Hit the Target game mode!
 
@@ -60,6 +72,14 @@ Fire single photons at a barrier with slits and watch an interference pattern bu
 ### [Mach-Zehnder Interferometer](mzinterferometer.html) `Quantum physics`
 
 Fire single photons through a beam-splitter setup and watch quantum interference in action. Adjust the phase shift, block paths, and see how detection statistics reveal wave-particle duality.
+
+### [Battery Connection Lab](batteries.html) `Electrical circuits` `Under development`
+
+Learn how batteries connect in series, parallel, and mixed configurations. Drag cells onto the board, test your circuit, and see the bulb respond. Includes guided lessons, challenge mode, and a free sandbox.
+
+### [Water Tank Negative Feedback Lab](feedbacktank.html) `Control theory`
+
+Watch a visible mechanism compare a water level to a target and correct itself. A step-by-step introduction builds the full feedback loop from an empty tank, adding pipes, valves, sensors, and a controller one piece at a time. Add disturbances and delay to see how the system responds.
 
 ### [Logic Gate Trainer](logigate.html) `Computer Science`
 

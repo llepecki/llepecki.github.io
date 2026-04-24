@@ -499,6 +499,89 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         display: block;
       }
 
+      /* Data source indicator */
+      .data-source {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: default;
+        z-index: 10;
+      }
+      .data-source-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #e05030;
+        box-shadow: 0 0 6px rgba(224, 80, 48, 0.6);
+        transition:
+          background 0.4s,
+          box-shadow 0.4s;
+      }
+      .data-source.fetching .data-source-dot {
+        background: #d29922;
+        box-shadow: 0 0 6px rgba(210, 153, 34, 0.6);
+      }
+      .data-source.online .data-source-dot {
+        background: #3fb950;
+        box-shadow: 0 0 6px rgba(63, 185, 80, 0.6);
+      }
+      .ds-panel {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 15;
+        display: none;
+        background: rgba(19, 24, 37, 0.95);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        width: 320px;
+        pointer-events: none;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 15px;
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .data-source:hover .ds-panel,
+      .data-source:focus-within .ds-panel {
+        display: block;
+      }
+      .ds-header {
+        font-family: "Outfit", sans-serif;
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .ds-meta {
+        color: var(--text-dim);
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+      .ds-stats {
+        margin-bottom: 10px;
+      }
+      .ds-stat {
+        display: flex;
+        justify-content: space-between;
+        padding: 2px 0;
+        font-size: 13px;
+      }
+      .ds-stat-label {
+        color: var(--text-dim);
+      }
+      .ds-desc {
+        border-top: 1px solid var(--panel-border);
+        padding-top: 8px;
+        color: var(--text-dim);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
       /* Result overlay */
       .result-overlay {
         position: fixed;
@@ -585,6 +668,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           padding: 6px 14px;
           min-width: 90px;
         }
+        .data-source {
+          top: 10px;
+          right: 10px;
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -660,6 +747,15 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             id="insetCanvas"
             aria-label="Inset planet approach view"
           ></canvas>
+        </div>
+        <div class="data-source" id="dataSource">
+          <span class="data-source-dot"></span>
+          <div class="ds-panel" id="dsPanel">
+            <div class="ds-header" id="dsHeader"></div>
+            <div class="ds-meta" id="dsMeta"></div>
+            <div class="ds-stats" id="dsStats"></div>
+            <div class="ds-desc" id="dsDesc"></div>
+          </div>
         </div>
       </div>
 
@@ -802,9 +898,16 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       </div>
     </main>
 
+    <script
+      src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"
+      integrity="sha384-LTVHvxfbG3XHla4Lu0C0s9U18B2sBOuzJIeOoVHm2t05SOOORvMbBMEVjXrGau9g"
+      crossorigin="anonymous"
+    ></script>
     <script>
       (function () {
         "use strict";
+
+        const Astronomy = window.Astronomy;
 
         /* ══════════════════════════════════════════════ */
         /* Constants                                      */
@@ -828,6 +931,27 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         const SOLAR_KILL_RADIUS = 0.18; // AU
         const _SOLAR_SAFE_RADIUS = 0.22; // AU
         const FLIP_ANIM_MS = 400; // ms
+
+        const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+        const MS_PER_YEAR = 365.25 * 24 * 3600 * 1000;
+        const GUIDE_SAMPLES = 360;
+        const KM_PER_AU = 149597870.7;
+
+        const ASTRO_BODY = {
+          mercury: "Mercury",
+          venus: "Venus",
+          earth: "Earth",
+          mars: "Mars",
+          jupiter: "Jupiter",
+          saturn: "Saturn",
+          uranus: "Uranus",
+          neptune: "Neptune",
+        };
+        const EQJ_TO_ECL = Astronomy.Rotation_EQJ_ECL();
+
+        function currentEpochYears() {
+          return (Date.now() - J2000_MS) / MS_PER_YEAR;
+        }
 
         const DIFFICULTY = {
           easy: {
@@ -855,116 +979,68 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         /* ══════════════════════════════════════════════ */
 
         const BODIES = [
-          {
-            key: "sun",
-            color: "#FFD700",
-            glow: "255,215,0",
-            radius: 14,
-            a: 0,
-            e: 0,
-            T: 0,
-            pomega: 0,
-            L0: 0,
-          },
+          { key: "sun", color: "#FFD700", glow: "255,215,0", radius: 14, T: 0 },
           {
             key: "mercury",
             color: "#A0A0A0",
             glow: "160,160,160",
             radius: 3,
-            a: 0.3871,
-            e: 0.2056,
             T: 0.2408,
-            pomega: 77.46,
-            L0: 252.25,
           },
           {
             key: "venus",
             color: "#F5DEB3",
             glow: "245,222,179",
             radius: 4,
-            a: 0.7233,
-            e: 0.0068,
             T: 0.6152,
-            pomega: 131.6,
-            L0: 181.98,
           },
           {
             key: "earth",
             color: "#4db8ff",
             glow: "77,184,255",
             radius: 5,
-            a: 1.0,
-            e: 0.0167,
             T: 1.0,
-            pomega: 102.93,
-            L0: 100.47,
           },
           {
             key: "mars",
             color: "#E05030",
             glow: "224,80,48",
             radius: 4,
-            a: 1.5237,
-            e: 0.0934,
             T: 1.8809,
-            pomega: 336.08,
-            L0: 355.43,
           },
           {
             key: "jupiter",
             color: "#D4944A",
             glow: "212,148,74",
             radius: 8,
-            a: 5.2034,
-            e: 0.0484,
             T: 11.862,
-            pomega: 14.33,
-            L0: 34.4,
           },
           {
             key: "saturn",
             color: "#C8A84C",
             glow: "200,168,76",
             radius: 7,
-            a: 9.5371,
-            e: 0.0542,
             T: 29.457,
-            pomega: 93.06,
-            L0: 49.94,
           },
           {
             key: "uranus",
             color: "#7CC8D8",
             glow: "124,200,216",
             radius: 5,
-            a: 19.1913,
-            e: 0.0472,
             T: 84.021,
-            pomega: 173.0,
-            L0: 313.23,
           },
           {
             key: "neptune",
             color: "#4060C0",
             glow: "64,96,192",
             radius: 5,
-            a: 30.069,
-            e: 0.0086,
             T: 164.8,
-            pomega: 48.12,
-            L0: 304.88,
           },
         ];
 
         BODIES.forEach(function (b) {
           if (b.key === "sun") return;
-          b.pomegaRad = b.pomega * DEG2RAD;
-          b.L0rad = b.L0 * DEG2RAD;
           b.n = TWO_PI / b.T;
-          b.M0 = b.L0rad - b.pomegaRad;
-          b.bSemi = b.a * Math.sqrt(1 - b.e * b.e);
-          b.cosPom = Math.cos(b.pomegaRad);
-          b.sinPom = Math.sin(b.pomegaRad);
         });
 
         const bodyByKey = {};
@@ -1055,11 +1131,23 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "Transfer completed but acceleration was far from optimal.",
             hintSolarFatal: "Too close to the Sun \u2014 crew cooked.",
             clickDismiss: "Click to try again",
-            info: 'This is a simplified 2D teaching model. Planets follow approximate eccentric Keplerian orbits. The spacecraft follows a straight-line constant-acceleration "flip and burn" profile between departure and predicted intercept positions.<br><br>An <b>Epstein drive flip-and-burn</b> accelerates halfway, rotates 180\u00b0, then decelerates the rest of the way. Hold ENGINE to choose your acceleration. Higher acceleration means a faster transfer but more g-force on the crew. Too high and they don\u2019t survive.',
+            info: 'This is a simplified 2D teaching model. Planets follow accurate ephemeris-based orbits computed by the Astronomy Engine library. The spacecraft follows a straight-line constant-acceleration "flip and burn" profile between departure and predicted intercept positions.<br><br>An <b>Epstein drive flip-and-burn</b> accelerates halfway, rotates 180\u00b0, then decelerates the rest of the way. Hold ENGINE to choose your acceleration. Higher acceleration means a faster transfer but more g-force on the crew. Too high and they don\u2019t survive.',
             years: "yr",
             days: "d",
             hours: "h",
             promptStart: "Press \u25b6 to begin",
+            dsOnlineTitle: "IMCCE Paris Observatory",
+            dsOnlineMeta: "Institut de m\u00e9canique c\u00e9leste",
+            dsOnlineDesc:
+              "Initial positions synced from the observatory. Offsets (dx / dy) are corrections applied to the local Astronomy Engine.",
+            dsOfflineTitle: "Offline Mode",
+            dsOfflineMeta: "Astronomy Engine",
+            dsOfflineDesc:
+              "Observatory sync failed or unavailable. Positions computed locally using the Astronomy Engine library.",
+            dsFetchingTitle: "Connecting\u2026",
+            dsFetchingMeta: "IMCCE Paris Observatory",
+            dsFetchingDesc:
+              "Fetching current planet positions from the observatory.",
           },
           pl: {
             title: "Flip and Burn",
@@ -1131,39 +1219,28 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             hintSolarFatal:
               "Za blisko S\u0142o\u0144ca \u2014 za\u0142oga si\u0119 usma\u017cy\u0142a.",
             clickDismiss: "Kliknij, aby spr\u00f3bowa\u0107 ponownie",
-            info: "To uproszczony dwuwymiarowy model dydaktyczny. Planety poruszaj\u0105 si\u0119 po przybli\u017conych elipsach Keplerowskich. Statek leci po linii prostej ze sta\u0142ym przyspieszeniem nap\u0119du Epsteina.<br><br><b>Flip-and-burn</b> to manewr, w kt\u00f3rym statek przyspiesza do po\u0142owy drogi, obraca si\u0119 o 180\u00b0 i hamuje reszt\u0119 drogi. Przytrzymaj SILNIK, aby wybra\u0107 przyspieszenie. Wy\u017csze przyspieszenie = szybszy transfer, ale wi\u0119ksze przeci\u0105\u017cenie. Za du\u017co \u2014 za\u0142oga ginie.",
+            info: "To uproszczony dwuwymiarowy model dydaktyczny. Pozycje planet s\u0105 obliczane na podstawie dok\u0142adnych efemeryd biblioteki Astronomy Engine. Statek leci po linii prostej ze sta\u0142ym przyspieszeniem nap\u0119du Epsteina.<br><br><b>Flip-and-burn</b> to manewr, w kt\u00f3rym statek przyspiesza do po\u0142owy drogi, obraca si\u0119 o 180\u00b0 i hamuje reszt\u0119 drogi. Przytrzymaj SILNIK, aby wybra\u0107 przyspieszenie. Wy\u017csze przyspieszenie = szybszy transfer, ale wi\u0119ksze przeci\u0105\u017cenie. Za du\u017co \u2014 za\u0142oga ginie.",
             years: "lat",
             days: "dni",
             hours: "h",
             promptStart: "Naci\u015bnij \u25b6 aby rozpocz\u0105\u0107",
+            dsOnlineTitle: "IMCCE Obserwatorium Paryskie",
+            dsOnlineMeta: "Institut de m\u00e9canique c\u00e9leste",
+            dsOnlineDesc:
+              "Pozycje pocz\u0105tkowe zsynchronizowane z obserwatorium. Offsety (dx / dy) to korekty na\u0142o\u017cone na lokalny silnik Astronomy Engine.",
+            dsOfflineTitle: "Tryb offline",
+            dsOfflineMeta: "Astronomy Engine",
+            dsOfflineDesc:
+              "Synchronizacja z obserwatorium nie powiod\u0142a si\u0119 lub jest niedost\u0119pna. Pozycje obliczone lokalnie.",
+            dsFetchingTitle: "\u0141\u0105czenie\u2026",
+            dsFetchingMeta: "IMCCE Obserwatorium Paryskie",
+            dsFetchingDesc:
+              "Pobieranie aktualnych pozycji planet z obserwatorium.",
           },
         };
 
         function T(key) {
           return I18N[state.lang][key] || key;
-        }
-
-        function _formatMET(simYears) {
-          const totalDays = simYears * 365.25;
-          const years = Math.floor(simYears);
-          const daysInYear = totalDays - years * 365.25;
-          const days = Math.floor(daysInYear);
-          const hours = Math.floor((daysInYear - days) * 24);
-          const hStr = (hours < 10 ? "0" : "") + hours;
-          if (years >= 1) {
-            return (
-              "T+ " +
-              years +
-              T("years") +
-              " " +
-              days +
-              T("days") +
-              " " +
-              hStr +
-              T("hours")
-            );
-          }
-          return "T+ " + days + T("days") + " " + hStr + T("hours");
         }
 
         /* ══════════════════════════════════════════════ */
@@ -1174,13 +1251,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           lang: (navigator.language || "").startsWith("pl") ? "pl" : "en",
           homeKey: "earth",
           destKey: "mars",
-          homeM0Offset: 0,
-          destM0Offset: 0,
+          dragDeltaT: 0,
           draggingKey: null,
           dragHoverKey: null,
           difficulty: "easy",
           phase: "prelaunch", // prelaunch | burn | flipping | braking | coasting | result
-          simTime: 0,
+          simTime: currentEpochYears(),
           timeWarp: 1,
           warpLevel: "normal",
           warpLevels: { normal: 1, fast: 10, fastest: 50, decel: 1 },
@@ -1246,10 +1322,15 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           warpLocked: false,
           phaseAtLaunch: 0,
           coastStart: 0,
+          pairSpeedScale: 1,
+
+          // IMCCE observatory sync
+          imcceOffset: null,
+          imcceFetching: false,
         };
 
         /* ══════════════════════════════════════════════ */
-        /* Physics — Kepler Solver                        */
+        /* Physics — Astronomy Engine                     */
         /* ══════════════════════════════════════════════ */
 
         function wrapAngle(a) {
@@ -1259,55 +1340,192 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           return a;
         }
 
-        function solveKepler(M, e) {
-          let m = M % TWO_PI;
-          if (m > Math.PI) m -= TWO_PI;
-          if (m < -Math.PI) m += TWO_PI;
-          let E = m;
-          for (let i = 0; i < 15; i++) {
-            const dE = (E - e * Math.sin(E) - m) / (1 - e * Math.cos(E));
-            E -= dE;
-            if (Math.abs(dE) < 1e-12) break;
+        function astroPosition(bodyKey, t) {
+          const date = new Date(J2000_MS + t * MS_PER_YEAR);
+          const time = Astronomy.MakeTime(date);
+          const eqj = Astronomy.HelioVector(ASTRO_BODY[bodyKey], time);
+          const ecl = Astronomy.RotateVector(EQJ_TO_ECL, eqj);
+          return { x: ecl.x, y: ecl.y };
+        }
+
+        function helioPositionRaw(body, t) {
+          if (body.key === "sun") return { x: 0, y: 0 };
+          const pos = astroPosition(body.key, t);
+          if (state.imcceOffset && state.imcceOffset[body.key]) {
+            pos.x += state.imcceOffset[body.key].x;
+            pos.y += state.imcceOffset[body.key].y;
           }
-          if (isNaN(E) || !isFinite(E)) E = m;
-          return E;
+          return pos;
         }
 
         function helioPosition(body, t) {
-          if (body.key === "sun") return { x: 0, y: 0 };
-          let M = body.M0 + body.n * t;
-          if (body.key === state.homeKey) M += state.homeM0Offset;
-          else if (body.key === state.destKey) M += state.destM0Offset;
-          const E = solveKepler(M, body.e);
-          const xp = body.a * (Math.cos(E) - body.e);
-          const yp = body.bSemi * Math.sin(E);
-          return {
-            x: xp * body.cosPom - yp * body.sinPom,
-            y: xp * body.sinPom + yp * body.cosPom,
-          };
-        }
-
-        function _orbitRadiusAtAngle(body, alpha) {
-          const p = body.a * (1 - body.e * body.e);
-          return p / (1 + body.e * Math.cos(alpha - body.pomegaRad));
+          return helioPositionRaw(body, t + state.dragDeltaT);
         }
 
         function helioVelocity(body, t) {
           if (body.key === "sun") return { vx: 0, vy: 0 };
-          let M = body.M0 + body.n * t;
-          if (body.key === state.homeKey) M += state.homeM0Offset;
-          else if (body.key === state.destKey) M += state.destM0Offset;
-          const E = solveKepler(M, body.e);
-          const sinE = Math.sin(E);
-          const cosE = Math.cos(E);
-          const denom = 1 - body.e * cosE;
-          const factor = (body.n * body.a) / denom;
-          const vxp = -factor * sinE;
-          const vyp = factor * (body.bSemi / body.a) * cosE;
+          const dt = 1e-6;
+          const p1 = helioPosition(body, t - dt);
+          const p2 = helioPosition(body, t + dt);
           return {
-            vx: vxp * body.cosPom - vyp * body.sinPom,
-            vy: vxp * body.sinPom + vyp * body.cosPom,
+            vx: (p2.x - p1.x) / (2 * dt),
+            vy: (p2.y - p1.y) / (2 * dt),
           };
+        }
+
+        function computeGuidePaths() {
+          const bodies = [bodyByKey[state.homeKey], bodyByKey[state.destKey]];
+          for (let b = 0; b < bodies.length; b++) {
+            const body = bodies[b];
+            if (body.key === "sun") continue;
+            const path = [];
+            const dt = body.T / GUIDE_SAMPLES;
+            let maxR = 0;
+            for (let i = 0; i <= GUIDE_SAMPLES; i++) {
+              const pos = helioPositionRaw(body, state.simTime + i * dt);
+              path.push(pos);
+              const r = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
+              if (r > maxR) maxR = r;
+            }
+            body.guidePath = path;
+            body.maxHelioR = maxR;
+          }
+        }
+
+        function computeDragDeltaT(canvasPos, planetKey) {
+          const body = bodyByKey[planetKey];
+          const world = fromCanvas(canvasPos.x, canvasPos.y);
+          const targetAngle = Math.atan2(world.y, world.x);
+          const basePos = helioPositionRaw(body, state.simTime);
+          const baseAngle = Math.atan2(basePos.y, basePos.x);
+          let dAngle = targetAngle - baseAngle;
+          while (dAngle > Math.PI) dAngle -= TWO_PI;
+          while (dAngle < -Math.PI) dAngle += TWO_PI;
+          const n = TWO_PI / body.T;
+          return dAngle / n;
+        }
+
+        /* ══════════════════════════════════════════════ */
+        /* IMCCE Observatory Sync                         */
+        /* ══════════════════════════════════════════════ */
+
+        function formatOffsetKm(v) {
+          const km = v * KM_PER_AU;
+          const sign = km >= 0 ? "+" : "";
+          if (Math.abs(km) >= 100)
+            return sign + Math.round(km).toLocaleString() + " km";
+          return sign + km.toFixed(1) + " km";
+        }
+
+        const IMCCE_URL =
+          "https://ssp.imcce.fr/webservices/miriade/api/ephemcc.php";
+        const IMCCE_PLANETS = [
+          "Mercury",
+          "Venus",
+          "Earth",
+          "Mars",
+          "Jupiter",
+          "Saturn",
+          "Uranus",
+          "Neptune",
+        ];
+
+        function fetchIMCCEPositions() {
+          state.imcceFetching = true;
+          const t = state.simTime;
+          const ep = new Date().toISOString().slice(0, 19);
+          const promises = IMCCE_PLANETS.map(function (name) {
+            const url =
+              IMCCE_URL +
+              "?-name=p:" +
+              name +
+              "&-ep=" +
+              ep +
+              "&-observer=@sun&-tcoor=2&-rplane=2&-mime=json&-nbd=1&-step=1d";
+            return fetch(url).then(function (r) {
+              return r.json();
+            });
+          });
+          function afterFetch() {
+            computeGuidePaths();
+          }
+          Promise.all(promises)
+            .then(function (results) {
+              const offsets = {};
+              for (let i = 0; i < results.length; i++) {
+                const d = results[i].data;
+                if (d && d[0]) {
+                  const key = IMCCE_PLANETS[i].toLowerCase();
+                  const imcce = {
+                    x: parseFloat(d[0].px),
+                    y: parseFloat(d[0].py),
+                  };
+                  const astro = astroPosition(key, t);
+                  offsets[key] = {
+                    x: imcce.x - astro.x,
+                    y: imcce.y - astro.y,
+                  };
+                }
+              }
+              if (Object.keys(offsets).length > 0) state.imcceOffset = offsets;
+              state.imcceFetching = false;
+              afterFetch();
+            })
+            .catch(function () {
+              state.imcceFetching = false;
+              afterFetch();
+            });
+        }
+
+        function updateDataSource() {
+          const wrap = document.getElementById("dataSource");
+          const online = !!state.imcceOffset;
+          const fetching = state.imcceFetching && !online;
+          wrap.classList.toggle("online", online);
+          wrap.classList.toggle("fetching", fetching);
+          let title, meta, desc, color;
+          if (online) {
+            title = T("dsOnlineTitle");
+            meta = T("dsOnlineMeta");
+            desc = T("dsOnlineDesc");
+            color = "#3fb950";
+          } else if (fetching) {
+            title = T("dsFetchingTitle");
+            meta = T("dsFetchingMeta");
+            desc = T("dsFetchingDesc");
+            color = "#d29922";
+          } else {
+            title = T("dsOfflineTitle");
+            meta = T("dsOfflineMeta");
+            desc = T("dsOfflineDesc");
+            color = "#e05030";
+          }
+          const headerEl = document.getElementById("dsHeader");
+          headerEl.textContent = title;
+          headerEl.style.color = color;
+          document.getElementById("dsMeta").textContent = meta;
+          document.getElementById("dsDesc").textContent = desc;
+          const statsEl = document.getElementById("dsStats");
+          while (statsEl.firstChild) statsEl.removeChild(statsEl.firstChild);
+          if (online && state.imcceOffset) {
+            const activeKeys = [state.homeKey, state.destKey];
+            for (let i = 0; i < activeKeys.length; i++) {
+              const k = activeKeys[i];
+              const o = state.imcceOffset[k];
+              if (!o) continue;
+              const row = document.createElement("div");
+              row.className = "ds-stat";
+              const lbl = document.createElement("span");
+              lbl.className = "ds-stat-label";
+              lbl.textContent = T(k);
+              const val = document.createElement("span");
+              val.textContent =
+                formatOffsetKm(o.x) + " / " + formatOffsetKm(o.y);
+              row.appendChild(lbl);
+              row.appendChild(val);
+              statsEl.appendChild(row);
+            }
+          }
         }
 
         /* ══════════════════════════════════════════════ */
@@ -1392,11 +1610,39 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             dvDepart: vPeakRef,
             dvArrive: vPeakRef,
             solarClearance: solarClearance,
-            outward: dest.a > home.a,
             phaseCurrent: phaseCurrent,
             phaseRequired: phaseRequired,
             phaseError: phaseError,
           };
+        }
+
+        const WARP_K = 0.75;
+
+        function computePairSpeedScale(homeKey, destKey) {
+          const home = bodyByKey[homeKey],
+            dest = bodyByKey[destKey];
+          const inner = home.T < dest.T ? home : dest;
+
+          // Desired speed ratio vs Earth: Mercury→1.1, Earth→1.0, Uranus→0.9
+          const logT = Math.log(inner.T);
+          const ratio =
+            logT <= 0
+              ? 1 + (0.2 * logT) / Math.log(0.2408)
+              : 1 - (0.2 * logT) / Math.log(84.021);
+
+          // Earth-Mars reference speed at original normal warp
+          const earthSyn =
+            TWO_PI / Math.abs(bodyByKey["earth"].n - bodyByKey["mars"].n);
+          const earthWarp = Math.max(1, Math.round(earthSyn * WARP_K));
+          const earthSpeed = bodyByKey["earth"].n * earthWarp * SIM_RATE;
+
+          // This pair's base speed at original normal warp
+          const synodicRate = Math.abs(home.n - dest.n);
+          const synodic = TWO_PI / synodicRate;
+          const pairWarp = Math.max(1, Math.round(synodic * WARP_K));
+          const pairSpeed = inner.n * pairWarp * SIM_RATE;
+
+          return (ratio * earthSpeed) / pairSpeed;
         }
 
         function computeWarpLevels(homeKey, destKey) {
@@ -1407,16 +1653,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const phaseTolDeg = DIFFICULTY[state.difficulty].PHASE_TOL_DEG;
           const windowDur = (2 * phaseTolDeg * DEG2RAD) / synodicRate;
 
+          const ps = state.pairSpeedScale;
           const MAX_WINDOW_SEC = 8;
           const baseDecel = state.difficulty === "easy" ? 0.5 : 1;
-          const windowRealSec = windowDur / (baseDecel * SIM_RATE);
+          const windowRealSec = windowDur / (baseDecel * SIM_RATE * ps);
           const decel =
             windowRealSec > MAX_WINDOW_SEC
-              ? Math.ceil(windowDur / (MAX_WINDOW_SEC * SIM_RATE))
+              ? Math.ceil(windowDur / (MAX_WINDOW_SEC * SIM_RATE * ps))
               : baseDecel;
 
           return {
-            normal: Math.max(1, Math.round(synodic * 0.75)),
+            normal: Math.max(1, Math.round(synodic * WARP_K)),
             fast: Math.max(2, Math.round(synodic * 2.5)),
             fastest: Math.max(5, Math.round(synodic * 7.5)),
             decel: decel,
@@ -1705,7 +1952,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         function computeAutoCamera() {
           const home = bodyByKey[state.homeKey];
           const dest = bodyByKey[state.destKey];
-          const maxR = Math.max(home.a * (1 + home.e), dest.a * (1 + dest.e));
+          const maxR = Math.max(home.maxHelioR || 2, dest.maxHelioR || 2);
           const margin = maxR * 1.2;
           return { cx: 0, cy: 0, scale: Math.min(W, H) / 2 / margin };
         }
@@ -1755,26 +2002,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           return bestKey;
         }
 
-        function computeM0OffsetFromCanvasPos(canvasPos, planetKey) {
-          const body = bodyByKey[planetKey];
-          const world = fromCanvas(canvasPos.x, canvasPos.y);
-          const theta = Math.atan2(world.y, world.x);
-          const nu = theta - body.pomegaRad;
-          const E =
-            2 *
-            Math.atan2(
-              Math.sqrt(1 - body.e) * Math.sin(nu / 2),
-              Math.sqrt(1 + body.e) * Math.cos(nu / 2),
-            );
-          const M_target = E - body.e * Math.sin(E);
-          return M_target - body.M0 - body.n * state.simTime;
-        }
-
-        function applyDragOffset(planetKey, offset) {
-          if (planetKey === state.homeKey) state.homeM0Offset = offset;
-          else if (planetKey === state.destKey) state.destM0Offset = offset;
-        }
-
         /* ══════════════════════════════════════════════ */
         /* Drawing                                        */
         /* ══════════════════════════════════════════════ */
@@ -1789,21 +2016,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
         }
 
-        function drawOrbitEllipse(body, alpha) {
-          if (body.key === "sun") return;
-          const cxAu = -body.a * body.e * body.cosPom;
-          const cyAu = -body.a * body.e * body.sinPom;
-          const cc = toCanvas(cxAu, cyAu);
+        function drawOrbitGuide(body, alpha) {
+          if (body.key === "sun" || !body.guidePath) return;
+          const path = body.guidePath;
+          if (path.length < 2) return;
           ctx.beginPath();
-          ctx.ellipse(
-            cc.cx,
-            cc.cy,
-            body.a * state.camera.scale,
-            body.bSemi * state.camera.scale,
-            -body.pomegaRad,
-            0,
-            TWO_PI,
-          );
+          const p0 = toCanvas(path[0].x, path[0].y);
+          ctx.moveTo(p0.cx, p0.cy);
+          for (let i = 1; i < path.length; i++) {
+            const p = toCanvas(path[i].x, path[i].y);
+            ctx.lineTo(p.cx, p.cy);
+          }
+          ctx.closePath();
           ctx.strokeStyle = "rgba(" + body.glow + "," + alpha + ")";
           ctx.lineWidth = 1;
           ctx.stroke();
@@ -2102,8 +2326,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const home = bodyByKey[state.homeKey];
           const dest = bodyByKey[state.destKey];
 
-          drawOrbitEllipse(home, 0.25);
-          drawOrbitEllipse(dest, 0.25);
+          drawOrbitGuide(home, 0.25);
+          drawOrbitGuide(dest, 0.25);
 
           drawTransferLine();
           drawTrail();
@@ -2113,6 +2337,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           drawBody(dest, state.simTime);
 
           drawSpacecraft();
+          updateDataSource();
         }
 
         /* ══════════════════════════════════════════════ */
@@ -2395,10 +2620,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         canvas.addEventListener("mousemove", function (e) {
           const pos = getCanvasPos(e);
           if (state.draggingKey) {
-            applyDragOffset(
-              state.draggingKey,
-              computeM0OffsetFromCanvasPos(pos, state.draggingKey),
-            );
+            state.dragDeltaT = computeDragDeltaT(pos, state.draggingKey);
             e.preventDefault();
           } else if (state.phase === "prelaunch") {
             const hoverKey = getNearPlanetKey(pos);
@@ -2441,12 +2663,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           "touchmove",
           function (e) {
             if (state.draggingKey) {
-              applyDragOffset(
+              state.dragDeltaT = computeDragDeltaT(
+                getCanvasPos(e),
                 state.draggingKey,
-                computeM0OffsetFromCanvasPos(
-                  getCanvasPos(e),
-                  state.draggingKey,
-                ),
               );
               e.preventDefault();
             }
@@ -2846,8 +3065,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           .getElementById("homeSelect")
           .addEventListener("change", function (e) {
             state.homeKey = e.target.value;
-            state.homeM0Offset = 0;
-            state.destM0Offset = 0;
+            state.dragDeltaT = 0;
             populateDestSelect();
             recalcMission();
             resetMission();
@@ -2857,7 +3075,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           .getElementById("destSelect")
           .addEventListener("change", function (e) {
             state.destKey = e.target.value;
-            state.destM0Offset = 0;
+            state.dragDeltaT = 0;
             recalcMission();
             resetMission();
           });
@@ -2898,9 +3116,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         function resetMission() {
-          state.simTime = 0;
-          state.homeM0Offset = 0;
-          state.destM0Offset = 0;
+          state.simTime = currentEpochYears();
+          state.dragDeltaT = 0;
+          state.imcceOffset = null;
+          state.imcceFetching = false;
+          state.pairSpeedScale = computePairSpeedScale(
+            state.homeKey,
+            state.destKey,
+          );
           state.phase = "prelaunch";
           state.burn = {
             holding: false,
@@ -2950,6 +3173,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           updateWarpBtns();
           updateReadouts();
           updateAccelDisplay();
+          fetchIMCCEPositions();
 
           document.getElementById("burnFill").style.width = "0%";
           document
@@ -2959,6 +3183,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         function recalcMission() {
+          computeGuidePaths();
+          state.pairSpeedScale = computePairSpeedScale(
+            state.homeKey,
+            state.destKey,
+          );
           state.ref = computeFlipBurnRef(
             state.homeKey,
             state.destKey,
@@ -3031,6 +3260,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           populateDestSelect();
           updateReadouts();
           updateAccelDisplay();
+          updateDataSource();
         }
 
         function toggleLang() {
@@ -3057,17 +3287,21 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             switch (state.phase) {
               case "prelaunch":
                 if (!state.draggingKey) {
-                  dtSim = dtReal * state.timeWarp * SIM_RATE;
+                  dtSim =
+                    dtReal * state.timeWarp * SIM_RATE * state.pairSpeedScale;
                   state.simTime += dtSim;
                 }
                 state.insetScAngle += dtReal * 2.0;
 
-                // Continuously update reference for readouts
-                state.ref = computeFlipBurnRef(
-                  state.homeKey,
-                  state.destKey,
-                  state.simTime,
-                );
+                // Throttle reference computation (Astronomy Engine is heavier)
+                if (timestamp - (state.lastRefCalcMs || 0) > 100) {
+                  state.ref = computeFlipBurnRef(
+                    state.homeKey,
+                    state.destKey,
+                    state.simTime,
+                  );
+                  state.lastRefCalcMs = timestamp;
+                }
 
                 updateEngineBtn();
                 break;
@@ -3194,7 +3428,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                   }
                 } else {
                   state.captureAlpha = 0;
-                  state.simTime += dtReal * SIM_RATE;
+                  state.simTime += dtReal * SIM_RATE * state.pairSpeedScale;
                 }
 
                 state.insetScAngle += dtReal * 2.0;
@@ -3207,7 +3441,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
               case "coasting":
                 // Ship stopped, destination moves away
-                state.simTime += dtReal * SIM_RATE;
+                state.simTime += dtReal * SIM_RATE * state.pairSpeedScale;
                 state.insetScAngle += dtReal * 0.5;
                 if ((performance.now() - state.coastStart) / 1000 > 4.0) {
                   state.phase = "result";
@@ -3219,7 +3453,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           // Keep sim running during result
           if (state.phase === "result") {
-            state.simTime += dtReal * SIM_RATE;
+            state.simTime += dtReal * SIM_RATE * state.pairSpeedScale;
           }
 
           // Auto-reset
@@ -3266,6 +3500,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           updatePrompt();
           updateStepIndicator();
           updateAccelDisplay();
+          fetchIMCCEPositions();
 
           document
             .getElementById("langBtn")

@@ -1,0 +1,1912 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- coriolis.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Interactive dual-frame simulation of the Coriolis effect. Launch projectiles on a spinning platform and see paths curve in the rotating frame while staying straight in the inertial frame."
+    />
+    <title>The Coriolis Effect</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --col-cor: #2979ff;
+        --col-cen: #7c4dff;
+        --col-proj: #e64a19;
+        --col-target: #00c853;
+      }
+      body {
+        min-height: 100vh;
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+        -webkit-tap-highlight-color: transparent;
+      }
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover,
+      header h1 a:focus-visible {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover,
+      .lang-btn:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+      .canvas-wrap {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+      }
+      canvas.dragging {
+        cursor: grabbing;
+      }
+      .panel {
+        width: 300px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .controls {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      #grpExplore,
+      #grpGame {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .section-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+        padding-bottom: 2px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .ctrl-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+      .type-toggle {
+        display: flex;
+        gap: 6px;
+      }
+      .type-btn {
+        flex: 1;
+        padding: 8px 4px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Outfit", sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+      }
+      .type-btn.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+      .type-btn:hover,
+      .type-btn:focus-visible {
+        background: #f0ede6;
+      }
+      .type-btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .slider-row input[type="range"] {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        background: #e0ddd6;
+        border-radius: 3px;
+        outline: none;
+        box-shadow: none;
+        touch-action: none;
+      }
+      .slider-row input[type="range"]:focus-visible {
+        box-shadow: 0 0 0 2px var(--accent);
+      }
+      .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+      .slider-row input[type="range"]::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+      .slider-row input[type="range"]:disabled {
+        opacity: 0.4;
+      }
+      .slider-val {
+        min-width: 52px;
+        text-align: right;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      #playBtn,
+      #stopBtn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        flex: 1;
+      }
+      #playBtn .pause-icon {
+        display: none;
+      }
+      #playBtn.playing .play-icon {
+        display: none;
+      }
+      #playBtn.playing .pause-icon {
+        display: block;
+      }
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .readout-section {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 1px 0;
+      }
+      .readout-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+      .readout-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .readout-val.v-cor {
+        color: var(--col-cor);
+      }
+      .readout-val.v-cen {
+        color: var(--col-cen);
+      }
+      .readout-val.v-proj {
+        color: var(--col-proj);
+      }
+      .readout-val.v-omega {
+        color: #2979ff;
+      }
+      .info {
+        padding: 16px 20px;
+        flex: 1;
+      }
+      .info-text {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.6;
+      }
+      .info-text a {
+        color: var(--accent);
+      }
+      .challenge-info {
+        margin-top: 4px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        background: #e8f5e9;
+        color: #2e7d32;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+      }
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        font-family: "Outfit", sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 16px;
+        color: #fff;
+      }
+      .overlay-detail {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        margin-top: 12px;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .overlay-hint {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.6);
+      }
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .result-overlay,
+        .overlay-emoji {
+          animation: none;
+        }
+      }
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+      #grpGame.hidden {
+        display: none;
+      }
+      #clearBtn {
+        width: 100%;
+      }
+      @media (max-width: 700px) {
+        .main {
+          flex-direction: column;
+          height: auto;
+          min-height: calc(100vh - 46px);
+        }
+        .canvas-wrap {
+          min-height: 320px;
+          height: 50vh;
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+        }
+        .panel {
+          width: 100%;
+        }
+        .controls {
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 12px;
+          padding: 12px 16px;
+        }
+        .ctrl-group {
+          min-width: 120px;
+          flex: 1;
+        }
+        .btn-row {
+          min-width: 100%;
+        }
+        .info {
+          padding: 12px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-icon">&#x1F300;</span></a>
+          <span id="titleText">The Coriolis Effect</span>
+        </h1>
+        <p id="subtitleText">
+          Launch projectiles on a spinning platform and observe the deflection.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="canvas-wrap">
+        <canvas
+          id="canvas"
+          aria-label="Coriolis effect simulation canvas"
+        ></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="controls">
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblMode">Mode</span>
+            <div class="type-toggle">
+              <button type="button" class="type-btn active" id="modeExploreBtn">
+                Explore
+              </button>
+              <button type="button" class="type-btn" id="modeGameBtn">
+                Game
+              </button>
+            </div>
+          </div>
+
+          <div id="grpExplore">
+            <span class="section-label" id="lblRotation">Rotation</span>
+
+            <div class="ctrl-group">
+              <span class="ctrl-label" id="lblAngVel">Angular velocity</span>
+              <div class="slider-row">
+                <input
+                  type="range"
+                  id="omegaSlider"
+                  min="2"
+                  max="60"
+                  value="12"
+                  step="1"
+                  aria-label="Angular velocity"
+                />
+                <span class="slider-val" id="omegaVal">12 RPM</span>
+              </div>
+            </div>
+
+            <span class="section-label" id="lblProjectile">Projectile</span>
+
+            <div class="ctrl-group">
+              <span class="ctrl-label" id="lblSpeed">Launch speed</span>
+              <div class="slider-row">
+                <input
+                  type="range"
+                  id="speedSlider"
+                  min="50"
+                  max="500"
+                  value="200"
+                  step="10"
+                  aria-label="Launch speed"
+                />
+                <span class="slider-val" id="speedVal">200</span>
+              </div>
+            </div>
+
+            <div class="ctrl-group">
+              <span class="ctrl-label" id="lblDisplay">Display</span>
+              <div class="type-toggle">
+                <button type="button" class="type-btn active" id="forcesBtn">
+                  Forces
+                </button>
+                <button type="button" class="type-btn" id="centrifugalBtn">
+                  Centrifugal
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="grpGame" class="hidden">
+            <div class="ctrl-group">
+              <div class="challenge-info" id="challengeInfo">
+                <span id="challengeText"></span>
+              </div>
+            </div>
+            <div class="type-toggle">
+              <button type="button" class="type-btn" id="newTargetBtn">
+                New target
+              </button>
+            </div>
+          </div>
+
+          <button type="button" class="type-btn" id="clearBtn">
+            Clear trail
+          </button>
+
+          <div class="btn-row">
+            <button
+              type="button"
+              class="type-btn"
+              id="playBtn"
+              aria-label="Play or pause simulation"
+            >
+              <svg
+                class="play-icon"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <polygon points="7,5 19,12 7,19" />
+              </svg>
+              <svg
+                class="pause-icon"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <rect x="6" y="5" width="4" height="14" />
+                <rect x="14" y="5" width="4" height="14" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="stopBtn"
+              aria-label="Stop and reset simulation"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <rect x="6" y="6" width="12" height="12" />
+              </svg>
+            </button>
+          </div>
+
+          <div id="grpReadouts">
+            <div class="readout-section">
+              <div class="readout-row">
+                <span class="readout-label" id="lblReadOmega"
+                  >&#x03c9; (angular vel)</span
+                >
+                <span class="readout-val v-omega" id="readoutOmega">0.0</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblReadSpeed"
+                  >v (proj. speed)</span
+                >
+                <span class="readout-val v-proj" id="readoutSpeed">--</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblReadCor"
+                  >F_cor (Coriolis)</span
+                >
+                <span class="readout-val v-cor" id="readoutCor">--</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblReadCen"
+                  >F_cen (centrifugal)</span
+                >
+                <span class="readout-val v-cen" id="readoutCen">--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info">
+          <div class="info-text" id="infoText"></div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        /* ───────── I18N ───────── */
+        const I18N = {
+          en: {
+            title: "The Coriolis Effect",
+            subtitle:
+              "Launch projectiles on a spinning platform and observe the deflection.",
+            mode: "Mode",
+            explore: "Explore",
+            game: "Game",
+            rotation: "Rotation",
+            projectile: "Projectile",
+            angularVelocity: "Angular velocity",
+            launchSpeed: "Launch speed",
+            display: "Display",
+            forces: "Forces",
+            centrifugal: "Centrifugal",
+            clearTrail: "Clear trail",
+            newTarget: "New target",
+            rotatingFrame: "ROTATING FRAME",
+            inertialFrame: "INERTIAL FRAME",
+            rotFrameDesc: "Observer on platform",
+            inertFrameDesc: "Observer from outside",
+            aimHint: "Click & drag to launch",
+            readOmega: "\u03c9 (angular vel)",
+            readSpeed: "v (proj. speed)",
+            readCoriolis: "F_cor (Coriolis)",
+            readCentrifugal: "F_cen (centrifugal)",
+            challengeHit: "Hit the target!",
+            challengeRPM: "\u03c9 = {0} RPM",
+            challengeSuccess: "Bull\u2019s eye!",
+            challengeClose: "Close! Try again",
+            challengeMiss: "Missed! Try again",
+            clickToDismiss: "Click to continue",
+            infoExplore: [
+              "Launch a projectile by clicking and dragging on the left platform. In the rotating frame the path curves due to the Coriolis effect. In the inertial frame it\u2019s a straight line!",
+              "The dashed line shows where you aimed \u2014 the gap between it and the actual path is the ",
+              { strong: "Coriolis deflection" },
+              ".",
+            ],
+            infoGame: [
+              "Aim for the green target! The platform is spinning, so you\u2019ll need to compensate for the Coriolis deflection. Click ",
+              { strong: "New target" },
+              " for another challenge.",
+            ],
+          },
+          pl: {
+            title: "Efekt Coriolisa",
+            subtitle:
+              "Wystrzel pociski na obracaj\u0105cej si\u0119 platformie i obserwuj odchylenie.",
+            mode: "Tryb",
+            explore: "Eksploruj",
+            game: "Gra",
+            rotation: "Obr\u00f3t",
+            projectile: "Pocisk",
+            angularVelocity: "Pr\u0119dko\u015b\u0107 k\u0105towa",
+            launchSpeed: "Pr\u0119dko\u015b\u0107 wystrza\u0142u",
+            display: "Widok",
+            forces: "Si\u0142y",
+            centrifugal: "Od\u015brodkowa",
+            clearTrail: "Wyczy\u015b\u0107 \u015blad",
+            newTarget: "Nowy cel",
+            rotatingFrame: "UK\u0141AD OBRACAJ\u0104CY",
+            inertialFrame: "UK\u0141AD INERCJALNY",
+            rotFrameDesc: "Obserwator na platformie",
+            inertFrameDesc: "Obserwator z zewn\u0105trz",
+            aimHint: "Kliknij i przeci\u0105gnij",
+            readOmega: "\u03c9 (pr\u0119d. k\u0105towa)",
+            readSpeed: "v (pr\u0119d. pocisku)",
+            readCoriolis: "F_cor (Coriolis)",
+            readCentrifugal: "F_cen (od\u015brodkowa)",
+            challengeHit: "Traf w cel!",
+            challengeRPM: "\u03c9 = {0} RPM",
+            challengeSuccess: "Celnie!",
+            challengeClose: "Prawie! Spr\u00f3buj ponownie",
+            challengeMiss: "Pud\u0142o! Spr\u00f3buj ponownie",
+            clickToDismiss: "Kliknij, aby kontynuowa\u0107",
+            infoExplore: [
+              "Wystrzel pocisk klikaj\u0105c i przeci\u0105gaj\u0105c na lewej platformie. W uk\u0142adzie obracaj\u0105cym tor zakrzywia si\u0119 przez efekt Coriolisa. W uk\u0142adzie inercjalnym to linia prosta!",
+              "Przerywana linia pokazuje kierunek celowania \u2014 r\u00f3\u017cnica to ",
+              { strong: "odchylenie Coriolisa" },
+              ".",
+            ],
+            infoGame: [
+              "Celuj w zielony cel! Platforma si\u0119 obraca \u2014 musisz skompensowa\u0107 odchylenie Coriolisa. Kliknij ",
+              { strong: "Nowy cel" },
+              ", aby uzyska\u0107 nowe wyzwanie.",
+            ],
+          },
+        };
+
+        function T(key) {
+          return I18N[state.lang][key];
+        }
+
+        /* ───────── CONSTANTS ───────── */
+        const LEFT_CX = 235;
+        const LEFT_CY = 260;
+        const RIGHT_CX = 765;
+        const RIGHT_CY = 260;
+        const PLAT_R = 175;
+        const PROJ_R = 5;
+        const TRAIL_DT = 0.012;
+        const MAX_TRAIL = 1200;
+        const ARROW_SCALE = 0.35;
+        const AIM_THRESHOLD = 5;
+
+        const COL_PROJ = "#E64A19";
+        const COL_COR = "#2979FF";
+        const COL_CEN = "#7C4DFF";
+        const COL_TARGET = "#00C853";
+        const COL_GHOST = "#BDBDBD";
+
+        /* ───────── STATE ───────── */
+        const state = {
+          lang: navigator.language?.startsWith("pl") ? "pl" : "en",
+          mode: "explore",
+          omega: fromRPM(12),
+          launchSpeed: 200,
+          platformAngle: 0,
+          playing: true,
+          projectile: null,
+          trail: [],
+          trailTimer: 0,
+          aiming: false,
+          aimOriginR: null,
+          aimDir: null,
+          ghostOriginR: null,
+          ghostDir: null,
+          showForces: true,
+          showCentrifugal: false,
+          liveCor: 0,
+          liveCen: 0,
+          liveSpeed: 0,
+          gameTarget: null,
+          gameLaunchR: null,
+          gameOmega: 0,
+          gameSpeed: 0,
+        };
+
+        /* ───────── CANVAS SETUP ───────── */
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        let W, H, scaleF, ox, oy;
+
+        function resize() {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          W = rect.width;
+          H = rect.height;
+          canvas.width = W * dpr;
+          canvas.height = H * dpr;
+          canvas.style.width = W + "px";
+          canvas.style.height = H + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          scaleF = Math.min(W / 1000, H / 580) * 0.92;
+          ox = (W - 1000 * scaleF) / 2;
+          oy = (H - 580 * scaleF) / 2;
+        }
+        window.addEventListener("resize", resize);
+
+        function tx(x) {
+          return ox + x * scaleF;
+        }
+        function ty(y) {
+          return oy + y * scaleF;
+        }
+        function ts(s) {
+          return s * scaleF;
+        }
+
+        /* ───────── MATH HELPERS ───────── */
+        function fromRPM(rpm) {
+          return (rpm * Math.PI) / 30;
+        }
+        function toRPM(omega) {
+          return (omega * 30) / Math.PI;
+        }
+        function fmtNum(v) {
+          return parseFloat(v.toPrecision(3)).toString();
+        }
+
+        /* ───────── PHYSICS ───────── */
+        function rotToInertial(rx, ry, theta) {
+          return {
+            x: rx * Math.cos(theta) - ry * Math.sin(theta),
+            y: rx * Math.sin(theta) + ry * Math.cos(theta),
+          };
+        }
+
+        function inertialToRot(ix, iy, theta) {
+          return {
+            x: ix * Math.cos(theta) + iy * Math.sin(theta),
+            y: -ix * Math.sin(theta) + iy * Math.cos(theta),
+          };
+        }
+
+        function fireLaunch(rx, ry, dirX, dirY) {
+          const theta = state.platformAngle;
+          const ip = rotToInertial(rx, ry, theta);
+          const speed = state.launchSpeed;
+          const vi = rotToInertial(dirX * speed, dirY * speed, theta);
+          state.projectile = {
+            dx0: ip.x,
+            dy0: ip.y,
+            ivx: vi.x - state.omega * ip.y,
+            ivy: vi.y + state.omega * ip.x,
+            t: 0,
+            active: true,
+          };
+          state.trail = [];
+          state.trailTimer = 0;
+          state.ghostOriginR = { x: rx, y: ry };
+          state.ghostDir = { x: dirX, y: dirY };
+        }
+
+        function projInertial(proj, t) {
+          return {
+            x: proj.dx0 + proj.ivx * t,
+            y: proj.dy0 + proj.ivy * t,
+          };
+        }
+
+        function projRotating(proj, t, theta) {
+          const ip = projInertial(proj, t);
+          return inertialToRot(ip.x, ip.y, theta);
+        }
+
+        function rotVelocity(proj, theta, rp) {
+          return {
+            x:
+              proj.ivx * Math.cos(theta) +
+              proj.ivy * Math.sin(theta) +
+              state.omega * rp.y,
+            y:
+              -proj.ivx * Math.sin(theta) +
+              proj.ivy * Math.cos(theta) -
+              state.omega * rp.x,
+          };
+        }
+
+        function coriolisAccel(vr) {
+          return {
+            x: 2 * state.omega * vr.y,
+            y: -2 * state.omega * vr.x,
+          };
+        }
+
+        function centrifugalAccel(rp) {
+          const w2 = state.omega * state.omega;
+          return { x: w2 * rp.x, y: w2 * rp.y };
+        }
+
+        /* ───────── DRAWING HELPERS ───────── */
+        function drawArrowhead(tipX, tipY, angle, color) {
+          const hs = ts(7);
+          ctx.save();
+          ctx.translate(tipX, tipY);
+          ctx.rotate(angle);
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.moveTo(hs, 0);
+          ctx.lineTo(-hs * 0.45, -hs * 0.5);
+          ctx.lineTo(-hs * 0.45, hs * 0.5);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        /* ───────── DRAW: PLATFORM DISC ───────── */
+        function drawPlatformDisc(cx, cy, radius, angle) {
+          const scx = tx(cx),
+            scy = ty(cy),
+            sr = ts(radius);
+
+          ctx.fillStyle = "rgba(0,0,0,0.08)";
+          ctx.beginPath();
+          ctx.arc(scx + ts(3), scy + ts(4), sr, 0, Math.PI * 2);
+          ctx.fill();
+
+          const grad = ctx.createRadialGradient(
+            scx - sr * 0.15,
+            scy - sr * 0.15,
+            sr * 0.1,
+            scx,
+            scy,
+            sr,
+          );
+          grad.addColorStop(0, "#E4E6E8");
+          grad.addColorStop(1, "#CDD1D5");
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(scx, scy, sr, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "#B0B5BA";
+          ctx.lineWidth = ts(2);
+          ctx.beginPath();
+          ctx.arc(scx, scy, sr, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.save();
+          ctx.translate(scx, scy);
+          ctx.rotate(angle);
+          ctx.strokeStyle = "rgba(0,0,0,0.12)";
+          ctx.lineWidth = ts(1.5);
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const cosA = Math.cos(a),
+              sinA = Math.sin(a);
+            ctx.beginPath();
+            ctx.moveTo(ts(10) * cosA, ts(10) * sinA);
+            ctx.lineTo((sr - ts(4)) * cosA, (sr - ts(4)) * sinA);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.setLineDash([ts(3), ts(5)]);
+          ctx.strokeStyle = "rgba(0,0,0,0.06)";
+          ctx.lineWidth = ts(1);
+          for (let f = 0; f < 3; f++) {
+            const frac = [0.25, 0.5, 0.75][f];
+            ctx.beginPath();
+            ctx.arc(scx, scy, sr * frac, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = "#A0A5AA";
+          ctx.beginPath();
+          ctx.arc(scx, scy, ts(6), 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        /* ───────── DRAW: TRAIL ───────── */
+        function drawTrailOnPlatform(cx, cy, key) {
+          if (state.trail.length < 2) return;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(tx(cx), ty(cy), ts(PLAT_R), 0, Math.PI * 2);
+          ctx.clip();
+
+          ctx.strokeStyle = COL_PROJ;
+          ctx.lineWidth = ts(2.5);
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.globalAlpha = 0.8;
+          ctx.beginPath();
+
+          const first = state.trail[0];
+          const fx = key === "r" ? first.rx : first.ix;
+          const fy = key === "r" ? first.ry : first.iy;
+          ctx.moveTo(tx(cx + fx), ty(cy + fy));
+
+          for (let i = 1; i < state.trail.length; i++) {
+            const p = state.trail[i];
+            const px = key === "r" ? p.rx : p.ix;
+            const py = key === "r" ? p.ry : p.iy;
+            ctx.lineTo(tx(cx + px), ty(cy + py));
+          }
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.lineCap = "butt";
+
+          for (let j = 0; j < state.trail.length; j += 10) {
+            const pt = state.trail[j];
+            const dx = key === "r" ? pt.rx : pt.ix;
+            const dy = key === "r" ? pt.ry : pt.iy;
+            ctx.fillStyle = COL_PROJ;
+            ctx.beginPath();
+            ctx.arc(tx(cx + dx), ty(cy + dy), ts(2.5), 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          ctx.restore();
+        }
+
+        /* ───────── DRAW: PROJECTILE ───────── */
+        function drawProjectileAt(cx, cy, px, py) {
+          const sx = tx(cx + px),
+            sy = ty(cy + py);
+
+          ctx.fillStyle = "rgba(0,0,0,0.15)";
+          ctx.beginPath();
+          ctx.arc(sx + ts(1.5), sy + ts(1.5), ts(PROJ_R), 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = COL_PROJ;
+          ctx.beginPath();
+          ctx.arc(sx, sy, ts(PROJ_R), 0, Math.PI * 2);
+          ctx.fill();
+
+          const hl = ctx.createRadialGradient(
+            sx - ts(PROJ_R * 0.3),
+            sy - ts(PROJ_R * 0.3),
+            ts(1),
+            sx,
+            sy,
+            ts(PROJ_R),
+          );
+          hl.addColorStop(0, "rgba(255,255,255,0.5)");
+          hl.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = hl;
+          ctx.beginPath();
+          ctx.arc(sx, sy, ts(PROJ_R), 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        /* ───────── DRAW: GHOST LINE ───────── */
+        function drawGhostLine(cx, cy) {
+          if (!state.ghostDir || !state.ghostOriginR) return;
+
+          const gox = state.ghostOriginR.x,
+            goy = state.ghostOriginR.y;
+          const gdx = state.ghostDir.x,
+            gdy = state.ghostDir.y;
+
+          const a = gdx * gdx + gdy * gdy;
+          if (a < 1e-10) return;
+          const b = 2 * (gox * gdx + goy * gdy);
+          const c = gox * gox + goy * goy - PLAT_R * PLAT_R;
+          const disc = b * b - 4 * a * c;
+          if (disc < 0) return;
+          const tEnd = (-b + Math.sqrt(disc)) / (2 * a);
+          if (tEnd < 0) return;
+
+          const endX = gox + gdx * tEnd;
+          const endY = goy + gdy * tEnd;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(tx(cx), ty(cy), ts(PLAT_R), 0, Math.PI * 2);
+          ctx.clip();
+
+          ctx.strokeStyle = COL_GHOST;
+          ctx.lineWidth = ts(1.5);
+          ctx.setLineDash([ts(5), ts(5)]);
+          ctx.beginPath();
+          ctx.moveTo(tx(cx + gox), ty(cy + goy));
+          ctx.lineTo(tx(cx + endX), ty(cy + endY));
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.restore();
+        }
+
+        /* ───────── DRAW: FORCE VECTORS ───────── */
+        function drawForceVectors(cx, cy, proj) {
+          if (!proj || !proj.active || !state.showForces) return;
+
+          const theta = state.platformAngle;
+          const rp = projRotating(proj, proj.t, theta);
+          if (Math.hypot(rp.x, rp.y) > PLAT_R) return;
+
+          const vr = rotVelocity(proj, theta, rp);
+          const cor = coriolisAccel(vr);
+          const fScale = 25;
+          const sx = tx(cx + rp.x),
+            sy = ty(cy + rp.y);
+
+          const cLen = Math.hypot(cor.x, cor.y) * fScale;
+          if (cLen > 0.5) {
+            const ex = sx + ts(cor.x * fScale);
+            const ey = sy + ts(cor.y * fScale);
+            ctx.strokeStyle = COL_COR;
+            ctx.lineWidth = ts(2.5);
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+            drawArrowhead(ex, ey, Math.atan2(ey - sy, ex - sx), COL_COR);
+
+            ctx.fillStyle = COL_COR;
+            ctx.font = "bold " + ts(10) + 'px "Share Tech Mono", monospace';
+            ctx.textAlign = "left";
+            ctx.textBaseline = "bottom";
+            ctx.fillText("F_cor", ex + ts(5), ey - ts(3));
+          }
+
+          if (state.showCentrifugal) {
+            const cen = centrifugalAccel(rp);
+            const cenLen = Math.hypot(cen.x, cen.y) * fScale;
+            if (cenLen > 0.5) {
+              const cex = sx + ts(cen.x * fScale);
+              const cey = sy + ts(cen.y * fScale);
+              ctx.strokeStyle = COL_CEN;
+              ctx.lineWidth = ts(2.5);
+              ctx.beginPath();
+              ctx.moveTo(sx, sy);
+              ctx.lineTo(cex, cey);
+              ctx.stroke();
+              drawArrowhead(cex, cey, Math.atan2(cey - sy, cex - sx), COL_CEN);
+
+              ctx.fillStyle = COL_CEN;
+              ctx.font = "bold " + ts(10) + 'px "Share Tech Mono", monospace';
+              ctx.textAlign = "left";
+              ctx.textBaseline = "bottom";
+              ctx.fillText("F_cen", cex + ts(5), cey - ts(3));
+            }
+          }
+        }
+
+        /* ───────── DRAW: AIM ARROW ───────── */
+        function drawAimArrow(cx, cy) {
+          if (!state.aiming || !state.aimOriginR || !state.aimDir) return;
+
+          const aox = state.aimOriginR.x,
+            aoy = state.aimOriginR.y;
+          const adx = state.aimDir.x,
+            ady = state.aimDir.y;
+          const len = state.launchSpeed * ARROW_SCALE;
+
+          const endX = aox + adx * len;
+          const endY = aoy + ady * len;
+
+          const sx1 = tx(cx + aox),
+            sy1 = ty(cy + aoy);
+          const sx2 = tx(cx + endX),
+            sy2 = ty(cy + endY);
+
+          ctx.strokeStyle = COL_PROJ;
+          ctx.lineWidth = ts(3);
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(sx1, sy1);
+          ctx.lineTo(sx2, sy2);
+          ctx.stroke();
+          ctx.lineCap = "butt";
+
+          drawArrowhead(sx2, sy2, Math.atan2(sy2 - sy1, sx2 - sx1), COL_PROJ);
+
+          ctx.fillStyle = COL_PROJ;
+          ctx.globalAlpha = 0.25;
+          ctx.beginPath();
+          ctx.arc(sx1, sy1, ts(8), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = COL_PROJ;
+          ctx.lineWidth = ts(1.5);
+          ctx.beginPath();
+          ctx.arc(sx1, sy1, ts(8), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        /* ───────── DRAW: TARGET (GAME) ───────── */
+        function drawTargetAt(cx, cy, gx, gy) {
+          const sx = tx(cx + gx),
+            sy = ty(cy + gy);
+          const r = ts(12);
+
+          ctx.strokeStyle = COL_TARGET;
+          ctx.lineWidth = ts(2);
+          ctx.beginPath();
+          ctx.arc(sx, sy, r, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(sx, sy, r * 0.5, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = COL_TARGET;
+          ctx.beginPath();
+          ctx.arc(sx, sy, ts(2.5), 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = COL_TARGET;
+          ctx.lineWidth = ts(1);
+          ctx.beginPath();
+          ctx.moveTo(sx - r - ts(4), sy);
+          ctx.lineTo(sx + r + ts(4), sy);
+          ctx.moveTo(sx, sy - r - ts(4));
+          ctx.lineTo(sx, sy + r + ts(4));
+          ctx.stroke();
+        }
+
+        /* ───────── DRAW: LAUNCH MARKER (GAME) ───────── */
+        function drawLaunchMarker(cx, cy, lx, ly) {
+          const sx = tx(cx + lx),
+            sy = ty(cy + ly);
+          const r = ts(9);
+
+          ctx.fillStyle = COL_PROJ;
+          ctx.globalAlpha = 0.15;
+          ctx.beginPath();
+          ctx.arc(sx, sy, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+
+          ctx.strokeStyle = COL_PROJ;
+          ctx.lineWidth = ts(2);
+          ctx.setLineDash([ts(3), ts(3)]);
+          ctx.beginPath();
+          ctx.arc(sx, sy, r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = COL_PROJ;
+          ctx.beginPath();
+          ctx.arc(sx, sy, ts(2.5), 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        /* ───────── DRAW: FRAME LABELS ───────── */
+        function drawFrameLabels() {
+          const labelY = LEFT_CY + PLAT_R + 22;
+          const descY = labelY + 15;
+
+          ctx.fillStyle = "#546E7A";
+          ctx.font = "bold " + ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(T("rotatingFrame"), tx(LEFT_CX), ty(labelY));
+
+          ctx.fillStyle = "#90A4AE";
+          ctx.font = ts(10) + 'px "Share Tech Mono", monospace';
+          ctx.fillText(T("rotFrameDesc"), tx(LEFT_CX), ty(descY));
+
+          ctx.fillStyle = "#546E7A";
+          ctx.font = "bold " + ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.fillText(T("inertialFrame"), tx(RIGHT_CX), ty(labelY));
+
+          ctx.fillStyle = "#90A4AE";
+          ctx.font = ts(10) + 'px "Share Tech Mono", monospace';
+          ctx.fillText(T("inertFrameDesc"), tx(RIGHT_CX), ty(descY));
+        }
+
+        /* ───────── DRAW: ROTATION ARROW ───────── */
+        function drawRotationArrow(cx, cy) {
+          if (Math.abs(state.omega) < 0.05) return;
+
+          const scx = tx(cx),
+            scy = ty(cy);
+          const r = ts(PLAT_R + 16);
+          const arcLen = Math.min(Math.abs(state.omega) * 0.12, 1.0);
+          const mid = -Math.PI / 2;
+          const a1 = mid - arcLen / 2;
+          const a2 = mid + arcLen / 2;
+
+          ctx.strokeStyle = "#90A4AE";
+          ctx.lineWidth = ts(2.5);
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.arc(scx, scy, r, a1, a2);
+          ctx.stroke();
+          ctx.lineCap = "butt";
+
+          const tipA = state.omega > 0 ? a2 : a1;
+          const tipX = scx + r * Math.cos(tipA);
+          const tipY = scy + r * Math.sin(tipA);
+          drawArrowhead(
+            tipX,
+            tipY,
+            state.omega > 0 ? tipA + Math.PI / 2 : tipA - Math.PI / 2,
+            "#90A4AE",
+          );
+
+          ctx.fillStyle = "#78909C";
+          ctx.font = "bold " + ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(
+            fmtNum(toRPM(state.omega)) + " RPM",
+            scx,
+            scy - r - ts(4),
+          );
+        }
+
+        /* ───────── DRAW: FORMULA ───────── */
+        function drawFormula() {
+          const fy = LEFT_CY + PLAT_R + 55;
+          ctx.fillStyle = "#90A4AE";
+          ctx.font = ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText("F_cor = \u22122m(\u03c9 \u00d7 v)", tx(500), ty(fy));
+        }
+
+        /* ───────── DRAW: HINT ───────── */
+        function drawHint() {
+          if (state.projectile) return;
+          if (state.aiming) return;
+          if (state.trail.length > 0) return;
+
+          ctx.fillStyle = "rgba(84,110,122,0.45)";
+          ctx.font = ts(13) + 'px "Outfit", sans-serif';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(T("aimHint"), tx(LEFT_CX), ty(LEFT_CY));
+        }
+
+        /* ───────── DRAW: ORIGIN MARKER ───────── */
+        function drawOriginMarker(cx, cy, gox, goy) {
+          const sx = tx(cx + gox),
+            sy = ty(cy + goy);
+
+          ctx.fillStyle = COL_PROJ;
+          ctx.globalAlpha = 0.2;
+          ctx.beginPath();
+          ctx.arc(sx, sy, ts(5), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+
+          ctx.strokeStyle = COL_PROJ;
+          ctx.lineWidth = ts(1);
+          ctx.beginPath();
+          ctx.moveTo(sx - ts(6), sy);
+          ctx.lineTo(sx + ts(6), sy);
+          ctx.moveTo(sx, sy - ts(6));
+          ctx.lineTo(sx, sy + ts(6));
+          ctx.stroke();
+        }
+
+        /* ───────── DRAW: SCENE ───────── */
+        function drawScene() {
+          ctx.fillStyle = "#f5f3ee";
+          ctx.fillRect(0, 0, W, H);
+
+          /* Platforms */
+          drawPlatformDisc(LEFT_CX, LEFT_CY, PLAT_R, 0);
+          drawPlatformDisc(RIGHT_CX, RIGHT_CY, PLAT_R, state.platformAngle);
+
+          /* Ghost line (aim straight line on rotating frame) */
+          if (!state.aiming) drawGhostLine(LEFT_CX, LEFT_CY);
+
+          /* Trails */
+          drawTrailOnPlatform(LEFT_CX, LEFT_CY, "r");
+          drawTrailOnPlatform(RIGHT_CX, RIGHT_CY, "i");
+
+          /* Active projectile */
+          if (state.projectile && state.projectile.active) {
+            const theta = state.platformAngle;
+            const rp = projRotating(
+              state.projectile,
+              state.projectile.t,
+              theta,
+            );
+            const ip = projInertial(state.projectile, state.projectile.t);
+
+            if (Math.hypot(rp.x, rp.y) <= PLAT_R + 5) {
+              drawProjectileAt(LEFT_CX, LEFT_CY, rp.x, rp.y);
+            }
+            if (Math.hypot(ip.x, ip.y) <= PLAT_R + 5) {
+              drawProjectileAt(RIGHT_CX, RIGHT_CY, ip.x, ip.y);
+            }
+
+            drawForceVectors(LEFT_CX, LEFT_CY, state.projectile);
+          }
+
+          /* Origin markers (where projectile was launched from) */
+          if (state.ghostOriginR && state.trail.length > 0) {
+            drawOriginMarker(
+              LEFT_CX,
+              LEFT_CY,
+              state.ghostOriginR.x,
+              state.ghostOriginR.y,
+            );
+            const iOrigin = rotToInertial(
+              state.ghostOriginR.x,
+              state.ghostOriginR.y,
+              state.platformAngle,
+            );
+            drawOriginMarker(RIGHT_CX, RIGHT_CY, iOrigin.x, iOrigin.y);
+          }
+
+          /* Game target */
+          if (state.mode === "game" && state.gameTarget) {
+            drawTargetAt(
+              LEFT_CX,
+              LEFT_CY,
+              state.gameTarget.x,
+              state.gameTarget.y,
+            );
+            const ti = rotToInertial(
+              state.gameTarget.x,
+              state.gameTarget.y,
+              state.platformAngle,
+            );
+            drawTargetAt(RIGHT_CX, RIGHT_CY, ti.x, ti.y);
+          }
+
+          /* Game launch marker */
+          if (state.mode === "game" && state.gameLaunchR) {
+            drawLaunchMarker(
+              LEFT_CX,
+              LEFT_CY,
+              state.gameLaunchR.x,
+              state.gameLaunchR.y,
+            );
+          }
+
+          /* Aim arrow */
+          drawAimArrow(LEFT_CX, LEFT_CY);
+
+          /* Rotation arrow (on inertial frame) */
+          drawRotationArrow(RIGHT_CX, RIGHT_CY);
+
+          /* Labels and formula */
+          drawFrameLabels();
+          drawFormula();
+
+          /* Hint */
+          drawHint();
+        }
+
+        /* ───────── INTERACTION ───────── */
+        function screenToLeftPlatform(sx, sy) {
+          const rect = canvas.getBoundingClientRect();
+          const lx = (sx - rect.left - ox) / scaleF - LEFT_CX;
+          const ly = (sy - rect.top - oy) / scaleF - LEFT_CY;
+          return { x: lx, y: ly };
+        }
+
+        function isOnLeftPlatform(rx, ry) {
+          return Math.hypot(rx, ry) < PLAT_R;
+        }
+
+        function handlePointerDown(sx, sy, e) {
+          const rp = screenToLeftPlatform(sx, sy);
+          if (!isOnLeftPlatform(rp.x, rp.y)) return;
+
+          if (state.mode === "game" && state.gameLaunchR) {
+            state.aimOriginR = {
+              x: state.gameLaunchR.x,
+              y: state.gameLaunchR.y,
+            };
+          } else {
+            state.aimOriginR = { x: rp.x, y: rp.y };
+          }
+          state.aimDir = null;
+          state.aiming = true;
+          canvas.classList.add("dragging");
+          if (e) e.preventDefault();
+        }
+
+        function handlePointerMove(sx, sy, e) {
+          if (!state.aiming || !state.aimOriginR) return;
+
+          const rp = screenToLeftPlatform(sx, sy);
+          const ddx = rp.x - state.aimOriginR.x;
+          const ddy = rp.y - state.aimOriginR.y;
+          const dist = Math.hypot(ddx, ddy);
+
+          if (dist > AIM_THRESHOLD) {
+            state.aimDir = { x: ddx / dist, y: ddy / dist };
+          } else {
+            state.aimDir = null;
+          }
+          if (e) e.preventDefault();
+        }
+
+        function handlePointerUp() {
+          if (!state.aiming) return;
+          state.aiming = false;
+          canvas.classList.remove("dragging");
+
+          if (state.aimOriginR && state.aimDir) {
+            if (!state.playing) {
+              state.playing = true;
+              updatePlayButton();
+            }
+            fireLaunch(
+              state.aimOriginR.x,
+              state.aimOriginR.y,
+              state.aimDir.x,
+              state.aimDir.y,
+            );
+          }
+          state.aimDir = null;
+        }
+
+        canvas.addEventListener("mousedown", function (e) {
+          handlePointerDown(e.clientX, e.clientY, e);
+        });
+        window.addEventListener("mousemove", function (e) {
+          handlePointerMove(e.clientX, e.clientY, e);
+        });
+        window.addEventListener("mouseup", function () {
+          handlePointerUp();
+        });
+
+        canvas.addEventListener(
+          "touchstart",
+          function (e) {
+            const t = e.touches[0];
+            handlePointerDown(t.clientX, t.clientY, e);
+          },
+          { passive: false },
+        );
+        window.addEventListener(
+          "touchmove",
+          function (e) {
+            if (state.aiming) {
+              handlePointerMove(e.touches[0].clientX, e.touches[0].clientY, e);
+            }
+          },
+          { passive: false },
+        );
+        window.addEventListener("touchend", function () {
+          handlePointerUp();
+        });
+
+        /* ───────── ANIMATION ───────── */
+        let lastTime = 0;
+        let rafId = 0;
+
+        function animate(now) {
+          now /= 1000;
+          const dt = lastTime ? Math.min(now - lastTime, 0.05) : 0;
+          lastTime = now;
+
+          if (state.playing) {
+            state.platformAngle += state.omega * dt;
+            if (state.platformAngle > 1e6) state.platformAngle %= Math.PI * 2;
+
+            if (state.projectile && state.projectile.active) {
+              state.projectile.t += dt;
+
+              state.trailTimer += dt;
+              while (state.trailTimer >= TRAIL_DT) {
+                state.trailTimer -= TRAIL_DT;
+                const t = state.projectile.t;
+                const theta = state.platformAngle;
+                const ip = projInertial(state.projectile, t);
+                const rp = projRotating(state.projectile, t, theta);
+                state.trail.push({
+                  ix: ip.x,
+                  iy: ip.y,
+                  rx: rp.x,
+                  ry: rp.y,
+                });
+                if (state.trail.length > MAX_TRAIL) state.trail.shift();
+              }
+
+              const curI = projInertial(state.projectile, state.projectile.t);
+              if (Math.hypot(curI.x, curI.y) > PLAT_R + 2) {
+                state.projectile.active = false;
+                if (state.mode === "game") evaluateGame();
+              }
+
+              updateLiveReadouts();
+            }
+          }
+
+          drawScene();
+          rafId = requestAnimationFrame(animate);
+        }
+
+        /* ───────── UI: READOUTS ───────── */
+        function updateReadouts() {
+          document.getElementById("readoutOmega").textContent =
+            fmtNum(toRPM(state.omega)) + " RPM";
+        }
+
+        function updateLiveReadouts() {
+          if (!state.projectile || !state.projectile.active) return;
+
+          const theta = state.platformAngle;
+          const rp = projRotating(state.projectile, state.projectile.t, theta);
+          const vr = rotVelocity(state.projectile, theta, rp);
+          const spd = Math.hypot(vr.x, vr.y);
+          const cor = coriolisAccel(vr);
+          const corMag = Math.hypot(cor.x, cor.y);
+          const cen = centrifugalAccel(rp);
+          const cenMag = Math.hypot(cen.x, cen.y);
+
+          state.liveSpeed = spd;
+          state.liveCor = corMag;
+          state.liveCen = cenMag;
+
+          document.getElementById("readoutSpeed").textContent = fmtNum(spd);
+          document.getElementById("readoutCor").textContent = fmtNum(corMag);
+          document.getElementById("readoutCen").textContent = fmtNum(cenMag);
+        }
+
+        function clearLiveReadouts() {
+          document.getElementById("readoutSpeed").textContent = "--";
+          document.getElementById("readoutCor").textContent = "--";
+          document.getElementById("readoutCen").textContent = "--";
+        }
+
+        /* ───────── UI: SLIDERS ───────── */
+        document
+          .getElementById("omegaSlider")
+          .addEventListener("input", function (e) {
+            state.omega = fromRPM(+e.target.value);
+            document.getElementById("omegaVal").textContent =
+              e.target.value + " RPM";
+            updateReadouts();
+          });
+
+        document
+          .getElementById("speedSlider")
+          .addEventListener("input", function (e) {
+            state.launchSpeed = +e.target.value;
+            document.getElementById("speedVal").textContent = e.target.value;
+          });
+
+        /* ───────── UI: PLAY / PAUSE / STOP ───────── */
+        function togglePlay() {
+          state.playing = !state.playing;
+          updatePlayButton();
+        }
+
+        function updatePlayButton() {
+          document
+            .getElementById("playBtn")
+            .classList.toggle("playing", state.playing);
+        }
+
+        function resetSim() {
+          state.playing = true;
+          state.projectile = null;
+          state.trail = [];
+          state.trailTimer = 0;
+          state.ghostOriginR = null;
+          state.ghostDir = null;
+          state.platformAngle = 0;
+          state.aiming = false;
+          state.aimOriginR = null;
+          state.aimDir = null;
+          clearLiveReadouts();
+          updatePlayButton();
+          updateReadouts();
+        }
+
+        function clearTrail() {
+          state.projectile = null;
+          state.trail = [];
+          state.trailTimer = 0;
+          state.ghostOriginR = null;
+          state.ghostDir = null;
+          clearLiveReadouts();
+        }
+
+        /* ───────── UI: MODE ───────── */
+        function setMode(mode) {
+          state.mode = mode;
+          document
+            .getElementById("modeExploreBtn")
+            .classList.toggle("active", mode === "explore");
+          document
+            .getElementById("modeGameBtn")
+            .classList.toggle("active", mode === "game");
+          document.getElementById("grpExplore").style.display =
+            mode === "explore" ? "" : "none";
+          document.getElementById("grpReadouts").style.display =
+            mode === "explore" ? "" : "none";
+          document.getElementById("grpGame").style.display =
+            mode === "game" ? "" : "none";
+
+          if (mode === "game") {
+            generateTarget();
+          } else {
+            state.gameTarget = null;
+            state.gameLaunchR = null;
+            resetSim();
+          }
+          updateInfoText();
+        }
+
+        /* ───────── GAME MODE ───────── */
+        function generateTarget() {
+          clearTrail();
+          state.platformAngle = 0;
+          state.playing = true;
+          updatePlayButton();
+
+          const rpm = 8 + Math.floor(Math.random() * 30);
+          state.omega = fromRPM(rpm);
+          state.gameOmega = rpm;
+          state.launchSpeed = 150 + Math.floor(Math.random() * 200);
+          state.gameSpeed = state.launchSpeed;
+
+          state.gameLaunchR = { x: 0, y: 0 };
+
+          const tAngle = Math.random() * Math.PI * 2;
+          const tDist = PLAT_R * (0.45 + Math.random() * 0.4);
+          state.gameTarget = {
+            x: tDist * Math.cos(tAngle),
+            y: tDist * Math.sin(tAngle),
+          };
+
+          updateChallengeDisplay();
+          updateReadouts();
+        }
+
+        function updateChallengeDisplay() {
+          let text = T("challengeHit");
+          text += "  " + T("challengeRPM").replace("{0}", state.gameOmega);
+          document.getElementById("challengeText").textContent = text;
+        }
+
+        function evaluateGame() {
+          if (!state.gameTarget || state.trail.length === 0) return;
+
+          let minDist = Infinity;
+          for (let i = 0; i < state.trail.length; i++) {
+            const d = Math.hypot(
+              state.trail[i].rx - state.gameTarget.x,
+              state.trail[i].ry - state.gameTarget.y,
+            );
+            if (d < minDist) minDist = d;
+          }
+
+          if (minDist < 15) {
+            showOverlay("success", minDist);
+          } else if (minDist < 40) {
+            showOverlay("close", minDist);
+          } else {
+            showOverlay("miss", minDist);
+          }
+        }
+
+        function showOverlay(result, dist) {
+          const existing = document.querySelector(".result-overlay");
+          if (existing) existing.remove();
+
+          const overlay = document.createElement("div");
+          overlay.className = "result-overlay";
+
+          let emoji, msg, bg;
+          if (result === "success") {
+            emoji = "\uD83C\uDF89";
+            msg = T("challengeSuccess");
+            bg = "rgba(63,185,80,0.88)";
+          } else if (result === "close") {
+            emoji = "\uD83D\uDC4D\uD83C\uDFFB";
+            msg = T("challengeClose");
+            bg = "rgba(88,166,255,0.88)";
+          } else {
+            emoji = "\uD83D\uDC4E\uD83C\uDFFB";
+            msg = T("challengeMiss");
+            bg = "rgba(240,180,60,0.92)";
+          }
+
+          overlay.style.background = bg;
+
+          const emojiEl = document.createElement("div");
+          emojiEl.className = "overlay-emoji";
+          emojiEl.textContent = emoji;
+          overlay.appendChild(emojiEl);
+
+          const msgEl = document.createElement("div");
+          msgEl.className = "overlay-msg";
+          msgEl.textContent = msg;
+          overlay.appendChild(msgEl);
+
+          const detailEl = document.createElement("div");
+          detailEl.className = "overlay-detail";
+          detailEl.textContent = "Miss distance: " + Math.round(dist) + " px";
+          overlay.appendChild(detailEl);
+
+          const hintEl = document.createElement("div");
+          hintEl.className = "overlay-hint";
+          hintEl.textContent = T("clickToDismiss");
+          overlay.appendChild(hintEl);
+
+          overlay.addEventListener("click", function () {
+            overlay.remove();
+          });
+          document.body.appendChild(overlay);
+        }
+
+        /* ───────── INFO TEXT ───────── */
+        function renderInfoParts(container, parts) {
+          container.textContent = "";
+          for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            if (typeof part === "string") {
+              container.appendChild(document.createTextNode(part));
+              if (i === 0 && parts.length > 1) {
+                container.appendChild(document.createElement("br"));
+                container.appendChild(document.createElement("br"));
+              }
+            } else if (part && part.strong) {
+              const strong = document.createElement("strong");
+              strong.textContent = part.strong;
+              container.appendChild(strong);
+            }
+          }
+        }
+
+        function updateInfoText() {
+          const el = document.getElementById("infoText");
+          const parts =
+            state.mode === "game" ? T("infoGame") : T("infoExplore");
+          renderInfoParts(el, parts);
+        }
+
+        /* ───────── TRANSLATIONS ───────── */
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          document.getElementById("langBtn").textContent =
+            state.lang === "en" ? "PL" : "EN";
+          document.getElementById("lblMode").textContent = T("mode");
+          document.getElementById("modeExploreBtn").textContent = T("explore");
+          document.getElementById("modeGameBtn").textContent = T("game");
+          document.getElementById("lblRotation").textContent = T("rotation");
+          document.getElementById("lblAngVel").textContent =
+            T("angularVelocity");
+          document.getElementById("lblProjectile").textContent =
+            T("projectile");
+          document.getElementById("lblSpeed").textContent = T("launchSpeed");
+          document.getElementById("lblDisplay").textContent = T("display");
+          document.getElementById("forcesBtn").textContent = T("forces");
+          document.getElementById("centrifugalBtn").textContent =
+            T("centrifugal");
+          document.getElementById("clearBtn").textContent = T("clearTrail");
+          document.getElementById("newTargetBtn").textContent = T("newTarget");
+          document.getElementById("lblReadOmega").textContent = T("readOmega");
+          document.getElementById("lblReadSpeed").textContent = T("readSpeed");
+          document.getElementById("lblReadCor").textContent = T("readCoriolis");
+          document.getElementById("lblReadCen").textContent =
+            T("readCentrifugal");
+
+          if (state.mode === "game") updateChallengeDisplay();
+          updatePlayButton();
+          updateInfoText();
+          updateReadouts();
+        }
+
+        function toggleLang() {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        }
+
+        /* ───────── INIT ───────── */
+        function init() {
+          resize();
+          applyTranslations();
+
+          document
+            .getElementById("langBtn")
+            .addEventListener("click", toggleLang);
+          document
+            .getElementById("modeExploreBtn")
+            .addEventListener("click", function () {
+              setMode("explore");
+            });
+          document
+            .getElementById("modeGameBtn")
+            .addEventListener("click", function () {
+              setMode("game");
+            });
+          document
+            .getElementById("forcesBtn")
+            .addEventListener("click", function () {
+              state.showForces = !state.showForces;
+              this.classList.toggle("active", state.showForces);
+            });
+          document
+            .getElementById("centrifugalBtn")
+            .addEventListener("click", function () {
+              state.showCentrifugal = !state.showCentrifugal;
+              this.classList.toggle("active", state.showCentrifugal);
+            });
+          document
+            .getElementById("clearBtn")
+            .addEventListener("click", clearTrail);
+          document
+            .getElementById("playBtn")
+            .addEventListener("click", togglePlay);
+          document
+            .getElementById("stopBtn")
+            .addEventListener("click", resetSim);
+          document
+            .getElementById("newTargetBtn")
+            .addEventListener("click", generateTarget);
+
+          rafId = requestAnimationFrame(animate);
+        }
+
+        document.addEventListener("visibilitychange", function () {
+          if (document.hidden) {
+            cancelAnimationFrame(rafId);
+            lastTime = 0;
+          } else {
+            lastTime = 0;
+            rafId = requestAnimationFrame(animate);
+          }
+        });
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

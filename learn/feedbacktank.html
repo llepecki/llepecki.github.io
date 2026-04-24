@@ -1,0 +1,3442 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- feedbacktank.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Water Tank Negative Feedback Lab — watch a tank correct itself with a visible mechanical feedback system."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/feedbacktank.html" />
+    <meta property="og:title" content="Water Tank Negative Feedback Lab" />
+    <meta
+      property="og:description"
+      content="Water Tank Negative Feedback Lab — watch a tank correct itself with a visible mechanical feedback system."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://lepecki.com/learn/feedbacktank.html"
+    />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Water Tank Negative Feedback Lab" />
+    <meta
+      name="twitter:description"
+      content="Water Tank Negative Feedback Lab — watch a tank correct itself with a visible mechanical feedback system."
+    />
+    <title>Water Tank Negative Feedback Lab</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --water: #42a5f5;
+        --water-deep: #1e88e5;
+        --water-light: #90caf9;
+        --valve-fill: #f57c00;
+        --valve-stroke: #e65100;
+        --drain-accent: #d84315;
+        --target: #43a047;
+        --measured: #fb8c00;
+        --actual: #ef6c00;
+        --error: #e53935;
+        --stable: #2e7d32;
+        --warning: #ef6c00;
+      }
+
+      body {
+        min-height: 100vh;
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+        overflow-x: hidden;
+        -webkit-user-select: none;
+        user-select: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .header-text {
+        flex: 1;
+        min-width: 0;
+      }
+
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .lang-btn:focus-visible,
+      .type-btn:focus-visible,
+      input[type="range"]:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .main {
+        display: flex;
+        min-height: calc(100vh - 46px);
+      }
+
+      .canvas-wrap {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+      }
+
+      .canvas-wrap svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .panel {
+        width: 300px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .controls {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .ctrl-label,
+      .section-label,
+      .chart-label,
+      .readout-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-label);
+      }
+
+      .section-label {
+        padding-bottom: 2px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+
+      .type-toggle {
+        display: flex;
+        gap: 6px;
+      }
+
+      .type-btn {
+        flex: 1;
+        padding: 10px 4px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .type-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .type-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .type-btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .btn-row {
+        display: flex;
+        gap: 6px;
+      }
+
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .slider-row input[type="range"] {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        background: #e0ddd6;
+        border-radius: 3px;
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+        touch-action: none;
+      }
+
+      .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+
+      .slider-row input[type="range"]::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+
+      .slider-row input[type="range"]:disabled {
+        opacity: 0.4;
+      }
+
+      .slider-val {
+        min-width: 56px;
+        text-align: right;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+
+      .hidden-group {
+        display: none;
+      }
+
+      .dimmed {
+        opacity: 0.45;
+        pointer-events: none;
+      }
+
+      .readout-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+      }
+
+      .readout-label {
+        letter-spacing: 0.5px;
+      }
+
+      .readout-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+
+      .readout-val.fill {
+        color: var(--water-deep);
+      }
+
+      .readout-val.drain {
+        color: var(--drain-accent);
+      }
+
+      .info {
+        padding: 16px 20px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .stability-badge {
+        display: inline-block;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .stability-badge.stable {
+        background: #e8f5e9;
+        color: var(--stable);
+      }
+
+      .stability-badge.recovering {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+
+      .stability-badge.overshoot {
+        background: #fff3e0;
+        color: var(--warning);
+      }
+
+      .stability-badge.oscillating {
+        background: #fce4ec;
+        color: #c62828;
+      }
+
+      .stability-badge.manual {
+        background: #eceff1;
+        color: #546e7a;
+      }
+
+      .status-text,
+      .info-text,
+      .inv-card {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.6;
+      }
+
+      .chart-card {
+        border: 1px solid var(--panel-border);
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fafaf7;
+      }
+
+      .chart-label {
+        display: block;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+
+      .chart-card canvas {
+        display: block;
+        width: 100%;
+        height: 132px;
+      }
+
+      .inv-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .inv-card {
+        border-left: 3px solid var(--accent);
+        background: var(--accent-light);
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+
+      .intro-panel {
+        display: none;
+        padding: 20px;
+        flex-direction: column;
+        gap: 16px;
+        flex: 1;
+      }
+
+      .intro-panel.active {
+        display: flex;
+      }
+
+      .intro-back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        flex: none;
+      }
+
+      .intro-step-title {
+        font-family: "Outfit", sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-head);
+        margin: 0;
+      }
+
+      .intro-commentary {
+        font-size: 14px;
+        color: #546e7a;
+        line-height: 1.7;
+        margin: 0;
+      }
+
+      .intro-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+      }
+
+      .intro-nav .type-btn {
+        min-width: 52px;
+      }
+
+      .intro-counter {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        color: var(--text-dim);
+        min-width: 56px;
+        text-align: center;
+      }
+
+      .intro-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      @media (max-width: 760px) {
+        .main {
+          flex-direction: column;
+          min-height: calc(100vh - 46px);
+        }
+
+        .canvas-wrap {
+          min-height: 360px;
+          height: 52vh;
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+        }
+
+        .panel {
+          width: 100%;
+        }
+
+        .controls {
+          padding: 14px 16px;
+          gap: 14px;
+        }
+
+        .btn-row {
+          flex-wrap: wrap;
+        }
+
+        .btn-row .type-btn {
+          min-width: 96px;
+        }
+
+        .info {
+          padding: 14px 16px 18px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html body *,
+        html body *::before,
+        html body *::after {
+          animation-duration: 0.01ms;
+          animation-iteration-count: 1;
+          transition-duration: 0.01ms;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/" aria-label="Back to Learn"
+            ><span class="header-icon">&#x1F4A7;</span></a
+          >
+          <span id="titleText">Water Tank Negative Feedback Lab</span>
+        </h1>
+        <p id="subtitleText">
+          Watch a visible mechanism compare the water level to a target.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="canvas-wrap">
+        <svg
+          id="boardSvg"
+          viewBox="-10 0 940 700"
+          preserveAspectRatio="xMidYMin meet"
+          aria-label="Water tank feedback simulation"
+        ></svg>
+      </div>
+
+      <div class="panel">
+        <div class="controls">
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblSetpoint">Target Level</span>
+            <div class="slider-row">
+              <input
+                type="range"
+                id="setpointSlider"
+                min="15"
+                max="85"
+                value="60"
+                step="1"
+                aria-label="Target level"
+              />
+              <span class="slider-val" id="setpointVal">60%</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group" id="disturbanceGroup">
+            <span class="ctrl-label" id="lblDrain">Manual Drain</span>
+            <div class="slider-row">
+              <input
+                type="range"
+                id="drainSlider"
+                min="0"
+                max="100"
+                value="0"
+                step="1"
+                aria-label="Manual drain"
+              />
+              <span class="slider-val" id="drainVal">0%</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group" id="responseGroup">
+            <span class="ctrl-label" id="lblResponse">Response Strength</span>
+            <div class="slider-row">
+              <input
+                type="range"
+                id="responseSlider"
+                min="4"
+                max="40"
+                value="16"
+                step="1"
+                aria-label="Response strength"
+              />
+              <span class="slider-val" id="responseVal">1.6</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group" id="delayGroup">
+            <span class="ctrl-label" id="lblDelay">Delay</span>
+            <div class="slider-row">
+              <input
+                type="range"
+                id="delaySlider"
+                min="0"
+                max="200"
+                value="0"
+                step="5"
+                aria-label="Measurement delay"
+              />
+              <span class="slider-val" id="delayVal">0.0s</span>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button
+              type="button"
+              class="type-btn"
+              id="btnPause"
+              aria-label="Pause"
+            >
+              &#x25b6;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="btnReset"
+              aria-label="Reset"
+            >
+              &#x25A0;
+            </button>
+            <button
+              type="button"
+              class="type-btn"
+              id="btnIntro"
+              aria-label="Introduction"
+            >
+              &#x1F4A1;
+            </button>
+          </div>
+        </div>
+
+        <div class="intro-panel" id="introPanel">
+          <span class="section-label" id="lblIntroTitle">Introduction</span>
+          <button
+            type="button"
+            class="type-btn intro-back"
+            id="btnIntroExit"
+            aria-label="Exit introduction"
+          >
+            &larr; <span id="lblIntroBack">Back</span>
+          </button>
+          <h2 class="intro-step-title" id="introStepTitle"></h2>
+          <p class="intro-commentary" id="introCommentary"></p>
+          <div class="intro-nav">
+            <button
+              type="button"
+              class="type-btn"
+              id="btnIntroPrev"
+              aria-label="Previous step"
+            >
+              &larr;
+            </button>
+            <span class="intro-counter" id="introCounter">1 / 10</span>
+            <button
+              type="button"
+              class="type-btn"
+              id="btnIntroNext"
+              aria-label="Next step"
+            >
+              &rarr;
+            </button>
+          </div>
+          <div class="intro-controls" id="introControls"></div>
+        </div>
+
+        <div class="info">
+          <div class="chart-card">
+            <span class="chart-label" id="lblLevelChart">Level History</span>
+            <canvas id="levelChart" aria-label="Level history chart"
+              >Level history chart</canvas
+            >
+          </div>
+
+          <div class="chart-card">
+            <span class="chart-label" id="lblControlChart"
+              >Control Balance</span
+            >
+            <canvas id="controlChart" aria-label="Control balance chart"
+              >Control balance chart</canvas
+            >
+          </div>
+
+          <div class="status-row">
+            <span class="section-label" id="lblExplain">Explanation</span>
+            <span class="stability-badge stable" id="stabilityBadge"
+              >Stable</span
+            >
+          </div>
+          <div class="status-text" id="statusText"></div>
+          <div class="info-text" id="explainText"></div>
+
+          <div class="ctrl-group">
+            <span class="section-label" id="lblReadouts">Readouts</span>
+            <div class="readout-section">
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdTarget">Target</span>
+                <span class="readout-val" id="rdTarget">60%</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdActual">Actual Level</span>
+                <span class="readout-val" id="rdActual">60%</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdMeasured"
+                  >Measured Level</span
+                >
+                <span class="readout-val" id="rdMeasured">60%</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdError">Error</span>
+                <span class="readout-val" id="rdError">0%</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdBalance"
+                  >Control Balance</span
+                >
+                <span class="readout-val" id="rdBalance">+19%</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdInletValve"
+                  >Inlet Valve</span
+                >
+                <span class="readout-val fill" id="rdInletValve">19%</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdDrainValve"
+                  >Drain Valve</span
+                >
+                <span class="readout-val drain" id="rdDrainValve">0%</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdInflow">Inflow</span>
+                <span class="readout-val" id="rdInflow">0.18</span>
+              </div>
+              <div class="readout-row">
+                <span class="readout-label" id="lblRdOutflow">Outflow</span>
+                <span class="readout-val" id="rdOutflow">0.18</span>
+              </div>
+            </div>
+          </div>
+
+          <span class="section-label" id="lblInvestigations"
+            >Investigations</span
+          >
+          <div class="inv-list" id="invList"></div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        const SVG_NS = "http://www.w3.org/2000/svg";
+
+        const Q_IN_MAX = 0.92;
+        const Q_LEAK_MAX = 0.42;
+        const Q_CONTROL_DRAIN = 0.56;
+        const SIM_DT = 1 / 120;
+        const MAX_STEPS = 12;
+        const CHART_DT = 1 / 30;
+        const HISTORY_LEN = 660;
+        const STABILITY_LEN = 72;
+        const DELAY_BUF_SIZE = 241;
+
+        const TANK_X = 310;
+        const TANK_Y = 256;
+        const TANK_W = 320;
+        const TANK_H = 320;
+        const TANK_B = TANK_Y + TANK_H;
+
+        const REF_RAIL_X = 678;
+        const SENSOR_REF_X = 678;
+        const SENSOR_WATER_X = 582;
+        const SENSOR_Y = 185;
+        const SENSOR_WATER_Y = 185;
+        const CTRL_X = 566;
+        const CTRL_Y = 32;
+        const CTRL_W = 128;
+        const CTRL_H = 64;
+
+        const MIN_STREAM_W = 2;
+        const INLET_PIPE_LX = 342;
+        const INLET_PIPE_W = 32;
+        const DRAIN_PIPE_LX = 566;
+        const DRAIN_PIPE_W = 32;
+        const MANUAL_PIPE_LX = 342;
+        const MANUAL_PIPE_W = 32;
+        const OVERFLOW_MAX_W = 22;
+
+        const DEF_S = 0.6;
+        const DEF_H = 0.6;
+        const DEF_LEAK = 0;
+        const DEF_K = 1.6;
+        const DEF_BALANCE = 0;
+
+        const state = {
+          lang: navigator.language?.startsWith("pl") ? "pl" : "en",
+          running: true,
+          h: DEF_H,
+          s: DEF_S,
+          m: DEF_H,
+          integral: 0,
+          balance: DEF_BALANCE,
+          uIn: DEF_BALANCE,
+          uOut: 0,
+          leak: DEF_LEAK,
+          K: DEF_K,
+          delaySeconds: 0,
+          inletForced: false,
+          drainForced: false,
+          stabilityLabel: "stable",
+          introActive: false,
+          introStep: 0,
+          qIn: Q_IN_MAX * DEF_BALANCE,
+          qOut: 0,
+          qLeak: 0,
+          qControlOut: 0,
+        };
+
+        const I18N = {
+          en: {
+            title: "Water Tank Negative Feedback Lab",
+            subtitle:
+              "Watch a visible mechanism compare the water level to a target.",
+            setpoint: "Target Level",
+            manualDrain: "Manual Drain",
+            responseStrength: "Response Strength",
+            delay: "Delay",
+            pause: "Pause",
+            run: "Run",
+            reset: "Reset",
+            readouts: "Readouts",
+            explanation: "Explanation",
+            investigations: "Investigations",
+            target: "Target",
+            actualLevel: "Actual Level",
+            measuredLevel: "Measured Level",
+            error: "Error",
+            controlBalance: "Control Balance",
+            inletValve: "Inlet Valve",
+            drainValve: "Drain valve",
+            inflow: "Inflow (tank/s)",
+            outflow: "Outflow (tank/s)",
+            levelHistory: "Level History",
+            controlHistory: "Control Balance",
+            stable: "Stable",
+            recovering: "Recovering",
+            overshoot: "Overshoot",
+            oscillating: "Oscillating",
+            manual: "Manual",
+            targetShort: "Target",
+            actualShort: "Actual",
+            feedback: "Feedback",
+            tank: "Tank",
+            fillValveLabel: "Fill valve",
+            drainValveLabel: "Drain valve",
+            manualDrainValveLabel: "Manual drain",
+            sensorRefLabel: "Setpoint",
+            sensorWaterLabel: "Level sensor",
+            errorShort: "Error",
+            statusStable:
+              "The tank is near the target and the mechanism is calm.",
+            statusLow:
+              "Measured level is below target. The controller increases the fill valve opening.",
+            statusHigh:
+              "Measured level is above target. The controller increases the drain valve opening.",
+            statusManual:
+              "You are forcing a valve open by holding it. The controller still runs but cannot override the forced valve.",
+            statusOsc:
+              "The controller keeps switching sides. The loop is oscillating.",
+            statusDelay:
+              "The measured marker lags behind the real float, so the correction comes late.",
+            explainNear:
+              "Negative feedback means the correction pushes against the error. Near the target, neither valve needs much opening.",
+            explainLow:
+              "Target is above the measured level, so the controller commands the fill valve to open.",
+            explainHigh:
+              "Measured level is above the target, so the controller commands the drain valve to open.",
+            explainManual:
+              "You are forcing a valve open by holding it. The controller still runs but cannot override the forced valve.",
+            explainDelay:
+              "With delay, the controller reacts to the amber measured marker instead of the real float. That lag can cause overshoot and wobble.",
+            explainUnderdamped:
+              "The response strength is high relative to the system, causing the controller to overcorrect. Lowering response strength will reduce the wobble.",
+            inv1: "Open the manual drain. Watch the actual float fall first, then the fill valve open.",
+            inv2: "Raise the target. The green reference carriage moves immediately, but the water catches up later.",
+            inv3: "Increase response strength. The controller reacts more aggressively and can overshoot.",
+            inv4: "Add delay. Compare the real float to the amber measured marker when the tank wobbles.",
+            inv5: "Click and hold a valve in the diagram to force it fully open. Watch how the level reacts without feedback control.",
+            inv6: "Set a high response strength and add delay. Compare how fast the actual level moves versus how late the measured marker follows.",
+            intro: "Intro",
+            introTitle: "Introduction",
+            introExit: "Exit",
+            introBack: "Back",
+            introStep1Title: "The Tank",
+            introStep1:
+              "An empty water tank. It can hold water from 0% to 100% of its capacity. The tick marks on the right wall show 25%, 50%, and 75%.",
+            introStep2Title: "Water",
+            introStep2:
+              "Water fills the tank to some level. Without any pipes, the level stays constant \u2014 water has nowhere to go.",
+            introStep3Title: "The Drain",
+            introStep3:
+              "A drain pipe at the bottom with a valve. The valve is open, so water flows out under gravity. As the level drops, the hydrostatic head falls, so the outlet flow slows.",
+            introStep4Title: "The Inlet",
+            introStep4:
+              "An inlet pipe at the top with a valve. The inlet valve is open and the tank fills at a constant rate. Unlike the drain, inlet pressure comes from an external supply and does not depend on the tank level.",
+            introStep5Title: "Manual Control",
+            introStep5:
+              "Now both valves are closed. Click and hold a valve to force it open. Try filling the tank, then draining it. You are the controller \u2014 can you hold the level at 50%?",
+            introStep6Title: "The Target",
+            introStep6:
+              "The green line marks the target level \u2014 where we want the water to be. Drag it up or down. Holding the level there manually is hard work. What if we could automate it?",
+            introStep7Title: "The Sensors",
+            introStep7:
+              "Two inputs above the tank. The left one carries the target/setpoint. The right one measures the actual water level.",
+            introStep8Title: "The Controller",
+            introStep8:
+              "The controller receives both signals and computes the error: how far the actual level is from the target. The error is shown as 'e' inside the box. But it is not connected to the valves yet.",
+            introStep9Title: "Closing the Loop",
+            introStep9:
+              "Signal wires now connect the controller to both valves. When the level is below the target, the controller opens the fill valve. When above, it opens the drain valve. The loop is closed \u2014 this is negative feedback.",
+            introStep10Title: "The Complete System",
+            introStep10:
+              "The complete system. Open the manual drain to add a disturbance \u2014 the controller will fight to maintain the target. Add delay to see how measurement lag affects stability. Explore the investigations below for more experiments.",
+          },
+          pl: {
+            title: "Laboratorium Ujemnego Sprzężenia Zwrotnego",
+            subtitle:
+              "Zobacz mechanizm, który porównuje poziom wody z poziomem docelowym.",
+            setpoint: "Poziom Docelowy",
+            manualDrain: "R\u0119czny Odp\u0142yw",
+            responseStrength: "Siła Reakcji",
+            delay: "Opóźnienie",
+            pause: "Pauza",
+            run: "Start",
+            reset: "Reset",
+            readouts: "Odczyty",
+            explanation: "Wyjaśnienie",
+            investigations: "Eksperymenty",
+            target: "Cel",
+            actualLevel: "Poziom Rzeczywisty",
+            measuredLevel: "Poziom Mierzony",
+            error: "Błąd",
+            controlBalance: "Wychylenie Sterowania",
+            inletValve: "Zawór dopływu",
+            drainValve: "Zawór odpływu",
+            inflow: "Dopływ (zb./s)",
+            outflow: "Odpływ (zb./s)",
+            levelHistory: "Historia Poziomu",
+            controlHistory: "Wychylenie Sterowania",
+            stable: "Stabilny",
+            recovering: "Wraca Do Celu",
+            overshoot: "Przeregulowanie",
+            oscillating: "Oscyluje",
+            manual: "Ręczny",
+            targetShort: "Cel",
+            actualShort: "Rzeczywisty",
+            feedback: "Sprzężenie",
+            tank: "Zbiornik",
+            fillValveLabel: "Zaw\u00f3r dop\u0142ywu",
+            drainValveLabel: "Zaw\u00f3r odp\u0142ywu",
+            manualDrainValveLabel: "Odp\u0142yw r\u0119czny",
+            sensorRefLabel: "Zadana wartość",
+            sensorWaterLabel: "Czujnik poziomu",
+            errorShort: "Błąd",
+            statusStable:
+              "Zbiornik jest blisko celu, a mechanizm jest spokojny.",
+            statusLow:
+              "Poziom mierzony jest poniżej celu. Sterownik bardziej otwiera zawór dopływu.",
+            statusHigh:
+              "Poziom mierzony jest powyżej celu. Sterownik bardziej otwiera zawór odpływu.",
+            statusManual:
+              "Wymuszasz otwarcie zaworu przytrzymując go. Sterownik nadal działa, ale nie może nadpisać wymuszonego zaworu.",
+            statusOsc:
+              "Sterownik przełącza się z jednej strony na drugą. Pętla oscyluje.",
+            statusDelay:
+              "Znacznik mierzony zostaje za prawdziwym pływakiem, więc korekta przychodzi za późno.",
+            explainNear:
+              "Ujemne sprzężenie zwrotne znaczy, że korekta działa przeciwnie do błędu. Blisko celu żaden zawór nie musi się mocno otwierać.",
+            explainLow:
+              "Cel jest wyżej niż poziom mierzony, więc sterownik otwiera zawór dopływu.",
+            explainHigh:
+              "Poziom mierzony jest wyżej niż cel, więc sterownik otwiera zawór odpływu.",
+            explainManual:
+              "Wymuszasz otwarcie zaworu przytrzymując go. Sterownik nadal działa, ale nie może nadpisać wymuszonego zaworu.",
+            explainDelay:
+              "Przy opóźnieniu sterowanie reaguje na bursztynowy znacznik mierzony, a nie na prawdziwy pływak. To może wywołać przeregulowanie i kołysanie.",
+            explainUnderdamped:
+              "Siła reakcji jest wysoka w stosunku do systemu, co powoduje nadmierną korekcję. Zmniejszenie siły reakcji zmniejszy kołysanie.",
+            inv1: "Otw\u00f3rz r\u0119czny odp\u0142yw. Najpierw opada prawdziwy p\u0142ywak, a dopiero potem bardziej otwiera si\u0119 zaw\u00f3r dop\u0142ywu.",
+            inv2: "Podnieś cel. Zielony wózek odniesienia rusza od razu, ale woda dogania go później.",
+            inv3: "Zwiększ siłę reakcji. Sterownik reaguje agresywniej i może przeregulować.",
+            inv4: "Dodaj opóźnienie. Porównaj prawdziwy pływak z bursztynowym znacznikiem mierzonym, gdy zbiornik zaczyna się kołysać.",
+            inv5: "Kliknij i przytrzymaj zawór na diagramie, aby go całkowicie otworzyć. Obserwuj jak poziom reaguje bez sterowania sprzężeniem.",
+            inv6: "Ustaw wysoką siłę reakcji i dodaj opóźnienie. Porównaj jak szybko zmienia się rzeczywisty poziom, a jak późno podąża za nim znacznik mierzony.",
+            intro: "Wst\u0119p",
+            introTitle: "Wprowadzenie",
+            introExit: "Zamknij",
+            introBack: "Wr\u00f3\u0107",
+            introStep1Title: "Zbiornik",
+            introStep1:
+              "Pusty zbiornik na wod\u0119. Mo\u017ce pomie\u015bci\u0107 wod\u0119 od 0% do 100% pojemno\u015bci. Znaczniki na prawej \u015bciance pokazuj\u0105 25%, 50% i 75%.",
+            introStep2Title: "Woda",
+            introStep2:
+              "Woda wype\u0142nia zbiornik do pewnego poziomu. Bez \u017cadnych rur poziom nie zmienia si\u0119 \u2014 woda nie ma dok\u0105d odp\u0142yn\u0105\u0107.",
+            introStep3Title: "Odp\u0142yw",
+            introStep3:
+              "Rura odp\u0142ywowa na dole z zaworem. Zaw\u00f3r jest otwarty, wi\u0119c woda wyp\u0142ywa pod wp\u0142ywem grawitacji. Zauwa\u017c, \u017ce gdy poziom spada, przep\u0142yw s\u0142abnie \u2014 mniejsza wysoko\u015b\u0107 s\u0142upa wody oznacza mniejsze ci\u015bnienie hydrostatyczne i mniejsz\u0105 pr\u0119dko\u015b\u0107 wyp\u0142ywu.",
+            introStep4Title: "Dop\u0142yw",
+            introStep4:
+              "Rura dop\u0142ywowa na g\u00f3rze z zaworem. Zaw\u00f3r dop\u0142ywu jest otwarty, a zbiornik nape\u0142nia si\u0119 ze sta\u0142\u0105 pr\u0119dko\u015bci\u0105. W odr\u00f3\u017cnieniu od odp\u0142ywu, ci\u015bnienie dop\u0142ywu pochodzi z zewn\u0119trznego \u017ar\u00f3d\u0142a i nie zale\u017cy od poziomu w zbiorniku.",
+            introStep5Title: "R\u0119czne Sterowanie",
+            introStep5:
+              "Teraz oba zawory s\u0105 zamkni\u0119te. Kliknij i przytrzymaj zaw\u00f3r, aby go otworzy\u0107. Spr\u00f3buj nape\u0142ni\u0107 zbiornik, potem go opr\u00f3\u017cni\u0107. Ty jeste\u015b sterownikiem \u2014 czy potrafisz utrzyma\u0107 poziom na 50%?",
+            introStep6Title: "Cel",
+            introStep6:
+              "Zielona linia oznacza poziom docelowy \u2014 gdzie chcemy, aby by\u0142a woda. Przeci\u0105gnij j\u0105 w g\u00f3r\u0119 lub w d\u00f3\u0142. R\u0119czne utrzymanie poziomu jest trudne. Co je\u015bli mogliby\u015bmy to zautomatyzowa\u0107?",
+            introStep7Title: "Czujniki",
+            introStep7:
+              "Dwa sygna\u0142y nad zbiornikiem. Po lewej jest sygna\u0142 warto\u015bci zadanej (zielony przew\u00f3d). Po prawej czujnik mierzy rzeczywisty poziom wody (niebieski przew\u00f3d). Oba sygna\u0142y trafiaj\u0105 do sterownika.",
+            introStep8Title: "Sterownik",
+            introStep8:
+              "Sterownik odbiera oba sygna\u0142y i oblicza b\u0142\u0105d: o ile rzeczywisty poziom r\u00f3\u017cni si\u0119 od warto\u015bci zadanej. B\u0142\u0105d jest pokazany jako \u201ee\u201d wewn\u0105trz bloku. Ale sterownik nie jest jeszcze po\u0142\u0105czony z zaworami.",
+            introStep9Title: "Zamkni\u0119cie P\u0119tli",
+            introStep9:
+              "Przewody sygna\u0142owe \u0142\u0105cz\u0105 teraz sterownik z oboma zaworami. Gdy poziom jest poni\u017cej celu, sterownik otwiera zaw\u00f3r dop\u0142ywu. Gdy powy\u017cej, otwiera zaw\u00f3r odp\u0142ywu. P\u0119tla jest zamkni\u0119ta \u2014 to jest ujemne sprz\u0119\u017cenie zwrotne.",
+            introStep10Title: "Kompletny System",
+            introStep10:
+              "Pe\u0142ny uk\u0142ad. Otw\u00f3rz r\u0119czny odp\u0142yw, aby doda\u0107 zak\u0142\u00f3cenie \u2014 sterownik b\u0119dzie korygowa\u0142 poziom, aby utrzyma\u0107 poziom docelowy. Dodaj op\u00f3\u017anienie, aby zobaczy\u0107, jak op\u00f3\u017anienie pomiaru wp\u0142ywa na stabilno\u015b\u0107. Przejrzyj eksperymenty poni\u017cej.",
+          },
+        };
+
+        function T(key) {
+          return I18N[state.lang][key] || I18N.en[key] || key;
+        }
+
+        function clamp(value, min, max) {
+          return Math.min(max, Math.max(min, value));
+        }
+
+        function setStreamWidth(el, fraction, maxW, wallX, rightAlign) {
+          if (fraction <= 0) {
+            el.setAttribute("width", "0");
+            return;
+          }
+          const w = Math.max(MIN_STREAM_W, fraction * maxW);
+          el.setAttribute("x", (rightAlign ? wallX - w : wallX).toFixed(1));
+          el.setAttribute("width", w.toFixed(1));
+        }
+
+        const titleText = document.getElementById("titleText");
+        const subtitleText = document.getElementById("subtitleText");
+        const langBtn = document.getElementById("langBtn");
+        const setpointSlider = document.getElementById("setpointSlider");
+        const setpointVal = document.getElementById("setpointVal");
+        const drainSlider = document.getElementById("drainSlider");
+        const drainVal = document.getElementById("drainVal");
+        const responseSlider = document.getElementById("responseSlider");
+        const responseVal = document.getElementById("responseVal");
+        const delaySlider = document.getElementById("delaySlider");
+        const delayValEl = document.getElementById("delayVal");
+        const btnPause = document.getElementById("btnPause");
+        const btnReset = document.getElementById("btnReset");
+        const boardSvg = document.getElementById("boardSvg");
+        const levelCanvas = document.getElementById("levelChart");
+        const controlCanvas = document.getElementById("controlChart");
+        const levelCtx = levelCanvas.getContext("2d");
+        const controlCtx = controlCanvas.getContext("2d");
+        const invList = document.getElementById("invList");
+        const explainText = document.getElementById("explainText");
+        const statusText = document.getElementById("statusText");
+        const stabilityBadge = document.getElementById("stabilityBadge");
+
+        const rdTarget = document.getElementById("rdTarget");
+        const rdActual = document.getElementById("rdActual");
+        const rdMeasured = document.getElementById("rdMeasured");
+        const rdError = document.getElementById("rdError");
+        const rdBalance = document.getElementById("rdBalance");
+        const rdInletValve = document.getElementById("rdInletValve");
+        const rdDrainValve = document.getElementById("rdDrainValve");
+        const rdInflow = document.getElementById("rdInflow");
+        const rdOutflow = document.getElementById("rdOutflow");
+
+        const delayBuffer = new Float64Array(DELAY_BUF_SIZE);
+        let delayWriteIdx = 0;
+
+        const history = {
+          target: new Float64Array(HISTORY_LEN),
+          level: new Float64Array(HISTORY_LEN),
+          measured: new Float64Array(HISTORY_LEN),
+          balance: new Float64Array(HISTORY_LEN),
+          writeIdx: 0,
+          full: false,
+        };
+
+        const stabilityErrors = new Float64Array(STABILITY_LEN);
+        let stabilityWriteIdx = 0;
+        let simAccum = 0;
+        let chartAccum = 0;
+        let lastTime = 0;
+        let wavePhase = 0;
+        let dragTarget = false;
+
+        const parts = {};
+
+        function createSvgEl(tag, attrs) {
+          const node = document.createElementNS(SVG_NS, tag);
+          if (attrs) {
+            const keys = Object.keys(attrs);
+            for (let i = 0; i < keys.length; i++) {
+              node.setAttribute(keys[i], attrs[keys[i]]);
+            }
+          }
+          return node;
+        }
+
+        function remember(id, node) {
+          node.setAttribute("id", id);
+          parts[id] = node;
+          return node;
+        }
+
+        function tag(groupName, node) {
+          node.setAttribute("data-ig", groupName);
+          return node;
+        }
+
+        function createText(id, x, y, text, attrs) {
+          const node = createSvgEl(
+            "text",
+            Object.assign(
+              {
+                x: x,
+                y: y,
+                "font-family": "Share Tech Mono, monospace",
+                "font-size": "10",
+                fill: "#455A64",
+                "text-anchor": "middle",
+              },
+              attrs || {},
+            ),
+          );
+          if (id) {
+            remember(id, node);
+          }
+          node.textContent = text;
+          return node;
+        }
+
+        function buildBoard() {
+          const keys = Object.keys(parts);
+          for (let i = 0; i < keys.length; i++) delete parts[keys[i]];
+          boardSvg.replaceChildren();
+
+          /* ── defs ─────────────────────────────────────────── */
+          const defs = createSvgEl("defs");
+          const waterGrad = createSvgEl("linearGradient", {
+            id: "waterGrad",
+            x1: "0",
+            y1: "0",
+            x2: "0",
+            y2: "1",
+          });
+          waterGrad.appendChild(
+            createSvgEl("stop", {
+              offset: "0%",
+              "stop-color": "#90CAF9",
+              "stop-opacity": "1",
+            }),
+          );
+          waterGrad.appendChild(
+            createSvgEl("stop", {
+              offset: "58%",
+              "stop-color": "#42A5F5",
+              "stop-opacity": "1",
+            }),
+          );
+          waterGrad.appendChild(
+            createSvgEl("stop", {
+              offset: "100%",
+              "stop-color": "#1E88E5",
+              "stop-opacity": "1",
+            }),
+          );
+          defs.appendChild(waterGrad);
+
+          const glassGrad = createSvgEl("linearGradient", {
+            id: "glassGrad",
+            x1: "0",
+            y1: "0",
+            x2: "1",
+            y2: "0",
+          });
+          glassGrad.appendChild(
+            createSvgEl("stop", {
+              offset: "0%",
+              "stop-color": "#FFFFFF",
+              "stop-opacity": "0.34",
+            }),
+          );
+          glassGrad.appendChild(
+            createSvgEl("stop", {
+              offset: "50%",
+              "stop-color": "#FFFFFF",
+              "stop-opacity": "0.08",
+            }),
+          );
+          glassGrad.appendChild(
+            createSvgEl("stop", {
+              offset: "100%",
+              "stop-color": "#CFD8DC",
+              "stop-opacity": "0.26",
+            }),
+          );
+          defs.appendChild(glassGrad);
+
+          const shadow = createSvgEl("filter", {
+            id: "shadow",
+            x: "-20%",
+            y: "-20%",
+            width: "150%",
+            height: "150%",
+          });
+          shadow.appendChild(
+            createSvgEl("feDropShadow", {
+              dx: "2",
+              dy: "3",
+              stdDeviation: "3",
+              "flood-color": "#000000",
+              "flood-opacity": "0.16",
+            }),
+          );
+          defs.appendChild(shadow);
+
+          const clip = createSvgEl("clipPath", { id: "tankClip" });
+          clip.appendChild(
+            createSvgEl("path", {
+              d:
+                "M " +
+                (TANK_X + 2) +
+                " " +
+                TANK_Y +
+                " L " +
+                (TANK_X + 2) +
+                " " +
+                TANK_B +
+                " Q " +
+                (TANK_X + 2) +
+                " " +
+                (TANK_B + 8) +
+                " " +
+                (TANK_X + 10) +
+                " " +
+                (TANK_B + 8) +
+                " L " +
+                (TANK_X + TANK_W - 10) +
+                " " +
+                (TANK_B + 8) +
+                " Q " +
+                (TANK_X + TANK_W - 2) +
+                " " +
+                (TANK_B + 8) +
+                " " +
+                (TANK_X + TANK_W - 2) +
+                " " +
+                TANK_B +
+                " L " +
+                (TANK_X + TANK_W - 2) +
+                " " +
+                TANK_Y +
+                " Z",
+            }),
+          );
+          defs.appendChild(clip);
+          boardSvg.appendChild(defs);
+
+          /* ── background ───────────────────────────────────── */
+          boardSvg.appendChild(
+            createSvgEl("rect", {
+              x: 0,
+              y: 0,
+              width: 920,
+              height: 560,
+              fill: "#f5f3ee",
+            }),
+          );
+
+          /* ── inlet pipe: water fill (behind gate) ────────── */
+          boardSvg.appendChild(
+            remember(
+              "inletWaterUp",
+              createSvgEl("rect", {
+                x: 342,
+                y: 32,
+                width: 32,
+                height: 88,
+                fill: "#42A5F5",
+                opacity: 0.8,
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "inletWaterDown",
+              createSvgEl("rect", {
+                x: INLET_PIPE_LX,
+                y: 120,
+                width: 0,
+                height: 72,
+                fill: "#42A5F5",
+                opacity: 0.85,
+              }),
+            ),
+          );
+
+          /* ── inlet pipe: walls (outside 32px interior) ───── */
+          /* left wall — continuous */
+          boardSvg.appendChild(
+            remember(
+              "inletWallL",
+              createSvgEl("line", {
+                x1: 340.5,
+                y1: 32,
+                x2: 340.5,
+                y2: 192,
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+          /* right wall — split for housing slot (gap 98..122) */
+          boardSvg.appendChild(
+            remember(
+              "inletWallRT",
+              createSvgEl("line", {
+                x1: 375.5,
+                y1: 32,
+                x2: 375.5,
+                y2: 98,
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "inletWallRB",
+              createSvgEl("line", {
+                x1: 375.5,
+                y1: 122,
+                x2: 375.5,
+                y2: 192,
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+
+          /* ── inlet valve ──────────────────────────────────── */
+          const inletValveGroup = createSvgEl("g", { cursor: "pointer" });
+          remember("inletValveGroup", inletValveGroup);
+          /* housing — stationary black box on right side */
+          inletValveGroup.appendChild(
+            createSvgEl("rect", {
+              x: 374,
+              y: 98,
+              width: 56,
+              height: 24,
+              fill: "#FAFAF7",
+              stroke: "#333",
+              "stroke-width": 2,
+            }),
+          );
+          /* gate — red block, slides between pipe and housing */
+          inletValveGroup.appendChild(
+            remember(
+              "inletGate",
+              createSvgEl("rect", {
+                x: 342,
+                y: 100,
+                width: 52,
+                height: 20,
+                fill: "#E53935",
+                stroke: "#B71C1C",
+                "stroke-width": 1,
+              }),
+            ),
+          );
+          boardSvg.appendChild(inletValveGroup);
+
+          /* ── drain pipe: water fill (behind gate) ────────── */
+          boardSvg.appendChild(
+            remember(
+              "drainWaterUp",
+              createSvgEl("rect", {
+                x: 566,
+                y: 576,
+                width: 32,
+                height: 60,
+                fill: "#42A5F5",
+                opacity: 0.8,
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "drainWaterDown",
+              createSvgEl("rect", {
+                x: DRAIN_PIPE_LX,
+                y: 636,
+                width: 0,
+                height: 36,
+                fill: "#42A5F5",
+                opacity: 0.85,
+              }),
+            ),
+          );
+
+          /* ── drain pipe: walls (outside 32px interior) ───── */
+          /* left wall — continuous */
+          boardSvg.appendChild(
+            remember(
+              "drainWallL",
+              createSvgEl("line", {
+                x1: 564.5,
+                y1: 576,
+                x2: 564.5,
+                y2: 672,
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+          /* right wall — split for housing slot (gap 614..638) */
+          boardSvg.appendChild(
+            remember(
+              "drainWallRT",
+              createSvgEl("line", {
+                x1: 599.5,
+                y1: 576,
+                x2: 599.5,
+                y2: 614,
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "drainWallRB",
+              createSvgEl("line", {
+                x1: 599.5,
+                y1: 638,
+                x2: 599.5,
+                y2: 672,
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+
+          /* ── drain exit water (pipe bottom → 64px below) ─── */
+          boardSvg.appendChild(
+            remember(
+              "drainExitWater",
+              createSvgEl("rect", {
+                x: DRAIN_PIPE_LX,
+                y: 672,
+                width: 0,
+                height: 64,
+                fill: "#42A5F5",
+                opacity: 0.85,
+              }),
+            ),
+          );
+
+          /* ── drain valve ──────────────────────────────────── */
+          const drainValveGroup = createSvgEl("g", { cursor: "pointer" });
+          remember("drainValveGroup", drainValveGroup);
+          /* housing — stationary black box on right side */
+          drainValveGroup.appendChild(
+            createSvgEl("rect", {
+              x: 598,
+              y: 614,
+              width: 56,
+              height: 24,
+              fill: "#FAFAF7",
+              stroke: "#333",
+              "stroke-width": 2,
+            }),
+          );
+          /* gate — red block, slides between pipe and housing */
+          drainValveGroup.appendChild(
+            remember(
+              "drainGate",
+              createSvgEl("rect", {
+                x: 566,
+                y: 616,
+                width: 52,
+                height: 20,
+                fill: "#E53935",
+                stroke: "#B71C1C",
+                "stroke-width": 1,
+              }),
+            ),
+          );
+          boardSvg.appendChild(drainValveGroup);
+
+          /* ── manual drain pipe: water fill (behind gate) ── */
+          boardSvg.appendChild(
+            remember(
+              "manualWaterUp",
+              createSvgEl("rect", {
+                x: 342,
+                y: 576,
+                width: 32,
+                height: 60,
+                fill: "#42A5F5",
+                opacity: 0.8,
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "manualWaterDown",
+              createSvgEl("rect", {
+                x: MANUAL_PIPE_LX,
+                y: 636,
+                width: 0,
+                height: 36,
+                fill: "#42A5F5",
+                opacity: 0.85,
+              }),
+            ),
+          );
+
+          /* ── manual drain pipe: walls ─────────────────────── */
+          /* right wall — continuous */
+          boardSvg.appendChild(
+            remember(
+              "manualWallR",
+              createSvgEl("line", {
+                x1: 375.5,
+                y1: 576,
+                x2: 375.5,
+                y2: 672,
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+          /* left wall — split for housing slot (gap 614..638) */
+          boardSvg.appendChild(
+            remember(
+              "manualWallLT",
+              createSvgEl("line", {
+                x1: 340.5,
+                y1: 576,
+                x2: 340.5,
+                y2: 614,
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "manualWallLB",
+              createSvgEl("line", {
+                x1: 340.5,
+                y1: 638,
+                x2: 340.5,
+                y2: 672,
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+
+          /* ── manual drain exit water (pipe bottom → below) ── */
+          boardSvg.appendChild(
+            remember(
+              "manualExitWater",
+              createSvgEl("rect", {
+                x: MANUAL_PIPE_LX,
+                y: 672,
+                width: 0,
+                height: 64,
+                fill: "#42A5F5",
+                opacity: 0.85,
+              }),
+            ),
+          );
+
+          /* ── manual drain valve ───────────────────────────── */
+          const manualValveGroup = createSvgEl("g");
+          remember("manualValveGroup", manualValveGroup);
+          /* housing — stationary box on left side */
+          manualValveGroup.appendChild(
+            createSvgEl("rect", {
+              x: 286,
+              y: 614,
+              width: 56,
+              height: 24,
+              fill: "#FAFAF7",
+              stroke: "#333",
+              "stroke-width": 2,
+            }),
+          );
+          /* gate — red block, slides left to open */
+          manualValveGroup.appendChild(
+            remember(
+              "manualGate",
+              createSvgEl("rect", {
+                x: 322,
+                y: 616,
+                width: 52,
+                height: 20,
+                fill: "#E53935",
+                stroke: "#B71C1C",
+                "stroke-width": 1,
+              }),
+            ),
+          );
+          boardSvg.appendChild(manualValveGroup);
+
+          /* ── overflow stream (behind left tank wall) ──────── */
+          boardSvg.appendChild(
+            remember(
+              "overflowLeft",
+              createSvgEl("rect", {
+                x: TANK_X,
+                y: TANK_Y,
+                width: 0,
+                height: TANK_H + 40,
+                fill: "#42A5F5",
+                opacity: 0.85,
+              }),
+            ),
+          );
+
+          /* ── tank body (open top, U-shape) ──────────────── */
+          boardSvg.appendChild(
+            remember(
+              "tankBody",
+              createSvgEl("path", {
+                d:
+                  "M " +
+                  TANK_X +
+                  " " +
+                  TANK_Y +
+                  " L " +
+                  TANK_X +
+                  " " +
+                  TANK_B +
+                  " Q " +
+                  TANK_X +
+                  " " +
+                  (TANK_B + 8) +
+                  " " +
+                  (TANK_X + 8) +
+                  " " +
+                  (TANK_B + 8) +
+                  " L " +
+                  (TANK_X + TANK_W - 8) +
+                  " " +
+                  (TANK_B + 8) +
+                  " Q " +
+                  (TANK_X + TANK_W) +
+                  " " +
+                  (TANK_B + 8) +
+                  " " +
+                  (TANK_X + TANK_W) +
+                  " " +
+                  TANK_B +
+                  " L " +
+                  (TANK_X + TANK_W) +
+                  " " +
+                  TANK_Y,
+                fill: "#E7EDF1",
+                stroke: "none",
+                filter: "url(#shadow)",
+              }),
+            ),
+          );
+
+          /* ── water ────────────────────────────────────────── */
+          const waterGroup = createSvgEl("g", {
+            "clip-path": "url(#tankClip)",
+          });
+          waterGroup.appendChild(
+            remember(
+              "waterBody",
+              createSvgEl("rect", {
+                x: TANK_X,
+                y: TANK_B,
+                width: TANK_W,
+                height: 0,
+                fill: "url(#waterGrad)",
+              }),
+            ),
+          );
+          waterGroup.appendChild(
+            remember(
+              "waterWave",
+              createSvgEl("path", {
+                d: "",
+                fill: "#64B5F6",
+                opacity: "0.62",
+              }),
+            ),
+          );
+          waterGroup.appendChild(
+            remember(
+              "waterHighlight",
+              createSvgEl("path", {
+                d: "",
+                fill: "none",
+                stroke: "rgba(255,255,255,0.52)",
+                "stroke-width": 1.6,
+              }),
+            ),
+          );
+          boardSvg.appendChild(waterGroup);
+
+          /* ── glass overlay (open top, U-shape) ────────────── */
+          boardSvg.appendChild(
+            remember(
+              "tankGlass",
+              createSvgEl("path", {
+                d:
+                  "M " +
+                  TANK_X +
+                  " " +
+                  TANK_Y +
+                  " L " +
+                  TANK_X +
+                  " " +
+                  TANK_B +
+                  " Q " +
+                  TANK_X +
+                  " " +
+                  (TANK_B + 8) +
+                  " " +
+                  (TANK_X + 8) +
+                  " " +
+                  (TANK_B + 8) +
+                  " L " +
+                  (TANK_X + TANK_W - 8) +
+                  " " +
+                  (TANK_B + 8) +
+                  " Q " +
+                  (TANK_X + TANK_W) +
+                  " " +
+                  (TANK_B + 8) +
+                  " " +
+                  (TANK_X + TANK_W) +
+                  " " +
+                  TANK_B +
+                  " L " +
+                  (TANK_X + TANK_W) +
+                  " " +
+                  TANK_Y,
+                fill: "none",
+                stroke: "#78909C",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "tankShine",
+              createSvgEl("rect", {
+                x: TANK_X + 8,
+                y: TANK_Y + 16,
+                width: 4,
+                height: TANK_H - 32,
+                rx: 2,
+                fill: "rgba(255,255,255,0.28)",
+              }),
+            ),
+          );
+
+          /* ── inlet exit water (pipe bottom → tank bottom) ── */
+          boardSvg.appendChild(
+            remember(
+              "inletExitWater",
+              createSvgEl("rect", {
+                x: INLET_PIPE_LX,
+                y: 192,
+                width: 0,
+                height: TANK_B - 192,
+                fill: "#42A5F5",
+                opacity: 0.85,
+              }),
+            ),
+          );
+
+          /* ── scale ticks ──────────────────────────────────── */
+          for (let i = 1; i <= 3; i++) {
+            const ty = TANK_B - (i / 4) * TANK_H;
+            boardSvg.appendChild(
+              tag(
+                "tank",
+                createSvgEl("line", {
+                  x1: TANK_X + TANK_W - 14,
+                  y1: ty,
+                  x2: TANK_X + TANK_W - 4,
+                  y2: ty,
+                  stroke: "#90A4AE",
+                  "stroke-width": 1,
+                }),
+              ),
+            );
+          }
+
+          boardSvg.appendChild(
+            createText("lblTank", TANK_X + TANK_W / 2, TANK_B + 26, "Tank", {
+              "font-size": 12,
+              fill: "#455A64",
+            }),
+          );
+
+          /* ── reference rail + carriage (inside tank left wall) */
+          boardSvg.appendChild(
+            remember(
+              "refRail",
+              createSvgEl("rect", {
+                x: REF_RAIL_X - 3,
+                y: TANK_Y + 4,
+                width: 6,
+                height: TANK_H - 8,
+                rx: 3,
+                fill: "#CFD8DC",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "referenceCarriage",
+              createSvgEl("rect", {
+                x: REF_RAIL_X - 14,
+                y: 0,
+                width: 28,
+                height: 28,
+                rx: 7,
+                fill: "#66BB6A",
+                stroke: "#2E7D32",
+                "stroke-width": 2,
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            createText("referenceLabel", REF_RAIL_X, TANK_B + 16, "Target", {
+              "font-size": 12,
+              fill: "#43A047",
+              "text-anchor": "middle",
+            }),
+          );
+
+          /* ── target line ──────────────────────────────────── */
+          boardSvg.appendChild(
+            remember(
+              "targetLine",
+              createSvgEl("line", {
+                x1: REF_RAIL_X - 14,
+                y1: 0,
+                x2: TANK_X + TANK_W + 17,
+                y2: 0,
+                stroke: "#43A047",
+                "stroke-width": 2.5,
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "targetHandle",
+              createSvgEl("path", {
+                d:
+                  "M " +
+                  (TANK_X + TANK_W + 6) +
+                  " 0" +
+                  " L " +
+                  (TANK_X + TANK_W + 18) +
+                  " -7" +
+                  " L " +
+                  (TANK_X + TANK_W + 18) +
+                  " 7 Z",
+                fill: "#43A047",
+              }),
+            ),
+          );
+          /* targetText label removed — "Target" label is below the slider rail */
+          boardSvg.appendChild(
+            remember(
+              "targetHitArea",
+              createSvgEl("rect", {
+                x: TANK_X - 20,
+                y: 0,
+                width: TANK_W + 100,
+                height: 28,
+                fill: "transparent",
+                cursor: "ns-resize",
+              }),
+            ),
+          );
+
+          /* ── reference sensor (above tank, looking down) ──── */
+          boardSvg.appendChild(
+            remember(
+              "sensorRefBox",
+              createSvgEl("rect", {
+                x: SENSOR_REF_X - 12,
+                y: SENSOR_Y - 25,
+                width: 24,
+                height: 20,
+                rx: 4,
+                fill: "#455A64",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "refBeam",
+              createSvgEl("line", {
+                x1: SENSOR_REF_X,
+                y1: SENSOR_Y,
+                x2: SENSOR_REF_X,
+                y2: 0,
+                stroke: "#FB8C00",
+                "stroke-width": 1,
+                "stroke-dasharray": "3 4",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "refBeamEnd",
+              createSvgEl("circle", {
+                cx: SENSOR_REF_X,
+                cy: 0,
+                r: 3,
+                fill: "#FB8C00",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            createText(
+              "sensorRefLabel",
+              SENSOR_REF_X + 16,
+              SENSOR_Y - 16,
+              "Setpoint",
+              {
+                "font-size": 12,
+                fill: "#FB8C00",
+                "text-anchor": "start",
+              },
+            ),
+          );
+
+          /* ── water sensor (above tank, looking down) ──────── */
+          boardSvg.appendChild(
+            remember(
+              "sensorWaterBox",
+              createSvgEl("rect", {
+                x: SENSOR_WATER_X - 12,
+                y: SENSOR_WATER_Y - 25,
+                width: 24,
+                height: 20,
+                rx: 4,
+                fill: "#455A64",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "waterBeam",
+              createSvgEl("line", {
+                x1: SENSOR_WATER_X,
+                y1: SENSOR_WATER_Y,
+                x2: SENSOR_WATER_X,
+                y2: 0,
+                stroke: "#FB8C00",
+                "stroke-width": 1,
+                "stroke-dasharray": "3 4",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "waterBeamEnd",
+              createSvgEl("circle", {
+                cx: SENSOR_WATER_X,
+                cy: 0,
+                r: 3,
+                fill: "#FB8C00",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            createText(
+              "sensorWaterLabel",
+              SENSOR_WATER_X - 16,
+              SENSOR_WATER_Y - 16,
+              "Level sensor",
+              {
+                "font-size": 12,
+                fill: "#FB8C00",
+                "text-anchor": "end",
+              },
+            ),
+          );
+
+          /* ── controller box ───────────────────────────────── */
+          boardSvg.appendChild(
+            createText(
+              "feedbackLabel",
+              CTRL_X + CTRL_W / 2,
+              CTRL_Y - 6,
+              "Feedback loop",
+              {
+                "font-size": 12,
+                fill: "#43A047",
+              },
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "controllerBox",
+              createSvgEl("rect", {
+                x: CTRL_X,
+                y: CTRL_Y,
+                width: CTRL_W,
+                height: CTRL_H,
+                rx: 8,
+                fill: "#ECEFF1",
+                stroke: "#546E7A",
+                "stroke-width": 2,
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            createText(
+              "lblController",
+              CTRL_X + CTRL_W / 2,
+              CTRL_Y + 18,
+              "Controller",
+              {
+                "font-size": 12,
+                fill: "#455A64",
+                "font-weight": "600",
+              },
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "ctrlErrorDisplay",
+              createText(null, CTRL_X + CTRL_W / 2, CTRL_Y + 34, "e = 0%", {
+                "font-size": 12,
+                fill: "#E53935",
+              }),
+            ),
+          );
+          /* LED indicators */
+          boardSvg.appendChild(
+            remember(
+              "ctrlLedRef",
+              createSvgEl("circle", {
+                cx: CTRL_X + 14,
+                cy: CTRL_Y + 14,
+                r: 4,
+                fill: "#7E57C2",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "ctrlLedWater",
+              createSvgEl("circle", {
+                cx: CTRL_X + CTRL_W - 14,
+                cy: CTRL_Y + 14,
+                r: 4,
+                fill: "#00897B",
+              }),
+            ),
+          );
+
+          /* ── input wire: ref sensor → controller ──────────── */
+          boardSvg.appendChild(
+            remember(
+              "wireRefIn",
+              createSvgEl("path", {
+                d:
+                  "M " +
+                  SENSOR_REF_X +
+                  " " +
+                  (SENSOR_Y - 25) +
+                  " L " +
+                  SENSOR_REF_X +
+                  " " +
+                  (CTRL_Y + CTRL_H),
+                fill: "none",
+                stroke: "#66BB6A",
+                "stroke-width": 2,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+
+          /* ── input wire: water sensor → controller ────────── */
+          boardSvg.appendChild(
+            remember(
+              "wireWaterIn",
+              createSvgEl("path", {
+                d:
+                  "M " +
+                  SENSOR_WATER_X +
+                  " " +
+                  (SENSOR_WATER_Y - 25) +
+                  " L " +
+                  SENSOR_WATER_X +
+                  " " +
+                  (CTRL_Y + CTRL_H),
+                fill: "none",
+                stroke: "#42A5F5",
+                "stroke-width": 2,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+
+          /* ── sensor wire junction dots ──────────────────── */
+          boardSvg.appendChild(
+            remember(
+              "juncRefTop",
+              createSvgEl("circle", {
+                cx: SENSOR_REF_X,
+                cy: SENSOR_Y - 25,
+                r: 3,
+                fill: "#66BB6A",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "juncRefBot",
+              createSvgEl("circle", {
+                cx: SENSOR_REF_X,
+                cy: CTRL_Y + CTRL_H,
+                r: 3,
+                fill: "#66BB6A",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "juncWaterTop",
+              createSvgEl("circle", {
+                cx: SENSOR_WATER_X,
+                cy: SENSOR_WATER_Y - 25,
+                r: 3,
+                fill: "#42A5F5",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "juncWaterBot",
+              createSvgEl("circle", {
+                cx: SENSOR_WATER_X,
+                cy: CTRL_Y + CTRL_H,
+                r: 3,
+                fill: "#42A5F5",
+              }),
+            ),
+          );
+
+          /* ── signal wire: controller → inlet valve (violet) ── */
+          boardSvg.appendChild(
+            remember(
+              "signalWireIn",
+              createSvgEl("path", {
+                d:
+                  "M " +
+                  CTRL_X +
+                  " " +
+                  (CTRL_Y + CTRL_H / 2) +
+                  " C " +
+                  (CTRL_X - 40) +
+                  " " +
+                  (CTRL_Y + CTRL_H / 2 + 50) +
+                  ", 460 80, 430 110",
+                fill: "none",
+                stroke: "#7E57C2",
+                "stroke-width": 2.5,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+
+          /* ── signal wire: controller → drain valve (teal) ── */
+          boardSvg.appendChild(
+            remember(
+              "signalWireOut",
+              createSvgEl("path", {
+                d:
+                  "M " +
+                  (CTRL_X + CTRL_W) +
+                  " " +
+                  (CTRL_Y + CTRL_H / 2) +
+                  " C 772 64, 822 64, 822 128" +
+                  " C 822 400, 822 626, 654 626",
+                fill: "none",
+                stroke: "#00897B",
+                "stroke-width": 2.5,
+                "stroke-linecap": "round",
+              }),
+            ),
+          );
+
+          /* ── controller signal dots ──────────────────────── */
+          boardSvg.appendChild(
+            remember(
+              "ctrlDotIn",
+              createSvgEl("circle", {
+                cx: CTRL_X,
+                cy: CTRL_Y + CTRL_H / 2,
+                r: 3,
+                fill: "#7E57C2",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "ctrlDotOut",
+              createSvgEl("circle", {
+                cx: CTRL_X + CTRL_W,
+                cy: CTRL_Y + CTRL_H / 2,
+                r: 3,
+                fill: "#00897B",
+              }),
+            ),
+          );
+
+          /* ── wire-to-valve junction dots ─────────────────── */
+          boardSvg.appendChild(
+            remember(
+              "valveDotIn",
+              createSvgEl("circle", {
+                cx: 430,
+                cy: 110,
+                r: 3,
+                fill: "#7E57C2",
+              }),
+            ),
+          );
+          boardSvg.appendChild(
+            remember(
+              "valveDotOut",
+              createSvgEl("circle", {
+                cx: 654,
+                cy: 626,
+                r: 3,
+                fill: "#00897B",
+              }),
+            ),
+          );
+
+          /* ── valve labels ─────────────────────────────────── */
+          boardSvg.appendChild(
+            createText("inletValveLabel", 430, 136, "Fill valve", {
+              "font-size": 12,
+              fill: "#E65100",
+            }),
+          );
+          boardSvg.appendChild(
+            createText("drainValveLabel", 654, 652, "Drain valve", {
+              "font-size": 12,
+              fill: "#BF360C",
+            }),
+          );
+          boardSvg.appendChild(
+            createText("manualValveLabel", 270, 652, "Manual drain", {
+              "font-size": 12,
+              fill: "#BF360C",
+            }),
+          );
+
+          /* ── intro group mapping ─────────────────────────── */
+          const ig = {};
+          ig.tank = [
+            parts.tankBody,
+            parts.tankGlass,
+            parts.tankShine,
+            parts.lblTank,
+          ];
+          boardSvg.querySelectorAll('[data-ig="tank"]').forEach(function (n) {
+            ig.tank.push(n);
+          });
+          ig.water = [parts.waterBody, parts.waterWave, parts.waterHighlight];
+          ig.inlet = [
+            parts.inletWaterUp,
+            parts.inletWaterDown,
+            parts.inletWallL,
+            parts.inletWallRT,
+            parts.inletWallRB,
+            parts.inletValveGroup,
+            parts.inletExitWater,
+            parts.inletValveLabel,
+          ];
+          ig.drain = [
+            parts.drainWaterUp,
+            parts.drainWaterDown,
+            parts.drainWallL,
+            parts.drainWallRT,
+            parts.drainWallRB,
+            parts.drainExitWater,
+            parts.drainValveGroup,
+            parts.drainValveLabel,
+          ];
+          ig.target = [
+            parts.refRail,
+            parts.referenceCarriage,
+            parts.referenceLabel,
+            parts.targetLine,
+            parts.targetHandle,
+            parts.targetHitArea,
+          ];
+          ig.sensors = [
+            parts.sensorRefBox,
+            parts.refBeam,
+            parts.refBeamEnd,
+            parts.sensorRefLabel,
+            parts.sensorWaterBox,
+            parts.waterBeam,
+            parts.waterBeamEnd,
+            parts.sensorWaterLabel,
+            parts.wireRefIn,
+            parts.wireWaterIn,
+            parts.juncRefTop,
+            parts.juncRefBot,
+            parts.juncWaterTop,
+            parts.juncWaterBot,
+          ];
+          ig.controller = [
+            parts.feedbackLabel,
+            parts.controllerBox,
+            parts.lblController,
+            parts.ctrlErrorDisplay,
+            parts.ctrlLedRef,
+            parts.ctrlLedWater,
+          ];
+          ig.signals = [
+            parts.signalWireIn,
+            parts.signalWireOut,
+            parts.ctrlDotIn,
+            parts.ctrlDotOut,
+            parts.valveDotIn,
+            parts.valveDotOut,
+          ];
+          ig.manualDrain = [
+            parts.manualWaterUp,
+            parts.manualWaterDown,
+            parts.manualWallR,
+            parts.manualWallLT,
+            parts.manualWallLB,
+            parts.manualExitWater,
+            parts.manualValveGroup,
+            parts.manualValveLabel,
+          ];
+          ig.overflow = [parts.overflowLeft];
+          parts.introGroups = ig;
+
+          /* ── TEMPORARY GRID OVERLAY ────────────────────────── */
+          const gridGroup = createSvgEl("g", {
+            opacity: "0",
+            "pointer-events": "none",
+          });
+          const gx0 = -10;
+          const gy0 = 0;
+          const gw = 940;
+          const gh = 700;
+          const cellSize = 32;
+          const cols = Math.floor(gw / cellSize);
+          const rows = Math.floor(gh / cellSize);
+          const cellW = cellSize;
+          const cellH = cellSize;
+          const rowLabels = "ABCDEFGHIJKLMNOPQRSTUV";
+          for (let c = 0; c <= cols; c++) {
+            const x = gx0 + c * cellW;
+            gridGroup.appendChild(
+              createSvgEl("line", {
+                x1: x,
+                y1: gy0,
+                x2: x,
+                y2: gy0 + gh,
+                stroke: "#999",
+                "stroke-width": 0.5,
+              }),
+            );
+            if (c <= cols) {
+              gridGroup.appendChild(
+                createText(null, x, gy0 + 8, String(c + 1), {
+                  "font-size": 8,
+                  fill: "#666",
+                  "font-weight": "bold",
+                }),
+              );
+            }
+          }
+          for (let r = 0; r <= rows; r++) {
+            const y = gy0 + r * cellH;
+            gridGroup.appendChild(
+              createSvgEl("line", {
+                x1: gx0,
+                y1: y,
+                x2: gx0 + gw,
+                y2: y,
+                stroke: "#999",
+                "stroke-width": 0.5,
+              }),
+            );
+            if (r <= rows) {
+              gridGroup.appendChild(
+                createText(null, gx0 + 6, y, rowLabels[r], {
+                  "font-size": 8,
+                  fill: "#666",
+                  "font-weight": "bold",
+                  "text-anchor": "start",
+                }),
+              );
+            }
+          }
+          boardSvg.appendChild(gridGroup);
+        }
+
+        function setupCanvas(canvas, ctx) {
+          const rect = canvas.getBoundingClientRect();
+          if (rect.width < 1 || rect.height < 1) return null;
+          const dpr = window.devicePixelRatio || 1;
+          const width = Math.round(rect.width * dpr);
+          const height = Math.round(rect.height * dpr);
+          if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          }
+          return { width: rect.width, height: rect.height };
+        }
+
+        function drawGrid01(ctx, pad, plotW, plotH) {
+          ctx.strokeStyle = "#E0DDD6";
+          ctx.lineWidth = 0.6;
+          ctx.font = "9px 'Share Tech Mono', monospace";
+          ctx.fillStyle = "#90A4AE";
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          const labels = ["100%", "75%", "50%", "25%", "0%"];
+          for (let i = 0; i <= 4; i++) {
+            const y = pad.top + (i / 4) * plotH;
+            ctx.beginPath();
+            ctx.moveTo(pad.left, y);
+            ctx.lineTo(pad.left + plotW, y);
+            ctx.stroke();
+            ctx.fillText(labels[i], pad.left - 4, y);
+          }
+        }
+
+        function drawGridBalance(ctx, pad, plotW, plotH) {
+          ctx.strokeStyle = "#E0DDD6";
+          ctx.lineWidth = 0.6;
+          ctx.font = "9px 'Share Tech Mono', monospace";
+          ctx.fillStyle = "#90A4AE";
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          const labels = ["+100%", "+50%", "0%", "-50%", "-100%"];
+          for (let i = 0; i <= 4; i++) {
+            const y = pad.top + (i / 4) * plotH;
+            ctx.beginPath();
+            ctx.moveTo(pad.left, y);
+            ctx.lineTo(pad.left + plotW, y);
+            ctx.stroke();
+            ctx.fillText(labels[i], pad.left - 4, y);
+          }
+        }
+
+        function drawTrace(
+          ctx,
+          buffer,
+          color,
+          dashed,
+          pad,
+          plotW,
+          plotH,
+          min,
+          max,
+          scrollFrac,
+        ) {
+          const count = history.full ? HISTORY_LEN : history.writeIdx;
+          if (count < 2) return;
+          const frac = scrollFrac || 0;
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.lineJoin = "round";
+          ctx.setLineDash(dashed ? [6, 4] : []);
+          for (let i = 0; i < count; i++) {
+            const idx = history.full ? (history.writeIdx + i) % HISTORY_LEN : i;
+            const value = buffer[idx];
+            const t = clamp((value - min) / (max - min), 0, 1);
+            const x = pad.left + ((i - frac) / (HISTORY_LEN - 1)) * plotW;
+            const y = pad.top + (1 - t) * plotH;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        function drawLevelChart() {
+          const dim = setupCanvas(levelCanvas, levelCtx);
+          if (!dim) return;
+          const w = dim.width;
+          const h = dim.height;
+          const scrollFrac = chartAccum / CHART_DT;
+          levelCtx.clearRect(0, 0, w, h);
+          levelCtx.fillStyle = "#fafaf7";
+          levelCtx.fillRect(0, 0, w, h);
+          const pad = { top: 14, right: 8, bottom: 8, left: 36 };
+          const plotW = w - pad.left - pad.right;
+          const plotH = h - pad.top - pad.bottom;
+          drawGrid01(levelCtx, pad, plotW, plotH);
+          drawTrace(
+            levelCtx,
+            history.target,
+            "#43A047",
+            true,
+            pad,
+            plotW,
+            plotH,
+            0,
+            1,
+            scrollFrac,
+          );
+          if (state.delaySeconds > 0) {
+            drawTrace(
+              levelCtx,
+              history.measured,
+              "#FB8C00",
+              false,
+              pad,
+              plotW,
+              plotH,
+              0,
+              1,
+              scrollFrac,
+            );
+            levelCtx.lineWidth = 1;
+          }
+          drawTrace(
+            levelCtx,
+            history.level,
+            "#1E88E5",
+            false,
+            pad,
+            plotW,
+            plotH,
+            0,
+            1,
+            scrollFrac,
+          );
+        }
+
+        function drawControlChart() {
+          const dim = setupCanvas(controlCanvas, controlCtx);
+          if (!dim) return;
+          const w = dim.width;
+          const h = dim.height;
+          const scrollFrac = chartAccum / CHART_DT;
+          controlCtx.clearRect(0, 0, w, h);
+          controlCtx.fillStyle = "#fafaf7";
+          controlCtx.fillRect(0, 0, w, h);
+          const pad = { top: 14, right: 8, bottom: 8, left: 40 };
+          const plotW = w - pad.left - pad.right;
+          const plotH = h - pad.top - pad.bottom;
+          drawGridBalance(controlCtx, pad, plotW, plotH);
+          const zeroY = pad.top + plotH / 2;
+          controlCtx.strokeStyle = "#B0BEC5";
+          controlCtx.lineWidth = 1;
+          controlCtx.beginPath();
+          controlCtx.moveTo(pad.left, zeroY);
+          controlCtx.lineTo(pad.left + plotW, zeroY);
+          controlCtx.stroke();
+          drawTrace(
+            controlCtx,
+            history.balance,
+            "#F57C00",
+            false,
+            pad,
+            plotW,
+            plotH,
+            -1,
+            1,
+            scrollFrac,
+          );
+        }
+
+        function classifyStability() {
+          const errors = new Array(STABILITY_LEN);
+          for (let i = 0; i < STABILITY_LEN; i++) {
+            errors[i] =
+              stabilityErrors[
+                (stabilityWriteIdx - STABILITY_LEN + i + STABILITY_LEN) %
+                  STABILITY_LEN
+              ];
+          }
+
+          let crossings = 0;
+          let minErr = Infinity;
+          let maxErr = -Infinity;
+          for (let i = 1; i < STABILITY_LEN; i++) {
+            if (
+              errors[i] * errors[i - 1] < 0 &&
+              Math.abs(errors[i]) > 0.008 &&
+              Math.abs(errors[i - 1]) > 0.008
+            ) {
+              crossings++;
+            }
+            if (errors[i] < minErr) minErr = errors[i];
+            if (errors[i] > maxErr) maxErr = errors[i];
+          }
+
+          const amp = maxErr - minErr;
+          const cur = Math.abs(errors[STABILITY_LEN - 1]);
+
+          if (crossings >= 3 && amp > 0.05) return "oscillating";
+          if (crossings >= 1 && amp > 0.035 && cur > 0.015) return "overshoot";
+          if (cur < 0.02 && amp < 0.025) return "stable";
+          return "recovering";
+        }
+
+        function recordHistory() {
+          history.target[history.writeIdx] = state.s;
+          history.level[history.writeIdx] = state.h;
+          history.measured[history.writeIdx] = state.m;
+          history.balance[history.writeIdx] = state.balance;
+          history.writeIdx = (history.writeIdx + 1) % HISTORY_LEN;
+          if (history.writeIdx === 0) history.full = true;
+
+          stabilityErrors[stabilityWriteIdx] = state.h - state.s;
+          stabilityWriteIdx = (stabilityWriteIdx + 1) % STABILITY_LEN;
+          state.stabilityLabel = classifyStability();
+        }
+
+        function formatSignedPercent(value) {
+          const pct = Math.round(value * 100);
+          return (pct > 0 ? "+" : "") + pct + "%";
+        }
+
+        function formatPercent(value) {
+          return Math.round(value * 100) + "%";
+        }
+
+        function updatePauseIcon() {
+          if (state.running) {
+            btnPause.textContent = "\u23F8";
+            btnPause.setAttribute("aria-label", T("pause"));
+          } else {
+            btnPause.textContent = "\u25B6";
+            btnPause.setAttribute("aria-label", T("run"));
+          }
+        }
+
+        function updateReadouts() {
+          const error = state.s - state.m;
+          rdTarget.textContent = formatPercent(state.s);
+          rdActual.textContent = formatPercent(state.h);
+          rdMeasured.textContent = formatPercent(state.m);
+          rdError.textContent = formatSignedPercent(error);
+          rdBalance.textContent = formatSignedPercent(state.balance);
+          rdInletValve.textContent = formatPercent(state.uIn);
+          rdDrainValve.textContent = formatPercent(state.uOut);
+          rdInflow.textContent = state.qIn.toFixed(2);
+          rdOutflow.textContent = state.qOut.toFixed(2);
+        }
+
+        function updateStatus() {
+          const error = state.s - state.m;
+          let statusKey = "statusStable";
+          let explainKey = "explainNear";
+          if (state.stabilityLabel === "oscillating") {
+            statusKey = "statusOsc";
+            explainKey =
+              state.delaySeconds > 0 ? "explainDelay" : "explainUnderdamped";
+          } else if (
+            state.delaySeconds > 0.2 &&
+            Math.abs(state.h - state.m) > 0.025
+          ) {
+            statusKey = "statusDelay";
+            explainKey = "explainDelay";
+          } else if (error > 0.02) {
+            statusKey = "statusLow";
+            explainKey = "explainLow";
+          } else if (error < -0.02) {
+            statusKey = "statusHigh";
+            explainKey = "explainHigh";
+          }
+
+          statusText.textContent = T(statusKey);
+          explainText.textContent = T(explainKey);
+          stabilityBadge.className = "stability-badge " + state.stabilityLabel;
+          stabilityBadge.textContent = T(state.stabilityLabel);
+        }
+
+        function updateInvestigations() {
+          invList.replaceChildren();
+          for (let i = 1; i <= 6; i++) {
+            const card = document.createElement("div");
+            card.className = "inv-card";
+            card.textContent = T("inv" + i);
+            invList.appendChild(card);
+          }
+        }
+
+        function updateSvgLabels() {
+          parts.referenceLabel.textContent = T("targetShort");
+
+          parts.feedbackLabel.textContent = T("feedback");
+          parts.lblTank.textContent = T("tank");
+          parts.inletValveLabel.textContent = T("fillValveLabel");
+          parts.drainValveLabel.textContent = T("drainValveLabel");
+          parts.manualValveLabel.textContent = T("manualDrainValveLabel");
+          parts.sensorRefLabel.textContent = T("sensorRefLabel");
+          parts.sensorWaterLabel.textContent = T("sensorWaterLabel");
+          parts.lblController.textContent = "Controller";
+        }
+
+        function applyTranslations() {
+          document.documentElement.lang = state.lang;
+          document.title = T("title");
+          titleText.textContent = T("title");
+          subtitleText.textContent = T("subtitle");
+          langBtn.textContent = state.lang === "en" ? "PL" : "EN";
+          document.getElementById("lblSetpoint").textContent = T("setpoint");
+          document.getElementById("lblDrain").textContent = T("manualDrain");
+          document.getElementById("lblResponse").textContent =
+            T("responseStrength");
+          document.getElementById("lblDelay").textContent = T("delay");
+          updatePauseIcon();
+          document.getElementById("lblIntroBack").textContent = T("introBack");
+          document.getElementById("lblReadouts").textContent = T("readouts");
+          document.getElementById("lblRdTarget").textContent = T("target");
+          document.getElementById("lblRdActual").textContent = T("actualLevel");
+          document.getElementById("lblRdMeasured").textContent =
+            T("measuredLevel");
+          document.getElementById("lblRdError").textContent = T("error");
+          document.getElementById("lblRdBalance").textContent =
+            T("controlBalance");
+          document.getElementById("lblRdInletValve").textContent =
+            T("inletValve");
+          document.getElementById("lblRdDrainValve").textContent =
+            T("drainValve");
+          document.getElementById("lblRdInflow").textContent = T("inflow");
+          document.getElementById("lblRdOutflow").textContent = T("outflow");
+          document.getElementById("lblExplain").textContent = T("explanation");
+          document.getElementById("lblLevelChart").textContent =
+            T("levelHistory");
+          document.getElementById("lblControlChart").textContent =
+            T("controlHistory");
+          document.getElementById("lblInvestigations").textContent =
+            T("investigations");
+          document.getElementById("lblIntroTitle").textContent =
+            T("introTitle");
+          if (state.introActive) {
+            introStepTitle.textContent = T(
+              "introStep" + state.introStep + "Title",
+            );
+            introCommentary.textContent = T("introStep" + state.introStep);
+          }
+          updateSvgLabels();
+          updateInvestigations();
+          updateReadouts();
+          updateStatus();
+        }
+
+        const INTRO_TOTAL = 10;
+        const INTRO_GROUPS = [
+          [],
+          ["tank"],
+          ["tank", "water", "overflow"],
+          ["tank", "water", "overflow", "drain"],
+          ["tank", "water", "overflow", "drain", "inlet"],
+          ["tank", "water", "overflow", "drain", "inlet"],
+          ["tank", "water", "overflow", "drain", "inlet", "target"],
+          ["tank", "water", "overflow", "drain", "inlet", "target", "sensors"],
+          [
+            "tank",
+            "water",
+            "overflow",
+            "drain",
+            "inlet",
+            "target",
+            "sensors",
+            "controller",
+          ],
+          [
+            "tank",
+            "water",
+            "overflow",
+            "drain",
+            "inlet",
+            "target",
+            "sensors",
+            "controller",
+            "signals",
+          ],
+          [
+            "tank",
+            "water",
+            "overflow",
+            "drain",
+            "inlet",
+            "target",
+            "sensors",
+            "controller",
+            "signals",
+            "manualDrain",
+          ],
+        ];
+
+        const introPanel = document.getElementById("introPanel");
+        const introStepTitle = document.getElementById("introStepTitle");
+        const introCommentary = document.getElementById("introCommentary");
+        const introCounter = document.getElementById("introCounter");
+        const introControls = document.getElementById("introControls");
+        const btnIntro = document.getElementById("btnIntro");
+        const btnIntroExit = document.getElementById("btnIntroExit");
+        const btnIntroPrev = document.getElementById("btnIntroPrev");
+        const btnIntroNext = document.getElementById("btnIntroNext");
+        const controlsDiv = document.querySelector(".controls");
+        const infoDiv = document.querySelector(".info");
+
+        function setIntroGroupVisibility(step) {
+          const ig = parts.introGroups;
+          if (!ig) return;
+          const visible = new Set(INTRO_GROUPS[step]);
+          const allNames = Object.keys(ig);
+          for (let g = 0; g < allNames.length; g++) {
+            const show = visible.has(allNames[g]);
+            const nodes = ig[allNames[g]];
+            for (let i = 0; i < nodes.length; i++) {
+              nodes[i].setAttribute("display", show ? "" : "none");
+            }
+          }
+        }
+
+        function showAllGroups() {
+          const ig = parts.introGroups;
+          if (!ig) return;
+          const allNames = Object.keys(ig);
+          for (let g = 0; g < allNames.length; g++) {
+            const nodes = ig[allNames[g]];
+            for (let i = 0; i < nodes.length; i++) {
+              nodes[i].setAttribute("display", "");
+            }
+          }
+        }
+
+        function setIntroStep(step) {
+          state.introStep = step;
+          setIntroGroupVisibility(step);
+
+          introStepTitle.textContent = T("introStep" + step + "Title");
+          introCommentary.textContent = T("introStep" + step);
+          introCounter.textContent = step + " / " + INTRO_TOTAL;
+          btnIntroPrev.disabled = step <= 1;
+          btnIntroNext.disabled = step >= INTRO_TOTAL;
+
+          state.integral = 0;
+          state.balance = 0;
+          state.uIn = 0;
+          state.uOut = 0;
+          state.qIn = 0;
+          state.qOut = 0;
+          state.qLeak = 0;
+          state.qControlOut = 0;
+          state.leak = 0;
+          state.delaySeconds = 0;
+          state.inletForced = false;
+          state.drainForced = false;
+
+          if (step === 1) {
+            state.running = false;
+            state.h = 0;
+          } else if (step === 2) {
+            state.running = false;
+            state.h = 0.5;
+          } else if (step === 3) {
+            state.running = true;
+            state.h = 0.5;
+            state.drainForced = true;
+          } else if (step === 4) {
+            state.running = true;
+            state.h = 0.2;
+            state.inletForced = true;
+          } else if (step <= 8) {
+            state.running = true;
+            state.h = 0.5;
+            state.s = 0.6;
+          } else {
+            state.running = true;
+            state.h = 0.6;
+            state.s = 0.6;
+          }
+
+          state.m = state.h;
+          delayBuffer.fill(state.h);
+
+          introControls.replaceChildren();
+          if (step >= 6) {
+            introControls.appendChild(
+              document.getElementById("lblSetpoint").parentElement,
+            );
+          }
+          if (step >= 9) {
+            introControls.appendChild(
+              document.getElementById("lblResponse").parentElement,
+            );
+          }
+          if (step >= 10) {
+            introControls.appendChild(
+              document.getElementById("lblDrain").parentElement,
+            );
+            introControls.appendChild(
+              document.getElementById("lblDelay").parentElement,
+            );
+          }
+        }
+
+        function enterIntro() {
+          state.introActive = true;
+          controlsDiv.style.display = "none";
+          infoDiv.style.display = "none";
+          introPanel.classList.add("active");
+          document.getElementById("lblIntroTitle").textContent =
+            T("introTitle");
+          lastTime = 0;
+          simAccum = 0;
+          setIntroStep(1);
+        }
+
+        function exitIntro() {
+          state.introActive = false;
+          introPanel.classList.remove("active");
+          const btnRow = controlsDiv.querySelector(".btn-row");
+          const sliderIds = [
+            "lblSetpoint",
+            "lblDrain",
+            "lblResponse",
+            "lblDelay",
+          ];
+          for (let i = 0; i < sliderIds.length; i++) {
+            const el = document.getElementById(sliderIds[i]);
+            if (el) controlsDiv.insertBefore(el.parentElement, btnRow);
+          }
+          controlsDiv.style.display = "";
+          infoDiv.style.display = "";
+          showAllGroups();
+          resetAll();
+        }
+
+        btnIntro.addEventListener("click", enterIntro);
+        btnIntroExit.addEventListener("click", exitIntro);
+        btnIntroPrev.addEventListener("click", function () {
+          if (state.introStep > 1) setIntroStep(state.introStep - 1);
+        });
+        btnIntroNext.addEventListener("click", function () {
+          if (state.introStep < INTRO_TOTAL) setIntroStep(state.introStep + 1);
+        });
+
+        function updateSignalWire(wireEl, intensity) {
+          const sw = 2.5 + intensity * 2;
+          const op = 0.2 + intensity * 0.8;
+          wireEl.setAttribute("stroke-width", sw.toFixed(2));
+          wireEl.setAttribute("opacity", op.toFixed(3));
+          wireEl.removeAttribute("stroke-dasharray");
+        }
+
+        function updateBoard(frameDt) {
+          wavePhase += frameDt * 2.6;
+
+          /* ── water body ───────────────────────────────────── */
+          const waterHeight = clamp(state.h, 0, 1) * TANK_H;
+          const waterTop = TANK_B - waterHeight;
+          parts.waterBody.setAttribute("y", waterTop);
+          parts.waterBody.setAttribute("height", waterHeight + 12);
+
+          /* ── wave surface ─────────────────────────────────── */
+          if (waterHeight > 1) {
+            const amp = clamp(2 + Math.abs(state.h - state.s) * 20, 2, 6);
+            let wavePath = "M " + TANK_X + " " + waterTop;
+            let highlightPath = "M " + TANK_X + " " + waterTop;
+            for (let x = 0; x <= TANK_W; x += 5) {
+              const y =
+                waterTop +
+                Math.sin(x * 0.055 + wavePhase) * amp +
+                Math.sin(x * 0.09 - wavePhase * 1.2) * amp * 0.35;
+              wavePath += " L " + (TANK_X + x) + " " + y;
+              highlightPath += " L " + (TANK_X + x) + " " + y;
+            }
+            wavePath +=
+              " L " +
+              (TANK_X + TANK_W) +
+              " " +
+              (TANK_B + 6) +
+              " L " +
+              TANK_X +
+              " " +
+              (TANK_B + 6) +
+              " Z";
+            parts.waterWave.setAttribute("d", wavePath);
+            parts.waterHighlight.setAttribute("d", highlightPath);
+          } else {
+            parts.waterWave.setAttribute("d", "");
+            parts.waterHighlight.setAttribute("d", "");
+          }
+
+          /* ── position calculations ────────────────────────── */
+          const targetY = TANK_B - state.s * TANK_H;
+          const measuredY = TANK_B - state.m * TANK_H;
+
+          const carriageY = targetY - 14;
+          const hasDelay = state.delaySeconds > 0;
+
+          /* ── reference carriage ───────────────────────────── */
+          parts.referenceCarriage.setAttribute("y", carriageY);
+
+          /* ── target line + handle ─────────────────────────── */
+          parts.targetLine.setAttribute("y1", targetY);
+          parts.targetLine.setAttribute("y2", targetY);
+          parts.targetHandle.setAttribute(
+            "transform",
+            "translate(0," + targetY + ")",
+          );
+
+          parts.targetHitArea.setAttribute("y", targetY - 14);
+
+          /* ── sensor beams ─────────────────────────────────── */
+          parts.refBeam.setAttribute("x2", REF_RAIL_X);
+          parts.refBeam.setAttribute("y2", targetY);
+          parts.refBeamEnd.setAttribute("cx", REF_RAIL_X);
+          parts.refBeamEnd.setAttribute("cy", targetY);
+          parts.waterBeam.setAttribute("x2", SENSOR_WATER_X);
+          const beamTargetY = hasDelay ? measuredY : waterTop;
+          parts.waterBeam.setAttribute("y2", beamTargetY);
+          parts.waterBeamEnd.setAttribute("cx", SENSOR_WATER_X);
+          parts.waterBeamEnd.setAttribute("cy", beamTargetY);
+
+          /* ── controller error display ─────────────────────── */
+          const errPct = Math.round((state.s - state.m) * 100);
+          parts.ctrlErrorDisplay.textContent =
+            "e = " + (errPct > 0 ? "+" : "") + errPct + "%";
+
+          /* ── signal wires ─────────────────────────────────── */
+          updateSignalWire(parts.signalWireIn, state.uIn);
+          updateSignalWire(parts.signalWireOut, state.uOut);
+          const dotInOp = (0.2 + clamp(state.uIn, 0, 1) * 0.8).toFixed(2);
+          const dotOutOp = (0.2 + clamp(state.uOut, 0, 1) * 0.8).toFixed(2);
+          parts.ctrlDotIn.setAttribute("opacity", "1");
+          parts.ctrlDotOut.setAttribute("opacity", "1");
+          parts.valveDotIn.setAttribute("opacity", "1");
+          parts.valveDotOut.setAttribute("opacity", "1");
+          parts.ctrlLedRef.setAttribute("opacity", dotInOp);
+          parts.ctrlLedWater.setAttribute("opacity", dotOutOp);
+
+          /* ── inlet valve visual ──────────────────────────── */
+          const uIn = clamp(state.uIn, 0, 1);
+          parts.inletGate.setAttribute("x", 342 + 32 * uIn);
+          setStreamWidth(
+            parts.inletWaterDown,
+            uIn,
+            INLET_PIPE_W,
+            INLET_PIPE_LX,
+          );
+
+          /* ── drain valve visual ──────────────────────────── */
+          const uOut = clamp(state.uOut, 0, 1);
+          parts.drainGate.setAttribute("x", 566 + 32 * uOut);
+          setStreamWidth(
+            parts.drainWaterDown,
+            uOut,
+            DRAIN_PIPE_W,
+            DRAIN_PIPE_LX,
+          );
+
+          /* ── inlet exit water ─────────────────────────────── */
+          setStreamWidth(
+            parts.inletExitWater,
+            uIn,
+            INLET_PIPE_W,
+            INLET_PIPE_LX,
+          );
+
+          /* ── drain exit water ─────────────────────────────── */
+          setStreamWidth(
+            parts.drainExitWater,
+            uOut,
+            DRAIN_PIPE_W,
+            DRAIN_PIPE_LX,
+          );
+
+          /* ── manual drain valve visual ────────────────────── */
+          parts.manualGate.setAttribute("x", 322 - 32 * state.leak);
+          setStreamWidth(
+            parts.manualWaterDown,
+            state.leak,
+            MANUAL_PIPE_W,
+            MANUAL_PIPE_LX + MANUAL_PIPE_W,
+            true,
+          );
+          setStreamWidth(
+            parts.manualExitWater,
+            state.leak,
+            MANUAL_PIPE_W,
+            MANUAL_PIPE_LX + MANUAL_PIPE_W,
+            true,
+          );
+
+          /* ── overflow streams ─────────────────────────────── */
+          const overflowFlow =
+            state.h >= 0.995 && state.qIn > state.qOut
+              ? clamp((state.qIn - state.qOut) / Q_IN_MAX, 0, 1)
+              : 0;
+          setStreamWidth(
+            parts.overflowLeft,
+            overflowFlow,
+            OVERFLOW_MAX_W,
+            TANK_X,
+            true,
+          );
+        }
+
+        function simStep(dt) {
+          const hSafe = Math.max(state.h, 0);
+
+          if (state.delaySeconds <= 0) {
+            state.m = state.h;
+          } else {
+            let samplesBack = Math.round(state.delaySeconds / SIM_DT);
+            samplesBack = Math.min(samplesBack, DELAY_BUF_SIZE - 1);
+            const idx =
+              (delayWriteIdx - 1 - samplesBack + DELAY_BUF_SIZE * 2) %
+              DELAY_BUF_SIZE;
+            state.m = delayBuffer[idx];
+          }
+
+          const error = state.s - state.m;
+
+          if (!state.introActive || state.introStep >= 9) {
+            const R = state.K;
+            const Kp = 0.6 * R;
+            const Ki = 0.28 * R;
+
+            const candidateIntegral = state.integral + Ki * error * dt;
+            const candidateCommand = Kp * error + candidateIntegral;
+            if (candidateCommand >= -1 && candidateCommand <= 1) {
+              state.integral = candidateIntegral;
+            } else if (candidateCommand > 1 && error < 0) {
+              state.integral = candidateIntegral;
+            } else if (candidateCommand < -1 && error > 0) {
+              state.integral = candidateIntegral;
+            }
+            state.balance = clamp(Kp * error + state.integral, -1, 1);
+          }
+
+          state.uIn = state.inletForced ? 1 : Math.max(0, state.balance);
+          state.uOut = state.drainForced ? 1 : Math.max(0, -state.balance);
+
+          state.qIn = Q_IN_MAX * state.uIn;
+          state.qLeak = Q_LEAK_MAX * state.leak * Math.sqrt(hSafe);
+          state.qControlOut = Q_CONTROL_DRAIN * state.uOut * Math.sqrt(hSafe);
+          state.qOut = state.qLeak + state.qControlOut;
+
+          state.h = clamp(state.h + (state.qIn - state.qOut) * dt, 0, 1);
+
+          delayBuffer[delayWriteIdx] = state.h;
+          delayWriteIdx = (delayWriteIdx + 1) % DELAY_BUF_SIZE;
+        }
+
+        function svgPoint(event) {
+          const pt = boardSvg.createSVGPoint();
+          pt.x = event.clientX;
+          pt.y = event.clientY;
+          const ctm = boardSvg.getScreenCTM();
+          return ctm ? pt.matrixTransform(ctm.inverse()) : pt;
+        }
+
+        function setTargetFromY(y) {
+          state.s = clamp((TANK_B - y) / TANK_H, 0.15, 0.85);
+          setpointSlider.value = Math.round(state.s * 100);
+          setpointVal.textContent = formatPercent(state.s);
+        }
+
+        boardSvg.addEventListener("pointerdown", function (event) {
+          const pt = svgPoint(event);
+          const targetY = TANK_B - state.s * TANK_H;
+          if (
+            Math.abs(pt.y - targetY) < 18 &&
+            pt.x >= TANK_X - 20 &&
+            pt.x <= TANK_X + TANK_W + 80
+          ) {
+            dragTarget = true;
+            boardSvg.setPointerCapture(event.pointerId);
+            setTargetFromY(pt.y);
+            event.preventDefault();
+          }
+        });
+
+        boardSvg.addEventListener("pointermove", function (event) {
+          if (!dragTarget) return;
+          const pt = svgPoint(event);
+          setTargetFromY(pt.y);
+          event.preventDefault();
+        });
+
+        boardSvg.addEventListener("pointerup", function () {
+          dragTarget = false;
+        });
+
+        langBtn.addEventListener("click", function () {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        });
+
+        setpointSlider.addEventListener("input", function () {
+          state.s = setpointSlider.value / 100;
+          setpointVal.textContent = setpointSlider.value + "%";
+        });
+
+        drainSlider.addEventListener("input", function () {
+          state.leak = drainSlider.value / 100;
+          drainVal.textContent = drainSlider.value + "%";
+        });
+
+        responseSlider.addEventListener("input", function () {
+          state.K = responseSlider.value / 10;
+          responseVal.textContent = state.K.toFixed(1);
+        });
+
+        delaySlider.addEventListener("input", function () {
+          state.delaySeconds = delaySlider.value / 100;
+          delayValEl.textContent = state.delaySeconds.toFixed(1) + "s";
+        });
+
+        btnPause.addEventListener("click", function () {
+          state.running = !state.running;
+          updatePauseIcon();
+          if (state.running) lastTime = 0;
+        });
+
+        btnReset.addEventListener("click", resetAll);
+
+        function resetAll() {
+          state.running = true;
+          state.h = DEF_H;
+          state.s = DEF_S;
+          state.m = DEF_H;
+          state.integral = 0;
+          state.balance = 0;
+          state.uIn = 0;
+          state.uOut = 0;
+          state.leak = DEF_LEAK;
+          state.K = DEF_K;
+          state.delaySeconds = 0;
+          state.inletForced = false;
+          state.drainForced = false;
+          state.stabilityLabel = "stable";
+          state.qIn = 0;
+          state.qLeak = 0;
+          state.qControlOut = 0;
+          state.qOut = 0;
+
+          setpointSlider.value = 60;
+          setpointVal.textContent = "60%";
+          drainSlider.value = 0;
+          drainVal.textContent = "0%";
+          responseSlider.value = 16;
+          responseVal.textContent = "1.6";
+          delaySlider.value = 0;
+          delayValEl.textContent = "0.0s";
+          updatePauseIcon();
+
+          delayBuffer.fill(DEF_H);
+          delayWriteIdx = 0;
+
+          history.target.fill(DEF_S);
+          history.level.fill(DEF_H);
+          history.measured.fill(DEF_H);
+          history.balance.fill(0);
+          history.writeIdx = 0;
+          history.full = true;
+
+          stabilityErrors.fill(0);
+          stabilityWriteIdx = 0;
+
+          simAccum = 0;
+          chartAccum = 0;
+          lastTime = 0;
+          wavePhase = 0;
+
+          updateReadouts();
+          updateStatus();
+          updateBoard(0);
+          drawLevelChart();
+          drawControlChart();
+        }
+
+        function animate(now) {
+          now /= 1000;
+          const frameDt = lastTime ? Math.min(now - lastTime, 0.05) : 0;
+          lastTime = now;
+
+          if (state.running) {
+            simAccum += frameDt;
+            let steps = 0;
+            while (simAccum >= SIM_DT && steps < MAX_STEPS) {
+              simStep(SIM_DT);
+              simAccum -= SIM_DT;
+              steps++;
+            }
+            if (steps >= MAX_STEPS) simAccum = 0;
+
+            chartAccum += frameDt;
+            while (chartAccum >= CHART_DT) {
+              recordHistory();
+              chartAccum -= CHART_DT;
+            }
+          }
+
+          drawLevelChart();
+          drawControlChart();
+          updateBoard(frameDt);
+          updateReadouts();
+          updateStatus();
+          requestAnimationFrame(animate);
+        }
+
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) {
+            lastTime = 0;
+            simAccum = 0;
+          }
+        });
+
+        buildBoard();
+
+        parts.inletValveGroup.addEventListener("pointerdown", function (e) {
+          state.inletForced = true;
+          parts.inletValveGroup.setPointerCapture(e.pointerId);
+        });
+        parts.inletValveGroup.addEventListener("pointerup", function () {
+          state.inletForced = false;
+        });
+        parts.inletValveGroup.addEventListener("pointercancel", function () {
+          state.inletForced = false;
+        });
+
+        parts.drainValveGroup.addEventListener("pointerdown", function (e) {
+          state.drainForced = true;
+          parts.drainValveGroup.setPointerCapture(e.pointerId);
+        });
+        parts.drainValveGroup.addEventListener("pointerup", function () {
+          state.drainForced = false;
+        });
+        parts.drainValveGroup.addEventListener("pointercancel", function () {
+          state.drainForced = false;
+        });
+
+        applyTranslations();
+        resetAll();
+        requestAnimationFrame(animate);
+      })();
+    </script>
+  </body>
+</html>
