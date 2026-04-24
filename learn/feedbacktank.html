@@ -832,7 +832,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         const DRAIN_PIPE_W = 32;
         const MANUAL_PIPE_LX = 342;
         const MANUAL_PIPE_W = 32;
-        const OVERFLOW_MAX_W = 22;
+        const OVERFLOW_WALL_X = 438;
+        const OVERFLOW_MAX_W = 32;
 
         const DEF_S = 0.6;
         const DEF_H = 0.6;
@@ -850,11 +851,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           balance: DEF_BALANCE,
           uIn: DEF_BALANCE,
           uOut: 0,
+          uManual: 0,
           leak: DEF_LEAK,
           K: DEF_K,
           delaySeconds: 0,
           inletForced: false,
           drainForced: false,
+          manualForced: false,
           stabilityLabel: "stable",
           introActive: false,
           introStep: 0,
@@ -1342,7 +1345,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 width: 32,
                 height: 88,
                 fill: "#42A5F5",
-                opacity: 0.8,
               }),
             ),
           );
@@ -1355,7 +1357,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 width: 0,
                 height: 72,
                 fill: "#42A5F5",
-                opacity: 0.85,
               }),
             ),
           );
@@ -1446,9 +1447,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: 566,
                 y: 576,
                 width: 32,
-                height: 60,
+                height: 62,
                 fill: "#42A5F5",
-                opacity: 0.8,
               }),
             ),
           );
@@ -1459,9 +1459,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: DRAIN_PIPE_LX,
                 y: 636,
                 width: 0,
-                height: 36,
+                height: 100,
                 fill: "#42A5F5",
-                opacity: 0.85,
               }),
             ),
           );
@@ -1512,21 +1511,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ),
           );
 
-          /* ── drain exit water (pipe bottom → 64px below) ─── */
-          boardSvg.appendChild(
-            remember(
-              "drainExitWater",
-              createSvgEl("rect", {
-                x: DRAIN_PIPE_LX,
-                y: 672,
-                width: 0,
-                height: 64,
-                fill: "#42A5F5",
-                opacity: 0.85,
-              }),
-            ),
-          );
-
           /* ── drain valve ──────────────────────────────────── */
           const drainValveGroup = createSvgEl("g", { cursor: "pointer" });
           remember("drainValveGroup", drainValveGroup);
@@ -1567,9 +1551,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: 342,
                 y: 576,
                 width: 32,
-                height: 60,
+                height: 62,
                 fill: "#42A5F5",
-                opacity: 0.8,
               }),
             ),
           );
@@ -1580,9 +1563,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: MANUAL_PIPE_LX,
                 y: 636,
                 width: 0,
-                height: 36,
+                height: 100,
                 fill: "#42A5F5",
-                opacity: 0.85,
               }),
             ),
           );
@@ -1633,23 +1615,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ),
           );
 
-          /* ── manual drain exit water (pipe bottom → below) ── */
-          boardSvg.appendChild(
-            remember(
-              "manualExitWater",
-              createSvgEl("rect", {
-                x: MANUAL_PIPE_LX,
-                y: 672,
-                width: 0,
-                height: 64,
-                fill: "#42A5F5",
-                opacity: 0.85,
-              }),
-            ),
-          );
-
           /* ── manual drain valve ───────────────────────────── */
-          const manualValveGroup = createSvgEl("g");
+          const manualValveGroup = createSvgEl("g", { cursor: "pointer" });
           remember("manualValveGroup", manualValveGroup);
           /* housing — stationary box on left side */
           manualValveGroup.appendChild(
@@ -1680,20 +1647,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           );
           boardSvg.appendChild(manualValveGroup);
 
-          /* ── overflow stream (behind left tank wall) ──────── */
-          boardSvg.appendChild(
-            remember(
-              "overflowLeft",
-              createSvgEl("rect", {
-                x: TANK_X,
-                y: TANK_Y,
-                width: 0,
-                height: TANK_H + 40,
-                fill: "#42A5F5",
-                opacity: 0.85,
-              }),
-            ),
-          );
+          /* overflow rect appended later (top of z-order) */
 
           /* ── tank body (open top, U-shape) ──────────────── */
           boardSvg.appendChild(
@@ -1838,7 +1792,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ),
           );
 
-          /* ── inlet exit water (pipe bottom → tank bottom) ── */
+          /* ── inlet exit water (after tank so it's on top) ── */
           boardSvg.appendChild(
             remember(
               "inletExitWater",
@@ -1848,7 +1802,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 width: 0,
                 height: TANK_B - 192,
                 fill: "#42A5F5",
-                opacity: 0.85,
               }),
             ),
           );
@@ -2371,7 +2324,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             parts.drainWallL,
             parts.drainWallRT,
             parts.drainWallRB,
-            parts.drainExitWater,
             parts.drainValveGroup,
             parts.drainValveLabel,
           ];
@@ -2421,11 +2373,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             parts.manualWallR,
             parts.manualWallLT,
             parts.manualWallLB,
-            parts.manualExitWater,
             parts.manualValveGroup,
             parts.manualValveLabel,
           ];
-          ig.overflow = [parts.overflowLeft];
+          ig.overflow = [parts.overflowStream];
           parts.introGroups = ig;
 
           /* ── TEMPORARY GRID OVERLAY ────────────────────────── */
@@ -2488,6 +2439,20 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               );
             }
           }
+          /* ── overflow stream (column 15, on top of all) ──── */
+          boardSvg.appendChild(
+            remember(
+              "overflowStream",
+              createSvgEl("rect", {
+                x: 438,
+                y: TANK_Y,
+                width: 0,
+                height: 700 - TANK_Y,
+                fill: "#42A5F5",
+              }),
+            ),
+          );
+
           boardSvg.appendChild(gridGroup);
         }
 
@@ -2945,6 +2910,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.delaySeconds = 0;
           state.inletForced = false;
           state.drainForced = false;
+          state.manualForced = false;
 
           if (step === 1) {
             state.running = false;
@@ -3139,6 +3105,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             INLET_PIPE_W,
             INLET_PIPE_LX,
           );
+          setStreamWidth(
+            parts.inletExitWater,
+            uIn,
+            INLET_PIPE_W,
+            INLET_PIPE_LX,
+          );
 
           /* ── drain valve visual ──────────────────────────── */
           const uOut = clamp(state.uOut, 0, 1);
@@ -3150,34 +3122,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             DRAIN_PIPE_LX,
           );
 
-          /* ── inlet exit water ─────────────────────────────── */
-          setStreamWidth(
-            parts.inletExitWater,
-            uIn,
-            INLET_PIPE_W,
-            INLET_PIPE_LX,
-          );
-
-          /* ── drain exit water ─────────────────────────────── */
-          setStreamWidth(
-            parts.drainExitWater,
-            uOut,
-            DRAIN_PIPE_W,
-            DRAIN_PIPE_LX,
-          );
-
           /* ── manual drain valve visual ────────────────────── */
-          parts.manualGate.setAttribute("x", 322 - 32 * state.leak);
+          parts.manualGate.setAttribute("x", 322 - 32 * state.uManual);
           setStreamWidth(
             parts.manualWaterDown,
-            state.leak,
-            MANUAL_PIPE_W,
-            MANUAL_PIPE_LX + MANUAL_PIPE_W,
-            true,
-          );
-          setStreamWidth(
-            parts.manualExitWater,
-            state.leak,
+            state.uManual,
             MANUAL_PIPE_W,
             MANUAL_PIPE_LX + MANUAL_PIPE_W,
             true,
@@ -3189,10 +3138,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               ? clamp((state.qIn - state.qOut) / Q_IN_MAX, 0, 1)
               : 0;
           setStreamWidth(
-            parts.overflowLeft,
+            parts.overflowStream,
             overflowFlow,
             OVERFLOW_MAX_W,
-            TANK_X,
+            OVERFLOW_WALL_X,
             true,
           );
         }
@@ -3233,8 +3182,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.uIn = state.inletForced ? 1 : Math.max(0, state.balance);
           state.uOut = state.drainForced ? 1 : Math.max(0, -state.balance);
 
+          state.uManual = state.manualForced ? 1 : state.leak;
           state.qIn = Q_IN_MAX * state.uIn;
-          state.qLeak = Q_LEAK_MAX * state.leak * Math.sqrt(hSafe);
+          state.qLeak = Q_LEAK_MAX * state.uManual * Math.sqrt(hSafe);
           state.qControlOut = Q_CONTROL_DRAIN * state.uOut * Math.sqrt(hSafe);
           state.qOut = state.qLeak + state.qControlOut;
 
@@ -3331,6 +3281,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.delaySeconds = 0;
           state.inletForced = false;
           state.drainForced = false;
+          state.manualForced = false;
           state.stabilityLabel = "stable";
           state.qIn = 0;
           state.qLeak = 0;
@@ -3431,6 +3382,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         });
         parts.drainValveGroup.addEventListener("pointercancel", function () {
           state.drainForced = false;
+        });
+
+        parts.manualValveGroup.addEventListener("pointerdown", function (e) {
+          state.manualForced = true;
+          parts.manualValveGroup.setPointerCapture(e.pointerId);
+        });
+        parts.manualValveGroup.addEventListener("pointerup", function () {
+          state.manualForced = false;
+        });
+        parts.manualValveGroup.addEventListener("pointercancel", function () {
+          state.manualForced = false;
         });
 
         applyTranslations();
