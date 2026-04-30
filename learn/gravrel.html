@@ -1599,6 +1599,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             phaseReunion: "Reunion",
             phasePaused: "Paused",
 
+            lblMissionTime: "Mission time",
             lblEarthElapsed: "Earth elapsed",
             lblCaptainAElapsedRead: "Captain A",
             lblCaptainBElapsedRead: "Captain B",
@@ -1703,6 +1704,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             phaseReunion: "Spotkanie",
             phasePaused: "Pauza",
 
+            lblMissionTime: "Czas misji",
             lblEarthElapsed: "Czas Ziemi",
             lblCaptainAElapsedRead: "Kapitan A",
             lblCaptainBElapsedRead: "Kapitan B",
@@ -2905,7 +2907,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             R,
             state.earthElapsed,
             "#4db8ff",
-            "",
+            T("lblMissionTime"),
             state.earthElapsed.toFixed(2) + " " + yr,
             yrPerRev,
           );
@@ -2922,10 +2924,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             clockColX,
             state.starLabPos.y - edgeOffset,
             R,
-            state.captainAElapsed,
+            getStartAge("A") + state.captainAElapsed,
             "#ffb347",
             getCaptainName("A"),
-            state.captainAElapsed.toFixed(2) + " " + yr,
+            (getStartAge("A") + state.captainAElapsed).toFixed(2) + " " + yr,
             yrPerRev,
           );
 
@@ -2934,10 +2936,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             clockColX,
             state.bhLabPos.y + edgeOffset,
             R,
-            state.captainBElapsed,
+            getStartAge("B") + state.captainBElapsed,
             "#66d9c2",
             getCaptainName("B"),
-            state.captainBElapsed.toFixed(2) + " " + yr,
+            (getStartAge("B") + state.captainBElapsed).toFixed(2) + " " + yr,
             yrPerRev,
           );
         }

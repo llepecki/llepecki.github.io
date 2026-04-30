@@ -1001,6 +1001,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             targetShort: "Target",
             actualShort: "Actual",
             feedback: "Feedback",
+            controllerLabel: "Controller",
             tank: "Tank",
             fillValveLabel: "Fill valve",
             drainValveLabel: "Drain valve",
@@ -1118,6 +1119,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             targetShort: "Cel",
             actualShort: "Rzeczywisty",
             feedback: "Sprzężenie",
+            controllerLabel: "Sterownik",
             tank: "Zbiornik",
             fillValveLabel: "Zaw\u00f3r dop\u0142ywu",
             drainValveLabel: "Zaw\u00f3r odp\u0142ywu",
@@ -2946,7 +2948,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           parts.manualValveLabel.textContent = T("manualDrainValveLabel");
           parts.sensorRefLabel.textContent = T("sensorRefLabel");
           parts.sensorWaterLabel.textContent = T("sensorWaterLabel");
-          parts.lblController.textContent = "Controller";
+          parts.lblController.textContent = T("controllerLabel");
         }
 
         function applyTranslations() {
@@ -3207,7 +3209,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const op = 0.2 + intensity * 0.8;
           wireEl.setAttribute("stroke-width", sw.toFixed(2));
           wireEl.setAttribute("opacity", op.toFixed(3));
-          wireEl.removeAttribute("stroke-dasharray");
+          if (intensity === 0) {
+            wireEl.setAttribute("stroke-dasharray", "6 4");
+          } else {
+            wireEl.removeAttribute("stroke-dasharray");
+          }
         }
 
         function updateBoard(frameDt) {
@@ -3315,10 +3321,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           /* ── drain valve visual ──────────────────────────── */
           const uOut = clamp(state.uOut, 0, 1);
+          const tankEmpty = state.h <= 0;
           parts.drainGate.setAttribute("x", 566 + 32 * uOut);
           setStreamWidth(
             parts.drainWaterDown,
-            uOut,
+            tankEmpty ? 0 : uOut,
             DRAIN_PIPE_W,
             DRAIN_PIPE_LX,
           );
@@ -3327,7 +3334,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           parts.manualGate.setAttribute("x", 322 - 32 * state.uManual);
           setStreamWidth(
             parts.manualWaterDown,
-            state.uManual,
+            tankEmpty ? 0 : state.uManual,
             MANUAL_PIPE_W,
             MANUAL_PIPE_LX + MANUAL_PIPE_W,
             true,
