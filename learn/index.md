@@ -29,6 +29,10 @@ Draw a route for a cartoon bug climbing a hill and discover the difference betwe
 
 Fire a cannonball on the Moon, Mercury, Venus, Earth, or Mars and discover how gravity shapes the path. Drag the launch vector, adjust mass, and see why heavier cannonballs follow the same arc in a vacuum. Includes a Hit the Target game mode!
 
+### [Fraction Playground](fractions.html) `Mathematics`
+
+Build, compare, and place fractions and decimals. Tap bars, circles, or a hundred grid to fill equal parts, drag a number line marker, and solve guided missions across three difficulty levels. Includes an explore mode!
+
 ### [Piano Scale Pattern Generator](gamgen.html) `Music`
 
 Visual generator for piano scale patterns. Pick a root note and scale type to see the notes laid out on a keyboard diagram.
@@ -52,6 +56,10 @@ Command an Epstein drive ship on a straight-line transfer between planets. Accel
 ### [Time Dilation Simulator](timerel.html) `Astrophysics`
 
 A twin on Earth, a twin in a rocket — who ages less? Pick a real star, set the speed as a fraction of light, and watch two clocks tick at different rates as the Lorentz factor stretches time.
+
+### [Star Lab](starlab.html) `Astrophysics`
+
+Create a star and watch it live and die. Pick from 14 real stars or dial your own mass to see the full lifecycle — from protostar to white dwarf, neutron star, or black hole. Hover over timeline phases for kid-friendly educational cards.
 
 ### [Gravitational Route Time Dilation](gravrel.html) `Astrophysics`
 

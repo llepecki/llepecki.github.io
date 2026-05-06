@@ -352,6 +352,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         pointer-events: none;
       }
 
+      .burn-miss-zone {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        background: rgba(249, 117, 131, 0.12);
+        pointer-events: none;
+      }
+
       .info-text {
         font-size: 12px;
         color: var(--text-dim);
@@ -859,6 +867,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           <span class="ctrl-label" id="lblBurn">Burn</span>
           <div class="burn-meter-wrap">
             <div class="burn-meter">
+              <div class="burn-miss-zone" id="burnMissLo"></div>
+              <div class="burn-miss-zone" id="burnMissHi"></div>
               <div class="burn-target" id="burnTarget"></div>
               <div class="burn-fill" id="burnFill"></div>
             </div>
@@ -959,18 +969,21 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             BOUNCE_AMP: 0,
             BOUNCE_FREQ: 0,
             PHASE_TOL_DEG: 30,
+            CAPTURE_TOL_FRAC: 0.05,
           },
           medium: {
             BURN_SHRINK_SEC: 5,
             BOUNCE_AMP: 0,
             BOUNCE_FREQ: 0,
             PHASE_TOL_DEG: 15,
+            CAPTURE_TOL_FRAC: 0.03,
           },
           hard: {
             BURN_SHRINK_SEC: 3,
             BOUNCE_AMP: 0.15,
             BOUNCE_FREQ: 0.8,
             PHASE_TOL_DEG: 8,
+            CAPTURE_TOL_FRAC: 0.015,
           },
         };
 
@@ -1107,6 +1120,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             promptReady: "Hold ENGINE to launch!",
             promptFlip: "Hold ENGINE \u2014 release in the green zone to flip",
             promptBrake: "Braking to destination...",
+            promptTransit: "Tap ENGINE to flip when ready",
+            promptBrake2: "Hold ENGINE \u2014 release on target to brake",
+            promptNoBand: "No capture burn \u2014 best effort only",
             promptCoast: "Coasting \u2014 engines off...",
             engineWait: "WAIT...",
             engineLaunch: "HOLD TO LAUNCH",
@@ -1130,6 +1146,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             hintSlowTransfer:
               "Transfer completed but acceleration was far from optimal.",
             hintSolarFatal: "Too close to the Sun \u2014 crew cooked.",
+            hintMissOvershoot:
+              "Braking too gentle \u2014 ship overshot the rendezvous.",
+            hintMissUndershoot:
+              "Braking too hard \u2014 ship stopped short of the rendezvous.",
             clickDismiss: "Click to try again",
             info: 'This is a simplified 2D teaching model. Planets follow accurate ephemeris-based orbits computed by the Astronomy Engine library. The spacecraft follows a straight-line constant-acceleration "flip and burn" profile between departure and predicted intercept positions.<br><br>An <b>Epstein drive flip-and-burn</b> accelerates halfway, rotates 180\u00b0, then decelerates the rest of the way. Hold ENGINE to choose your acceleration. Higher acceleration means a faster transfer but more g-force on the crew. Too high and they don\u2019t survive.',
             years: "yr",
@@ -1193,6 +1213,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             promptFlip:
               "Trzymaj SILNIK \u2014 pu\u015b\u0107 w zielonej strefie by flipowa\u0107",
             promptBrake: "Hamowanie do celu...",
+            promptTransit: "Naci\u015bnij SILNIK aby flipowa\u0107",
+            promptBrake2: "Trzymaj SILNIK \u2014 pu\u015b\u0107 na celu",
+            promptNoBand:
+              "Brak mo\u017cliwo\u015bci przechwycenia \u2014 pr\u00f3buj",
             promptCoast: "Dryf \u2014 silniki wy\u0142\u0105czone...",
             engineWait: "CZEKAJ...",
             engineLaunch: "TRZYMAJ: START",
@@ -1218,6 +1242,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "Transfer uko\u0144czony, ale przyspieszenie dalekie od optymalnego.",
             hintSolarFatal:
               "Za blisko S\u0142o\u0144ca \u2014 za\u0142oga si\u0119 usma\u017cy\u0142a.",
+            hintMissOvershoot:
+              "Za s\u0142abe hamowanie \u2014 statek przelecia\u0142 punkt spotkania.",
+            hintMissUndershoot:
+              "Za mocne hamowanie \u2014 statek zatrzyma\u0142 si\u0119 przed celem.",
             clickDismiss: "Kliknij, aby spr\u00f3bowa\u0107 ponownie",
             info: "To uproszczony dwuwymiarowy model dydaktyczny. Pozycje planet s\u0105 obliczane na podstawie dok\u0142adnych efemeryd biblioteki Astronomy Engine. Statek leci po linii prostej ze sta\u0142ym przyspieszeniem nap\u0119du Epsteina.<br><br><b>Flip-and-burn</b> to manewr, w kt\u00f3rym statek przyspiesza do po\u0142owy drogi, obraca si\u0119 o 180\u00b0 i hamuje reszt\u0119 drogi. Przytrzymaj SILNIK, aby wybra\u0107 przyspieszenie. Wy\u017csze przyspieszenie = szybszy transfer, ale wi\u0119ksze przeci\u0105\u017cenie. Za du\u017co \u2014 za\u0142oga ginie.",
             years: "lat",
@@ -1255,7 +1283,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           draggingKey: null,
           dragHoverKey: null,
           difficulty: "easy",
-          phase: "prelaunch", // prelaunch | burn | flipping | braking | coasting | result
+          phase: "prelaunch", // prelaunch | burn | transit | flipping | burn2 | decel | captured | coasting | result
           simTime: currentEpochYears(),
           timeWarp: 1,
           warpLevel: "normal",
@@ -1274,6 +1302,19 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             committed: false,
           },
 
+          // Second burn interaction — player sets braking acceleration
+          burn2: {
+            holding: false,
+            holdStart: 0,
+            holdDuration: 0,
+            accel: 0,
+            meterFrac: 0,
+            committed: false,
+          },
+
+          // Transit: required decel shown on burn bar (g)
+          transitReqAccelG: 0,
+
           // Spacecraft
           sc: { x: 0, y: 0, launched: false, trail: [] },
 
@@ -1291,7 +1332,19 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           // Transfer physics
           accelFinal: 0,
+          accelFinal1: 0,
+          accelFinal2: 0,
           tActual: 0,
+          tAccelHalf: 0,
+          tDecelHalf: 0,
+          tauSimDecel: 0,
+          flipPointPos: null,
+          vPeakAtFlip: 0,
+          sFlip: 0,
+          a2Target: 0,
+          burn2Band: null,
+          result1: null,
+          result2: null,
 
           // Flip animation
           flipStartWall: 0,
@@ -1616,6 +1669,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           };
         }
 
+        // Single-line braking: the ship decelerates along the same
+        // transfer line to stop exactly at rdRef.
+        // a2 = vFlip² / (2 * remaining)
+        // T_brake = vFlip / a2  =  2 * remaining / vFlip
+
         const WARP_K = 0.75;
 
         function computePairSpeedScale(homeKey, destKey) {
@@ -1705,6 +1763,47 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           );
         }
 
+        // Inverse of meterToAccelG: g-value → meter fraction [0,1]
+        function accelGToMeter(g, p, q) {
+          if (g <= METER_MIN_G) return 0;
+          if (g >= METER_MAX_G) return 1;
+          if (q - p < 0.001) {
+            if (g <= GREEN_LOW_G) {
+              return (
+                0.5 *
+                (Math.log(g / METER_MIN_G) /
+                  Math.log(GREEN_LOW_G / METER_MIN_G))
+              );
+            }
+            return (
+              0.5 +
+              0.5 *
+                (Math.log(g / GREEN_HIGH_G) /
+                  Math.log(METER_MAX_G / GREEN_HIGH_G))
+            );
+          }
+          if (g <= GREEN_LOW_G) {
+            return (
+              p *
+              (Math.log(g / METER_MIN_G) / Math.log(GREEN_LOW_G / METER_MIN_G))
+            );
+          }
+          if (g <= GREEN_HIGH_G) {
+            return (
+              p +
+              (q - p) *
+                (Math.log(g / GREEN_LOW_G) /
+                  Math.log(GREEN_HIGH_G / GREEN_LOW_G))
+            );
+          }
+          return (
+            q +
+            (1 - q) *
+              (Math.log(g / GREEN_HIGH_G) /
+                Math.log(METER_MAX_G / GREEN_HIGH_G))
+          );
+        }
+
         // Current green zone edges on the meter [0,1], shrinking and bouncing over time
         function getGreenZoneEdges() {
           const diff = DIFFICULTY[state.difficulty];
@@ -1752,7 +1851,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         /* ══════════════════════════════════════════════ */
 
         function isLaunchReady() {
-          return state.ref != null && state.missionStarted;
+          if (!state.ref || !state.missionStarted) return false;
+          const tolRad = DIFFICULTY[state.difficulty].PHASE_TOL_DEG * DEG2RAD;
+          return Math.abs(state.ref.phaseError) <= tolRad;
         }
 
         /* ══════════════════════════════════════════════ */
@@ -1763,18 +1864,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const ref = state.transfer;
           if (!ref) return { x: 0, y: 0, s: 0 };
 
-          const accel = state.burn.committed ? state.accelFinal : A_REF;
-          const T = state.burn.committed ? state.tActual : ref.T_ref;
-          const tFlip = T / 2;
+          const accel = state.burn.committed ? state.accelFinal1 : A_REF;
+          const s = 0.5 * accel * tau * tau;
 
-          let s;
-          if (tau <= tFlip) {
-            s = 0.5 * accel * tau * tau;
-          } else {
-            const dt = T - tau;
-            s = ref.L - 0.5 * accel * dt * dt;
-          }
-          s = Math.max(0, Math.min(ref.L, s));
+          return {
+            x: ref.r0.x + ref.u.x * s,
+            y: ref.r0.y + ref.u.y * s,
+            s: s,
+          };
+        }
+
+        function getDecelPosition(tau) {
+          const ref = state.transfer;
+          if (!ref) return { x: 0, y: 0, s: 0 };
+
+          const s =
+            state.sFlip +
+            state.vPeakAtFlip * tau -
+            0.5 * state.accelFinal2 * tau * tau;
 
           return {
             x: ref.r0.x + ref.u.x * s,
@@ -1819,8 +1926,25 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           return { type: "close" };
         }
 
+        const RESULT_SEVERITY = {
+          success: 0,
+          slow: 1,
+          close: 2,
+          fatal: 3,
+        };
+
+        function worstResult(r1, r2) {
+          const s1 = RESULT_SEVERITY[r1.type] || 0;
+          const s2 = RESULT_SEVERITY[r2.type] || 0;
+          return s1 >= s2 ? r1.type : r2.type;
+        }
+
         function getResultHint() {
           if (state.resultSubtype === "solar") return T("hintSolarFatal");
+          if (state.resultSubtype === "overshoot")
+            return T("hintMissOvershoot");
+          if (state.resultSubtype === "undershoot")
+            return T("hintMissUndershoot");
           if (state.resultType === "fatal") return T("hintHighG");
           if (state.resultType === "close") return T("hintInjured");
           if (state.resultType === "slow") return T("hintSlowTransfer");
@@ -2094,6 +2218,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         function drawTransferLine() {
           if (!state.transfer) return;
           if (state.phase === "prelaunch") return;
+          if (state.phase === "captured" || state.phase === "result") return;
 
           const ref = state.transfer;
           const p0 = toCanvas(ref.r0.x, ref.r0.y);
@@ -2103,7 +2228,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.setLineDash([4, 4]);
           ctx.moveTo(p0.cx, p0.cy);
           ctx.lineTo(p1.cx, p1.cy);
-          ctx.strokeStyle = "rgba(255,255,255,0.15)";
+          ctx.strokeStyle = "rgba(255,180,80,0.35)";
           ctx.lineWidth = 1;
           ctx.stroke();
           ctx.setLineDash([]);
@@ -2118,29 +2243,33 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           const baseAngle = Math.atan2(-ref.u.y, ref.u.x);
 
-          if (
-            state.phase === "transit" ||
-            state.phase === "captured" ||
-            (state.phase === "result" && state.burn.committed)
-          ) {
-            if (state.flipStartWall === 0) {
-              return baseAngle; // before flip: pointing forward
-            }
+          // Forward along first leg: burn, transit
+          if (state.phase === "burn" || state.phase === "transit") {
+            return baseAngle;
+          }
+
+          // Flipping: interpolate from forward to backward along first leg
+          if (state.phase === "flipping") {
             const flipProgress = Math.min(
               1,
               (performance.now() - state.flipStartWall) /
                 (state.flipDurMs || FLIP_ANIM_MS),
             );
-            if (flipProgress < 1) {
-              return baseAngle + Math.PI * flipProgress; // during flip: rotating
-            }
-            return baseAngle + Math.PI; // after flip: pointing backward
+            return baseAngle + Math.PI * flipProgress;
           }
-          if (state.phase === "coasting") {
+
+          // After flip: backward along same transfer line
+          if (
+            state.phase === "burn2" ||
+            state.phase === "decel" ||
+            state.phase === "captured" ||
+            state.phase === "coasting" ||
+            (state.phase === "result" && state.accelFinal2 > 0)
+          ) {
             return baseAngle + Math.PI;
           }
 
-          return baseAngle; // burn phase: pointing forward
+          return baseAngle;
         }
 
         function drawSpacecraft() {
@@ -2213,25 +2342,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.closePath();
           ctx.fill();
 
-          // Determine flip state for engine/RCS logic
-          let isFlipping = false;
-          let flipDone = false;
-          if (state.phase === "transit" && state.flipStartWall > 0) {
-            const fProg = Math.min(
-              1,
-              (performance.now() - state.flipStartWall) /
-                (state.flipDurMs || FLIP_ANIM_MS),
-            );
-            isFlipping = fProg < 1;
-            flipDone = fProg >= 1;
-          }
-
-          // Engine flame: during burn, or during transit when NOT mid-flip
+          // Engine flame: burn, transit (accel), decel
           if (
-            state.phase === "burn" ||
-            (state.phase === "transit" &&
-              !isFlipping &&
-              state.solarDeathStart === 0)
+            (state.phase === "burn" ||
+              state.phase === "transit" ||
+              state.phase === "decel") &&
+            state.solarDeathStart === 0
           ) {
             const fl = 6.6 + 4.4 * Math.sin(Date.now() / 60);
             ctx.fillStyle = "rgba(255,140,30,0.6)";
@@ -2244,7 +2360,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           // RCS thrusters during flip rotation
-          if (state.phase === "transit" && isFlipping) {
+          if (state.phase === "flipping") {
             const rcsLen = 3.3 + 2.2 * Math.sin(Date.now() / 40);
             ctx.fillStyle = "rgba(100,180,255,0.5)";
             ctx.beginPath();
@@ -2262,11 +2378,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           // Flash at flip completion
-          if (
-            state.phase === "transit" &&
-            flipDone &&
-            state.flipStartWall > 0
-          ) {
+          if (state.phase === "decel" && state.flipStartWall > 0) {
             const flashAge =
               performance.now() -
               (state.flipStartWall + (state.flipDurMs || FLIP_ANIM_MS));
@@ -2283,6 +2395,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         function drawTrail() {
+          if (state.phase === "captured" || state.phase === "result") return;
           const trail = state.sc.trail;
           if (trail.length < 2) return;
 
@@ -2353,9 +2466,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             cy = iH / 2;
           const bodyKey =
             state.phase === "transit" ||
+            state.phase === "flipping" ||
+            state.phase === "decel" ||
             state.phase === "captured" ||
             state.phase === "coasting" ||
-            (state.phase === "result" && state.burn.committed)
+            (state.phase === "result" &&
+              (state.burn.committed || state.accelFinal2 > 0))
               ? state.destKey
               : state.homeKey;
           const body = bodyByKey[bodyKey];
@@ -2384,8 +2500,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const scX = cx + orbitR * Math.cos(scAngle);
           const scY = cy - orbitR * Math.sin(scAngle);
 
-          // Engine glow during burn/transit
-          if (state.phase === "burn" || state.phase === "transit") {
+          // Engine glow during burn/transit/decel
+          if (
+            state.phase === "burn" ||
+            state.phase === "transit" ||
+            state.phase === "decel"
+          ) {
             const flR = 5.5 + 2.2 * Math.sin(Date.now() / 80);
             ictx.beginPath();
             ictx.arc(scX, scY, flR, 0, TWO_PI);
@@ -2393,13 +2513,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ictx.fill();
           }
 
-          // RCS glow during mid-transit flip
-          if (
-            state.phase === "transit" &&
-            state.flipStartWall > 0 &&
-            performance.now() - state.flipStartWall <
-              (state.flipDurMs || FLIP_ANIM_MS)
-          ) {
+          // RCS glow during flip
+          if (state.phase === "flipping") {
             const rcsR = 4.4 + 2.2 * Math.sin(Date.now() / 40);
             ictx.beginPath();
             ictx.arc(scX, scY, rcsR, 0, TWO_PI);
@@ -2433,129 +2548,299 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         /* ══════════════════════════════════════════════ */
 
         function startBurn() {
-          if (state.phase !== "prelaunch") return;
-          if (!isLaunchReady()) return;
+          if (state.phase === "prelaunch") {
+            if (!isLaunchReady()) return;
 
-          // Lock reference at launch time
-          const ref = computeFlipBurnRef(
-            state.homeKey,
-            state.destKey,
-            state.simTime,
-          );
-          state.transfer = ref;
-          state.ref = ref;
-          state.solarClearance = ref.solarClearance;
-          state.launchSimTime = state.simTime;
-          state.tauSim = 0;
+            // Lock reference at launch time
+            const ref = computeFlipBurnRef(
+              state.homeKey,
+              state.destKey,
+              state.simTime,
+            );
+            state.transfer = ref;
+            state.ref = ref;
+            state.solarClearance = ref.solarClearance;
+            state.launchSimTime = state.simTime;
+            state.tauSim = 0;
 
-          // Compute burn meter zones
-          state.burnZones = computeBurnMeterZones();
+            // Compute burn meter zones
+            state.burnZones = computeBurnMeterZones();
 
-          // Place spacecraft at home planet position
-          const hp = helioPosition(bodyByKey[state.homeKey], state.simTime);
-          state.sc.x = hp.x;
-          state.sc.y = hp.y;
-          state.sc.launched = true;
-          state.sc.trail = [{ x: hp.x, y: hp.y }];
+            // Place spacecraft at home planet position
+            const hp = helioPosition(bodyByKey[state.homeKey], state.simTime);
+            state.sc.x = hp.x;
+            state.sc.y = hp.y;
+            state.sc.launched = true;
+            state.sc.trail = [{ x: hp.x, y: hp.y }];
 
-          // Start burn phase
-          state.phase = "burn";
-          state.burn.holding = true;
-          state.burn.holdStart = performance.now();
-          state.burn.holdDuration = 0;
-          state.burn.accel = 0;
-          state.burn.meterFrac = 0;
+            // Start burn phase
+            state.phase = "burn";
+            state.burn.holding = true;
+            state.burn.holdStart = performance.now();
+            state.burn.holdDuration = 0;
+            state.burn.accel = 0;
+            state.burn.meterFrac = 0;
 
-          updateEngineBtn();
-          updateBurnMeter();
+            updateEngineBtn();
+            updateBurnMeter();
+          } else if (state.phase === "transit") {
+            // Tap to flip — record outbound state, enter flip animation
+            const ref = state.transfer;
+            const tau = state.tauSim;
+            const sFlip = 0.5 * state.accelFinal1 * tau * tau;
+            const vFlip = state.accelFinal1 * tau;
+            const remaining = ref.L - sFlip;
+
+            state.flipPointPos = { x: state.sc.x, y: state.sc.y };
+            state.sFlip = sFlip;
+            state.vPeakAtFlip = vFlip;
+            state.tAccelHalf = tau;
+            state.flipTrailIdx = state.sc.trail.length;
+
+            // Guidance target — not committed
+            // -1 sentinel = past stop point (no capture on this line)
+            state.a2Target =
+              remaining > 1e-10 ? (vFlip * vFlip) / (2 * remaining) : -1;
+
+            // Transition to flipping
+            state.phase = "flipping";
+            state.flipStartWall = performance.now();
+            state.flipDurMs = FLIP_ANIM_MS;
+            if (state.warpLocked) state.warpLocked = false;
+            state.burnZones = null;
+            updateEngineBtn();
+            updateBurnMeter();
+          } else if (state.phase === "burn2") {
+            // Hold ENGINE to choose braking acceleration
+            state.burn2.holding = true;
+            state.burn2.holdStart = performance.now();
+            state.burn2.holdDuration = 0;
+            state.burn2.accel = 0;
+            state.burn2.meterFrac = 0;
+            updateEngineBtn();
+            updateBurnMeter();
+          }
         }
 
         function endBurn() {
-          if (state.phase !== "burn" || !state.burn.holding) return;
+          if (state.phase === "burn" && state.burn.holding) {
+            // --- First burn: set acceleration ---
+            state.burn.holding = false;
+            state.burn.committed = true;
 
-          state.burn.holding = false;
-          state.burn.committed = true;
+            const ref = state.transfer;
+            let accel = state.burn.accel;
+            if (accel < 1) accel = 1;
+            state.accelFinal = accel;
+            state.accelFinal1 = accel;
+
+            // Re-solve symmetric intercept for player's chosen acceleration
+            const r0 = ref.r0;
+            const dest = bodyByKey[state.destKey];
+            const t0 = state.launchSimTime;
+
+            const T_guess = 2 * Math.sqrt(ref.L / accel);
+            let T_lo = 0;
+            let T_hi = Math.max(2 * T_guess, 1 / 365.25);
+
+            function fIntercept(T) {
+              const rd = helioPosition(dest, t0 + T);
+              const dx = rd.x - r0.x,
+                dy = rd.y - r0.y;
+              const Ld = Math.sqrt(dx * dx + dy * dy);
+              return Ld - (accel * T * T) / 4;
+            }
+
+            while (fIntercept(T_hi) > 0) {
+              T_hi *= 2;
+              if (T_hi > 1000) break;
+            }
+
+            let T_actual = T_guess;
+            for (let i = 0; i < 40; i++) {
+              T_actual = (T_lo + T_hi) / 2;
+              const fVal = fIntercept(T_actual);
+              if (Math.abs(fVal) < 1e-6) break;
+              if (fVal > 0) T_lo = T_actual;
+              else T_hi = T_actual;
+            }
+
+            // Update transfer geometry to actual intercept point
+            const rdActual = helioPosition(dest, t0 + T_actual);
+            const lineX = rdActual.x - r0.x,
+              lineY = rdActual.y - r0.y;
+            let L_actual = Math.sqrt(lineX * lineX + lineY * lineY);
+            if (L_actual < 1e-10) L_actual = 1e-10;
+
+            ref.rdRef = rdActual;
+            ref.line = { x: lineX, y: lineY };
+            ref.L = L_actual;
+            ref.u = { x: lineX / L_actual, y: lineY / L_actual };
+
+            // Recheck solar clearance with new transfer line
+            const dotR0Seg = r0.x * lineX + r0.y * lineY;
+            const dotSegSeg = lineX * lineX + lineY * lineY;
+            const q = Math.max(0, Math.min(1, -dotR0Seg / dotSegSeg));
+            const closestX = r0.x + q * lineX;
+            const closestY = r0.y + q * lineY;
+            ref.solarClearance = Math.sqrt(
+              closestX * closestX + closestY * closestY,
+            );
+            state.solarClearance = ref.solarClearance;
+
+            state.tauFlip = T_actual / 2;
+            state.tAccelHalf = T_actual / 2;
+            state.tActual = T_actual;
+
+            // Evaluate first burn result (don't set final resultType yet)
+            state.result1 = evaluateAccelResult(accel);
+            state.resultType = null;
+            state.resultSubtype = null;
+
+            // Transition to transit — accel half only
+            state.phase = "transit";
+            state.flipStartWall = 0;
+            state.flipAngle = 0;
+            state.flipTrailIdx = 0;
+
+            state.burnZones = computeBurnMeterZones();
+            updateEngineBtn();
+          } else if (state.phase === "burn2" && state.burn2.holding) {
+            commitBurn2();
+          }
+        }
+
+        function computeBurn2TargetBand() {
+          const ref = state.transfer;
+          const vFlip = state.vPeakAtFlip;
+          const sFlipVal = state.sFlip;
+          const tauFlip = state.tAccelHalf;
+          const captureTol = Math.max(
+            0.01,
+            ref.L * DIFFICULTY[state.difficulty].CAPTURE_TOL_FRAC,
+          );
+          const dest = bodyByKey[state.destKey];
+
+          function missAtA2(a2) {
+            const sStop = sFlipVal + (vFlip * vFlip) / (2 * a2);
+            const T_arrive = tauFlip + vFlip / a2;
+            const rStopX = ref.r0.x + ref.u.x * sStop;
+            const rStopY = ref.r0.y + ref.u.y * sStop;
+            const rp = helioPosition(dest, state.launchSimTime + T_arrive);
+            const dx = rp.x - rStopX;
+            const dy = rp.y - rStopY;
+            return Math.sqrt(dx * dx + dy * dy);
+          }
+
+          if (vFlip < 1e-10 || state.a2Target < 0)
+            return { lo: 0, hi: 0, bestA2: 0 };
+
+          // Sample across full meter range to find actual miss minimum
+          const aLo = METER_MIN_G * G_TO_AUYR2;
+          const aHi = METER_MAX_G * G_TO_AUYR2;
+          const N = 200;
+          let bestA2 = aLo;
+          let bestMiss = Infinity;
+          for (let i = 0; i <= N; i++) {
+            const a2 = aLo * Math.pow(aHi / aLo, i / N);
+            const m = missAtA2(a2);
+            if (m < bestMiss) {
+              bestMiss = m;
+              bestA2 = a2;
+            }
+          }
+
+          // No capture band if best miss exceeds tolerance
+          if (bestMiss > captureTol)
+            return { lo: 0, hi: 0, bestA2: bestA2 / G_TO_AUYR2 };
+
+          // Binary search outward from bestA2 for band edges
+          let lo_lo = aLo;
+          let lo_hi = bestA2;
+          for (let i = 0; i < 30; i++) {
+            const mid = Math.sqrt(lo_lo * lo_hi);
+            if (missAtA2(mid) > captureTol) lo_lo = mid;
+            else lo_hi = mid;
+          }
+
+          let hi_lo = bestA2;
+          let hi_hi = aHi;
+          for (let i = 0; i < 30; i++) {
+            const mid = Math.sqrt(hi_lo * hi_hi);
+            if (missAtA2(mid) > captureTol) hi_hi = mid;
+            else hi_lo = mid;
+          }
+
+          return {
+            lo: lo_hi / G_TO_AUYR2,
+            hi: hi_lo / G_TO_AUYR2,
+            bestA2: bestA2 / G_TO_AUYR2,
+          };
+        }
+
+        function commitBurn2() {
+          if (state.phase !== "burn2" || !state.burn2.holding) return;
+          state.burn2.holding = false;
+          state.burn2.committed = true;
 
           const ref = state.transfer;
-          let accel = state.burn.accel;
-          if (accel < 1) accel = 1; // floor to prevent division by zero
-          state.accelFinal = accel;
+          let a2 = state.burn2.accel;
+          if (a2 < 1) a2 = 1;
 
-          // Re-solve intercept for player's chosen acceleration
-          // The reference was computed at A_REF — different accel means different
-          // transfer time, so the destination planet will be at a different position.
-          const r0 = ref.r0;
+          state.accelFinal2 = a2;
+          state.tDecelHalf = state.vPeakAtFlip / a2;
+          state.tActual = state.tAccelHalf + state.tDecelHalf;
+
+          // Evaluate survivability
+          state.result2 = evaluateAccelResult(a2);
+          const survivalResult = worstResult(state.result1, state.result2);
+
+          // Hit/miss from actual physics
+          const sStop =
+            state.sFlip + (state.vPeakAtFlip * state.vPeakAtFlip) / (2 * a2);
+          const rStopX = ref.r0.x + ref.u.x * sStop;
+          const rStopY = ref.r0.y + ref.u.y * sStop;
           const dest = bodyByKey[state.destKey];
-          const t0 = state.launchSimTime;
-
-          const T_guess = 2 * Math.sqrt(ref.L / accel);
-          let T_lo = 0;
-          let T_hi = Math.max(2 * T_guess, 1 / 365.25);
-
-          function fIntercept(T) {
-            const rd = helioPosition(dest, t0 + T);
-            const dx = rd.x - r0.x,
-              dy = rd.y - r0.y;
-            const Ld = Math.sqrt(dx * dx + dy * dy);
-            return Ld - (accel * T * T) / 4;
-          }
-
-          while (fIntercept(T_hi) > 0) {
-            T_hi *= 2;
-            if (T_hi > 1000) break;
-          }
-
-          let T_actual = T_guess;
-          for (let i = 0; i < 40; i++) {
-            T_actual = (T_lo + T_hi) / 2;
-            const fVal = fIntercept(T_actual);
-            if (Math.abs(fVal) < 1e-6) break;
-            if (fVal > 0) T_lo = T_actual;
-            else T_hi = T_actual;
-          }
-
-          // Update transfer geometry to actual intercept point
-          const rdActual = helioPosition(dest, t0 + T_actual);
-          const lineX = rdActual.x - r0.x,
-            lineY = rdActual.y - r0.y;
-          let L_actual = Math.sqrt(lineX * lineX + lineY * lineY);
-          if (L_actual < 1e-10) L_actual = 1e-10;
-
-          ref.rdRef = rdActual;
-          ref.line = { x: lineX, y: lineY };
-          ref.L = L_actual;
-          ref.u = { x: lineX / L_actual, y: lineY / L_actual };
-
-          // Recheck solar clearance with new transfer line
-          const dotR0Seg = r0.x * lineX + r0.y * lineY;
-          const dotSegSeg = lineX * lineX + lineY * lineY;
-          const q = Math.max(0, Math.min(1, -dotR0Seg / dotSegSeg));
-          const closestX = r0.x + q * lineX;
-          const closestY = r0.y + q * lineY;
-          ref.solarClearance = Math.sqrt(
-            closestX * closestX + closestY * closestY,
+          const rPlanet = helioPosition(
+            dest,
+            state.launchSimTime + state.tActual,
           );
-          state.solarClearance = ref.solarClearance;
+          const mx = rPlanet.x - rStopX;
+          const my = rPlanet.y - rStopY;
+          const missDistance = Math.sqrt(mx * mx + my * my);
+          const captureTol = Math.max(
+            0.01,
+            ref.L * DIFFICULTY[state.difficulty].CAPTURE_TOL_FRAC,
+          );
 
-          state.tauFlip = T_actual / 2;
-          state.tActual = T_actual;
-
-          // Evaluate result based on acceleration
-          const result = evaluateAccelResult(accel);
-          state.resultType = result.type;
-          state.resultSubtype = null;
-
-          // Transition to transit — flip happens mid-flight
-          state.phase = "transit";
-          state.flipStartWall = 0; // flip not started yet
-          state.flipAngle = 0;
-          state.flipTrailIdx = 0;
-
-          if (state.warpLocked) {
-            state.warpLocked = false;
+          // Miss subtype from a2 vs best-capture a2
+          const bestRef =
+            state.burn2Band && state.burn2Band.bestA2 > 0
+              ? state.burn2Band.bestA2 * G_TO_AUYR2
+              : state.a2Target > 0
+                ? state.a2Target
+                : a2;
+          if (survivalResult === "fatal") {
+            state.resultType = "fatal";
+            state.resultSubtype = null;
+          } else if (state.a2Target < 0) {
+            // Past stop point — always overshoot
+            state.resultType = "miss";
+            state.resultSubtype = "overshoot";
+          } else if (missDistance > captureTol) {
+            state.resultType = "miss";
+            state.resultSubtype = a2 < bestRef ? "overshoot" : "undershoot";
+          } else {
+            state.resultType = survivalResult;
+            state.resultSubtype = null;
           }
 
+          // Transition to decel
+          state.phase = "decel";
+          state.tauSimDecel = 0;
+          state.burnZones = null;
           updateEngineBtn();
+          updateBurnMeter();
         }
 
         const engineBtn = document.getElementById("engineBtn");
@@ -2569,7 +2854,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           endBurn();
         });
         engineBtn.addEventListener("mouseleave", function () {
-          if (state.burn.holding) endBurn();
+          if (state.burn.holding || state.burn2.holding) endBurn();
         });
         engineBtn.addEventListener(
           "touchstart",
@@ -2588,10 +2873,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           { passive: false },
         );
         engineBtn.addEventListener("touchcancel", function () {
-          if (state.burn.holding) endBurn();
+          if (state.burn.holding || state.burn2.holding) endBurn();
         });
         window.addEventListener("blur", function () {
-          if (state.burn.holding) endBurn();
+          if (state.burn.holding || state.burn2.holding) endBurn();
         });
         window.addEventListener("keydown", function (e) {
           if (e.code === "Space" && !e.repeat) {
@@ -2694,6 +2979,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             }
           } else if (state.phase === "burn") {
             btn.classList.add("firing");
+          } else if (state.phase === "transit") {
+            // Always enabled — no armed/pulsing cue
+          } else if (state.phase === "burn2") {
+            if (state.burn2.holding) {
+              btn.classList.add("firing");
+            } else {
+              btn.classList.add("armed");
+            }
           } else {
             btn.disabled = true;
           }
@@ -2718,19 +3011,28 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               el.classList.add("active");
               break;
             case "transit":
-              if (state.flipStartWall === 0) {
-                text = T("burning");
-                el.classList.add("active");
-              } else if (
-                performance.now() - state.flipStartWall <
-                (state.flipDurMs || FLIP_ANIM_MS)
+              text = T("promptTransit");
+              el.classList.add("active");
+              break;
+            case "burn2":
+              if (
+                state.burn2Band &&
+                state.burn2Band.lo === 0 &&
+                state.burn2Band.hi === 0
               ) {
-                text = T("flipping");
-                el.classList.add("active");
+                text = T("promptNoBand");
               } else {
-                text = T("promptBrake");
-                el.classList.add("cruise");
+                text = T("promptBrake2");
               }
+              el.classList.add("active");
+              break;
+            case "flipping":
+              text = T("flipping");
+              el.classList.add("active");
+              break;
+            case "decel":
+              text = T("promptBrake");
+              el.classList.add("cruise");
               break;
             case "captured":
               text = "";
@@ -2762,8 +3064,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           let step = 0;
           if (state.phase === "prelaunch" || state.phase === "burn") step = 0;
-          else if (state.phase === "transit" || state.phase === "coasting")
+          else if (
+            state.phase === "transit" ||
+            state.phase === "flipping" ||
+            state.phase === "burn2"
+          )
             step = 1;
+          else if (state.phase === "decel") step = 2;
           else if (state.phase === "captured") step = 3;
           else if (state.phase === "result" && state.resultType === "success")
             step = 3;
@@ -2796,9 +3103,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           const zones = state.burnZones;
-          const accel = state.burn.accel;
+          const activeBurn =
+            state.phase === "transit"
+              ? {
+                  accel: state.transitReqAccelG * G_TO_AUYR2,
+                  meterFrac: accelGToMeter(state.transitReqAccelG, 0.25, 0.75),
+                }
+              : state.phase === "burn2"
+                ? state.burn2
+                : state.burn;
+          const accel = activeBurn.accel;
 
-          const pct = Math.min(100, state.burn.meterFrac * 100);
+          const pct = Math.min(100, activeBurn.meterFrac * 100);
           fillEl.style.width = pct + "%";
 
           // Coloring
@@ -2811,14 +3127,62 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             fillEl.classList.add("fatal");
           }
 
-          // Green zone — edges come from the piecewise curve parameterization
-          const edges = getGreenZoneEdges();
-          if (edges.q - edges.p < 0.005) {
+          // Green zone / target band
+          const missLo = document.getElementById("burnMissLo");
+          const missHi = document.getElementById("burnMissHi");
+
+          if (state.phase === "transit") {
+            // Transit: fill only — no green target, no miss zones
             targetEl.style.display = "none";
+            missLo.style.display = "none";
+            missHi.style.display = "none";
+          } else if (state.phase === "burn2" && state.burn2Band) {
+            // Burn2: physics-based target band
+            const edges = getGreenZoneEdges();
+            const bandLoFrac = accelGToMeter(
+              state.burn2Band.lo,
+              edges.p,
+              edges.q,
+            );
+            const bandHiFrac = accelGToMeter(
+              state.burn2Band.hi,
+              edges.p,
+              edges.q,
+            );
+            if (
+              state.burn2Band.lo > 0 &&
+              state.burn2Band.hi > state.burn2Band.lo
+            ) {
+              targetEl.style.display = "";
+              targetEl.style.left = bandLoFrac * 100 + "%";
+              targetEl.style.width = (bandHiFrac - bandLoFrac) * 100 + "%";
+              // Miss zones outside band
+              missLo.style.display = "";
+              missLo.style.left = "0";
+              missLo.style.width = Math.max(0, bandLoFrac * 100) + "%";
+              missHi.style.display = "";
+              missHi.style.left = Math.min(100, bandHiFrac * 100) + "%";
+              missHi.style.width = Math.max(0, (1 - bandHiFrac) * 100) + "%";
+            } else {
+              // No valid capture band
+              targetEl.style.display = "none";
+              missLo.style.display = "";
+              missLo.style.left = "0";
+              missLo.style.width = "100%";
+              missHi.style.display = "none";
+            }
           } else {
-            targetEl.style.display = "";
-            targetEl.style.left = edges.p * 100 + "%";
-            targetEl.style.width = (edges.q - edges.p) * 100 + "%";
+            // First burn: standard green zone from difficulty
+            const edges = getGreenZoneEdges();
+            if (edges.q - edges.p < 0.005) {
+              targetEl.style.display = "none";
+            } else {
+              targetEl.style.display = "";
+              targetEl.style.left = edges.p * 100 + "%";
+              targetEl.style.width = (edges.q - edges.p) * 100 + "%";
+            }
+            missLo.style.display = "none";
+            missHi.style.display = "none";
           }
         }
 
@@ -2829,13 +3193,25 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           document.getElementById("missionVal").textContent =
             T(state.homeKey) + " \u2192 " + T(state.destKey);
 
-          // Acceleration readout
+          // Acceleration readout — must match the quantity driving the current phase
           const brakingEl = document.getElementById("brakingVal");
           let a_g;
-          if (state.phase === "burn" && state.burn.holding) {
+          if (state.phase === "transit") {
+            a_g = state.transitReqAccelG;
+          } else if (state.phase === "burn2") {
+            if (state.burn2.holding) {
+              a_g = state.burn2.accel / G_TO_AUYR2;
+            } else if (state.a2Target < 0) {
+              a_g = METER_MAX_G;
+            } else {
+              a_g = state.a2Target / G_TO_AUYR2;
+            }
+          } else if (state.accelFinal2 > 0) {
+            a_g = state.accelFinal2 / G_TO_AUYR2;
+          } else if (state.phase === "burn" && state.burn.holding) {
             a_g = state.burn.accel / G_TO_AUYR2;
           } else if (state.burn.committed) {
-            a_g = state.accelFinal / G_TO_AUYR2;
+            a_g = state.accelFinal1 / G_TO_AUYR2;
           } else {
             a_g = A_REF / G_TO_AUYR2;
           }
@@ -2843,10 +3219,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const bc = accelColor(a_g);
           brakingEl.style.color = "rgb(" + bc.r + "," + bc.g + "," + bc.b + ")";
 
+          const dvDepart =
+            state.vPeakAtFlip > 0 ? state.vPeakAtFlip : ref.dvDepart;
+          const dvArrive =
+            state.vPeakAtFlip > 0 ? state.vPeakAtFlip : ref.dvArrive;
           document.getElementById("dv1Val").textContent =
-            (ref.dvDepart * AU_TO_KMS).toFixed(2) + " km/s";
+            (dvDepart * AU_TO_KMS).toFixed(2) + " km/s";
           document.getElementById("dv2Val").textContent =
-            (ref.dvArrive * AU_TO_KMS).toFixed(2) + " km/s";
+            (dvArrive * AU_TO_KMS).toFixed(2) + " km/s";
 
           if (state.difficulty !== "hard") {
             const pDeg = (ref.phaseCurrent / DEG2RAD).toFixed(1);
@@ -2860,23 +3240,22 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           let statusText;
           switch (state.phase) {
             case "prelaunch":
-              statusText = state.missionStarted
-                ? T("goodWindow")
-                : T("waiting");
+              statusText = isLaunchReady() ? T("goodWindow") : T("waiting");
               break;
             case "burn":
               statusText = T("burning");
               break;
             case "transit":
-              if (
-                state.flipStartWall > 0 &&
-                performance.now() - state.flipStartWall >=
-                  (state.flipDurMs || FLIP_ANIM_MS)
-              ) {
-                statusText = T("brakingStatus");
-              } else {
-                statusText = T("burning");
-              }
+              statusText = T("burning");
+              break;
+            case "flipping":
+              statusText = T("flipping");
+              break;
+            case "burn2":
+              statusText = T("burning");
+              break;
+            case "decel":
+              statusText = T("brakingStatus");
               break;
             case "coasting":
               statusText = T("coastingStatus");
@@ -2941,7 +3320,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             // Live: player is choosing acceleration
             a_g = state.burn.accel / G_TO_AUYR2;
             accelText = a_g.toFixed(2) + " g";
-            // Projected transfer time decreases as accel increases
             if (state.burn.accel > 0) {
               const projT = 2 * Math.sqrt(state.transfer.L / state.burn.accel);
               timeText = formatTransferTime(projT);
@@ -2949,19 +3327,44 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               timeText = state.ref ? formatTransferTime(state.ref.T_ref) : "";
             }
           } else if (state.phase === "transit") {
-            // Constant acceleration throughout (symmetric)
-            a_g = state.accelFinal / G_TO_AUYR2;
+            a_g = state.transitReqAccelG;
+            accelText = a_g.toFixed(2) + " g";
+            timeText = formatTransferTime(state.tauSim);
+          } else if (state.phase === "flipping") {
+            a_g = 0;
+            accelText = "0 g";
+            timeText = formatTransferTime(state.tAccelHalf);
+          } else if (state.phase === "burn2") {
+            if (state.burn2.holding) {
+              a_g = state.burn2.accel / G_TO_AUYR2;
+              accelText = a_g.toFixed(2) + " g";
+            } else if (state.a2Target < 0) {
+              a_g = METER_MAX_G;
+              accelText = ">" + METER_MAX_G + " g";
+            } else {
+              a_g = state.a2Target / G_TO_AUYR2;
+              accelText = a_g.toFixed(2) + " g";
+            }
+            timeText = formatTransferTime(state.tAccelHalf);
+          } else if (state.phase === "decel") {
+            a_g = state.accelFinal2 / G_TO_AUYR2;
             accelText = a_g.toFixed(2) + " g";
             timeText =
-              formatTransferTime(state.tauSim) +
+              formatTransferTime(state.tAccelHalf + state.tauSimDecel) +
               " / " +
               formatTransferTime(state.tActual);
           } else if (state.phase === "captured") {
             a_g = 0;
             accelText = "0 g";
             timeText = formatTransferTime(state.tActual);
-          } else if (state.phase === "result" && state.burn.committed) {
-            a_g = state.accelFinal / G_TO_AUYR2;
+          } else if (
+            state.phase === "result" &&
+            (state.burn.committed || state.accelFinal2 > 0)
+          ) {
+            a_g =
+              state.accelFinal2 > 0
+                ? state.accelFinal2 / G_TO_AUYR2
+                : state.accelFinal1 / G_TO_AUYR2;
             accelText = a_g.toFixed(2) + " g";
             timeText = formatTransferTime(state.tActual);
           } else {
@@ -3133,15 +3536,36 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             meterFrac: 0,
             committed: false,
           };
+          state.burn2 = {
+            holding: false,
+            holdStart: 0,
+            holdDuration: 0,
+            accel: 0,
+            meterFrac: 0,
+            committed: false,
+          };
+          state.transitReqAccelG = 0;
           state.sc = { x: 0, y: 0, launched: false, trail: [] };
           state.transfer = null;
+          state.sFlip = 0;
           state.burnZones = null;
           state.tauFlip = 0;
           state.tauSim = 0;
+          state.tauSimDecel = 0;
           state.launchSimTime = 0;
           state.flipTrailIdx = 0;
           state.accelFinal = 0;
+          state.accelFinal1 = 0;
+          state.accelFinal2 = 0;
           state.tActual = 0;
+          state.tAccelHalf = 0;
+          state.tDecelHalf = 0;
+          state.flipPointPos = null;
+          state.vPeakAtFlip = 0;
+          state.a2Target = 0;
+          state.burn2Band = null;
+          state.result1 = null;
+          state.result2 = null;
           state.flipStartWall = 0;
           state.flipAngle = 0;
           state.flipDurMs = 0;
@@ -3323,24 +3747,25 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 }
                 break;
 
-              case "transit":
-                // Solar death freeze — ship frozen, dissolving
+              case "transit": {
+                // Acceleration half — ship keeps accelerating until player taps
                 if (state.solarDeathStart > 0) {
                   const deathElapsed =
                     (performance.now() - state.solarDeathStart) / 1000;
                   if (deathElapsed >= 2.0) {
+                    // Solar death stays fatal — never overwrite with result1
                     state.phase = "result";
                     showResultOverlay();
                   }
                   break;
                 }
 
-                // Animate transit: 10s at 0.3g (snail), 4s at 20g (deadly)
-                const accelG = state.accelFinal / G_TO_AUYR2;
+                const accelG = state.accelFinal1 / G_TO_AUYR2;
                 const transitSec =
                   10 -
                   (6 * (accelG - METER_MIN_G)) / (METER_MAX_G - METER_MIN_G);
-                const cruiseWarp = state.tActual / (transitSec * SIM_RATE);
+                const cruiseWarp =
+                  (state.tAccelHalf * 2) / (transitSec * SIM_RATE);
                 dtSim = dtReal * cruiseWarp * SIM_RATE;
                 state.tauSim += dtSim;
                 state.simTime += dtSim;
@@ -3351,7 +3776,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
                 // Trail
                 trailAccum += dtSim;
-                let trailInterval = state.tActual / 500;
+                let trailInterval = state.tAccelHalf / 250;
                 if (trailInterval < 0.0001) trailInterval = 0.0001;
                 while (trailAccum >= trailInterval) {
                   trailAccum -= trailInterval;
@@ -3361,31 +3786,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
                 state.insetScAngle += dtReal * 1.5;
 
-                // Trigger flip animation when reaching the flip point
-                if (
-                  state.tauSim >= state.tauFlip &&
-                  state.flipStartWall === 0
-                ) {
-                  state.flipStartWall = performance.now();
-                  state.flipTrailIdx = state.sc.trail.length;
-                  // Flip must finish well before arrival — cap at 1/6 of remaining wall-clock time
-                  const remainingWallMs =
-                    ((state.tActual - state.tauFlip) /
-                      (cruiseWarp * SIM_RATE)) *
-                    1000;
-                  state.flipDurMs = Math.min(FLIP_ANIM_MS, remainingWallMs / 6);
-                  state.flipDurMs = Math.max(state.flipDurMs, 100); // floor at 100ms
-                }
-
-                // Update flip angle (wall-clock driven within transit)
-                if (state.flipStartWall > 0) {
-                  const flipElapsed = performance.now() - state.flipStartWall;
-                  const flipDur = state.flipDurMs || FLIP_ANIM_MS;
-                  state.flipAngle =
-                    Math.PI * Math.min(1, flipElapsed / flipDur);
-                }
-
-                // Solar proximity check — freeze and dissolve
+                // Solar proximity check
                 const sunDist = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
                 if (
                   sunDist < SOLAR_KILL_RADIUS &&
@@ -3397,9 +3798,113 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                   break;
                 }
 
-                // Check completion — ship always reaches destination (symmetric transfer)
-                if (state.tauSim >= state.tActual) {
-                  if (
+                // Per-frame required decel along fixed transfer line
+                const v = state.accelFinal1 * state.tauSim;
+                const sNow =
+                  0.5 * state.accelFinal1 * state.tauSim * state.tauSim;
+                const remaining = state.transfer.L - sNow;
+                state.transitReqAccelG =
+                  remaining > 1e-10
+                    ? (v * v) / (2 * remaining) / G_TO_AUYR2
+                    : METER_MAX_G + 1;
+                updateBurnMeter();
+                updateEngineBtn();
+
+                break;
+              }
+
+              case "flipping": {
+                // Flip animation at the flip point
+                const flipElapsed = performance.now() - state.flipStartWall;
+                const flipDur = state.flipDurMs || FLIP_ANIM_MS;
+                state.flipAngle = Math.PI * Math.min(1, flipElapsed / flipDur);
+                state.insetScAngle += dtReal * 1.5;
+
+                if (flipElapsed >= flipDur) {
+                  state.phase = "burn2";
+                  state.burnZones = computeBurnMeterZones();
+                  state.burn2Band = computeBurn2TargetBand();
+                  updateEngineBtn();
+                  updateBurnMeter();
+                }
+                break;
+              }
+
+              case "burn2":
+                // SimTime frozen — player choosing braking acceleration
+                if (state.burn2.holding) {
+                  state.burn2.holdDuration =
+                    (performance.now() - state.burn2.holdStart) / 1000;
+                  state.burn2.meterFrac = Math.min(
+                    1,
+                    state.burn2.holdDuration / BURN_FILL_SEC,
+                  );
+                  const edges2 = getGreenZoneEdges();
+                  state.burn2.accel =
+                    meterToAccelG(state.burn2.meterFrac, edges2.p, edges2.q) *
+                    G_TO_AUYR2;
+                  updateBurnMeter();
+                }
+                break;
+
+              case "decel": {
+                // Deceleration along same transfer line
+                if (state.solarDeathStart > 0) {
+                  const deathElapsed2 =
+                    (performance.now() - state.solarDeathStart) / 1000;
+                  if (deathElapsed2 >= 2.0) {
+                    state.phase = "result";
+                    showResultOverlay();
+                  }
+                  break;
+                }
+
+                const a2_g = state.accelFinal2 / G_TO_AUYR2;
+                const decelTransitSec =
+                  10 - (6 * (a2_g - METER_MIN_G)) / (METER_MAX_G - METER_MIN_G);
+                const decelWarp =
+                  (state.tDecelHalf * 2) / (decelTransitSec * SIM_RATE);
+                const dtDecel = dtReal * decelWarp * SIM_RATE;
+                state.tauSimDecel += dtDecel;
+                state.simTime += dtDecel;
+
+                const dpos = getDecelPosition(
+                  Math.min(state.tauSimDecel, state.tDecelHalf),
+                );
+                state.sc.x = dpos.x;
+                state.sc.y = dpos.y;
+
+                // Trail
+                trailAccum += dtDecel;
+                let trailInterval2 = state.tDecelHalf / 250;
+                if (trailInterval2 < 0.0001) trailInterval2 = 0.0001;
+                while (trailAccum >= trailInterval2) {
+                  trailAccum -= trailInterval2;
+                  state.sc.trail.push({ x: dpos.x, y: dpos.y });
+                  if (state.sc.trail.length > 5000) state.sc.trail.splice(0, 1);
+                }
+
+                state.insetScAngle += dtReal * 1.5;
+
+                // Solar proximity check
+                const sunDist2 = Math.sqrt(dpos.x * dpos.x + dpos.y * dpos.y);
+                if (
+                  sunDist2 < SOLAR_KILL_RADIUS &&
+                  state.solarDeathStart === 0
+                ) {
+                  state.solarDeathStart = performance.now();
+                  state.resultType = "fatal";
+                  state.resultSubtype = "solar";
+                  break;
+                }
+
+                // Check completion
+                if (state.tauSimDecel >= state.tDecelHalf) {
+                  if (state.resultType === "miss") {
+                    // Ship missed — coast while planets keep orbiting
+                    state.phase = "coasting";
+                    state.coastStart = performance.now();
+                  } else if (
                     state.resultType === "success" ||
                     state.resultType === "close" ||
                     state.resultType === "slow"
@@ -3408,12 +3913,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                     state.captureStart = performance.now();
                     state.captureAlpha = 1;
                   } else {
-                    // Fatal from g-force — ship arrives but crew is dead
                     state.phase = "result";
                     showResultOverlay();
                   }
                 }
                 break;
+              }
 
               case "captured":
                 const captureElapsed =

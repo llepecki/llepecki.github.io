@@ -1,0 +1,4463 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- fractions.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fraction Playground</title>
+    <meta
+      name="description"
+      content="Fraction Playground — build, compare, match, place, and repair fractions and decimals. An interactive manipulative for children aged 7-11."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --mode-build: #26a69a;
+        --mode-compare: #42a5f5;
+        --mode-match: #5c6bc0;
+        --mode-place: #ffa726;
+        --mode-repair: #ef5350;
+        --mode-active: var(--mode-build);
+        --success: #66bb6a;
+        --error: #ef5350;
+        --bar-bg: #f5f0e8;
+        --bar-border: #b0a89a;
+        --strip-shadow: rgba(0, 0, 0, 0.06);
+      }
+
+      body {
+        min-height: 100vh;
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .header-text {
+        flex: 1;
+        min-width: 0;
+      }
+
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+        transition: opacity 0.2s;
+      }
+
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+
+      .header-emoji {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .lang-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+
+      .play-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+      }
+
+      .toolbar {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--panel-border);
+        background: var(--panel);
+      }
+
+      .tb-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .tb-sep {
+        width: 1px;
+        height: 26px;
+        background: var(--panel-border);
+        margin: 0 4px;
+        align-self: center;
+      }
+
+      .mode-btn {
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Outfit", sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+
+      .mode-btn:hover {
+        background: #f0ede6;
+      }
+
+      .mode-btn.active {
+        color: #fff;
+        border-color: transparent;
+      }
+
+      .mode-btn[data-mode="build"].active {
+        background: var(--mode-build);
+      }
+
+      .mode-btn[data-mode="compare"].active {
+        background: var(--mode-compare);
+      }
+
+      .mode-btn[data-mode="match"].active {
+        background: var(--mode-match);
+      }
+
+      .mode-btn[data-mode="place"].active {
+        background: var(--mode-place);
+        color: var(--text-head);
+      }
+
+      .mode-btn[data-mode="repair"].active {
+        background: var(--mode-repair);
+      }
+
+      .mode-btn:disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+
+      .mode-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .diff-btn {
+        padding: 8px 14px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+
+      .diff-btn:hover {
+        background: #f0ede6;
+      }
+
+      .diff-btn.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+
+      .diff-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .action-btn {
+        padding: 8px 14px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+
+      .action-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .action-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .board-stage {
+        flex: 1;
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .board-stage svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+      }
+
+      .panel {
+        width: 300px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .panel-section {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+
+      .panel-section:last-child {
+        border-bottom: none;
+      }
+
+      .panel-section.flex-fill {
+        flex: 1;
+      }
+
+      .section-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+        margin-bottom: 6px;
+      }
+
+      .frac-display {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 0;
+      }
+
+      .frac-stack {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .frac-numer,
+      .frac-denom {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text-head);
+        line-height: 1.2;
+        min-width: 36px;
+        text-align: center;
+      }
+
+      .frac-line {
+        width: 100%;
+        min-width: 36px;
+        height: 3px;
+        background: var(--text-head);
+        border-radius: 2px;
+      }
+
+      .frac-whole {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 30px;
+        font-weight: 700;
+        color: var(--text-head);
+        margin-right: 6px;
+        align-self: center;
+      }
+
+      .frac-decimal {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-dim);
+        margin-left: 14px;
+        align-self: center;
+      }
+
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 2px 0;
+      }
+
+      .readout-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+
+      .readout-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+
+      .readout-val.dim {
+        color: var(--text-dim);
+        font-weight: 400;
+      }
+
+      .progress-bar {
+        height: 5px;
+        background: var(--accent-light);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+
+      .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--mode-active);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+      }
+
+      .progress-label {
+        margin-top: 4px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 10px;
+        color: var(--text-label);
+      }
+
+      .hint-text {
+        font-size: 12px;
+        color: #546e7a;
+        line-height: 1.5;
+        min-height: 18px;
+        margin-top: 6px;
+      }
+
+      .hint-text.success {
+        color: var(--success);
+        font-weight: 600;
+      }
+
+      .hint-text.error {
+        color: var(--error);
+      }
+
+      .mode-summary {
+        font-size: 12px;
+        color: var(--text-dim);
+        line-height: 1.5;
+      }
+
+      .explore-ctrls {
+        display: none;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .explore-ctrls.visible {
+        display: flex;
+      }
+
+      .stepper-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .stepper-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+        min-width: 90px;
+      }
+
+      .step-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        touch-action: manipulation;
+      }
+
+      .step-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .step-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .stepper-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-head);
+        min-width: 28px;
+        text-align: center;
+      }
+
+      .eq-btn {
+        display: none;
+        position: absolute;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 24px;
+        border-radius: 8px;
+        border: 2px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-head);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+        touch-action: manipulation;
+        z-index: 2;
+      }
+
+      .eq-btn.visible {
+        display: block;
+      }
+
+      .eq-btn:hover {
+        border-color: var(--mode-compare);
+        background: #e3f2fd;
+      }
+
+      .eq-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .bottom-bar {
+        text-align: center;
+        padding: 4px 20px;
+        border-top: 1px solid var(--panel-border);
+      }
+
+      .status-text {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        color: var(--text-dim);
+      }
+
+      @keyframes success-pulse {
+        0% {
+          filter: brightness(1);
+        }
+        50% {
+          filter: brightness(1.1) drop-shadow(0 0 8px rgba(102, 187, 106, 0.6));
+        }
+        100% {
+          filter: brightness(1);
+        }
+      }
+
+      .success-pulse {
+        animation: success-pulse 0.4s ease;
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-4px);
+        }
+        75% {
+          transform: translateX(4px);
+        }
+      }
+
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+      }
+
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+
+      .overlay-msg {
+        font-family: "Outfit", sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        margin-top: 16px;
+        color: #fff;
+        text-align: center;
+        max-width: 400px;
+        padding: 0 20px;
+      }
+
+      .overlay-hint {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        margin-top: 12px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @media (max-width: 700px) {
+        .main {
+          flex-direction: column;
+          height: auto;
+          min-height: calc(100vh - 46px);
+        }
+
+        .play-area {
+          min-height: 360px;
+          height: 58vh;
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+        }
+
+        .panel {
+          width: 100%;
+        }
+
+        .toolbar {
+          padding: 6px 8px;
+          gap: 4px;
+        }
+
+        .mode-btn {
+          padding: 7px 10px;
+          font-size: 12px;
+        }
+
+        .diff-btn {
+          padding: 5px 8px;
+          font-size: 11px;
+        }
+      }
+
+      @media (pointer: coarse) {
+        .mode-btn {
+          min-height: 42px;
+        }
+
+        .step-btn {
+          width: 36px;
+          height: 36px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .success-pulse {
+          animation: none;
+        }
+
+        .progress-fill {
+          transition: none;
+        }
+
+        .result-overlay {
+          animation: none;
+        }
+
+        .overlay-emoji {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/" aria-label="Back to Learn"
+            ><span class="header-emoji">&#x1F9E9;</span></a
+          >
+          <span id="titleText">Fraction Playground</span>
+        </h1>
+        <p id="subtitleText">
+          Build, compare, match, place, and repair fractions and decimals.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="play-area">
+        <div class="toolbar">
+          <div class="tb-row" id="modeRow">
+            <button
+              type="button"
+              class="mode-btn active"
+              data-mode="build"
+              id="modeBuildBtn"
+            >
+              Build
+            </button>
+            <button
+              type="button"
+              class="mode-btn"
+              data-mode="compare"
+              id="modeCompareBtn"
+            >
+              Compare
+            </button>
+            <button
+              type="button"
+              class="mode-btn"
+              data-mode="match"
+              id="modeMatchBtn"
+            >
+              Match
+            </button>
+            <button
+              type="button"
+              class="mode-btn"
+              data-mode="place"
+              id="modePlaceBtn"
+            >
+              Place
+            </button>
+            <button
+              type="button"
+              class="mode-btn"
+              data-mode="repair"
+              id="modeRepairBtn"
+            >
+              Repair
+            </button>
+          </div>
+          <div class="tb-row">
+            <button type="button" class="diff-btn active" data-diff="intro">
+              Introduction
+            </button>
+            <button type="button" class="diff-btn" data-diff="intermediate">
+              Intermediate
+            </button>
+            <button type="button" class="diff-btn" data-diff="advanced">
+              Advanced
+            </button>
+            <button type="button" class="action-btn" id="exploreBtn">
+              Explore
+            </button>
+            <button type="button" class="action-btn" id="hintBtn">Hint</button>
+            <button
+              type="button"
+              class="action-btn"
+              id="nextBtn"
+              aria-label="Next round"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
+        <div class="board-stage">
+          <svg
+            id="boardSvg"
+            viewBox="0 0 800 500"
+            preserveAspectRatio="xMidYMid meet"
+            aria-label="Fraction activity board"
+          ></svg>
+          <button
+            type="button"
+            class="eq-btn"
+            id="eqBtn"
+            aria-label="Values are equal"
+          >
+            = Equal
+          </button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-section">
+          <div class="section-label" id="lblActivity">Activity</div>
+          <div class="mode-summary" id="modeSummary"></div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-label" id="lblValue">Value</div>
+          <div class="frac-display" id="fracDisplay">
+            <span class="frac-whole" id="fracWhole"></span>
+            <span class="frac-stack">
+              <span class="frac-numer" id="fracNumer">0</span>
+              <span class="frac-line"></span>
+              <span class="frac-denom" id="fracDenom">2</span>
+            </span>
+            <span class="frac-decimal" id="fracDecimal"></span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblSimplified">Simplified</span>
+            <span class="readout-val" id="rdSimplified">0</span>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-label" id="lblProgress">Progress</div>
+          <div class="hint-text" id="hintText"></div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-label" id="progressLabel">0 / 6</div>
+          <div class="explore-ctrls" id="exploreCtrls">
+            <div class="stepper-row">
+              <span class="stepper-label" id="lblDenom">Denominator</span>
+              <button
+                type="button"
+                class="step-btn"
+                id="denomMinus"
+                aria-label="Decrease denominator"
+              >
+                &minus;
+              </button>
+              <span class="stepper-val" id="denomVal">2</span>
+              <button
+                type="button"
+                class="step-btn"
+                id="denomPlus"
+                aria-label="Increase denominator"
+              >
+                +
+              </button>
+            </div>
+            <div class="stepper-row">
+              <span class="stepper-label" id="lblNumer">Numerator</span>
+              <button
+                type="button"
+                class="step-btn"
+                id="numerMinus"
+                aria-label="Decrease numerator"
+              >
+                &minus;
+              </button>
+              <span class="stepper-val" id="numerVal">0</span>
+              <button
+                type="button"
+                class="step-btn"
+                id="numerPlus"
+                aria-label="Increase numerator"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section flex-fill"></div>
+      </div>
+    </main>
+
+    <div class="bottom-bar">
+      <span class="status-text" id="statusText"></span>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        /* ═══════════════════════════════════════════
+           I18N
+           ═══════════════════════════════════════════ */
+
+        const I18N = {
+          en: {
+            title: "Fraction Playground",
+            subtitle:
+              "Build, compare, match, place, and repair fractions and decimals.",
+            build: "Build",
+            compare: "Compare",
+            match: "Match",
+            place: "Place",
+            repair: "Repair",
+            intro: "Introduction",
+            intermediate: "Intermediate",
+            advanced: "Advanced",
+            explore: "Explore",
+            hint: "Hint",
+            next: "Next",
+            activity: "Activity",
+            value: "Value",
+            simplified: "Simplified",
+            progress: "Progress",
+            denominator: "Denominator",
+            numerator: "Numerator",
+            buildSummary: "Fill the strip to show the target fraction.",
+            compareSummary: "Tap the bigger value.",
+            matchSummary: "Pair cards that show the same amount.",
+            placeSummary: "Drag the token to its place on the line.",
+            repairSummary: "Find and fix the wrong picture.",
+            exploreSummary: "Free play — change values and watch.",
+            tapBigger: "Tap the bigger one!",
+            theyAreEqual: "They are equal!",
+            equalBtn: "Equal",
+            correct: "Correct!",
+            tryAgain: "Look again.",
+            nextRound: "Next round",
+            reprBar: "Bar",
+            reprFraction: "Fraction",
+            reprNumberLine: "Number line",
+            reprDecimal: "Decimal",
+            fixPrompt: "Choose the correct value:",
+            ariaBackToLearn: "Back to Learn",
+            ariaSwitchLang: "Switch language",
+            ariaNextRound: "Next round",
+            ariaBoard: "Fraction activity board",
+            ariaEqual: "Values are equal",
+            ariaDecDenom: "Decrease denominator",
+            ariaIncDenom: "Increase denominator",
+            ariaDecNumer: "Decrease numerator",
+            ariaIncNumer: "Increase numerator",
+          },
+          pl: {
+            title: "Plac zabaw z ułamkami",
+            subtitle:
+              "Buduj, porównuj, dopasowuj, umieszczaj i naprawiaj ułamki oraz liczby dziesiętne.",
+            build: "Buduj",
+            compare: "Porównaj",
+            match: "Dopasuj",
+            place: "Umieść",
+            repair: "Napraw",
+            intro: "Wprowadzenie",
+            intermediate: "Średni",
+            advanced: "Zaawansowany",
+            explore: "Odkrywaj",
+            hint: "Podpowiedź",
+            next: "Dalej",
+            activity: "Aktywność",
+            value: "Wartość",
+            simplified: "Po uproszczeniu",
+            progress: "Postęp",
+            denominator: "Mianownik",
+            numerator: "Licznik",
+            buildSummary: "Wypełnij pasek, aby pokazać ułamek.",
+            compareSummary: "Wybierz większą wartość.",
+            matchSummary: "Połącz karty, które pokazują tę samą ilość.",
+            placeSummary: "Przeciągnij kartę na odpowiednie miejsce na osi.",
+            repairSummary: "Znajdź i popraw błędną reprezentację.",
+            exploreSummary: "Swobodna zabawa — zmieniaj wartości i obserwuj.",
+            tapBigger: "Wybierz większą wartość!",
+            theyAreEqual: "Są równe!",
+            equalBtn: "Równe",
+            correct: "Dobrze!",
+            tryAgain: "Spróbuj jeszcze raz.",
+            nextRound: "Następna runda",
+            reprBar: "Pasek",
+            reprFraction: "Ułamek",
+            reprNumberLine: "Oś liczbowa",
+            reprDecimal: "Zapis dziesiętny",
+            fixPrompt: "Wybierz poprawną wartość:",
+            ariaBackToLearn: "Powrót do nauki",
+            ariaSwitchLang: "Zmień język",
+            ariaNextRound: "Następna runda",
+            ariaBoard: "Tablica aktywności z ułamkami",
+            ariaEqual: "Wartości są równe",
+            ariaDecDenom: "Zmniejsz mianownik",
+            ariaIncDenom: "Zwiększ mianownik",
+            ariaDecNumer: "Zmniejsz licznik",
+            ariaIncNumer: "Zwiększ licznik",
+          },
+        };
+
+        function T(key) {
+          return I18N[state.lang][key] || key;
+        }
+
+        function stepText(step, field) {
+          if (!step) return "";
+          if (state.lang === "pl" && step[field + "_pl"]) {
+            return step[field + "_pl"];
+          }
+          return step[field] || "";
+        }
+
+        function _Tf(key, subs) {
+          let s = T(key);
+          if (subs) {
+            for (const k in subs) {
+              s = s.replace("{" + k + "}", subs[k]);
+            }
+          }
+          return s;
+        }
+
+        /* ═══════════════════════════════════════════
+           RATIONAL MATH
+           ════════════���══════════════════════════════ */
+
+        function gcd(a, b) {
+          a = Math.abs(a);
+          b = Math.abs(b);
+          while (b) {
+            const t = b;
+            b = a % b;
+            a = t;
+          }
+          return a;
+        }
+
+        function fracSimplify(n, d) {
+          if (d === 0) return { n: 0, d: 1 };
+          if (n === 0) return { n: 0, d: 1 };
+          const g = gcd(Math.abs(n), Math.abs(d));
+          return { n: n / g, d: d / g };
+        }
+
+        function fracEqual(a, b) {
+          return a.n * b.d === b.n * a.d;
+        }
+
+        function fracCompare(a, b) {
+          const lhs = a.n * b.d;
+          const rhs = b.n * a.d;
+          if (lhs < rhs) return -1;
+          if (lhs > rhs) return 1;
+          return 0;
+        }
+
+        function fracToFloat(f) {
+          if (f.d === 0) return 0;
+          return f.n / f.d;
+        }
+
+        function fracIsFriendlyDecimal(d) {
+          let r = d;
+          while (r % 2 === 0) r /= 2;
+          while (r % 5 === 0) r /= 5;
+          return r === 1;
+        }
+
+        function fracToDecimalStr(n, d) {
+          if (d === 0) return "0";
+          const s = fracSimplify(n, d);
+          if (!fracIsFriendlyDecimal(s.d)) return null;
+          const val = n / d;
+          if (Number.isInteger(val)) return val.toString();
+          let str = val.toFixed(4);
+          str = str.replace(/0+$/, "");
+          if (str.endsWith(".")) str = str.slice(0, -1);
+          return str;
+        }
+
+        function formatDecimal(n, d) {
+          const str = fracToDecimalStr(n, d);
+          if (!str) return null;
+          if (state.lang === "pl") return str.replace(".", ",");
+          return str;
+        }
+
+        function fracToMixed(n, d) {
+          if (d === 0) return { whole: 0, n: 0, d: 1 };
+          const whole = Math.floor(n / d);
+          const rem = n - whole * d;
+          return { whole, n: rem, d };
+        }
+
+        function fracFormat(n, d) {
+          return n + "/" + d;
+        }
+
+        function _fracFormatMixed(n, d) {
+          const m = fracToMixed(n, d);
+          if (m.whole === 0) return fracFormat(n, d);
+          if (m.n === 0) return m.whole.toString();
+          return m.whole + " " + m.n + "/" + m.d;
+        }
+
+        /* ═══════════════════════════════════════════
+           CONSTANTS
+           ═══════════════════════════════════════════ */
+
+        const DENOMS_INTRO = [2, 3, 4, 5, 6, 8, 10];
+        const DENOMS_INTER = [2, 3, 4, 5, 6, 8, 10, 12];
+        const DENOMS_ADV = [2, 4, 5, 8, 10, 12, 20, 25, 50, 100];
+
+        const DIFF_CFG = {
+          intro: { denoms: DENOMS_INTRO, maxWholes: 1, nlMax: 1 },
+          intermediate: { denoms: DENOMS_INTER, maxWholes: 2, nlMax: 2 },
+          advanced: { denoms: DENOMS_ADV, maxWholes: 3, nlMax: 3 },
+        };
+
+        const SVG_NS = "http://www.w3.org/2000/svg";
+
+        const MODE_COLORS = {
+          build: "#26A69A",
+          compare: "#42A5F5",
+          match: "#5C6BC0",
+          place: "#FFA726",
+          repair: "#EF5350",
+        };
+
+        /* ═══════════════════════════════════════════
+           AUTHORED SEQUENCES
+           ═══════════════════════════════════════════ */
+
+        const SEQ = {
+          build: {
+            intro: [
+              {
+                goal: "First fraction: one half",
+                goal_pl: "Pierwszy ułamek: jedna druga",
+                concept: "halfOfWhole",
+                primaryModel: "circle",
+                target: { n: 1, d: 2 },
+                hint1: "Fill one of the two equal parts.",
+                hint1_pl: "Wypełnij jedną z dwóch równych części.",
+                hint2: "The whole is split into 2. Fill 1.",
+                hint2_pl: "Całość jest podzielona na 2. Wypełnij 1.",
+                feedbackSuccess: "That's 1/2 — one of two equal parts!",
+                feedbackSuccess_pl:
+                  "To jest 1/2 — jedna z dwóch równych części!",
+              },
+              {
+                goal: "One quarter",
+                goal_pl: "Jedna czwarta",
+                concept: "quarterOfWhole",
+                target: { n: 1, d: 4 },
+                hint1: "How many parts make the whole?",
+                hint1_pl: "Ile części tworzy całość?",
+                hint2: "4 equal parts. Fill just 1.",
+                hint2_pl: "4 równe części. Wypełnij tylko 1.",
+                feedbackSuccess: "1/4 — one quarter of the whole.",
+                feedbackSuccess_pl: "1/4 — jedna czwarta całości.",
+              },
+              {
+                goal: "Three quarters",
+                goal_pl: "Trzy czwarte",
+                concept: "multiplePartsOfWhole",
+                target: { n: 3, d: 4 },
+                hint1: "Fill more than one part this time.",
+                hint1_pl: "Tym razem wypełnij więcej niż jedną część.",
+                hint2: "Fill 3 of the 4 equal parts.",
+                hint2_pl: "Wypełnij 3 z 4 równych części.",
+                feedbackSuccess: "3/4 — three quarters!",
+                feedbackSuccess_pl: "3/4 — trzy czwarte!",
+              },
+              {
+                goal: "Two thirds",
+                goal_pl: "Dwie trzecie",
+                concept: "thirdsIntro",
+                primaryModel: "circle",
+                target: { n: 2, d: 3 },
+                hint1: "The whole has 3 equal parts.",
+                hint1_pl: "Całość ma 3 równe części.",
+                hint2: "Fill 2 of those 3 parts.",
+                hint2_pl: "Wypełnij 2 z tych 3 części.",
+                feedbackSuccess: "2/3 — two out of three.",
+                feedbackSuccess_pl: "2/3 — dwie z trzech.",
+              },
+              {
+                goal: "Four fifths — almost full",
+                goal_pl: "Cztery piąte — prawie pełne",
+                concept: "almostFull",
+                target: { n: 4, d: 5 },
+                hint1: "Only one part should stay empty.",
+                hint1_pl: "Tylko jedna część powinna zostać pusta.",
+                hint2: "Fill 4 out of 5.",
+                hint2_pl: "Wypełnij 4 z 5.",
+                feedbackSuccess: "4/5 — just one part away from a full whole!",
+                feedbackSuccess_pl:
+                  "4/5 — tylko jedna część do pełnej całości!",
+              },
+              {
+                goal: "Seven tenths — meet decimals",
+                goal_pl: "Siedem dziesiątych — poznaj ułamki dziesiętne",
+                concept: "tenthsIntro",
+                target: { n: 7, d: 10 },
+                hint1: "Count the parts: there are 10.",
+                hint1_pl: "Policz części: jest ich 10.",
+                hint2: "Fill 7 of the 10 equal parts.",
+                hint2_pl: "Wypełnij 7 z 10 równych części.",
+                feedbackSuccess: "7/10 = 0.7 — tenths connect to decimals!",
+                feedbackSuccess_pl:
+                  "7/10 = 0,7 — dziesiąte łączą się z liczbami dziesiętnymi!",
+              },
+            ],
+            intermediate: [
+              {
+                goal: "Five eighths",
+                goal_pl: "Pięć ósmych",
+                concept: "eighths",
+                target: { n: 5, d: 8 },
+                hint1: "The whole has 8 parts.",
+                hint1_pl: "Całość ma 8 części.",
+                hint2: "Fill 5 of 8.",
+                hint2_pl: "Wypełnij 5 z 8.",
+                feedbackSuccess: "5/8 — more than half!",
+                feedbackSuccess_pl: "5/8 — więcej niż połowa!",
+              },
+              {
+                goal: "One and a quarter — mixed number",
+                goal_pl: "Jeden i jedna czwarta — ułamek mieszany",
+                concept: "mixedNumber",
+                target: { n: 5, d: 4 },
+                hint1: "You need more than one whole.",
+                hint1_pl: "Potrzebujesz więcej niż jedną całość.",
+                hint2: "Fill all of the first bar, then one more part.",
+                hint2_pl:
+                  "Wypełnij cały pierwszy pasek, potem jeszcze jedną część.",
+                feedbackSuccess: "1 1/4 — one whole and one quarter more!",
+                feedbackSuccess_pl:
+                  "1 1/4 — jedna całość i jeszcze jedna czwarta!",
+              },
+              {
+                goal: "One and three tenths",
+                goal_pl: "Jeden i trzy dziesiąte",
+                concept: "mixedDecimal",
+                target: { n: 13, d: 10 },
+                hint1: "Fill one complete bar first.",
+                hint1_pl: "Najpierw wypełnij cały pasek.",
+                hint2: "Then fill 3 more tenths.",
+                hint2_pl: "Potem wypełnij jeszcze 3 dziesiąte.",
+                feedbackSuccess: "1 3/10 = 1.3",
+                feedbackSuccess_pl: "1 3/10 = 1,3",
+              },
+            ],
+            advanced: [
+              {
+                goal: "Two and three quarters",
+                goal_pl: "Dwa i trzy czwarte",
+                concept: "largeMixed",
+                target: { n: 11, d: 4 },
+                hint1: "Fill two full bars and part of the third.",
+                hint1_pl: "Wypełnij dwa pełne paski i część trzeciego.",
+                hint2: "2 wholes + 3/4.",
+                hint2_pl: "2 całości + 3/4.",
+                feedbackSuccess: "2 3/4 = 2.75",
+                feedbackSuccess_pl: "2 3/4 = 2,75",
+              },
+              {
+                goal: "Same amount, different name",
+                goal_pl: "Ta sama ilość, inna nazwa",
+                concept: "advancedEquivalent",
+                target: { n: 15, d: 20 },
+                sourceValue: { n: 3, d: 4 },
+                hint1:
+                  "The top strip shows 3/4. Fill the bottom strip to match.",
+                hint1_pl: "Górny pasek pokazuje 3/4. Wypełnij dolny tak samo.",
+                hint2: "15 out of 20 parts equals 3 out of 4.",
+                hint2_pl: "15 z 20 części to tyle samo co 3 z 4.",
+                feedbackSuccess:
+                  "15/20 = 3/4 = 0.75 — same value, different name!",
+                feedbackSuccess_pl:
+                  "15/20 = 3/4 = 0,75 — ta sama wartość, inna nazwa!",
+              },
+            ],
+          },
+          compare: {
+            intro: [
+              {
+                goal: "Obvious halves vs quarters",
+                goal_pl: "Połówki kontra ćwiartki",
+                concept: "biggerPieceBiggerFraction",
+                cardA: { n: 1, d: 2 },
+                cardB: { n: 1, d: 4 },
+                hint1: "Which piece is bigger: a half or a quarter?",
+                hint1_pl: "Który kawałek jest większy: połowa czy ćwiartka?",
+                hint2: "Fewer parts means bigger pieces.",
+                hint2_pl: "Mniej części oznacza większe kawałki.",
+                feedbackSuccess:
+                  "1/2 is bigger — halves are larger pieces than quarters.",
+                feedbackSuccess_pl:
+                  "1/2 jest większe — połówki są większe niż ćwiartki.",
+                feedbackError: "A half is a bigger piece than a quarter.",
+                feedbackError_pl:
+                  "Połowa jest większym kawałkiem niż ćwiartka.",
+              },
+              {
+                goal: "Same denominator comparison",
+                goal_pl: "Ten sam mianownik",
+                concept: "samedenomMoreNum",
+                cardA: { n: 3, d: 4 },
+                cardB: { n: 1, d: 4 },
+                hint1: "Same size pieces — which has more filled?",
+                hint1_pl: "Kawałki tej samej wielkości — których jest więcej?",
+                hint2: "3 pieces vs 1 piece, same size each.",
+                hint2_pl:
+                  "3 kawałki kontra 1 kawałek, każdy tej samej wielkości.",
+                feedbackSuccess: "3/4 > 1/4 — more pieces of the same size!",
+                feedbackSuccess_pl:
+                  "3/4 > 1/4 — więcej kawałków tej samej wielkości!",
+                feedbackError: "Same size pieces — 3 is more than 1.",
+                feedbackError_pl:
+                  "Kawałki tej samej wielkości — 3 to więcej niż 1.",
+              },
+              {
+                goal: "Unit fraction — bigger denom = smaller",
+                goal_pl:
+                  "Ułamek jednostkowy — większy mianownik = mniejszy ułamek",
+                concept: "biggerDenomSmallerFraction",
+                cardA: { n: 1, d: 3 },
+                cardB: { n: 1, d: 5 },
+                hint1: "Both have 1 piece. Which piece is bigger?",
+                hint1_pl: "Oba mają 1 kawałek. Który jest większy?",
+                hint2: "More parts means each part is smaller.",
+                hint2_pl: "Więcej części oznacza, że każda jest mniejsza.",
+                feedbackSuccess: "1/3 > 1/5 — thirds are bigger than fifths!",
+                feedbackSuccess_pl: "1/3 > 1/5 — trzecie są większe niż piąte!",
+                feedbackError:
+                  "More parts = smaller parts. 1/3 is bigger than 1/5.",
+                feedbackError_pl:
+                  "Więcej części = mniejsze części. 1/3 jest większe niż 1/5.",
+              },
+              {
+                goal: "Close comparison",
+                goal_pl: "Bliskie wartości",
+                concept: "closeFractions",
+                cardA: { n: 2, d: 3 },
+                cardB: { n: 3, d: 4 },
+                hint1: "These are close — look at how much is left unfilled.",
+                hint1_pl: "Są blisko siebie — zobacz, ile zostało pustego.",
+                hint2: "2/3 leaves 1/3 empty. 3/4 leaves only 1/4 empty.",
+                hint2_pl: "2/3 zostawia 1/3 pustego. 3/4 zostawia tylko 1/4.",
+                feedbackSuccess:
+                  "3/4 > 2/3 — less empty space means more is filled!",
+                feedbackSuccess_pl:
+                  "3/4 > 2/3 — mniej pustego miejsca to więcej wypełnionego!",
+                feedbackError: "3/4 fills more of its bar — less empty space.",
+                feedbackError_pl: "3/4 wypełnia więcej paska — mniej pustego.",
+              },
+              {
+                goal: "Decimal vs fraction",
+                goal_pl: "Liczba dziesiętna kontra ułamek",
+                concept: "decimalFractionLink",
+                cardA: { n: 1, d: 2 },
+                cardB: { n: 3, d: 10 },
+                displayB: "decimal",
+                hint1: "Convert to the same form to compare.",
+                hint1_pl: "Zamień na tę samą postać, żeby porównać.",
+                hint2: "1/2 = 0.5, and 0.3 = 3/10. Which is more?",
+                hint2_pl: "1/2 = 0,5, a 0,3 = 3/10. Co jest większe?",
+                feedbackSuccess: "1/2 = 0.5 > 0.3",
+                feedbackSuccess_pl: "1/2 = 0,5 > 0,3",
+                feedbackError: "1/2 equals 0.5, which is bigger than 0.3.",
+                feedbackError_pl: "1/2 to 0,5, co jest większe niż 0,3.",
+              },
+            ],
+            intermediate: [
+              {
+                goal: "Benchmark: compare to 1/2",
+                goal_pl: "Punkt odniesienia: porównanie z 1/2",
+                concept: "benchmarkHalf",
+                cardA: { n: 3, d: 8 },
+                cardB: { n: 1, d: 2 },
+                hint1: "Is 3/8 more or less than a half?",
+                hint1_pl: "Czy 3/8 to więcej czy mniej niż połowa?",
+                hint2: "Half of 8 is 4. So 3/8 is less than 1/2.",
+                hint2_pl: "Połowa z 8 to 4. Więc 3/8 to mniej niż 1/2.",
+                feedbackSuccess: "1/2 > 3/8 — 3/8 is less than half!",
+                feedbackSuccess_pl: "1/2 > 3/8 — 3/8 to mniej niż połowa!",
+                feedbackError: "4/8 = 1/2. Since 3 < 4, 3/8 < 1/2.",
+                feedbackError_pl: "4/8 = 1/2. Skoro 3 < 4, to 3/8 < 1/2.",
+              },
+              {
+                goal: "Different denoms, close values",
+                goal_pl: "Różne mianowniki, bliskie wartości",
+                concept: "crossMultiply",
+                cardA: { n: 2, d: 3 },
+                cardB: { n: 5, d: 8 },
+                hint1: "The bars will help — which fills more?",
+                hint1_pl: "Paski pomogą — który wypełnia więcej?",
+                hint2: "2/3 ≈ 0.67, 5/8 = 0.625.",
+                hint2_pl: "2/3 ≈ 0,67, 5/8 = 0,625.",
+                feedbackSuccess:
+                  "2/3 > 5/8 — look at how much more of the bar is filled!",
+                feedbackSuccess_pl: "2/3 > 5/8 — więcej paska jest wypełnione!",
+                feedbackError: "2/3 covers more of the whole than 5/8.",
+                feedbackError_pl: "2/3 pokrywa więcej całości niż 5/8.",
+              },
+              {
+                goal: "Decimal vs fraction close",
+                goal_pl: "Liczba dziesiętna kontra ułamek — blisko",
+                concept: "decimalClose",
+                cardA: { n: 7, d: 10 },
+                cardB: { n: 3, d: 4 },
+                displayA: "decimal",
+                hint1: "0.7 — what is 3/4 as a decimal?",
+                hint1_pl: "0,7 — ile to 3/4 w postaci dziesiętnej?",
+                hint2: "3/4 = 0.75, which is bigger than 0.7.",
+                hint2_pl: "3/4 = 0,75, co jest większe niż 0,7.",
+                feedbackSuccess: "3/4 = 0.75 > 0.7",
+                feedbackSuccess_pl: "3/4 = 0,75 > 0,7",
+                feedbackError: "0.75 > 0.7, so 3/4 is bigger.",
+                feedbackError_pl: "0,75 > 0,7, więc 3/4 jest większe.",
+              },
+              {
+                goal: "Equality check",
+                goal_pl: "Sprawdzenie równości",
+                concept: "equivalentFractions",
+                cardA: { n: 3, d: 6 },
+                cardB: { n: 1, d: 2 },
+                isEqual: true,
+                hint1: "Simplify 3/6. What do you get?",
+                hint1_pl: "Uprość 3/6. Co otrzymasz?",
+                hint2: "3/6 = 1/2. They are the same!",
+                hint2_pl: "3/6 = 1/2. Są takie same!",
+                feedbackSuccess: "3/6 = 1/2 — same value, different name!",
+                feedbackSuccess_pl: "3/6 = 1/2 — ta sama wartość, inna nazwa!",
+                feedbackError: "Simplify 3/6: divide both by 3 to get 1/2.",
+                feedbackError_pl:
+                  "Uprość 3/6: podziel oba przez 3, żeby dostać 1/2.",
+              },
+            ],
+            advanced: [
+              {
+                goal: "Very close to 1",
+                goal_pl: "Bardzo blisko 1",
+                concept: "nearBenchmark",
+                cardA: { n: 7, d: 8 },
+                cardB: { n: 9, d: 10 },
+                hint1: "Both are close to 1. Which is closer?",
+                hint1_pl: "Oba są blisko 1. Który jest bliżej?",
+                hint2: "7/8 leaves 1/8 empty. 9/10 leaves 1/10 empty.",
+                hint2_pl: "7/8 zostawia 1/8 pustego. 9/10 zostawia 1/10.",
+                feedbackSuccess:
+                  "9/10 > 7/8 — 1/10 gap is smaller than 1/8 gap!",
+                feedbackSuccess_pl:
+                  "9/10 > 7/8 — luka 1/10 jest mniejsza niż 1/8!",
+                feedbackError: "9/10 is closer to 1 because 1/10 < 1/8.",
+                feedbackError_pl: "9/10 jest bliżej 1, bo 1/10 < 1/8.",
+              },
+              {
+                goal: "Hundredths precision",
+                goal_pl: "Dokładność setnych",
+                concept: "hundredths",
+                cardA: { n: 1, d: 4 },
+                cardB: { n: 3, d: 10 },
+                displayB: "decimal",
+                hint1: "Convert both to hundredths.",
+                hint1_pl: "Zamień oba na setne.",
+                hint2: "1/4 = 25/100, 0.3 = 30/100.",
+                hint2_pl: "1/4 = 25/100, 0,3 = 30/100.",
+                feedbackSuccess: "0.3 = 30/100 > 25/100 = 1/4",
+                feedbackSuccess_pl: "0,3 = 30/100 > 25/100 = 1/4",
+                feedbackError: "30/100 > 25/100.",
+                feedbackError_pl: "30/100 > 25/100.",
+              },
+            ],
+          },
+          place: {
+            intro: [
+              {
+                goal: "Place one half",
+                goal_pl: "Umieść jedną drugą",
+                concept: "halfOnLine",
+                tokens: [{ n: 1, d: 2 }],
+                nlDenom: 2,
+                hint1: "Find the middle of the line.",
+                hint1_pl: "Znajdź środek osi.",
+                hint2: "1/2 goes exactly in the center.",
+                hint2_pl: "1/2 jest dokładnie w środku.",
+                feedbackSuccess: "1/2 is right in the middle!",
+                feedbackSuccess_pl: "1/2 jest dokładnie w środku!",
+              },
+              {
+                goal: "Place quarters",
+                goal_pl: "Umieść ćwiartki",
+                concept: "quartersOnLine",
+                tokens: [
+                  { n: 1, d: 4 },
+                  { n: 3, d: 4 },
+                ],
+                nlDenom: 4,
+                hint1: "Split the line into 4 equal jumps.",
+                hint1_pl: "Podziel oś na 4 równe skoki.",
+                hint2: "1/4 is the first mark, 3/4 is the third.",
+                hint2_pl: "1/4 to pierwsza kreska, 3/4 to trzecia.",
+                feedbackSuccess: "1/4 and 3/4 placed correctly!",
+                feedbackSuccess_pl: "1/4 i 3/4 umieszczone poprawnie!",
+              },
+              {
+                goal: "Place two thirds",
+                goal_pl: "Umieść dwie trzecie",
+                concept: "thirdsOnLine",
+                tokens: [{ n: 2, d: 3 }],
+                nlDenom: 3,
+                hint1: "The line has 3 equal sections.",
+                hint1_pl: "Oś ma 3 równe odcinki.",
+                hint2: "2/3 is at the second mark.",
+                hint2_pl: "2/3 jest przy drugiej kresce.",
+                feedbackSuccess: "2/3 — two jumps of one third!",
+                feedbackSuccess_pl: "2/3 — dwa skoki po jednej trzeciej!",
+              },
+            ],
+            intermediate: [
+              {
+                goal: "Place a mixed number",
+                goal_pl: "Umieść ułamek mieszany",
+                concept: "mixedOnLine",
+                tokens: [{ n: 3, d: 2 }],
+                nlDenom: 2,
+                nlMax: 2,
+                hint1: "This value is bigger than 1.",
+                hint1_pl: "Ta wartość jest większa niż 1.",
+                hint2: "Go past the 1 mark to the halfway point.",
+                hint2_pl: "Przesuń za kreskę 1 do połowy.",
+                feedbackSuccess: "1 1/2 — one whole and a half more!",
+                feedbackSuccess_pl: "1 1/2 — jedna całość i jeszcze połowa!",
+              },
+              {
+                goal: "Place a decimal",
+                goal_pl: "Umieść liczbę dziesiętną",
+                concept: "decimalOnLine",
+                tokens: [{ n: 7, d: 10, asDecimal: true }],
+                nlDenom: 10,
+                hint1: "0.7 is the same as 7/10.",
+                hint1_pl: "0,7 to to samo co 7/10.",
+                hint2: "Find the 7th mark out of 10.",
+                hint2_pl: "Znajdź 7. kreskę z 10.",
+                feedbackSuccess: "0.7 = 7/10 placed perfectly!",
+                feedbackSuccess_pl: "0,7 = 7/10 umieszczone idealnie!",
+              },
+            ],
+            advanced: [
+              {
+                goal: "Close placement",
+                goal_pl: "Umieszczanie bliskich wartości",
+                concept: "closeValues",
+                tokens: [
+                  { n: 7, d: 8 },
+                  { n: 9, d: 10, asDecimal: true },
+                ],
+                nlDenom: 40,
+                nlMax: 1,
+                hint1: "Both are close to 1 but not the same.",
+                hint1_pl: "Oba są blisko 1, ale nie takie same.",
+                hint2: "7/8 = 0.875, 9/10 = 0.9.",
+                hint2_pl: "7/8 = 0,875, 9/10 = 0,9.",
+                feedbackSuccess: "7/8 and 0.9 — very close but distinct!",
+                feedbackSuccess_pl: "7/8 i 0,9 — bardzo blisko, ale różne!",
+              },
+            ],
+          },
+          match: {
+            intro: [
+              {
+                goal: "Match fractions to bars",
+                goal_pl: "Dopasuj ułamki do pasków",
+                concept: "fractionBarLink",
+                pairs: [
+                  { n: 1, d: 2 },
+                  { n: 1, d: 4 },
+                  { n: 3, d: 4 },
+                ],
+                reprTypes: ["fraction", "bar"],
+                hint1: "Each fraction has a bar that shows the same amount.",
+                hint1_pl:
+                  "Każdy ułamek ma pasek, który pokazuje tę samą ilość.",
+                hint2: "Count the filled parts in each bar.",
+                hint2_pl: "Policz wypełnione części w każdym pasku.",
+                feedbackSuccess:
+                  "All matched! Same amounts, different pictures.",
+                feedbackSuccess_pl:
+                  "Dopasowane! Te same ilości, różne obrazki.",
+              },
+              {
+                goal: "Match fractions to decimals",
+                goal_pl: "Dopasuj ułamki do liczb dziesiętnych",
+                concept: "fractionDecimalLink",
+                pairs: [
+                  { n: 1, d: 2 },
+                  { n: 1, d: 4 },
+                ],
+                reprTypes: ["fraction", "decimal"],
+                hint1: "A decimal is another way to write a fraction.",
+                hint1_pl: "Liczba dziesiętna to inny sposób zapisu ułamka.",
+                hint2: "1/2 = 0.5, 1/4 = 0.25.",
+                hint2_pl: "1/2 = 0,5, 1/4 = 0,25.",
+                feedbackSuccess: "Fractions and decimals — same values!",
+                feedbackSuccess_pl:
+                  "Ułamki i liczby dziesiętne — te same wartości!",
+              },
+            ],
+            intermediate: [
+              {
+                goal: "Match equivalent fractions",
+                goal_pl: "Dopasuj ułamki równoważne",
+                concept: "equivalentPairs",
+                pairs: [
+                  { n: 1, d: 2 },
+                  { n: 2, d: 3 },
+                ],
+                reprTypes: ["fraction", "equivalent"],
+                equivMap: {
+                  "1/2": { n: 2, d: 4 },
+                  "2/3": { n: 4, d: 6 },
+                },
+                hint1:
+                  "Some fractions are different names for the same amount.",
+                hint1_pl: "Niektóre ułamki to inne nazwy tej samej ilości.",
+                hint2: "Multiply top and bottom by the same number.",
+                hint2_pl: "Pomnóż licznik i mianownik przez tę samą liczbę.",
+                feedbackSuccess: "Same amounts — just different names!",
+                feedbackSuccess_pl: "Te same ilości — tylko inne nazwy!",
+              },
+            ],
+            advanced: [
+              {
+                goal: "Match fractions to decimals with more values",
+                goal_pl:
+                  "Dopasuj ułamki do liczb dziesiętnych — więcej wartości",
+                concept: "advancedDecimalMatch",
+                pairs: [
+                  { n: 3, d: 4 },
+                  { n: 1, d: 5 },
+                  { n: 2, d: 5 },
+                ],
+                reprTypes: ["fraction", "decimal"],
+                hint1: "Convert each fraction to a decimal.",
+                hint1_pl: "Zamień każdy ułamek na liczbę dziesiętną.",
+                hint2: "3/4 = 0.75, 1/5 = 0.2, 2/5 = 0.4.",
+                hint2_pl: "3/4 = 0,75, 1/5 = 0,2, 2/5 = 0,4.",
+                feedbackSuccess: "All fractions matched to their decimals!",
+                feedbackSuccess_pl:
+                  "Wszystkie ułamki dopasowane do liczb dziesiętnych!",
+              },
+            ],
+          },
+          repair: {
+            intro: [
+              {
+                goal: "Fix wrong fraction label",
+                goal_pl: "Popraw błędny ułamek",
+                concept: "labelMismatch",
+                correct: { n: 3, d: 4 },
+                wrongRepr: "fraction",
+                wrongValue: { n: 2, d: 4 },
+                hint1: "Count the filled parts in the bar.",
+                hint1_pl: "Policz wypełnione części w pasku.",
+                hint2: "The bar shows 3 filled parts, not 2.",
+                hint2_pl: "Pasek pokazuje 3 wypełnione części, nie 2.",
+                feedbackSuccess: "Fixed! The bar shows 3/4, not 2/4.",
+                feedbackSuccess_pl: "Poprawione! Pasek pokazuje 3/4, nie 2/4.",
+              },
+              {
+                goal: "Fix wrong number line position",
+                goal_pl: "Popraw pozycję na osi liczbowej",
+                concept: "positionMismatch",
+                correct: { n: 1, d: 2 },
+                wrongRepr: "numberLine",
+                wrongValue: { n: 1, d: 3 },
+                hint1: "Where should 1/2 be on the line?",
+                hint1_pl: "Gdzie powinna być 1/2 na osi?",
+                hint2: "The marker is at 1/3 — too far left.",
+                hint2_pl: "Znacznik jest przy 1/3 — za daleko na lewo.",
+                feedbackSuccess: "Fixed! 1/2 is exactly in the middle.",
+                feedbackSuccess_pl: "Poprawione! 1/2 jest dokładnie w środku.",
+              },
+            ],
+            intermediate: [
+              {
+                goal: "Fix wrong decimal",
+                goal_pl: "Popraw błędną liczbę dziesiętną",
+                concept: "decimalMismatch",
+                correct: { n: 3, d: 4 },
+                wrongRepr: "decimal",
+                wrongValue: { n: 34, d: 100 },
+                hint1: "What decimal equals 3/4?",
+                hint1_pl: "Jaka liczba dziesiętna równa się 3/4?",
+                hint2: "3/4 = 0.75, not 0.34.",
+                hint2_pl: "3/4 = 0,75, nie 0,34.",
+                feedbackSuccess: "Fixed! 3/4 = 0.75.",
+                feedbackSuccess_pl: "Poprawione! 3/4 = 0,75.",
+              },
+            ],
+            advanced: [
+              {
+                goal: "Fix wrong bar in complex case",
+                goal_pl: "Popraw błędny pasek w trudniejszym przypadku",
+                concept: "barMismatch",
+                correct: { n: 7, d: 10 },
+                wrongRepr: "bar",
+                wrongValue: { n: 6, d: 10 },
+                hint1: "Check: do all four representations agree?",
+                hint1_pl:
+                  "Sprawdź: czy wszystkie cztery reprezentacje się zgadzają?",
+                hint2: "The bar shows 6/10 but everything else says 7/10.",
+                hint2_pl: "Pasek pokazuje 6/10, ale reszta mówi 7/10.",
+                feedbackSuccess: "Fixed! Now all show 7/10 = 0.7.",
+                feedbackSuccess_pl:
+                  "Poprawione! Teraz wszystko pokazuje 7/10 = 0,7.",
+              },
+            ],
+          },
+        };
+
+        /* ═══════════════════════════════════════════
+           STATE
+           ═══════════════════════════════════════════ */
+
+        const state = {
+          lang:
+            navigator.language && navigator.language.startsWith("pl")
+              ? "pl"
+              : "en",
+          activity: "build",
+          difficulty: "intro",
+          scene: "activity",
+
+          build: {
+            target: { n: 1, d: 2 },
+            denominator: 2,
+            maxWholes: 1,
+            filledSegments: [false, false],
+            currentValue: { n: 0, d: 2 },
+            showGhost: true,
+          },
+
+          compare: {
+            cardA: { n: 1, d: 2 },
+            cardB: { n: 1, d: 4 },
+            correctAnswer: "left",
+            isEqual: false,
+            phase: "choose",
+            childChoice: null,
+            streak: 0,
+          },
+
+          match: {
+            cards: [],
+            selectedCard: null,
+            matchedPairs: [],
+            totalPairs: 0,
+          },
+
+          place: {
+            tokens: [],
+            nlDenom: 2,
+            nlMax: 1,
+            dragToken: null,
+            dragX: 0,
+            dragY: 0,
+          },
+
+          repair: {
+            correctValue: { n: 3, d: 4 },
+            wrongRepr: "fraction",
+            wrongValue: { n: 2, d: 4 },
+            phase: "identify",
+            selectedRepr: null,
+            fixOptions: null,
+          },
+
+          sequence: { steps: [], currentStep: 0, inFreePlay: false },
+          progress: {
+            build: { intro: 0, intermediate: 0, advanced: 0 },
+            compare: { intro: 0, intermediate: 0, advanced: 0 },
+            match: { intro: 0, intermediate: 0, advanced: 0 },
+            place: { intro: 0, intermediate: 0, advanced: 0 },
+            repair: { intro: 0, intermediate: 0, advanced: 0 },
+          },
+          ui: {
+            animating: false,
+            hintLevel: 0,
+            stepComplete: false,
+            feedbackText: "",
+            feedbackType: "",
+          },
+        };
+
+        /* ═══════════════════════════════════════════
+           SVG HELPERS
+           ═══════════════════════════════════════════ */
+
+        function svgEl(tag, attrs) {
+          const el = document.createElementNS(SVG_NS, tag);
+          if (attrs) {
+            for (const k in attrs) {
+              el.setAttribute(k, attrs[k]);
+            }
+          }
+          return el;
+        }
+
+        function clearEl(el) {
+          while (el.firstChild) el.removeChild(el.firstChild);
+        }
+
+        /* ═══════════════════════════════════════════
+           ANIMATION ENGINE
+           ═══════════════════════════════════════════ */
+
+        function easeOutCubic(t) {
+          return 1 - Math.pow(1 - t, 3);
+        }
+
+        function animateValue(duration, onFrame, onComplete) {
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            onFrame(1);
+            if (onComplete) onComplete();
+            return;
+          }
+          const start = performance.now();
+          function frame(now) {
+            const elapsed = now - start;
+            const t = Math.min(1, elapsed / duration);
+            onFrame(easeOutCubic(t));
+            if (t < 1) {
+              requestAnimationFrame(frame);
+            } else {
+              if (onComplete) onComplete();
+            }
+          }
+          requestAnimationFrame(frame);
+        }
+
+        /* ═══════════════════════════════════════════
+           DOM REFS
+           ═══════════════════════════════════════════ */
+
+        const boardSvg = document.getElementById("boardSvg");
+
+        /* ═══════════════════════════════════════════
+           SHARED UI PRIMITIVES
+           ═══════════════════════════════════════════ */
+
+        function wholeWidth(numWholes) {
+          const maxTotal = 720;
+          const gap = 8;
+          return (maxTotal - Math.max(0, numWholes - 1) * gap) / numWholes;
+        }
+
+        function renderStrip(opts) {
+          const {
+            x,
+            y,
+            width,
+            height,
+            denom,
+            filled,
+            color,
+            ghost,
+            ghostColor,
+          } = opts;
+          const g = svgEl("g", {});
+          const segW = width / denom;
+
+          g.appendChild(
+            svgEl("rect", {
+              x,
+              y,
+              width,
+              height,
+              fill: "#F5F0E8",
+              rx: "5",
+              ry: "5",
+              filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.06))",
+            }),
+          );
+
+          if (ghost > 0) {
+            for (let i = 0; i < ghost; i++) {
+              g.appendChild(
+                svgEl("rect", {
+                  x: x + i * segW + 1,
+                  y: y + 1,
+                  width: segW - 2,
+                  height: height - 2,
+                  fill: ghostColor || "#CFD8DC",
+                  opacity: "0.25",
+                  rx: "3",
+                }),
+              );
+            }
+          }
+
+          for (let i = 0; i < denom; i++) {
+            if (i < filled) {
+              g.appendChild(
+                svgEl("rect", {
+                  x: x + i * segW + 1,
+                  y: y + 1,
+                  width: segW - 2,
+                  height: height - 2,
+                  fill: color || MODE_COLORS[state.activity],
+                  opacity: "0.65",
+                  rx: "3",
+                  "data-seg": i,
+                  class: "strip-seg",
+                  style: "cursor:pointer",
+                }),
+              );
+            } else {
+              g.appendChild(
+                svgEl("rect", {
+                  x: x + i * segW + 1,
+                  y: y + 1,
+                  width: segW - 2,
+                  height: height - 2,
+                  fill: "transparent",
+                  "data-seg": i,
+                  class: "strip-seg",
+                  style: "cursor:pointer",
+                }),
+              );
+            }
+          }
+
+          for (let i = 1; i < denom; i++) {
+            g.appendChild(
+              svgEl("line", {
+                x1: x + i * segW,
+                y1: y,
+                x2: x + i * segW,
+                y2: y + height,
+                stroke: "#B0A89A",
+                "stroke-width": "1",
+                "stroke-opacity": "0.6",
+              }),
+            );
+          }
+
+          g.appendChild(
+            svgEl("rect", {
+              x,
+              y,
+              width,
+              height,
+              fill: "none",
+              stroke: opts.borderColor || "#78909C",
+              "stroke-width": opts.borderColor ? "3" : "2",
+              rx: "5",
+              ry: "5",
+            }),
+          );
+
+          return g;
+        }
+
+        function renderCircleModel(opts) {
+          const { cx, cy, r, denom, filledSegs, color } = opts;
+          const g = svgEl("g", {});
+
+          g.appendChild(
+            svgEl("circle", {
+              cx,
+              cy,
+              r,
+              fill: "#F5F0E8",
+              stroke: "#78909C",
+              "stroke-width": "2",
+            }),
+          );
+
+          for (let s = 0; s < denom; s++) {
+            const a1 = (s / denom) * Math.PI * 2 - Math.PI / 2;
+            const a2 = ((s + 1) / denom) * Math.PI * 2 - Math.PI / 2;
+            const x1 = cx + r * Math.cos(a1);
+            const y1 = cy + r * Math.sin(a1);
+            const x2 = cx + r * Math.cos(a2);
+            const y2 = cy + r * Math.sin(a2);
+            const large = a2 - a1 > Math.PI ? 1 : 0;
+            const isFilled = filledSegs && filledSegs[s];
+            const pathD =
+              "M " +
+              cx +
+              " " +
+              cy +
+              " L " +
+              x1 +
+              " " +
+              y1 +
+              " A " +
+              r +
+              " " +
+              r +
+              " 0 " +
+              large +
+              " 1 " +
+              x2 +
+              " " +
+              y2 +
+              " Z";
+            g.appendChild(
+              svgEl("path", {
+                d: pathD,
+                fill: isFilled ? color || "#26A69A" : "#EDE8DF",
+                opacity: isFilled ? "0.6" : "1",
+                "data-seg": s,
+                class: "strip-seg",
+                style: "cursor:pointer",
+                "pointer-events": "all",
+              }),
+            );
+          }
+
+          for (let i = 0; i < denom; i++) {
+            const angle = (i / denom) * Math.PI * 2 - Math.PI / 2;
+            g.appendChild(
+              svgEl("line", {
+                x1: cx,
+                y1: cy,
+                x2: cx + r * Math.cos(angle),
+                y2: cy + r * Math.sin(angle),
+                stroke: "#B0A89A",
+                "stroke-width": "1",
+                "stroke-opacity": "0.6",
+              }),
+            );
+          }
+
+          g.appendChild(
+            svgEl("circle", {
+              cx,
+              cy,
+              r,
+              fill: "none",
+              stroke: opts.borderColor || "#78909C",
+              "stroke-width": "2",
+            }),
+          );
+
+          return g;
+        }
+
+        function renderNumberLine(opts) {
+          const { x, y, width, nlMax, denom, markers, benchmarks } = opts;
+          const g = svgEl("g", {});
+
+          g.appendChild(
+            svgEl("line", {
+              x1: x,
+              y1: y,
+              x2: x + width,
+              y2: y,
+              stroke: "#B0BEC5",
+              "stroke-width": "2",
+              "stroke-linecap": "round",
+            }),
+          );
+
+          const bmarks = benchmarks || [];
+          for (let i = 0; i < bmarks.length; i++) {
+            const bx = x + (bmarks[i] / nlMax) * width;
+            g.appendChild(
+              svgEl("line", {
+                x1: bx,
+                y1: y - 8,
+                x2: bx,
+                y2: y + 8,
+                stroke: "#78909C",
+                "stroke-width": "1.5",
+              }),
+            );
+            const lbl = svgEl("text", {
+              x: bx,
+              y: y + 24,
+              "text-anchor": "middle",
+              "font-family": "'Share Tech Mono', monospace",
+              "font-size": "14",
+              fill: "#78909C",
+            });
+            lbl.textContent =
+              bmarks[i] === 0.5
+                ? "\u00BD"
+                : bmarks[i] === 1.5
+                  ? "1\u00BD"
+                  : bmarks[i] === 2.5
+                    ? "2\u00BD"
+                    : bmarks[i].toString();
+            g.appendChild(lbl);
+          }
+
+          const totalTicks = denom * nlMax;
+          for (let i = 0; i <= totalTicks; i++) {
+            const val = i / denom;
+            let isBench = false;
+            for (let b = 0; b < bmarks.length; b++) {
+              if (Math.abs(val - bmarks[b]) < 0.001) {
+                isBench = true;
+                break;
+              }
+            }
+            if (isBench) continue;
+            const tx = x + (val / nlMax) * width;
+            g.appendChild(
+              svgEl("line", {
+                x1: tx,
+                y1: y - 4,
+                x2: tx,
+                y2: y + 4,
+                stroke: "#CFD8DC",
+                "stroke-width": "1",
+              }),
+            );
+          }
+
+          if (markers) {
+            for (let m = 0; m < markers.length; m++) {
+              const mk = markers[m];
+              const mx = x + (fracToFloat(mk.value) / nlMax) * width;
+              g.appendChild(
+                svgEl("circle", {
+                  cx: mx,
+                  cy: y,
+                  r: mk.ghost ? "7" : "9",
+                  fill: mk.ghost
+                    ? "#CFD8DC"
+                    : mk.color || MODE_COLORS[state.activity],
+                  stroke: "#fff",
+                  "stroke-width": "2",
+                  opacity: mk.ghost ? "0.5" : "1",
+                }),
+              );
+            }
+          }
+
+          return g;
+        }
+
+        /*
+         * renderSvgFraction — measurement-based SVG fraction display.
+         *
+         * Renders numerator / denominator as stacked text with a
+         * horizontal vinculum (fraction bar), sized from actual
+         * getBBox() measurements so the line always fits the digits.
+         *
+         * Handles: 0, whole numbers (3), proper fractions (3/4),
+         * improper fractions (7/4), and mixed numbers (1 3/4).
+         *
+         * Strategy:
+         *  1. Append a staging group to the SVG so getBBox() works.
+         *  2. Render numerator and denominator text at origin.
+         *  3. Measure their actual pixel widths.
+         *  4. Size the vinculum to the wider of the two + padding.
+         *  5. For mixed numbers, measure the whole-part text too.
+         *  6. Reposition all elements centred on (cx, cy).
+         */
+        function renderSvgFraction(parent, cx, cy, n, d, size, color) {
+          const fs = size || 24;
+          const clr = color || "#263238";
+          const pad = fs * 0.25;
+          const lineGap = fs * 0.12;
+          const lineThick = Math.max(2, Math.round(fs * 0.09));
+          const font = "'Share Tech Mono', monospace";
+          const m = fracToMixed(n, d);
+
+          const g = svgEl("g", {});
+          const needsTempAttach =
+            !parent.ownerSVGElement && parent !== boardSvg;
+          if (needsTempAttach) boardSvg.appendChild(parent);
+          parent.appendChild(g);
+
+          /* ── Case: value is exactly zero ── */
+          if (n === 0) {
+            const z = svgEl("text", {
+              x: cx,
+              y: cy,
+              "text-anchor": "middle",
+              "dominant-baseline": "central",
+              "font-family": font,
+              "font-size": fs,
+              "font-weight": "bold",
+              fill: clr,
+            });
+            z.textContent = "0";
+            g.appendChild(z);
+            return g;
+          }
+
+          /* ── Case: whole number with no remainder ── */
+          if (m.whole > 0 && m.n === 0) {
+            const wt = svgEl("text", {
+              x: cx,
+              y: cy,
+              "text-anchor": "middle",
+              "dominant-baseline": "central",
+              "font-family": font,
+              "font-size": fs * 1.15,
+              "font-weight": "bold",
+              fill: clr,
+            });
+            wt.textContent = m.whole;
+            g.appendChild(wt);
+            return g;
+          }
+
+          /* ── Fraction part (proper, improper, or remainder of mixed) ── */
+          const showN = m.whole > 0 ? m.n : n;
+          const showD = d;
+
+          /* Create text elements at (0,0) for measuring */
+          const numEl = svgEl("text", {
+            x: 0,
+            y: 0,
+            "text-anchor": "middle",
+            "font-family": font,
+            "font-size": fs,
+            "font-weight": "bold",
+            fill: clr,
+          });
+          numEl.textContent = showN;
+          g.appendChild(numEl);
+
+          const denEl = svgEl("text", {
+            x: 0,
+            y: 0,
+            "text-anchor": "middle",
+            "font-family": font,
+            "font-size": fs,
+            "font-weight": "bold",
+            fill: clr,
+          });
+          denEl.textContent = showD;
+          g.appendChild(denEl);
+
+          /* Measure actual rendered widths */
+          const numW = numEl.getBBox().width;
+          const denW = denEl.getBBox().width;
+          const fracW = Math.max(numW, denW);
+          const lineW = fracW + pad;
+
+          /* Whole-part measurement (if mixed) */
+          let wholeW = 0;
+          let wholeEl = null;
+          if (m.whole > 0) {
+            wholeEl = svgEl("text", {
+              x: 0,
+              y: 0,
+              "text-anchor": "middle",
+              "dominant-baseline": "central",
+              "font-family": font,
+              "font-size": fs * 1.15,
+              "font-weight": "bold",
+              fill: clr,
+            });
+            wholeEl.textContent = m.whole;
+            g.appendChild(wholeEl);
+            wholeW = wholeEl.getBBox().width;
+          }
+
+          /* ── Layout: compute final positions ── */
+          const gap = m.whole > 0 ? fs * 0.25 : 0;
+          const totalW = (m.whole > 0 ? wholeW + gap : 0) + lineW;
+          const leftEdge = cx - totalW / 2;
+
+          /* Position whole number */
+          if (wholeEl) {
+            wholeEl.setAttribute("x", leftEdge + wholeW / 2);
+            wholeEl.setAttribute("y", cy);
+          }
+
+          /* Fraction centre x */
+          const fracCx = m.whole > 0 ? leftEdge + wholeW + gap + lineW / 2 : cx;
+
+          /* Position numerator above vinculum */
+          numEl.setAttribute("x", fracCx);
+          numEl.setAttribute("y", cy - lineGap - lineThick / 2 - fs * 0.15);
+
+          /* Vinculum */
+          g.appendChild(
+            svgEl("line", {
+              x1: fracCx - lineW / 2,
+              y1: cy,
+              x2: fracCx + lineW / 2,
+              y2: cy,
+              stroke: clr,
+              "stroke-width": lineThick,
+              "stroke-linecap": "round",
+            }),
+          );
+
+          /* Position denominator below vinculum */
+          denEl.setAttribute("x", fracCx);
+          denEl.setAttribute("y", cy + lineGap + lineThick / 2 + fs * 0.72);
+
+          if (needsTempAttach) boardSvg.removeChild(parent);
+
+          return g;
+        }
+
+        function renderFractionCard(opts) {
+          const { x, y, width, height, value, color, label } = opts;
+          const g = svgEl("g", { style: "cursor:pointer", class: "frac-card" });
+
+          g.appendChild(
+            svgEl("rect", {
+              x: x + 2,
+              y: y + 2,
+              width,
+              height,
+              fill: "rgba(0,0,0,0.05)",
+              rx: "10",
+            }),
+          );
+
+          g.appendChild(
+            svgEl("rect", {
+              x,
+              y,
+              width,
+              height,
+              fill: "#fff",
+              stroke: color || "#CFD8DC",
+              "stroke-width": "2.5",
+              rx: "10",
+            }),
+          );
+
+          if (label) {
+            const lbl = svgEl("text", {
+              x: x + width / 2,
+              y: y + height / 2 + 2,
+              "text-anchor": "middle",
+              "dominant-baseline": "middle",
+              "font-family": "'Share Tech Mono', monospace",
+              "font-size": label.length > 5 ? "22" : "28",
+              "font-weight": "bold",
+              fill: color || "#263238",
+            });
+            lbl.textContent = label;
+            g.appendChild(lbl);
+          } else {
+            const mx = fracToMixed(value.n, value.d);
+            const isMixed = mx.whole > 0 && mx.n > 0;
+            const fracSz = isMixed
+              ? Math.min(20, height * 0.2)
+              : Math.min(28, height * 0.25);
+            renderSvgFraction(
+              g,
+              x + width / 2,
+              y + height / 2,
+              value.n,
+              value.d,
+              fracSz,
+              color || "#263238",
+            );
+          }
+
+          return g;
+        }
+
+        function renderBoardNextBtn(y) {
+          const showForReveal =
+            state.activity === "compare" && state.compare.phase === "reveal";
+          if (!state.ui.stepComplete && !showForReveal) return;
+          const btnY = y || 460;
+          const nextG = svgEl("g", {
+            style: "cursor:pointer",
+            class: "board-next-btn",
+          });
+          nextG.appendChild(
+            svgEl("rect", {
+              x: 320,
+              y: btnY,
+              width: 160,
+              height: 40,
+              fill: MODE_COLORS[state.activity] || "#455A64",
+              rx: "10",
+            }),
+          );
+          const nextLbl = svgEl("text", {
+            x: 400,
+            y: btnY + 22,
+            "text-anchor": "middle",
+            "dominant-baseline": "middle",
+            "font-family": "'Outfit', sans-serif",
+            "font-size": "16",
+            "font-weight": "600",
+            fill: "#fff",
+            "pointer-events": "none",
+          });
+          nextLbl.textContent =
+            state.lang === "pl" ? "Dalej \u2192" : "Next \u2192";
+          nextG.appendChild(nextLbl);
+          boardSvg.appendChild(nextG);
+        }
+
+        function renderStepGoal(mainY) {
+          const step = getCurrentStep();
+          const goalStr = stepText(step, "goal");
+          if (goalStr) {
+            const goalEl = svgEl("text", {
+              x: 400,
+              y: (mainY || 40) + 35,
+              "text-anchor": "middle",
+              "font-family": "'Outfit', sans-serif",
+              "font-size": "13",
+              fill: "#90A4AE",
+            });
+            goalEl.textContent = goalStr;
+            boardSvg.appendChild(goalEl);
+          }
+        }
+
+        function nlBenchmarks(nlMax) {
+          const b = [0];
+          if (nlMax >= 1) b.push(1);
+          if (nlMax >= 2) b.push(0.5, 2);
+          if (nlMax >= 3) b.push(1.5, 2.5, 3);
+          return b.sort((a, c) => a - c);
+        }
+
+        /* ═══════════════════════════════════════════
+           BUILD: RENDERER + CONTROLLER
+           ═══════════════════════════════════════════ */
+
+        function renderBuildBoard() {
+          clearEl(boardSvg);
+          const b = state.build;
+          const step = getCurrentStep();
+          const denom = b.target ? b.target.d : b.denominator;
+          if (denom !== b.denominator) {
+            b.denominator = denom;
+            const total = denom * DIFF_CFG[state.difficulty].maxWholes;
+            b.filledSegments = new Array(total).fill(false);
+            b.currentValue = { n: 0, d: denom };
+          }
+          const wholes = Math.max(1, Math.ceil(b.target.n / denom));
+          const hasSource = step && step.sourceValue;
+
+          const useCircle =
+            step &&
+            step.primaryModel === "circle" &&
+            wholes === 1 &&
+            !hasSource;
+
+          const stripW = wholeWidth(wholes);
+          const stripH = hasSource ? 50 : 60;
+          const gap = 8;
+          const totalW = stripW * wholes + gap * (wholes - 1);
+          const startX = (800 - totalW) / 2;
+          const startY = hasSource ? 200 : 140;
+
+          if (hasSource) {
+            const src = step.sourceValue;
+            const srcW = wholeWidth(1);
+            const srcX = (800 - srcW) / 2;
+            const srcStrip = renderStrip({
+              x: srcX,
+              y: 110,
+              width: srcW,
+              height: stripH,
+              denom: src.d,
+              filled: src.n,
+              color: "#78909C",
+              ghost: 0,
+            });
+            boardSvg.appendChild(srcStrip);
+            renderSvgFraction(
+              boardSvg,
+              srcX + srcW + 30,
+              110 + stripH / 2,
+              src.n,
+              src.d,
+              18,
+              "#78909C",
+            );
+            const eqSign = svgEl("text", {
+              x: 400,
+              y: 180,
+              "text-anchor": "middle",
+              "font-family": "'Share Tech Mono', monospace",
+              "font-size": "20",
+              "font-weight": "bold",
+              fill: "#90A4AE",
+            });
+            eqSign.textContent = "=";
+            boardSvg.appendChild(eqSign);
+          }
+
+          if (useCircle) {
+            const circle = renderCircleModel({
+              cx: 400,
+              cy: startY + 60,
+              r: 90,
+              denom,
+              filledSegs: b.filledSegments,
+              color: MODE_COLORS.build,
+            });
+            circle.setAttribute("data-whole", 0);
+            boardSvg.appendChild(circle);
+          }
+
+          for (let w = 0; w < (useCircle ? 0 : wholes); w++) {
+            const wx = startX + w * (stripW + gap);
+            let filledInThisWhole = 0;
+
+            for (let s = 0; s < denom; s++) {
+              const idx = w * denom + s;
+              if (idx < b.filledSegments.length && b.filledSegments[idx]) {
+                filledInThisWhole++;
+              }
+            }
+
+            const strip = renderStrip({
+              x: wx,
+              y: startY,
+              width: stripW,
+              height: stripH,
+              denom,
+              filled: filledInThisWhole,
+              color: MODE_COLORS.build,
+              ghost: 0,
+              ghostColor: MODE_COLORS.build,
+            });
+            strip.setAttribute("data-whole", w);
+            boardSvg.appendChild(strip);
+
+            if (wholes > 1) {
+              const lbl = svgEl("text", {
+                x: wx + stripW / 2,
+                y: startY + stripH + 18,
+                "text-anchor": "middle",
+                "font-family": "'Share Tech Mono', monospace",
+                "font-size": "12",
+                fill: "#90A4AE",
+              });
+              lbl.textContent = (w + 1).toString();
+              boardSvg.appendChild(lbl);
+            }
+          }
+
+          const nlY = 320;
+          const nlW = totalW;
+          const nlX = startX;
+          const nlMax = DIFF_CFG[state.difficulty].nlMax;
+          const currentVal = {
+            n: b.currentValue.n,
+            d: b.currentValue.d,
+          };
+          const ghostMarker = {
+            value: { n: b.target.n, d: b.target.d },
+            ghost: true,
+          };
+          const currentMarker = {
+            value: currentVal,
+            color: MODE_COLORS.build,
+          };
+
+          const nl = renderNumberLine({
+            x: nlX,
+            y: nlY,
+            width: nlW,
+            nlMax,
+            denom,
+            markers:
+              b.currentValue.n > 0
+                ? [ghostMarker, currentMarker]
+                : [ghostMarker],
+            benchmarks: nlBenchmarks(nlMax),
+          });
+          boardSvg.appendChild(nl);
+
+          const promptY = hasSource ? 60 : 60;
+          const promptText = svgEl("text", {
+            x: hasSource ? 300 : 360,
+            y: promptY,
+            "text-anchor": "middle",
+            "font-family": "'Outfit', sans-serif",
+            "font-size": "20",
+            "font-weight": "600",
+            fill: "#455A64",
+          });
+          promptText.textContent = state.lang === "pl" ? "Pokaż" : "Show";
+          boardSvg.appendChild(promptText);
+          renderSvgFraction(
+            boardSvg,
+            hasSource ? 380 : 440,
+            promptY - 2,
+            b.target.n,
+            b.target.d,
+            18,
+            "#455A64",
+          );
+          renderStepGoal(promptY);
+          renderBoardNextBtn(460);
+        }
+
+        function handleBuildClick(e) {
+          const seg = e.target.closest(".strip-seg");
+          if (!seg) return;
+
+          const idx = parseInt(seg.getAttribute("data-seg"), 10);
+          const wholeGroup = seg.closest("g[data-whole]");
+          if (!wholeGroup) return;
+          const wholeIdx = parseInt(wholeGroup.getAttribute("data-whole"), 10);
+          const globalIdx = wholeIdx * state.build.denominator + idx;
+
+          const b = state.build;
+          const total = b.filledSegments.length;
+          const step = getCurrentStep();
+          const isCircle = step && step.primaryModel === "circle";
+
+          if (isCircle) {
+            b.filledSegments[globalIdx] = !b.filledSegments[globalIdx];
+          } else {
+            const currentFilled = b.filledSegments.filter(Boolean).length;
+            const targetIdx = globalIdx + 1;
+
+            if (currentFilled === targetIdx) {
+              for (let i = globalIdx; i < total; i++)
+                b.filledSegments[i] = false;
+            } else {
+              for (let i = 0; i < total; i++) {
+                b.filledSegments[i] = i < targetIdx;
+              }
+            }
+          }
+
+          b.currentValue = {
+            n: b.filledSegments.filter(Boolean).length,
+            d: b.denominator,
+          };
+
+          renderBuildBoard();
+          updatePanel();
+          checkBuildComplete();
+        }
+
+        function animateRepartition(callback) {
+          const step = getCurrentStep();
+          if (!step || !step.sourceValue) {
+            if (callback) callback();
+            return;
+          }
+          const src = step.sourceValue;
+          const tgt = state.build.target;
+          const srcW = wholeWidth(1);
+          const srcX = (800 - srcW) / 2;
+          const stripY = 110;
+          const stripH = 50;
+          const fillWidth = (src.n / src.d) * srcW;
+
+          state.ui.animating = true;
+          const duration = 600;
+          const start = performance.now();
+
+          function frame(now) {
+            const t = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - t, 3);
+            const currentDenom = Math.round(src.d + (tgt.d - src.d) * eased);
+            const segW = srcW / currentDenom;
+
+            const existing = boardSvg.querySelector("#repartGroup");
+            if (existing) existing.remove();
+
+            const g = svgEl("g", { id: "repartGroup" });
+            g.appendChild(
+              svgEl("rect", {
+                x: srcX,
+                y: stripY,
+                width: srcW,
+                height: stripH,
+                fill: "#F5F0E8",
+                rx: "5",
+              }),
+            );
+            g.appendChild(
+              svgEl("rect", {
+                x: srcX,
+                y: stripY,
+                width: fillWidth,
+                height: stripH,
+                fill: MODE_COLORS.build,
+                opacity: "0.5",
+                rx: "3",
+              }),
+            );
+            for (let i = 1; i < currentDenom; i++) {
+              g.appendChild(
+                svgEl("line", {
+                  x1: srcX + i * segW,
+                  y1: stripY,
+                  x2: srcX + i * segW,
+                  y2: stripY + stripH,
+                  stroke: "#B0A89A",
+                  "stroke-width": "1",
+                }),
+              );
+            }
+            g.appendChild(
+              svgEl("rect", {
+                x: srcX,
+                y: stripY,
+                width: srcW,
+                height: stripH,
+                fill: "none",
+                stroke: "#78909C",
+                "stroke-width": "2",
+                rx: "5",
+              }),
+            );
+            boardSvg.appendChild(g);
+
+            if (t < 1) {
+              requestAnimationFrame(frame);
+            } else {
+              state.ui.animating = false;
+              if (callback) callback();
+            }
+          }
+          requestAnimationFrame(frame);
+        }
+
+        function checkBuildComplete() {
+          const b = state.build;
+          const filled = b.filledSegments.filter(Boolean).length;
+          if (filled === b.target.n) {
+            const step = getCurrentStep();
+            if (step && step.sourceValue) {
+              animateRepartition(() => onSuccess());
+            } else {
+              onSuccess();
+            }
+          }
+        }
+
+        /* ═══════════════════════════════════════════
+           COMPARE: RENDERER + CONTROLLER
+           ═══════════════════════════════════════════ */
+
+        function renderCompareBoard() {
+          clearEl(boardSvg);
+          const c = state.compare;
+          const step = getCurrentStep();
+          const cardW = 200;
+          const cardH = 120;
+          const gap = 80;
+          const leftX = 400 - cardW - gap / 2;
+          const rightX = 400 + gap / 2;
+          const cardY = 80;
+          const colLeft = "#26A69A";
+          const colRight = "#FFA726";
+
+          const dispA = (step && step.displayA) || c.displayA;
+          const dispB = (step && step.displayB) || c.displayB;
+          const labelA =
+            dispA === "decimal"
+              ? formatDecimal(c.cardA.n, c.cardA.d)
+              : undefined;
+          const labelB =
+            dispB === "decimal"
+              ? formatDecimal(c.cardB.n, c.cardB.d)
+              : undefined;
+
+          const leftCard = renderFractionCard({
+            x: leftX,
+            y: cardY,
+            width: cardW,
+            height: cardH,
+            value: c.cardA,
+            label: labelA,
+            color: c.phase === "choose" ? colLeft : colLeft,
+          });
+          leftCard.setAttribute("data-side", "left");
+          boardSvg.appendChild(leftCard);
+
+          const rightCard = renderFractionCard({
+            x: rightX,
+            y: cardY,
+            width: cardW,
+            height: cardH,
+            value: c.cardB,
+            label: labelB,
+            color: c.phase === "choose" ? colRight : colRight,
+          });
+          rightCard.setAttribute("data-side", "right");
+          boardSvg.appendChild(rightCard);
+
+          if (c.phase === "choose") {
+            const prompt = svgEl("text", {
+              x: 400,
+              y: 50,
+              "text-anchor": "middle",
+              "font-family": "'Outfit', sans-serif",
+              "font-size": "18",
+              "font-weight": "600",
+              fill: "#455A64",
+            });
+            prompt.textContent = T("tapBigger");
+            boardSvg.appendChild(prompt);
+
+            if (c.isEqual) {
+              document.getElementById("eqBtn").classList.add("visible");
+            }
+          }
+
+          if (c.phase === "reveal") {
+            renderCompareReveal(leftX, rightX, cardY + cardH + 30);
+          }
+        }
+
+        function renderCompareReveal(leftX, rightX, revealY) {
+          const c = state.compare;
+          const wholeW = wholeWidth(1);
+          const barH = 36;
+          const barGap = 12;
+          const barX = (800 - wholeW) / 2;
+          const dA = c.cardA.d;
+          const dB = c.cardB.d;
+
+          const stripA = renderStrip({
+            x: barX,
+            y: revealY,
+            width: wholeW,
+            height: barH,
+            denom: dA,
+            filled: c.cardA.n,
+            color: "#26A69A",
+            ghost: 0,
+          });
+          boardSvg.appendChild(stripA);
+
+          const stripB = renderStrip({
+            x: barX,
+            y: revealY + barH + barGap,
+            width: wholeW,
+            height: barH,
+            denom: dB,
+            filled: c.cardB.n,
+            color: "#FFA726",
+            ghost: 0,
+          });
+          boardSvg.appendChild(stripB);
+
+          const fillEndA = barX + fracToFloat(c.cardA) * wholeW;
+          const fillEndB = barX + fracToFloat(c.cardB) * wholeW;
+          const biggerEnd = Math.max(fillEndA, fillEndB);
+          boardSvg.appendChild(
+            svgEl("line", {
+              x1: biggerEnd,
+              y1: revealY - 4,
+              x2: biggerEnd,
+              y2: revealY + barH * 2 + barGap + 4,
+              stroke: "#455A64",
+              "stroke-width": "1.5",
+              "stroke-dasharray": "4,3",
+              opacity: "0.5",
+            }),
+          );
+
+          const nlY = revealY + barH * 2 + barGap + 40;
+          const nl = renderNumberLine({
+            x: barX,
+            y: nlY,
+            width: wholeW,
+            nlMax: 1,
+            denom: Math.max(dA, dB),
+            markers: [
+              { value: c.cardA, color: "#26A69A" },
+              { value: c.cardB, color: "#FFA726" },
+            ],
+            benchmarks: [0, 0.5, 1],
+          });
+          boardSvg.appendChild(nl);
+
+          const step = getCurrentStep();
+          if (step) {
+            const isCorrect =
+              c.childChoice === c.correctAnswer ||
+              (c.childChoice === "equal" && c.isEqual);
+            const fbKey = isCorrect ? "feedbackSuccess" : "feedbackError";
+            const fbText = stepText(step, fbKey);
+            if (fbText) {
+              const fb = svgEl("text", {
+                x: 400,
+                y: nlY + 40,
+                "text-anchor": "middle",
+                "font-family": "'Outfit', sans-serif",
+                "font-size": "14",
+                fill: isCorrect ? "#2E7D32" : "#C62828",
+              });
+              fb.textContent = fbText;
+              boardSvg.appendChild(fb);
+            }
+          }
+
+          renderBoardNextBtn(460);
+        }
+
+        function handleCompareClick(e) {
+          if (state.compare.phase !== "choose") return;
+          const card = e.target.closest("[data-side]");
+          if (!card) return;
+
+          const side = card.getAttribute("data-side");
+          const c = state.compare;
+          c.childChoice = side;
+
+          const cmp = fracCompare(c.cardA, c.cardB);
+          const correct =
+            (side === "left" && cmp > 0) || (side === "right" && cmp < 0);
+
+          if (correct || (c.isEqual && side === "equal")) {
+            c.phase = "reveal";
+            c.correctAnswer = side;
+            state.ui.animating = true;
+            animateValue(
+              400,
+              () => {},
+              () => {
+                state.ui.animating = false;
+                onSuccess();
+              },
+            );
+          } else if (c.isEqual && !correct) {
+            state.ui.feedbackText = T("theyAreEqual");
+            state.ui.feedbackType = "error";
+            updateHintDisplay();
+          } else {
+            c.phase = "reveal";
+            c.correctAnswer = cmp > 0 ? "left" : cmp < 0 ? "right" : "equal";
+            state.ui.feedbackText = T("tryAgain");
+            state.ui.feedbackType = "error";
+            updateHintDisplay();
+            document.getElementById("nextBtn").disabled = false;
+          }
+
+          document.getElementById("eqBtn").classList.remove("visible");
+          renderCompareBoard();
+        }
+
+        function handleEqualClick() {
+          if (state.compare.phase !== "choose") return;
+          const c = state.compare;
+          c.childChoice = "equal";
+
+          if (c.isEqual) {
+            c.phase = "reveal";
+            c.correctAnswer = "equal";
+            onSuccess();
+          } else {
+            c.phase = "reveal";
+            const cmp = fracCompare(c.cardA, c.cardB);
+            c.correctAnswer = cmp > 0 ? "left" : "right";
+            state.ui.feedbackText = T("tryAgain");
+            state.ui.feedbackType = "error";
+            updateHintDisplay();
+            document.getElementById("nextBtn").disabled = false;
+          }
+
+          document.getElementById("eqBtn").classList.remove("visible");
+          renderCompareBoard();
+        }
+
+        /* ═══════════════════════════════════════════
+           PLACE: RENDERER + CONTROLLER
+           ═══════════════════════════════════════════ */
+
+        function renderPlaceBoard() {
+          clearEl(boardSvg);
+          const p = state.place;
+          const nlMax = p.nlMax || DIFF_CFG[state.difficulty].nlMax;
+          const nlW = 650;
+          const nlX = 75;
+          const nlY = 140;
+
+          if (p.dragToken !== null) {
+            const rawVal = ((p.dragX - nlX) / nlW) * nlMax;
+            const snapVal = Math.max(
+              0,
+              Math.min(nlMax, Math.round(rawVal * p.nlDenom) / p.nlDenom),
+            );
+            const snapX = nlX + (snapVal / nlMax) * nlW;
+            boardSvg.appendChild(
+              svgEl("circle", {
+                cx: snapX,
+                cy: nlY,
+                r: "14",
+                fill: "rgba(255,167,38,0.3)",
+                stroke: MODE_COLORS.place,
+                "stroke-width": "2",
+                "stroke-dasharray": "4,3",
+              }),
+            );
+          }
+
+          const nl = renderNumberLine({
+            x: nlX,
+            y: nlY,
+            width: nlW,
+            nlMax,
+            denom: p.nlDenom,
+            markers: p.tokens
+              .filter((tk) => tk.placed)
+              .map((tk) => ({
+                value: { n: tk.n, d: tk.d },
+                color: MODE_COLORS.place,
+              })),
+            benchmarks: nlBenchmarks(nlMax),
+          });
+          boardSvg.appendChild(nl);
+
+          const trayY = 300;
+          const trayGap = 20;
+          const cardW = 160;
+          const cardH = 90;
+          const totalTrayW =
+            p.tokens.length * cardW + (p.tokens.length - 1) * trayGap;
+          const trayStartX = (800 - totalTrayW) / 2;
+
+          for (let i = 0; i < p.tokens.length; i++) {
+            const tk = p.tokens[i];
+            if (tk.placed) continue;
+
+            const tx =
+              p.dragToken === i
+                ? p.dragX - cardW / 2
+                : trayStartX + i * (cardW + trayGap);
+            const ty = p.dragToken === i ? p.dragY - cardH / 2 : trayY;
+
+            const card = renderFractionCard({
+              x: tx,
+              y: ty,
+              width: cardW,
+              height: cardH,
+              value: { n: tk.n, d: tk.d },
+              label: tk.asDecimal ? formatDecimal(tk.n, tk.d) : tk.label,
+              color: MODE_COLORS.place,
+            });
+            card.setAttribute("data-token", i);
+            card.setAttribute("class", "place-token");
+            boardSvg.appendChild(card);
+          }
+
+          const prompt = svgEl("text", {
+            x: 400,
+            y: 40,
+            "text-anchor": "middle",
+            "font-family": "'Outfit', sans-serif",
+            "font-size": "16",
+            "font-weight": "600",
+            fill: "#455A64",
+          });
+          prompt.textContent = T("placeSummary");
+          boardSvg.appendChild(prompt);
+          renderStepGoal(40);
+          renderBoardNextBtn(460);
+        }
+
+        function handlePlaceDown(e) {
+          const card = e.target.closest(".place-token");
+          if (!card) return;
+          const idx = parseInt(card.getAttribute("data-token"), 10);
+          if (state.place.tokens[idx].placed) return;
+
+          state.place.dragToken = idx;
+          const pt = getSvgPoint(e);
+          state.place.dragX = pt.x;
+          state.place.dragY = pt.y;
+          e.preventDefault();
+        }
+
+        function handlePlaceMove(e) {
+          if (state.place.dragToken === null) return;
+          const pt = getSvgPoint(e);
+          state.place.dragX = pt.x;
+          state.place.dragY = pt.y;
+          renderPlaceBoard();
+          e.preventDefault();
+        }
+
+        function handlePlaceUp() {
+          if (state.place.dragToken === null) return;
+          const p = state.place;
+          const idx = p.dragToken;
+          const tk = p.tokens[idx];
+          p.dragToken = null;
+
+          const nlX = 75;
+          const nlW = 650;
+          const nlY = 140;
+          const nlMax = p.nlMax || DIFF_CFG[state.difficulty].nlMax;
+
+          if (
+            Math.abs(p.dragY - nlY) < 50 &&
+            p.dragX >= nlX &&
+            p.dragX <= nlX + nlW
+          ) {
+            const rawVal = ((p.dragX - nlX) / nlW) * nlMax;
+            const correctVal = fracToFloat({ n: tk.n, d: tk.d });
+            const tolerance = (1 / p.nlDenom) * 0.45;
+
+            if (Math.abs(rawVal - correctVal) < tolerance) {
+              tk.placed = true;
+              checkPlaceComplete();
+            } else {
+              state.ui.feedbackText = T("tryAgain");
+              state.ui.feedbackType = "error";
+              updateHintDisplay();
+            }
+          }
+
+          renderPlaceBoard();
+        }
+
+        function checkPlaceComplete() {
+          const allPlaced = state.place.tokens.every((tk) => tk.placed);
+          if (allPlaced) {
+            onSuccess();
+          }
+        }
+
+        /* ═══════════════════════════════════════════
+           MATCH: RENDERER + CONTROLLER
+           ═══════════════════════════════════════════ */
+
+        function renderMatchBoard() {
+          clearEl(boardSvg);
+          const m = state.match;
+          const PAIR_COLORS = ["#26A69A", "#FFA726", "#5C6BC0", "#EF5350"];
+          const cards = m.cards;
+          const cardW = 150;
+          const cardH = 80;
+          const cols = 2;
+          const rows = Math.ceil(cards.length / cols);
+          const gapX = 40;
+          const gapY = 20;
+          const totalW = cols * cardW + (cols - 1) * gapX;
+          const totalH = rows * cardH + (rows - 1) * gapY;
+          const startX = (800 - totalW) / 2;
+          const startY = (440 - totalH) / 2 + 30;
+
+          for (let i = 0; i < cards.length; i++) {
+            const c = cards[i];
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const cx = startX + col * (cardW + gapX);
+            const cy = startY + row * (cardH + gapY);
+
+            const isSelected = m.selectedCard === c.id;
+            let pairIdx = -1;
+            if (c.matched) {
+              for (let pi = 0; pi < m.matchedPairs.length; pi++) {
+                if (
+                  m.matchedPairs[pi][0] === c.id ||
+                  m.matchedPairs[pi][1] === c.id
+                ) {
+                  pairIdx = pi;
+                  break;
+                }
+              }
+            }
+            const color = c.matched
+              ? PAIR_COLORS[pairIdx % PAIR_COLORS.length]
+              : isSelected
+                ? MODE_COLORS.match
+                : "#455A64";
+
+            let label;
+            if (c.repr === "decimal") {
+              label = formatDecimal(c.value.n, c.value.d) || "?";
+            } else if (c.repr === "bar") {
+              label = null;
+            } else {
+              label = null;
+            }
+
+            if (c.repr === "bar") {
+              const strip = renderStrip({
+                x: cx,
+                y: cy + 10,
+                width: cardW,
+                height: cardH - 20,
+                denom: c.value.d,
+                filled: c.value.n,
+                color: isSelected ? MODE_COLORS.match : "#78909C",
+                ghost: 0,
+                borderColor: c.matched ? color : undefined,
+              });
+              strip.setAttribute("data-match-id", c.id);
+              strip.setAttribute("class", "match-card");
+              strip.style.cursor = "pointer";
+              if (isSelected) {
+                const highlight = svgEl("rect", {
+                  x: cx - 3,
+                  y: cy + 7,
+                  width: cardW + 6,
+                  height: cardH - 14,
+                  fill: "none",
+                  stroke: MODE_COLORS.match,
+                  "stroke-width": "3",
+                  rx: "7",
+                });
+                strip.insertBefore(highlight, strip.firstChild);
+              }
+              boardSvg.appendChild(strip);
+            } else {
+              const card = renderFractionCard({
+                x: cx,
+                y: cy,
+                width: cardW,
+                height: cardH,
+                value: c.displayValue || c.value,
+                label,
+                color,
+              });
+              card.setAttribute("data-match-id", c.id);
+              card.setAttribute("class", "match-card");
+              boardSvg.appendChild(card);
+            }
+          }
+
+          const prompt = svgEl("text", {
+            x: 400,
+            y: 30,
+            "text-anchor": "middle",
+            "font-family": "'Outfit', sans-serif",
+            "font-size": "16",
+            "font-weight": "600",
+            fill: "#455A64",
+          });
+          prompt.textContent = T("matchSummary");
+          boardSvg.appendChild(prompt);
+          renderStepGoal(30);
+          renderBoardNextBtn(460);
+        }
+
+        function handleMatchClick(e) {
+          const card = e.target.closest("[data-match-id]");
+          if (!card) return;
+          const id = parseInt(card.getAttribute("data-match-id"), 10);
+          const m = state.match;
+          const clickedCard = m.cards.find((c) => c.id === id);
+          if (!clickedCard || clickedCard.matched) return;
+
+          if (m.selectedCard === null) {
+            m.selectedCard = id;
+            renderMatchBoard();
+          } else if (m.selectedCard === id) {
+            m.selectedCard = null;
+            renderMatchBoard();
+          } else {
+            const firstCard = m.cards.find((c) => c.id === m.selectedCard);
+            if (
+              firstCard &&
+              fracEqual(firstCard.value, clickedCard.value) &&
+              firstCard.id !== clickedCard.id
+            ) {
+              firstCard.matched = true;
+              clickedCard.matched = true;
+              m.matchedPairs.push([firstCard.id, clickedCard.id]);
+              m.selectedCard = null;
+              checkMatchComplete();
+            } else {
+              state.ui.feedbackText = T("tryAgain");
+              state.ui.feedbackType = "error";
+              updateHintDisplay();
+              m.selectedCard = null;
+            }
+            renderMatchBoard();
+          }
+        }
+
+        function checkMatchComplete() {
+          const allMatched = state.match.cards.every((c) => c.matched);
+          if (allMatched) {
+            onSuccess();
+          }
+        }
+
+        /* ═══════════════════════════════════════════
+           REPAIR: RENDERER + CONTROLLER
+           ═══════════════════════════════════════════ */
+
+        function renderRepairBoard() {
+          clearEl(boardSvg);
+          const r = state.repair;
+          const correct = r.correctValue;
+          const quadW = 320;
+          const quadH = 140;
+          const gapX = 40;
+          const gapY = 30;
+          const startX = (800 - quadW * 2 - gapX) / 2;
+          const startY = 80;
+
+          const reprs = [
+            { type: "bar", x: startX, y: startY },
+            {
+              type: "fraction",
+              x: startX + quadW + gapX,
+              y: startY,
+            },
+            { type: "numberLine", x: startX, y: startY + quadH + gapY },
+            {
+              type: "decimal",
+              x: startX + quadW + gapX,
+              y: startY + quadH + gapY,
+            },
+          ];
+
+          for (let i = 0; i < reprs.length; i++) {
+            const repr = reprs[i];
+            const isWrong = repr.type === r.wrongRepr;
+            const displayValue =
+              isWrong && r.phase !== "done" ? r.wrongValue : correct;
+            const isSelected = r.selectedRepr === repr.type;
+
+            let borderColor = "#CFD8DC";
+            if (r.phase === "identify" && isSelected) {
+              borderColor = MODE_COLORS.repair;
+            }
+            if (r.phase === "fix" && isWrong) {
+              borderColor = MODE_COLORS.repair;
+            }
+            if (r.phase === "done") {
+              borderColor = "#66BB6A";
+            }
+
+            boardSvg.appendChild(
+              svgEl("rect", {
+                x: repr.x - 5,
+                y: repr.y - 5,
+                width: quadW + 10,
+                height: quadH + 10,
+                fill: "#FAFAF7",
+                stroke: borderColor,
+                "stroke-width":
+                  isSelected || (r.phase === "fix" && isWrong) ? "3" : "1.5",
+                rx: "8",
+                "data-repr": repr.type,
+                class: "repair-quad",
+                style: "cursor:pointer",
+              }),
+            );
+
+            if (repr.type === "bar") {
+              const strip = renderStrip({
+                x: repr.x + 20,
+                y: repr.y + 40,
+                width: quadW - 40,
+                height: 50,
+                denom: displayValue.d,
+                filled: displayValue.n,
+                color: "#78909C",
+                ghost: 0,
+              });
+              boardSvg.appendChild(strip);
+              const lbl = svgEl("text", {
+                x: repr.x + quadW / 2,
+                y: repr.y + 20,
+                "text-anchor": "middle",
+                "font-family": "'Share Tech Mono', monospace",
+                "font-size": "11",
+                fill: "#90A4AE",
+              });
+              lbl.textContent = T("reprBar");
+              boardSvg.appendChild(lbl);
+            } else if (repr.type === "fraction") {
+              renderSvgFraction(
+                boardSvg,
+                repr.x + quadW / 2,
+                repr.y + quadH / 2 + 5,
+                displayValue.n,
+                displayValue.d,
+                30,
+                "#263238",
+              );
+            } else if (repr.type === "numberLine") {
+              const nl = renderNumberLine({
+                x: repr.x + 20,
+                y: repr.y + quadH / 2 + 10,
+                width: quadW - 40,
+                nlMax: 1,
+                denom: correct.d,
+                markers: [{ value: displayValue, color: "#455A64" }],
+                benchmarks: [0, 0.5, 1],
+              });
+              boardSvg.appendChild(nl);
+              const lbl = svgEl("text", {
+                x: repr.x + quadW / 2,
+                y: repr.y + 20,
+                "text-anchor": "middle",
+                "font-family": "'Share Tech Mono', monospace",
+                "font-size": "11",
+                fill: "#90A4AE",
+              });
+              lbl.textContent = T("reprNumberLine");
+              boardSvg.appendChild(lbl);
+            } else if (repr.type === "decimal") {
+              const dec = formatDecimal(displayValue.n, displayValue.d) || "?";
+              const lbl = svgEl("text", {
+                x: repr.x + quadW / 2,
+                y: repr.y + quadH / 2 + 8,
+                "text-anchor": "middle",
+                "font-family": "'Share Tech Mono', monospace",
+                "font-size": "32",
+                "font-weight": "bold",
+                fill: "#263238",
+              });
+              lbl.textContent = dec;
+              boardSvg.appendChild(lbl);
+            }
+          }
+
+          const prompt = svgEl("text", {
+            x: 400,
+            y: 30,
+            "text-anchor": "middle",
+            "font-family": "'Outfit', sans-serif",
+            "font-size": "16",
+            "font-weight": "600",
+            fill: "#455A64",
+          });
+          prompt.textContent =
+            r.phase === "identify"
+              ? T("repairSummary")
+              : r.phase === "fix"
+                ? T("fixPrompt")
+                : T("correct");
+          boardSvg.appendChild(prompt);
+          renderStepGoal(30);
+
+          if (r.phase === "fix" && r.fixOptions) {
+            const optY = 440;
+            const optW = 100;
+            const optH = 40;
+            const optGap = 20;
+            const totalOptW =
+              r.fixOptions.length * optW + (r.fixOptions.length - 1) * optGap;
+            const optStartX = (800 - totalOptW) / 2;
+            for (let fi = 0; fi < r.fixOptions.length; fi++) {
+              const fo = r.fixOptions[fi];
+              const fx = optStartX + fi * (optW + optGap);
+              const isDecimal =
+                r.wrongRepr === "decimal" && fracIsFriendlyDecimal(fo.d);
+
+              const g = svgEl("g", {
+                "data-fix-idx": fi,
+                style: "cursor:pointer",
+              });
+              g.appendChild(
+                svgEl("rect", {
+                  x: fx,
+                  y: optY,
+                  width: optW,
+                  height: optH,
+                  fill: "#fff",
+                  stroke: MODE_COLORS.repair,
+                  "stroke-width": "2",
+                  rx: "8",
+                  "data-fix-idx": fi,
+                }),
+              );
+              boardSvg.appendChild(g);
+              if (isDecimal) {
+                const decTxt = svgEl("text", {
+                  x: fx + optW / 2,
+                  y: optY + optH / 2 + 2,
+                  "text-anchor": "middle",
+                  "dominant-baseline": "middle",
+                  "font-family": "'Share Tech Mono', monospace",
+                  "font-size": "16",
+                  "font-weight": "bold",
+                  fill: "#263238",
+                  "pointer-events": "none",
+                });
+                decTxt.textContent =
+                  formatDecimal(fo.n, fo.d) || fo.n + "/" + fo.d;
+                g.appendChild(decTxt);
+              } else {
+                const fracG = renderSvgFraction(
+                  g,
+                  fx + optW / 2,
+                  optY + optH / 2,
+                  fo.n,
+                  fo.d,
+                  14,
+                  "#263238",
+                );
+                fracG.setAttribute("pointer-events", "none");
+              }
+            }
+          }
+
+          renderBoardNextBtn(460);
+        }
+
+        function generateRepairFixOptions(correct, wrong) {
+          const opts = [correct];
+          const d = correct.d;
+
+          const candidates = [];
+          for (let cn = 0; cn <= d; cn++) {
+            if (cn === correct.n) continue;
+            if (cn === wrong.n && d === wrong.d) continue;
+            candidates.push(cn);
+          }
+
+          for (let i = candidates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const tmp = candidates[i];
+            candidates[i] = candidates[j];
+            candidates[j] = tmp;
+          }
+
+          for (let i = 0; i < candidates.length && opts.length < 3; i++) {
+            opts.push({ n: candidates[i], d });
+          }
+
+          if (opts.length < 3 && wrong.d === d) {
+            opts.push(wrong);
+          }
+
+          while (opts.length < 3) {
+            const altD = d * 2;
+            const altN = correct.n * 2 + (opts.length === 1 ? 1 : -1);
+            opts.push({ n: Math.max(0, Math.min(altD, altN)), d: altD });
+          }
+
+          for (let i = opts.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const tmp = opts[i];
+            opts[i] = opts[j];
+            opts[j] = tmp;
+          }
+          return opts;
+        }
+
+        function handleRepairClick(e) {
+          if (state.ui.animating) return;
+          const r = state.repair;
+          if (r.phase === "done") return;
+
+          if (r.phase === "fix") {
+            const fixBtn = e.target.closest("[data-fix-idx]");
+            if (!fixBtn) return;
+            state.ui.animating = true;
+            const idx = parseInt(fixBtn.getAttribute("data-fix-idx"), 10);
+            const chosen = r.fixOptions[idx];
+            if (fracEqual(chosen, r.correctValue)) {
+              r.phase = "done";
+              setTimeout(() => {
+                state.ui.animating = false;
+                onSuccess();
+              }, 50);
+            } else {
+              state.ui.feedbackText = T("tryAgain");
+              state.ui.feedbackType = "error";
+              updateHintDisplay();
+              setTimeout(() => {
+                state.ui.animating = false;
+                renderRepairBoard();
+              }, 50);
+            }
+            return;
+          }
+
+          const quad = e.target.closest(".repair-quad");
+          if (!quad) return;
+          const repr = quad.getAttribute("data-repr");
+
+          if (r.phase === "identify") {
+            r.selectedRepr = repr;
+            state.ui.animating = true;
+            if (repr === r.wrongRepr) {
+              r.phase = "fix";
+              r.fixOptions = generateRepairFixOptions(
+                r.correctValue,
+                r.wrongValue,
+              );
+            } else {
+              state.ui.feedbackText = T("tryAgain");
+              state.ui.feedbackType = "error";
+              updateHintDisplay();
+            }
+            setTimeout(() => {
+              state.ui.animating = false;
+              renderRepairBoard();
+            }, 50);
+          }
+        }
+
+        /* ═══════════════════════════════════════════
+           EXPLORE: RENDERER + CONTROLLER
+           ═══════════════════════════════════════════ */
+
+        function renderExploreBoard() {
+          clearEl(boardSvg);
+          const b = state.build;
+          const cfg = DIFF_CFG[state.difficulty];
+          const denom = b.denominator;
+          const needed = Math.max(1, Math.ceil(b.currentValue.n / denom));
+          const wholes = Math.max(needed, 1);
+          const stripW = wholeWidth(wholes);
+          const stripH = 60;
+          const gap = 8;
+          const totalW = stripW * wholes + gap * (wholes - 1);
+          const startX = (800 - totalW) / 2;
+          const startY = 160;
+
+          for (let w = 0; w < wholes; w++) {
+            const wx = startX + w * (stripW + gap);
+            let filledInThisWhole = 0;
+            for (let s = 0; s < denom; s++) {
+              const idx = w * denom + s;
+              if (idx < b.filledSegments.length && b.filledSegments[idx]) {
+                filledInThisWhole++;
+              }
+            }
+            const strip = renderStrip({
+              x: wx,
+              y: startY,
+              width: stripW,
+              height: stripH,
+              denom,
+              filled: filledInThisWhole,
+              color: MODE_COLORS.build,
+              ghost: 0,
+            });
+            strip.setAttribute("data-whole", w);
+            boardSvg.appendChild(strip);
+          }
+
+          const nlY = 320;
+          const nl = renderNumberLine({
+            x: startX,
+            y: nlY,
+            width: totalW,
+            nlMax: cfg.nlMax,
+            denom,
+            markers:
+              b.currentValue.n > 0
+                ? [{ value: b.currentValue, color: MODE_COLORS.build }]
+                : [],
+            benchmarks: nlBenchmarks(cfg.nlMax),
+          });
+          boardSvg.appendChild(nl);
+        }
+
+        /* ═══════════════════════════════════════════
+           BOARD DISPATCH
+           ═══════════════════════════════════════════ */
+
+        const BoardRenderers = {
+          build: renderBuildBoard,
+          compare: renderCompareBoard,
+          match: renderMatchBoard,
+          place: renderPlaceBoard,
+          repair: renderRepairBoard,
+        };
+
+        function renderBoard() {
+          if (state.scene === "explore") {
+            renderExploreBoard();
+          } else {
+            const renderer = BoardRenderers[state.activity];
+            if (renderer) renderer();
+          }
+        }
+
+        /* ═══════════════════════════════════════════
+           EVENT DISPATCH
+           ═══════════════════════════════════════════ */
+
+        function getSvgPoint(e) {
+          const rect = boardSvg.getBoundingClientRect();
+          const vb = boardSvg.viewBox.baseVal;
+          return {
+            x: ((e.clientX - rect.left) / rect.width) * vb.width,
+            y: ((e.clientY - rect.top) / rect.height) * vb.height,
+          };
+        }
+
+        boardSvg.addEventListener("pointerdown", (e) => {
+          if (state.ui.animating) return;
+          if (e.target.closest(".board-next-btn")) {
+            nextRound();
+            return;
+          }
+          if (state.scene === "explore") {
+            handleBuildClick(e);
+            return;
+          }
+          const handler = {
+            build: handleBuildClick,
+            compare: handleCompareClick,
+            match: handleMatchClick,
+            place: handlePlaceDown,
+            repair: handleRepairClick,
+          }[state.activity];
+          if (handler) handler(e);
+        });
+
+        document.addEventListener("pointermove", (e) => {
+          if (state.activity === "place" && state.scene === "activity") {
+            handlePlaceMove(e);
+          }
+        });
+
+        document.addEventListener("pointerup", () => {
+          if (state.activity === "place" && state.scene === "activity") {
+            handlePlaceUp();
+          }
+        });
+
+        document
+          .getElementById("eqBtn")
+          .addEventListener("click", handleEqualClick);
+
+        /* ═══════════════════════════════════════════
+           PANEL & READOUTS
+           ═══════════════════════════════════════════ */
+
+        function updatePanel() {
+          let n = -1;
+          let d = 1;
+
+          if (state.activity === "build" || state.scene === "explore") {
+            n = state.build.currentValue.n;
+            d = state.build.currentValue.d;
+          } else if (state.activity === "compare") {
+            if (state.compare.phase === "reveal") {
+              const bigger =
+                fracCompare(state.compare.cardA, state.compare.cardB) >= 0
+                  ? state.compare.cardA
+                  : state.compare.cardB;
+              n = bigger.n;
+              d = bigger.d;
+            }
+          } else if (state.activity === "repair") {
+            n = state.repair.correctValue.n;
+            d = state.repair.correctValue.d;
+          } else if (state.activity === "match") {
+            if (state.match.selectedCard !== null) {
+              const sel = state.match.cards.find(
+                (c) => c.id === state.match.selectedCard,
+              );
+              if (sel) {
+                n = sel.value.n;
+                d = sel.value.d;
+              }
+            }
+          } else if (state.activity === "place") {
+            const active =
+              state.place.dragToken !== null
+                ? state.place.tokens[state.place.dragToken]
+                : state.place.tokens.find((t) => !t.placed);
+            if (active) {
+              n = active.n;
+              d = active.d;
+            }
+          }
+
+          const fracWholeEl = document.getElementById("fracWhole");
+          const fracNumerEl = document.getElementById("fracNumer");
+          const fracDenomEl = document.getElementById("fracDenom");
+          const fracDecEl = document.getElementById("fracDecimal");
+
+          if (n < 0) {
+            fracWholeEl.textContent = "";
+            fracNumerEl.textContent = "\u2014";
+            fracDenomEl.textContent = "";
+            fracDecEl.textContent = "";
+            document.getElementById("rdSimplified").textContent = "\u2014";
+            updateProgressDisplay();
+            return;
+          }
+
+          const m = fracToMixed(n, d);
+          if (m.whole > 0 && m.n > 0) {
+            fracWholeEl.textContent = m.whole;
+            fracNumerEl.textContent = m.n;
+            fracDenomEl.textContent = m.d;
+          } else if (m.whole > 0 && m.n === 0) {
+            fracWholeEl.textContent = m.whole;
+            fracNumerEl.textContent = "";
+            fracDenomEl.textContent = "";
+          } else {
+            fracWholeEl.textContent = "";
+            fracNumerEl.textContent = n;
+            fracDenomEl.textContent = d;
+          }
+
+          const dec = formatDecimal(n, d);
+          fracDecEl.textContent = dec && d > 1 ? "= " + dec : "";
+
+          const s = fracSimplify(n, d);
+          document.getElementById("rdSimplified").textContent =
+            s.d === 1 ? s.n.toString() : fracFormat(s.n, s.d);
+
+          updateProgressDisplay();
+        }
+
+        function updateProgressDisplay() {
+          const p = state.progress[state.activity][state.difficulty];
+          const total = getSequenceLength();
+          const pct = total > 0 ? Math.min(100, (p / total) * 100) : 0;
+          document.getElementById("progressFill").style.width = pct + "%";
+          document.getElementById("progressLabel").textContent =
+            p + " / " + total;
+        }
+
+        function updateHintDisplay() {
+          const el = document.getElementById("hintText");
+          el.textContent = state.ui.feedbackText;
+          el.className = "hint-text";
+          if (state.ui.feedbackType) {
+            el.classList.add(state.ui.feedbackType);
+          }
+        }
+
+        function updateModeSummary() {
+          const key = state.activity + "Summary";
+          document.getElementById("modeSummary").textContent = T(key);
+          const step = getCurrentStep();
+          const statusEl = document.getElementById("statusText");
+          const goalStr2 = stepText(step, "goal");
+          statusEl.textContent = goalStr2 || "";
+        }
+
+        /* ═══════════════════════════════════════════
+           SEQUENCE & PROGRESSION
+           ═══════════════════════════════════════════ */
+
+        function getSequenceLength() {
+          const seq = SEQ[state.activity];
+          if (!seq) return 6;
+          const steps = seq[state.difficulty];
+          if (!steps) return 6;
+          return steps.length;
+        }
+
+        function getCurrentStep() {
+          const seq = SEQ[state.activity];
+          if (!seq) return null;
+          const steps = seq[state.difficulty];
+          if (!steps) return null;
+          const idx = state.sequence.currentStep;
+          if (idx >= steps.length) return null;
+          return steps[idx];
+        }
+
+        function loadStep() {
+          const step = getCurrentStep();
+          if (!step) {
+            state.sequence.inFreePlay = true;
+            loadRandomStep();
+            return;
+          }
+
+          state.ui.hintLevel = 0;
+          state.ui.feedbackText = "";
+          state.ui.feedbackType = "";
+          state.ui.stepComplete = false;
+          document.getElementById("nextBtn").disabled = true;
+
+          if (state.activity === "build") {
+            const cfg = DIFF_CFG[state.difficulty];
+            const target = step.target;
+            state.build.target = target;
+            state.build.denominator = target.d;
+            state.build.maxWholes = cfg.maxWholes;
+            state.build.showGhost = true;
+            const total = target.d * cfg.maxWholes;
+            state.build.filledSegments = new Array(total).fill(false);
+            state.build.currentValue = { n: 0, d: target.d };
+          } else if (state.activity === "compare") {
+            state.compare.cardA = step.cardA;
+            state.compare.cardB = step.cardB;
+            state.compare.isEqual = !!step.isEqual;
+            state.compare.phase = "choose";
+            state.compare.childChoice = null;
+            state.compare.displayA = undefined;
+            state.compare.displayB = undefined;
+            const cmp = fracCompare(step.cardA, step.cardB);
+            state.compare.correctAnswer =
+              cmp > 0 ? "left" : cmp < 0 ? "right" : "equal";
+          } else if (state.activity === "place") {
+            const cfg = DIFF_CFG[state.difficulty];
+            state.place.tokens = step.tokens.map((t, i) => ({
+              ...t,
+              id: i,
+              placed: false,
+            }));
+            state.place.nlDenom = step.nlDenom || cfg.denoms[0];
+            state.place.nlMax = step.nlMax || cfg.nlMax;
+            state.place.dragToken = null;
+          } else if (state.activity === "match") {
+            setupMatchCards(step);
+          } else if (state.activity === "repair") {
+            state.repair.correctValue = step.correct;
+            state.repair.wrongRepr = step.wrongRepr;
+            state.repair.wrongValue = step.wrongValue;
+            state.repair.phase = "identify";
+            state.repair.selectedRepr = null;
+          }
+
+          document.getElementById("eqBtn").classList.remove("visible");
+          updateHintDisplay();
+          renderBoard();
+          updatePanel();
+        }
+
+        function setupMatchCards(step) {
+          const m = state.match;
+          m.cards = [];
+          m.selectedCard = null;
+          m.matchedPairs = [];
+          let idCounter = 0;
+
+          const pairs = step.pairs;
+          const reprTypes = step.reprTypes;
+
+          for (let i = 0; i < pairs.length; i++) {
+            for (let r = 0; r < reprTypes.length; r++) {
+              const repr = reprTypes[r];
+              const card = {
+                id: idCounter++,
+                value: pairs[i],
+                repr,
+                matched: false,
+              };
+              if (repr === "equivalent" && step.equivMap) {
+                const key = fracFormat(pairs[i].n, pairs[i].d);
+                card.displayValue = step.equivMap[key] || pairs[i];
+              }
+              m.cards.push(card);
+            }
+          }
+
+          for (let i = m.cards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const tmp = m.cards[i];
+            m.cards[i] = m.cards[j];
+            m.cards[j] = tmp;
+          }
+
+          m.totalPairs = pairs.length;
+        }
+
+        function loadRandomStep() {
+          if (state.activity === "build") {
+            const cfg = DIFF_CFG[state.difficulty];
+            const denoms = cfg.denoms.filter((d) => d <= 12);
+            const d = denoms[Math.floor(Math.random() * denoms.length)];
+            const maxN = d * cfg.maxWholes;
+            const n = 1 + Math.floor(Math.random() * (maxN - 1));
+            state.build.target = { n, d };
+            state.build.denominator = d;
+            state.build.maxWholes = cfg.maxWholes;
+            state.build.showGhost = true;
+            state.build.filledSegments = new Array(d * cfg.maxWholes).fill(
+              false,
+            );
+            state.build.currentValue = { n: 0, d };
+          } else if (state.activity === "compare") {
+            const cfg = DIFF_CFG[state.difficulty];
+            const denoms = cfg.denoms.filter((d) => d <= 10);
+            const dA = denoms[Math.floor(Math.random() * denoms.length)];
+            const dB = denoms[Math.floor(Math.random() * denoms.length)];
+            const nA = 1 + Math.floor(Math.random() * (dA - 1));
+            const nB = 1 + Math.floor(Math.random() * (dB - 1));
+            state.compare.cardA = { n: nA, d: dA };
+            state.compare.cardB = { n: nB, d: dB };
+            state.compare.isEqual = false;
+            state.compare.phase = "choose";
+            state.compare.childChoice = null;
+            state.compare.displayA = undefined;
+            state.compare.displayB = undefined;
+            if (state.difficulty !== "intro" && Math.random() < 0.3) {
+              if (fracIsFriendlyDecimal(dA) && Math.random() < 0.5) {
+                state.compare.displayA = "decimal";
+              } else if (fracIsFriendlyDecimal(dB)) {
+                state.compare.displayB = "decimal";
+              }
+            }
+            const cmp = fracCompare({ n: nA, d: dA }, { n: nB, d: dB });
+            state.compare.correctAnswer =
+              cmp > 0 ? "left" : cmp < 0 ? "right" : "equal";
+            if (cmp === 0) state.compare.isEqual = true;
+          } else if (state.activity === "place") {
+            const cfg = DIFF_CFG[state.difficulty];
+            const isAdv = state.difficulty === "advanced";
+            const placeNlMax = isAdv ? 1 : cfg.nlMax;
+            const placeDenoms = isAdv
+              ? cfg.denoms.filter((dd) => dd >= 8 && dd <= 20)
+              : cfg.denoms.filter((dd) => dd <= 10);
+            const tokenCount = state.difficulty === "intro" ? 1 : 2;
+            const tokens = [];
+            const usedD =
+              placeDenoms[Math.floor(Math.random() * placeDenoms.length)];
+            while (tokens.length < tokenCount) {
+              const tn =
+                1 + Math.floor(Math.random() * (usedD * placeNlMax - 1));
+              let dup = false;
+              for (let ti = 0; ti < tokens.length; ti++) {
+                if (tokens[ti].n === tn && tokens[ti].d === usedD) dup = true;
+              }
+              if (!dup) {
+                const tdec = formatDecimal(tn, usedD);
+                tokens.push({
+                  n: tn,
+                  d: usedD,
+                  label: tdec || undefined,
+                  asDecimal: !!tdec,
+                  id: tokens.length,
+                  placed: false,
+                });
+              }
+            }
+            state.place.tokens = tokens;
+            state.place.nlDenom = usedD;
+            state.place.nlMax = placeNlMax;
+            state.place.dragToken = null;
+          } else if (state.activity === "match") {
+            const cfg = DIFF_CFG[state.difficulty];
+            const denoms = cfg.denoms.filter((d) => d <= 10);
+            const pairs = [];
+            while (pairs.length < 3) {
+              const d = denoms[Math.floor(Math.random() * denoms.length)];
+              const n = 1 + Math.floor(Math.random() * (d - 1));
+              let dup = false;
+              for (let p = 0; p < pairs.length; p++) {
+                if (fracEqual(pairs[p], { n, d })) dup = true;
+              }
+              if (!dup) pairs.push({ n, d });
+            }
+            const roll = Math.random();
+            let matchRepr;
+            let equivMap;
+            if (state.difficulty === "intro") {
+              matchRepr = ["fraction", "bar"];
+            } else if (roll < 0.33) {
+              matchRepr = ["fraction", "decimal"];
+            } else if (roll < 0.66) {
+              matchRepr = ["fraction", "equivalent"];
+              equivMap = {};
+              for (let ei = 0; ei < pairs.length; ei++) {
+                const ep = pairs[ei];
+                const mult = 2 + Math.floor(Math.random() * 3);
+                equivMap[fracFormat(ep.n, ep.d)] = {
+                  n: ep.n * mult,
+                  d: ep.d * mult,
+                };
+              }
+            } else {
+              matchRepr = ["fraction", "bar"];
+            }
+            const matchStep = {
+              pairs,
+              reprTypes: matchRepr,
+              hint1: "",
+              hint2: "",
+              feedbackSuccess: T("correct"),
+            };
+            if (equivMap) matchStep.equivMap = equivMap;
+            setupMatchCards(matchStep);
+          } else if (state.activity === "repair") {
+            const cfg = DIFF_CFG[state.difficulty];
+            const denoms = cfg.denoms.filter((d) => d <= 10);
+            const d = denoms[Math.floor(Math.random() * denoms.length)];
+            const n = 1 + Math.floor(Math.random() * (d - 1));
+            const reprTypes = ["fraction", "decimal", "numberLine", "bar"];
+            const wrongRepr =
+              reprTypes[Math.floor(Math.random() * reprTypes.length)];
+            let wn = n + (Math.random() < 0.5 ? 1 : -1);
+            wn = Math.max(0, Math.min(d, wn));
+            if (wn === n) wn = n > 0 ? n - 1 : n + 1;
+            state.repair.correctValue = { n, d };
+            state.repair.wrongRepr = wrongRepr;
+            state.repair.wrongValue = { n: wn, d };
+            state.repair.phase = "identify";
+            state.repair.selectedRepr = null;
+            state.repair.fixOptions = null;
+          }
+
+          document.getElementById("eqBtn").classList.remove("visible");
+          renderBoard();
+          updatePanel();
+          updateHintDisplay();
+        }
+
+        function showSuccessCelebration() {
+          const emoji = svgEl("text", {
+            x: 400,
+            y: 260,
+            "text-anchor": "middle",
+            "dominant-baseline": "middle",
+            "font-size": "64",
+            opacity: "1",
+            class: "celebrate-emoji",
+          });
+          emoji.textContent = "\uD83C\uDF89";
+          boardSvg.appendChild(emoji);
+
+          let frame = 0;
+          const totalFrames = 40;
+          function fadeOut() {
+            frame++;
+            const t = frame / totalFrames;
+            const scale = 1 + t * 0.3;
+            const opacity = Math.max(0, 1 - t);
+            emoji.setAttribute("opacity", opacity);
+            emoji.setAttribute(
+              "transform",
+              "translate(400," +
+                260 +
+                ") scale(" +
+                scale +
+                ") translate(-400,-260)",
+            );
+            if (frame < totalFrames) {
+              requestAnimationFrame(fadeOut);
+            } else if (emoji.parentNode) {
+              emoji.parentNode.removeChild(emoji);
+            }
+          }
+          setTimeout(() => requestAnimationFrame(fadeOut), 600);
+        }
+
+        function onSuccess() {
+          state.progress[state.activity][state.difficulty]++;
+          state.ui.stepComplete = true;
+          document.getElementById("nextBtn").disabled = false;
+          const step = getCurrentStep();
+          const fbText = stepText(step, "feedbackSuccess") || T("correct");
+          state.ui.feedbackText = fbText;
+          state.ui.feedbackType = "success";
+          updateHintDisplay();
+          updateProgressDisplay();
+          renderBoard();
+          showSuccessCelebration();
+        }
+
+        function nextRound() {
+          state.ui.feedbackText = "";
+          state.ui.feedbackType = "";
+          state.ui.hintLevel = 0;
+          updateHintDisplay();
+
+          if (!state.sequence.inFreePlay) {
+            state.sequence.currentStep++;
+          }
+          loadStep();
+        }
+
+        /* ═══════════════════════════════════════════
+           NAVIGATION & MODE SWITCHING
+           ═══════════════════════════════════════════ */
+
+        function setActivity(activity) {
+          state.activity = activity;
+          state.scene = "activity";
+          document.querySelectorAll(".mode-btn").forEach((btn) => {
+            btn.classList.toggle(
+              "active",
+              btn.getAttribute("data-mode") === activity,
+            );
+          });
+          document.getElementById("exploreBtn").classList.remove("active");
+          document.getElementById("exploreCtrls").classList.remove("visible");
+          document.documentElement.style.setProperty(
+            "--mode-active",
+            "var(--mode-" + activity + ")",
+          );
+          updateModeSummary();
+          startSequence();
+        }
+
+        function setDifficulty(diff) {
+          state.difficulty = diff;
+          document.querySelectorAll(".diff-btn").forEach((btn) => {
+            btn.classList.toggle(
+              "active",
+              btn.getAttribute("data-diff") === diff,
+            );
+          });
+          if (state.scene === "explore") {
+            state.scene = "activity";
+            document.getElementById("exploreBtn").classList.remove("active");
+            document.getElementById("exploreCtrls").classList.remove("visible");
+          }
+          startSequence();
+        }
+
+        function startSequence() {
+          state.sequence.currentStep = 0;
+          state.sequence.inFreePlay = false;
+          state.ui.feedbackText = "";
+          state.ui.feedbackType = "";
+          state.ui.hintLevel = 0;
+          loadStep();
+        }
+
+        function toggleExplore() {
+          if (state.scene === "explore") {
+            state.scene = "activity";
+            document.getElementById("exploreBtn").classList.remove("active");
+            document.getElementById("exploreCtrls").classList.remove("visible");
+            startSequence();
+          } else {
+            state.scene = "explore";
+            document.getElementById("exploreBtn").classList.add("active");
+            document.getElementById("exploreCtrls").classList.add("visible");
+            const cfg = DIFF_CFG[state.difficulty];
+            state.build.denominator = 2;
+            state.build.maxWholes = cfg.maxWholes;
+            state.build.filledSegments = new Array(2 * cfg.maxWholes).fill(
+              false,
+            );
+            state.build.currentValue = { n: 0, d: 2 };
+            updateExploreControls();
+            renderBoard();
+            updatePanel();
+            updateModeSummary();
+          }
+        }
+
+        function updateExploreControls() {
+          document.getElementById("denomVal").textContent =
+            state.build.denominator;
+          document.getElementById("numerVal").textContent =
+            state.build.currentValue.n;
+        }
+
+        function stepDenominator(delta) {
+          const denoms = DIFF_CFG[state.difficulty].denoms;
+          let idx = denoms.indexOf(state.build.denominator);
+          if (idx < 0) idx = 0;
+          idx = Math.max(0, Math.min(denoms.length - 1, idx + delta));
+          const cfg = DIFF_CFG[state.difficulty];
+          const oldVal = fracToFloat(state.build.currentValue);
+          state.build.denominator = denoms[idx];
+          const newN = Math.round(oldVal * denoms[idx]);
+          const maxN = denoms[idx] * cfg.maxWholes;
+          state.build.currentValue = {
+            n: Math.max(0, Math.min(maxN, newN)),
+            d: denoms[idx],
+          };
+          state.build.filledSegments = new Array(
+            denoms[idx] * cfg.maxWholes,
+          ).fill(false);
+          for (let i = 0; i < state.build.currentValue.n; i++) {
+            state.build.filledSegments[i] = true;
+          }
+          updateExploreControls();
+          renderBoard();
+          updatePanel();
+        }
+
+        function stepNumerator(delta) {
+          const cfg = DIFF_CFG[state.difficulty];
+          const maxN = state.build.denominator * cfg.maxWholes;
+          const newN = Math.max(
+            0,
+            Math.min(maxN, state.build.currentValue.n + delta),
+          );
+          state.build.currentValue = { n: newN, d: state.build.denominator };
+          state.build.filledSegments = new Array(
+            state.build.denominator * cfg.maxWholes,
+          ).fill(false);
+          for (let i = 0; i < newN; i++) {
+            state.build.filledSegments[i] = true;
+          }
+          updateExploreControls();
+          renderBoard();
+          updatePanel();
+        }
+
+        function showHint() {
+          const step = getCurrentStep();
+          if (!step) return;
+          state.ui.hintLevel = Math.min(state.ui.hintLevel + 1, 2);
+          const key = state.ui.hintLevel === 1 ? "hint1" : "hint2";
+          state.ui.feedbackText = stepText(step, key);
+          state.ui.feedbackType = "";
+          updateHintDisplay();
+        }
+
+        /* ═══════════════════════════════════════════
+           BUTTON WIRING
+           ═══════════════════════════════════════════ */
+
+        document.querySelectorAll(".mode-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            setActivity(btn.getAttribute("data-mode"));
+          });
+        });
+
+        document.querySelectorAll(".diff-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            setDifficulty(btn.getAttribute("data-diff"));
+          });
+        });
+
+        document
+          .getElementById("exploreBtn")
+          .addEventListener("click", toggleExplore);
+        document.getElementById("hintBtn").addEventListener("click", showHint);
+        document.getElementById("nextBtn").addEventListener("click", nextRound);
+        document.getElementById("langBtn").addEventListener("click", () => {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        });
+        document
+          .getElementById("denomMinus")
+          .addEventListener("click", () => stepDenominator(-1));
+        document
+          .getElementById("denomPlus")
+          .addEventListener("click", () => stepDenominator(1));
+        document
+          .getElementById("numerMinus")
+          .addEventListener("click", () => stepNumerator(-1));
+        document
+          .getElementById("numerPlus")
+          .addEventListener("click", () => stepNumerator(1));
+
+        /* ═══════════════════════════════════════════
+           KEYBOARD
+           ═══════���═══════════════════════════════════ */
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowRight" && state.scene === "explore") {
+            stepNumerator(1);
+            e.preventDefault();
+          } else if (e.key === "ArrowLeft" && state.scene === "explore") {
+            stepNumerator(-1);
+            e.preventDefault();
+          } else if (e.key === "Enter" || e.key === " ") {
+            if (
+              state.ui.feedbackType === "success" ||
+              (state.activity === "compare" && state.compare.phase === "reveal")
+            ) {
+              nextRound();
+              e.preventDefault();
+            }
+          }
+        });
+
+        /* ═══════════════════════════════════════════
+           TRANSLATIONS
+           ═══════════════════════════════════════════ */
+
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          document.getElementById("langBtn").textContent =
+            state.lang === "en" ? "PL" : "EN";
+          document.getElementById("modeBuildBtn").textContent = T("build");
+          document.getElementById("modeCompareBtn").textContent = T("compare");
+          document.getElementById("modeMatchBtn").textContent = T("match");
+          document.getElementById("modePlaceBtn").textContent = T("place");
+          document.getElementById("modeRepairBtn").textContent = T("repair");
+          document.querySelectorAll(".diff-btn").forEach((btn) => {
+            btn.textContent = T(btn.getAttribute("data-diff"));
+          });
+          document.getElementById("exploreBtn").textContent = T("explore");
+          document.getElementById("hintBtn").textContent = T("hint");
+          document.getElementById("nextBtn").textContent = T("next");
+          document.getElementById("lblActivity").textContent = T("activity");
+          document.getElementById("lblValue").textContent = T("value");
+          document.getElementById("lblSimplified").textContent =
+            T("simplified");
+          document.getElementById("lblProgress").textContent = T("progress");
+          document.getElementById("lblDenom").textContent = T("denominator");
+          document.getElementById("lblNumer").textContent = T("numerator");
+
+          const eqBtnEl = document.getElementById("eqBtn");
+          eqBtnEl.textContent = "= " + T("equalBtn");
+          eqBtnEl.setAttribute("aria-label", T("ariaEqual"));
+
+          document
+            .querySelector("a[aria-label]")
+            .setAttribute("aria-label", T("ariaBackToLearn"));
+          document.getElementById("langBtn").title = T("ariaSwitchLang");
+          document
+            .getElementById("nextBtn")
+            .setAttribute("aria-label", T("ariaNextRound"));
+          document
+            .getElementById("boardSvg")
+            .setAttribute("aria-label", T("ariaBoard"));
+          document
+            .getElementById("denomMinus")
+            .setAttribute("aria-label", T("ariaDecDenom"));
+          document
+            .getElementById("denomPlus")
+            .setAttribute("aria-label", T("ariaIncDenom"));
+          document
+            .getElementById("numerMinus")
+            .setAttribute("aria-label", T("ariaDecNumer"));
+          document
+            .getElementById("numerPlus")
+            .setAttribute("aria-label", T("ariaIncNumer"));
+
+          document
+            .querySelector('meta[name="description"]')
+            .setAttribute("content", T("subtitle"));
+
+          updateModeSummary();
+          renderBoard();
+          updatePanel();
+        }
+
+        /* ═══════════════════════════════════════════
+           INIT
+           ═══════════════════════════════════════════ */
+
+        /* ═══════════════════════════════════════════
+           VISIBILITY
+           ═══════════════════════════════════════════ */
+
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) {
+            renderBoard();
+          }
+        });
+
+        /* ═══════════════════════════════════════════
+           INIT
+           ═══════════════════════════════════════════ */
+
+        function init() {
+          applyTranslations();
+          setActivity("build");
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,4489 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- starlab.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Star Lab: an interactive simulator showing how stars live and die — from birth to white dwarf, neutron star, or black hole."
+    />
+    <meta name="author" content="Lukasz Lepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/starlab.html" />
+    <meta property="og:title" content="Star Lab" />
+    <meta
+      property="og:description"
+      content="Star Lab: an interactive simulator showing how stars live and die — from birth to white dwarf, neutron star, or black hole."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/starlab.html" />
+    <meta property="og:site_name" content="Lukasz Lepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Star Lab" />
+    <meta
+      name="twitter:description"
+      content="Star Lab: an interactive simulator showing how stars live and die — from birth to white dwarf, neutron star, or black hole."
+    />
+    <title>Star Lab</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0b0f18;
+        --panel: #131825;
+        --panel-border: #1e2a3a;
+        --text: #c9d1d9;
+        --text-dim: #6e7a8a;
+        --accent: #58a6ff;
+        --gain: #3fb950;
+        --loss: #f97583;
+      }
+
+      body {
+        min-height: 100vh;
+        background: var(--bg);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+      }
+
+      header {
+        padding: 20px 28px 16px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .main {
+        display: flex;
+        height: calc(100vh - 80px);
+      }
+
+      .canvas-wrap {
+        flex: 1;
+        position: relative;
+        background: #080c14;
+        min-width: 0;
+      }
+      .canvas-wrap canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+      }
+
+      .controls {
+        width: 300px;
+        flex-shrink: 0;
+        padding: 20px;
+        border-left: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        overflow-y: auto;
+      }
+
+      .ctrl-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .ctrl-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
+
+      .mass-bar {
+        display: flex;
+        align-items: stretch;
+        height: 37px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        overflow: hidden;
+        background: var(--panel);
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+      }
+      .mass-bar-btn {
+        width: 34px;
+        flex-shrink: 0;
+        border: none;
+        background: var(--panel);
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background 0.15s,
+          color 0.15s;
+        touch-action: manipulation;
+      }
+      .mass-bar-btn:hover {
+        background: rgba(88, 166, 255, 0.12);
+        color: var(--accent);
+      }
+      .mass-bar-btn:active {
+        background: var(--accent);
+        color: var(--bg);
+      }
+      .mass-bar-minus {
+        border-right: 1px solid var(--panel-border);
+      }
+      .mass-bar-plus {
+        border-left: 1px solid var(--panel-border);
+      }
+      .mass-bar-track {
+        flex: 1;
+        position: relative;
+        cursor: pointer;
+        overflow: hidden;
+        min-width: 0;
+      }
+      .mass-bar-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 0%;
+        transition: width 0.05s ease-out;
+        pointer-events: none;
+      }
+      .mass-bar-val {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        color: #fff;
+        pointer-events: none;
+        letter-spacing: 0.5px;
+        z-index: 1;
+      }
+
+      .step-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+      .step-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .step-btn:active {
+        background: var(--accent);
+        color: var(--bg);
+      }
+
+      .type-toggle {
+        display: flex;
+        gap: 6px;
+      }
+      .type-btn {
+        flex: 1;
+        padding: 10px 4px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        cursor: pointer;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        transition: all 0.2s;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .type-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .type-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: rgba(88, 166, 255, 0.08);
+      }
+      .type-btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+      .type-btn.full-width {
+        width: 100%;
+        flex: none;
+      }
+      #advancedToggle {
+        font-size: 18px;
+      }
+
+      .star-select {
+        width: 100%;
+        height: 37px;
+        padding: 0 10px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        outline: none;
+        cursor: pointer;
+      }
+      .star-select option {
+        background: var(--panel);
+        color: var(--text);
+      }
+      .star-select:focus {
+        border-color: var(--accent);
+      }
+
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 2px 0;
+      }
+      .readout-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .readout-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        color: var(--text);
+      }
+
+      .info-text {
+        font-size: 12px;
+        color: var(--text-dim);
+        line-height: 1.6;
+        border-top: 1px solid var(--panel-border);
+        padding-top: 12px;
+      }
+
+      .star-blurb {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--text);
+        background: rgba(88, 166, 255, 0.06);
+        border-left: 2px solid var(--accent);
+        padding: 8px 10px;
+        border-radius: 3px;
+      }
+
+      .ctrl-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .ctrl-wrapper.hidden {
+        display: none;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .phase-card {
+        position: absolute;
+        z-index: 5;
+        background: rgba(19, 24, 37, 0.95);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        max-width: 340px;
+        pointer-events: none;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 15px;
+        color: var(--text);
+        line-height: 1.5;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+        display: none;
+      }
+      .phase-card.visible {
+        opacity: 1;
+      }
+      .pc-header {
+        font-family: "Outfit", sans-serif;
+        font-size: 19px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .pc-meta {
+        color: var(--text-dim);
+        font-size: 15px;
+        margin-bottom: 8px;
+      }
+      .pc-body {
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 10px;
+      }
+      .pc-stats {
+        margin-bottom: 10px;
+      }
+      .pc-stat {
+        display: flex;
+        justify-content: space-between;
+        padding: 2px 0;
+      }
+      .pc-stat-label {
+        color: var(--text-dim);
+      }
+      .pc-wow {
+        border-top: 1px solid var(--panel-border);
+        padding-top: 8px;
+        margin-bottom: 8px;
+        color: var(--star-glow);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .pc-arrow {
+        color: var(--text-dim);
+        margin: 0 6px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html *,
+        html *::before,
+        html *::after {
+          animation-duration: 0.01ms;
+          transition-duration: 0.01ms;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .main {
+          flex-direction: column;
+          height: auto;
+          min-height: 100vh;
+        }
+        .canvas-wrap {
+          min-height: 350px;
+          flex: none;
+          height: 50vh;
+        }
+        .controls {
+          width: 100%;
+          border-left: none;
+          border-top: 1px solid var(--panel-border);
+          padding: 14px 16px;
+          gap: 14px;
+          max-height: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-icon">&#x2B50;</span></a>
+          <span id="titleText">Star Lab</span>
+        </h1>
+        <p id="subtitleText">How stars live and die</p>
+      </div>
+      <button
+        class="lang-btn"
+        id="langBtn"
+        type="button"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="canvas-wrap">
+        <canvas id="canvas" aria-label="Star lifecycle simulation"></canvas>
+        <div id="phaseCardOverlay" class="phase-card"></div>
+      </div>
+      <div class="controls">
+        <div class="ctrl-group">
+          <div class="type-toggle">
+            <button class="type-btn active" id="modeCustomBtn" type="button">
+              Custom Star
+            </button>
+            <button class="type-btn" id="modeRealBtn" type="button">
+              Real Star
+            </button>
+          </div>
+        </div>
+
+        <div id="grpCustom" class="ctrl-wrapper">
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblMass">Initial Mass</span>
+            <div class="mass-bar" id="massBar">
+              <button
+                class="mass-bar-btn mass-bar-minus"
+                id="massDown"
+                type="button"
+                aria-label="Decrease mass"
+              >
+                &minus;
+              </button>
+              <div class="mass-bar-track" id="massTrack">
+                <div class="mass-bar-fill" id="massFill"></div>
+                <span class="mass-bar-val" id="massVal">1.00 M&#x2609;</span>
+              </div>
+              <button
+                class="mass-bar-btn mass-bar-plus"
+                id="massUp"
+                type="button"
+                aria-label="Increase mass"
+              >
+                +
+              </button>
+              <input type="hidden" id="massSlider" value="354" />
+            </div>
+          </div>
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblPreset">Star Type</span>
+            <select
+              class="star-select"
+              id="massPresetSelect"
+              aria-label="Star type preset"
+            >
+              <option value="1.0">Sun-like (1 M&#x2609;)</option>
+              <option value="0.12">Tiny red dwarf (0.12 M&#x2609;)</option>
+              <option value="2.5">Bright white (2.5 M&#x2609;)</option>
+              <option value="15">Blue giant (15 M&#x2609;)</option>
+              <option value="60">Monster star (60 M&#x2609;)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="grpReal" class="ctrl-wrapper hidden">
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblRealStar">Star</span>
+            <select
+              class="star-select"
+              id="realStarSelect"
+              aria-label="Real star preset"
+            >
+              <option value="sun">Sun</option>
+              <option value="proxima">Proxima Centauri</option>
+              <option value="betelgeuse">Betelgeuse</option>
+              <option value="eta_carinae">Eta Carinae A</option>
+              <option value="barnard">Barnard's Star</option>
+              <option value="trappist">TRAPPIST-1</option>
+              <option value="sirius">Sirius A</option>
+              <option value="vega">Vega</option>
+              <option value="fomalhaut">Fomalhaut</option>
+              <option value="arcturus">Arcturus</option>
+              <option value="rigel">Rigel</option>
+              <option value="antares">Antares</option>
+              <option value="p_cygni">P Cygni</option>
+              <option value="gamma_velorum">Gamma Velorum</option>
+            </select>
+          </div>
+          <div class="ctrl-group">
+            <div class="type-toggle">
+              <button class="type-btn active" id="startNowBtn" type="button">
+                Start from now
+              </button>
+              <button class="type-btn" id="startBirthBtn" type="button">
+                Start from birth
+              </button>
+            </div>
+          </div>
+          <div class="star-blurb" id="realStarBlurb"></div>
+        </div>
+
+        <div class="ctrl-group">
+          <button
+            class="type-btn full-width"
+            id="advancedToggle"
+            type="button"
+            aria-label="Advanced options"
+          >
+            &#x2699;
+          </button>
+        </div>
+        <div id="grpAdvanced" class="ctrl-wrapper hidden">
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblMetallicity">Metallicity</span>
+            <div class="type-toggle">
+              <button class="type-btn" id="metalLow" type="button">
+                Low metals
+              </button>
+              <button class="type-btn active" id="metalSolar" type="button">
+                Sun-like
+              </button>
+              <button class="type-btn" id="metalHigh" type="button">
+                High metals
+              </button>
+            </div>
+          </div>
+          <div class="ctrl-group">
+            <span class="ctrl-label" id="lblBinary">Companion</span>
+            <div class="type-toggle">
+              <button class="type-btn active" id="binarySingle" type="button">
+                Single star
+              </button>
+              <button class="type-btn" id="binaryClose" type="button">
+                Close binary
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label" id="lblPlayback">Playback</span>
+          <div class="type-toggle">
+            <button
+              class="type-btn"
+              id="playBtn"
+              type="button"
+              aria-label="Play"
+            >
+              &#x25B6;
+            </button>
+            <button
+              class="type-btn"
+              id="nextPhaseBtn"
+              type="button"
+              aria-label="Next phase"
+            >
+              &#x23ED;
+            </button>
+            <button
+              class="type-btn"
+              id="resetBtn"
+              type="button"
+              aria-label="Reset"
+            >
+              &#x25A0;
+            </button>
+          </div>
+          <div class="type-toggle">
+            <button class="type-btn active" id="speedStory" type="button">
+              Story
+            </button>
+            <button class="type-btn" id="speedFast" type="button">Fast</button>
+            <button class="type-btn" id="speedTurbo" type="button">
+              Turbo
+            </button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <div class="readout-row">
+            <span class="readout-label" id="lblPhase">Phase</span>
+            <span class="readout-val" id="readPhase">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblAge">Age</span>
+            <span class="readout-val" id="readAge">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblInitMass">Initial mass</span>
+            <span class="readout-val" id="readInitMass">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblEnding">Likely ending</span>
+            <span class="readout-val" id="readEnding">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblTemp">Temperature</span>
+            <span class="readout-val" id="readTemp">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblRadius">Radius</span>
+            <span class="readout-val" id="readRadius">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblLuminosity">Luminosity</span>
+            <span class="readout-val" id="readLuminosity">&mdash;</span>
+          </div>
+          <div class="readout-row hidden" id="rowDistance">
+            <span class="readout-label" id="lblDistance">Distance</span>
+            <span class="readout-val" id="readDistance">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblComparison">Scale</span>
+            <span class="readout-val" id="readComparison">&mdash;</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <div class="info-text" id="infoText"></div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      "use strict";
+      (function () {
+        /* ============================================================
+         *  I18N
+         * ============================================================ */
+        const I18N = {
+          en: {
+            title: "Star Lab",
+            subtitle: "How stars live and die",
+            modeCustom: "Custom Star",
+            modeReal: "Real Star",
+            lblMass: "Initial Mass",
+            lblRealStar: "Star",
+            startNow: "Start from now",
+            startBirth: "Start from birth",
+            advancedShow: "\u25B6 Advanced",
+            advancedHide: "\u25BC Advanced",
+            lblMetallicity: "Metallicity (simplified)",
+            metallicityTooltip:
+              "This control only adjusts stellar lifetime. Real metallicity effects are more complex.",
+            lblBinary: "Companion",
+            lblPlayback: "Playback",
+            lblPreset: "Star Type",
+            metalLow: "Low metals",
+            metalSolar: "Sun-like",
+            metalHigh: "High metals",
+            binarySingle: "Single star",
+            binaryClose: "Close binary",
+            speedStory: "Story",
+            speedFast: "Fast",
+            speedTurbo: "Turbo",
+            lblPhase: "Phase",
+            lblAge: "Age",
+            lblInitMass: "Initial mass",
+            lblEnding: "Likely ending",
+            lblTemp: "Temperature",
+            lblRadius: "Radius",
+            lblLuminosity: "Luminosity",
+            presetTiny: "Tiny red dwarf",
+            presetSun: "Sun-like",
+            presetBright: "Bright white",
+            presetGiant: "Blue giant",
+            presetMonster: "Monster star",
+            likely: "likely",
+            protostar: "Protostar",
+            main_sequence: "Main Sequence",
+            red_dwarf_main_sequence: "Red Dwarf",
+            subgiant: "Subgiant",
+            red_giant: "Red Giant",
+            helium_burning: "Helium Burning",
+            asymptotic_giant_branch: "AGB Star",
+            planetary_nebula: "Planetary Nebula",
+            blue_dwarf: "Blue Dwarf",
+            white_dwarf: "White Dwarf",
+            unstable_massive_star: "Unstable Giant",
+            red_supergiant: "Red Supergiant",
+            blue_supergiant: "Blue Supergiant",
+            stripped_hot_star: "Wolf-Rayet Star",
+            core_collapse_supernova: "Supernova!",
+            type_ia_supernova: "Type Ia Supernova!",
+            neutron_star: "Neutron Star",
+            black_hole: "Black Hole",
+            co_white_dwarf: "White Dwarf",
+            he_white_dwarf: "White Dwarf",
+            neutron_star_outcome: "Neutron Star",
+            black_hole_outcome: "Black Hole",
+            type_ia_outcome: "Type Ia Supernova",
+            uncertain_ns_or_wd: "Neutron Star or White Dwarf",
+            uncertain_ns_or_bh: "Neutron Star or Black Hole",
+            timelineCompressed: "Compressed timeline \u2014 not linear",
+            notToScale: "Visual size compressed",
+            realSizeWD: "Real size: about Earth-sized",
+            realSizeNS: "Real size: about city-sized",
+            realSizeBH: "Visualization only",
+            sunBlurb:
+              "Our home star. A yellow main-sequence star about halfway through its 10 billion year life.",
+            proximaBlurb:
+              "The closest star to our Sun, a tiny red dwarf only 4.24 light-years away. It will shine for trillions of years.",
+            betelgeuseBlurb:
+              "A red supergiant about 700 light-years away. It could explode as a supernova within the next 100,000 years.",
+            etaCarBlurb:
+              "One of the most massive and luminous stars known, about 8,000 light-years away. Extremely unstable.",
+            sunName: "Sun",
+            proximaName: "Proxima Centauri",
+            betelgeuseName: "Betelgeuse",
+            etaCarName: "Eta Carinae A",
+            barnardName: "Barnard\u2019s Star",
+            barnardBlurb:
+              "A tiny nearby red dwarf in Ophiuchus, about 6 light-years away. It races across our sky faster than any other known star.",
+            trappistName: "TRAPPIST-1",
+            trappistBlurb:
+              "An ultracool red dwarf about 39 light-years away with seven Earth-size planets. Three orbit in the habitable zone.",
+            siriusName: "Sirius A",
+            siriusBlurb:
+              "The brightest star in Earth\u2019s night sky, 8.6 light-years away. It has a faint white dwarf companion, Sirius B.",
+            vegaName: "Vega",
+            vegaBlurb:
+              "A bright white star in Lyra, about 25 light-years away. It is wrapped in a huge dusty debris disk and will be our North Star again in about 12,000 years.",
+            fomalhautName: "Fomalhaut",
+            fomalhautBlurb:
+              "A young bright star about 25 light-years away, famous for giant debris rings. The once-celebrated \u2018Fomalhaut b\u2019 now looks more like a dust cloud from a collision.",
+            arcturusName: "Arcturus",
+            arcturusBlurb:
+              "A swollen orange-red giant 36.7 light-years away and the brightest star in the northern celestial hemisphere. It shows a future stage our Sun will one day reach.",
+            rigelName: "Rigel",
+            rigelBlurb:
+              "The blue-white foot of Orion, roughly 860 light-years away. It is a massive supergiant and a likely future supernova.",
+            antaresName: "Antares",
+            antaresBlurb:
+              "The red heart of Scorpius, about 550 light-years away. If it replaced our Sun, it would stretch far past Mars\u2019s orbit.",
+            pCygniName: "P Cygni",
+            pCygniBlurb:
+              "A rare unstable giant star in Cygnus, thousands of light-years away. It flared brightly in 1600 and gave astronomers the famous \u2018P Cygni profile\u2019 spectral signature.",
+            gammaVelName: "Gamma Velorum",
+            gammaVelBlurb:
+              "The closest Wolf-Rayet system, about 1,100 light-years away. Its stripped star is blasting off matter in fierce winds while orbiting a hot massive companion.",
+            infoIntro:
+              "Create a star and watch it live and die. Small stars sip their fuel slowly and live for trillions of years. Big stars burn through it fast and die in spectacular explosions.",
+            infoBinaryNote:
+              "In a close binary system, a white dwarf can steal matter from its companion. If it gains enough mass, it can explode as a Type Ia supernova \u2014 leaving nothing behind.",
+            infoUncertainNote:
+              "Stars near this mass are on the boundary. The exact ending depends on how much material the star loses during its life. Astronomers label this a \u201Clikely\u201D outcome.",
+            infoBoundaryNote:
+              "Stars near this mass are on a boundary between different endings. The exact outcome depends on mass loss during the star\u2019s life. Astronomers are still working to pin down these transitions.",
+            infoBinaryMassiveNote:
+              "Binary interactions strongly affect massive star evolution in reality, but this simplified model does not include those effects.",
+            endedText: "This star has reached the end of its life.",
+            lblDistance: "Distance",
+            lblComparison: "Scale",
+            orbitMercury: "Mercury orbit",
+            orbitEarth: "Earth orbit",
+            orbitJupiter: "Jupiter orbit",
+            now: "NOW",
+            scaleCity: "City",
+            scaleEarth: "Earth",
+            scaleJupiter: "Jupiter",
+            scaleSun: "Sun",
+            scaleMercuryOrbit: "Mercury orbit",
+            scaleEarthOrbit: "Earth orbit",
+            scaleJupiterOrbit: "Jupiter orbit",
+            zoomingIn: "Zooming in",
+            zoomingOut: "Zooming out",
+            magnified: "Magnified",
+            orbitSafe: "Smaller than",
+            orbitNear: "Approaching",
+            orbitEngulfed: "Engulfed",
+            compCity: "City-sized",
+            compEarths: "~ {n} Earths wide",
+            compJupiters: "~ {n} Jupiters wide",
+            compSuns: "~ {n} Suns wide",
+            compMercury: "Reaches Mercury\u2019s orbit",
+            compEarthOrbit: "Reaches Earth\u2019s orbit",
+            compJupiterOrbit: "Reaches Jupiter\u2019s orbit",
+            /* Accessibility strings */
+            ariaSwitchLang: "Switch language",
+            ariaCanvas: "Star lifecycle simulation",
+            ariaDecreaseMass: "Decrease mass",
+            ariaIncreaseMass: "Increase mass",
+            ariaStarType: "Star type preset",
+            ariaRealStar: "Real star preset",
+            ariaAdvanced: "Advanced options",
+            ariaPlay: "Play",
+            ariaNextPhase: "Next phase",
+            ariaReset: "Reset",
+            /* Phase card UI labels */
+            phaseCardDuration: "Duration",
+            phaseCardTemp: "Temperature",
+            phaseCardSize: "Size range",
+            phaseCardTransition: "What happens",
+            phaseCardCoreTemp: "Core temperature",
+            phaseCardVisibility: "Visible for",
+            phaseCardPeakDuration: "Peak brightness",
+            phaseCardTimescale: "Timescale",
+            phaseCardHorizon: "Event horizon",
+            statCoolsBillions: "Cools for billions of years",
+            statPersists: "Persists indefinitely",
+            statWeeksToMonths: "Weeks to months",
+            statNebulaExpands:
+              "Gas shell expands outward while the core shrinks",
+            /* Phase descriptions */
+            phaseDesc_protostar:
+              "A huge cloud of gas and dust is collapsing under its own gravity, getting hotter and denser. It glows from the heat of collapse, but hydrogen fusion has not started in its core yet.",
+            phaseWow_protostar:
+              "This cloud could be hundreds of times bigger than our entire solar system!",
+            phaseDesc_main_sequence:
+              "The star is steadily fusing hydrogen into helium in its core. This is the longest and most stable part of a star\u2019s life.",
+            phaseWow_main_sequence:
+              "Our Sun has been in this phase for 4.6 billion years \u2014 and still has about 5 billion more to go!",
+            phaseDesc_red_dwarf_main_sequence:
+              "This tiny star burns hydrogen very slowly. It is so cool that its light is red. It will keep shining for trillions of years \u2014 far longer than the current age of the universe.",
+            phaseWow_red_dwarf_main_sequence:
+              "Red dwarfs are the most common stars in the galaxy \u2014 about 3 out of every 4 stars are red dwarfs!",
+            phaseDesc_subgiant:
+              "The star has used up the hydrogen in its core. The core is shrinking while the outer layers begin to expand and cool.",
+            phaseWow_subgiant:
+              "This phase is a brief transition \u2014 astronomically speaking, it passes in the blink of an eye.",
+            phaseDesc_red_giant:
+              "The star\u2019s outer layers have swollen enormously. It is now tens to hundreds of times wider than it was on the main sequence, glowing red because the surface has cooled.",
+            phaseWow_red_giant:
+              "When our Sun becomes a red giant, it will grow large enough to swallow Mercury, Venus, and possibly Earth!",
+            phaseDesc_helium_burning:
+              "The core has gotten hot enough to fuse helium into carbon and oxygen. The star shrinks slightly and stabilizes for a while.",
+            phaseWow_helium_burning:
+              "Helium fusion requires temperatures above 100 million degrees \u2014 ten times hotter than hydrogen burning!",
+            phaseDesc_asymptotic_giant_branch:
+              "The star is burning fuel in shells around its core and pulsing in size. It is shedding its outer layers into space, creating beautiful shells of glowing gas.",
+            phaseWow_asymptotic_giant_branch:
+              "AGB stars are factories for heavy elements \u2014 much of the carbon in your body was made inside a star like this!",
+            phaseDesc_planetary_nebula:
+              "The dying star has puffed off its outer layers, forming a colorful glowing shell. The hot, exposed core lights up the gas from inside.",
+            phaseWow_planetary_nebula:
+              "Despite the name, these have nothing to do with planets \u2014 early astronomers thought they looked like planets through small telescopes!",
+            phaseDesc_blue_dwarf:
+              "After trillions of years, this red dwarf has used up enough hydrogen that it contracts, heats up, and glows blue-white. A theoretical phase \u2014 the universe is not old enough for any to exist yet.",
+            phaseWow_blue_dwarf:
+              "No blue dwarf has ever been observed \u2014 the universe would need to be many times older for the first ones to appear!",
+            phaseDesc_white_dwarf:
+              "The star\u2019s core is all that remains \u2014 a hot, dense ball about the size of Earth but with the mass of the Sun. It slowly cools and fades over billions of years.",
+            phaseWow_white_dwarf:
+              "A teaspoon of white dwarf material would weigh about 5 tons \u2014 as much as an elephant!",
+            phaseDesc_unstable_massive_star:
+              "This extremely massive star is violently unstable, shedding huge amounts of mass in eruptions. Its enormous luminosity is tearing it apart from the inside.",
+            phaseWow_unstable_massive_star:
+              "Stars like Eta Carinae can lose an entire Sun\u2019s worth of mass in a single eruption!",
+            phaseDesc_red_supergiant:
+              "This massive star has expanded to an enormous size \u2014 hundreds or even a thousand times wider than the Sun. It is fusing heavier and heavier elements in its core.",
+            phaseWow_red_supergiant:
+              "If you placed Betelgeuse where the Sun is, it would swallow Mercury, Venus, Earth, Mars, and nearly reach Jupiter!",
+            phaseDesc_blue_supergiant:
+              "This very massive, hot star burns through its fuel rapidly. Its extreme temperature makes it glow blue-white, and it is one of the most luminous types of star.",
+            phaseWow_blue_supergiant:
+              "Blue supergiants can be hundreds of thousands of times brighter than the Sun!",
+            phaseDesc_stripped_hot_star:
+              "Strong stellar winds have stripped away the outer hydrogen layers, exposing the hot helium core. These Wolf-Rayet stars have some of the fastest stellar winds known.",
+            phaseWow_stripped_hot_star:
+              "Wolf-Rayet winds can race outward at several million kilometers per hour \u2014 some of the fastest stellar winds known!",
+            phaseDesc_core_collapse_supernova:
+              "The star\u2019s iron core has collapsed in a fraction of a second, and the outer layers are blasting outward in a titanic explosion. For a few weeks, it outshines an entire galaxy.",
+            phaseWow_core_collapse_supernova:
+              "For a short time, a supernova can outshine an entire galaxy \u2014 billions of stars combined!",
+            phaseDesc_type_ia_supernova:
+              "A white dwarf in a binary system has gained too much mass from its companion and exploded completely. Unlike a core-collapse supernova, nothing remains.",
+            phaseWow_type_ia_supernova:
+              "Type Ia supernovae all explode at nearly the same brightness, so astronomers use them to measure distances across the universe!",
+            phaseDesc_neutron_star:
+              "After the explosion, the core has been crushed into an incredibly dense ball made almost entirely of neutrons. It is only about the size of a city but contains more mass than the Sun.",
+            phaseWow_neutron_star:
+              "Neutron stars can spin hundreds of times per second and have magnetic fields trillions of times stronger than Earth\u2019s!",
+            phaseDesc_black_hole:
+              "The core was so massive that nothing could stop its collapse. It has become a region of space where gravity is so strong that nothing \u2014 not even light \u2014 can escape.",
+            phaseWow_black_hole:
+              "Black holes are invisible by themselves \u2014 astronomers find them by watching how nearby gas and stars move around an empty spot!",
+            /* Transition descriptions */
+            transTrigger_protostar_red_dwarf_main_sequence:
+              "Hydrogen fusion begins",
+            transDesc_protostar_red_dwarf_main_sequence:
+              "The collapsing cloud has gotten hot and dense enough in its core to start fusing hydrogen. The star is now a true star \u2014 but so small and cool that it glows red.",
+            transTrigger_red_dwarf_main_sequence_blue_dwarf:
+              "Hydrogen supply dwindles",
+            transDesc_red_dwarf_main_sequence_blue_dwarf:
+              "After trillions of years, the red dwarf has burned through much of its hydrogen. It contracts and heats up, shifting from red to blue-white.",
+            transTrigger_blue_dwarf_white_dwarf: "Fuel completely exhausted",
+            transDesc_blue_dwarf_white_dwarf:
+              "With no hydrogen left to fuse, the star can no longer generate energy. It contracts into a dense white dwarf and begins slowly cooling.",
+            transTrigger_protostar_main_sequence: "Hydrogen fusion ignites",
+            transDesc_protostar_main_sequence:
+              "The core has become hot enough \u2014 millions of degrees \u2014 for hydrogen nuclei to fuse into helium. The star now generates its own energy and stabilizes.",
+            transTrigger_main_sequence_subgiant: "Core hydrogen runs out",
+            transDesc_main_sequence_subgiant:
+              "After billions of years, the hydrogen in the core is used up. Fusion continues in a shell around the core, and the star starts to expand.",
+            transTrigger_subgiant_red_giant: "Shell burning intensifies",
+            transDesc_subgiant_red_giant:
+              "The hydrogen-burning shell grows hotter and the outer layers swell dramatically. The surface cools as it expands, turning the star red.",
+            transTrigger_red_giant_helium_burning: "Helium fusion begins",
+            transDesc_red_giant_helium_burning:
+              "The core reaches about 100 million degrees and helium begins fusing into carbon. In smaller stars, this ignition happens all at once in a sudden burst.",
+            transTrigger_helium_burning_asymptotic_giant_branch:
+              "Core helium runs out",
+            transDesc_helium_burning_asymptotic_giant_branch:
+              "The helium in the core is now exhausted. The star expands again, even larger than before, burning hydrogen and helium in alternating shells.",
+            transTrigger_asymptotic_giant_branch_planetary_nebula:
+              "Outer layers expelled",
+            transDesc_asymptotic_giant_branch_planetary_nebula:
+              "Thermal pulses and strong stellar winds strip the outer layers off the star, sending them drifting into space as a glowing nebula.",
+            transTrigger_planetary_nebula_white_dwarf:
+              "Nebula fades, core exposed",
+            transDesc_planetary_nebula_white_dwarf:
+              "The expanding gas shell thins out and fades. What remains is the hot, dense core \u2014 a white dwarf that will cool for billions of years.",
+            transTrigger_main_sequence_red_supergiant:
+              "Core hydrogen exhausted",
+            transDesc_main_sequence_red_supergiant:
+              "This massive star burns through its hydrogen quickly. When the core fuel runs out, the star rapidly expands into an enormous red supergiant.",
+            transTrigger_red_supergiant_core_collapse_supernova:
+              "Iron core collapses",
+            transDesc_red_supergiant_core_collapse_supernova:
+              "The star has fused elements all the way to iron, but iron fusion absorbs energy instead of releasing it. The core collapses in milliseconds, triggering a catastrophic explosion.",
+            transTrigger_core_collapse_supernova_neutron_star:
+              "Core rebounds as neutron ball",
+            transDesc_core_collapse_supernova_neutron_star:
+              "The collapsing core bounces back when neutrons are packed as tightly as possible. The outer layers are blasted away, leaving a tiny, ultra-dense neutron star.",
+            transTrigger_main_sequence_blue_supergiant:
+              "Hydrogen fuel depleted",
+            transDesc_main_sequence_blue_supergiant:
+              "This very massive star exhausts its core hydrogen and evolves off the main sequence. It remains hot and blue due to its enormous mass.",
+            transTrigger_blue_supergiant_stripped_hot_star:
+              "Stellar winds strip outer layers",
+            transDesc_blue_supergiant_stripped_hot_star:
+              "Powerful stellar winds blow away the star\u2019s outer hydrogen layers, exposing the much hotter core underneath.",
+            transTrigger_stripped_hot_star_core_collapse_supernova:
+              "Iron core collapses",
+            transDesc_stripped_hot_star_core_collapse_supernova:
+              "Like other massive stars, the Wolf-Rayet star builds an iron core that cannot sustain fusion. The core collapses and the star explodes as a supernova.",
+            transTrigger_core_collapse_supernova_black_hole:
+              "Core too massive to stop collapsing",
+            transDesc_core_collapse_supernova_black_hole:
+              "The remnant core is so massive that nothing can stop its collapse. It shrinks past the point of no return, forming a black hole.",
+            transTrigger_main_sequence_unstable_massive_star:
+              "Extreme luminosity destabilizes the star",
+            transDesc_main_sequence_unstable_massive_star:
+              "This monster star shines so intensely that its own light pushes outward hard enough to nearly tear it apart. It enters a violently unstable phase with dramatic eruptions.",
+            transTrigger_unstable_massive_star_core_collapse_supernova:
+              "Iron core collapses",
+            transDesc_unstable_massive_star_core_collapse_supernova:
+              "Despite its chaotic life, the star\u2019s end is the same: an iron core forms and collapses, triggering a supernova \u2014 possibly one of the most energetic explosions in the universe.",
+          },
+          pl: {
+            title: "Star Lab",
+            subtitle: "Jak gwiazdy żyją i umierają",
+            modeCustom: "Własna gwiazda",
+            modeReal: "Prawdziwa gwiazda",
+            lblMass: "Masa początkowa",
+            lblRealStar: "Gwiazda",
+            startNow: "Zacznij od teraz",
+            startBirth: "Zacznij od narodzin",
+            advancedShow: "\u25B6 Zaawansowane",
+            advancedHide: "\u25BC Zaawansowane",
+            lblMetallicity: "Metaliczność (uproszczona)",
+            metallicityTooltip:
+              "Ta kontrolka zmienia jedynie czas życia gwiazdy. Rzeczywiste efekty metaliczności są bardziej złożone.",
+            lblBinary: "Uk\u0142ad",
+            lblPlayback: "Odtwarzanie",
+            lblPreset: "Typ gwiazdy",
+            metalLow: "Mało metali",
+            metalSolar: "Słoneczna",
+            metalHigh: "Dużo metali",
+            binarySingle: "Pojedyncza gwiazda",
+            binaryClose: "Uk\u0142ad podw\u00F3jny",
+            speedStory: "Historia",
+            speedFast: "Szybko",
+            speedTurbo: "Turbo",
+            lblPhase: "Faza",
+            lblAge: "Wiek",
+            lblInitMass: "Masa początkowa",
+            lblEnding: "Prawdopodobny koniec",
+            lblTemp: "Temperatura",
+            lblRadius: "Promień",
+            lblLuminosity: "Jasność",
+            presetTiny: "Mały czerwony karzeł",
+            presetSun: "Jak Słońce",
+            presetBright: "Jasna bia\u0142a gwiazda",
+            presetGiant: "Niebieski olbrzym",
+            presetMonster: "Gwiazda-potwór",
+            likely: "prawdopodobnie",
+            protostar: "Protogwiazda",
+            main_sequence: "Ciąg główny",
+            red_dwarf_main_sequence: "Czerwony karzeł",
+            subgiant: "Podolbrzym",
+            red_giant: "Czerwony olbrzym",
+            helium_burning: "Spalanie helu",
+            asymptotic_giant_branch: "Gwiazda AGB",
+            planetary_nebula: "Mgławica planetarna",
+            blue_dwarf: "Niebieski karzeł",
+            white_dwarf: "Biały karzeł",
+            unstable_massive_star: "Niestabilny olbrzym",
+            red_supergiant: "Czerwony nadolbrzym",
+            blue_supergiant: "Niebieski nadolbrzym",
+            stripped_hot_star: "Gwiazda Wolfa-Rayeta",
+            core_collapse_supernova: "Supernowa!",
+            type_ia_supernova: "Supernowa typu Ia!",
+            neutron_star: "Gwiazda neutronowa",
+            black_hole: "Czarna dziura",
+            co_white_dwarf: "Biały karzeł",
+            he_white_dwarf: "Biały karzeł",
+            neutron_star_outcome: "Gwiazda neutronowa",
+            black_hole_outcome: "Czarna dziura",
+            type_ia_outcome: "Supernowa typu Ia",
+            uncertain_ns_or_wd: "Gwiazda neutronowa lub bia\u0142y karze\u0142",
+            uncertain_ns_or_bh: "Gwiazda neutronowa lub czarna dziura",
+            timelineCompressed: "Oś czasu skompresowana \u2014 nieliniowa",
+            notToScale: "Rozmiar wizualny skompresowany",
+            realSizeWD: "Rzeczywisty rozmiar: mniej więcej jak Ziemia",
+            realSizeNS: "Rzeczywisty rozmiar: mniej więcej jak miasto",
+            realSizeBH: "Tylko wizualizacja",
+            sunBlurb:
+              "Nasza gwiazda. Żółta gwiazda ciągu głównego w połowie swojego 10-miliardowego życia.",
+            proximaBlurb:
+              "Najbliższy Słońcu czerwony karzeł, zaledwie 4,24 roku świetlnego stąd. Będzie świecić przez biliony lat.",
+            betelgeuseBlurb:
+              "Czerwony nadolbrzym około 700 lat świetlnych stąd. Może wybuchnąć jako supernowa w ciągu najbliższych 100 000 lat.",
+            etaCarBlurb:
+              "Jedna z najmasywniejszych i najjaśniejszych znanych gwiazd, około 8000 lat świetlnych stąd. Skrajnie niestabilna.",
+            sunName: "Słońce",
+            proximaName: "Proxima Centauri",
+            betelgeuseName: "Betelgeza",
+            etaCarName: "Eta Carinae A",
+            barnardName: "Gwiazda Barnarda",
+            barnardBlurb:
+              "Ma\u0142y czerwony karze\u0142 w W\u0119\u017Cowniku, oko\u0142o 6 lat \u015Bwietlnych st\u0105d. Przesuwa si\u0119 po naszym niebie szybciej ni\u017C jakakolwiek inna znana gwiazda.",
+            trappistName: "TRAPPIST-1",
+            trappistBlurb:
+              "Ultrach\u0142odny czerwony karze\u0142 oko\u0142o 39 lat \u015Bwietlnych st\u0105d z siedmioma planetami wielko\u015Bci Ziemi. Trzy kr\u0105\u017C\u0105 w strefie zamieszkiwalnej.",
+            siriusName: "Syriusz A",
+            siriusBlurb:
+              "Najja\u015Bniejsza gwiazda nocnego nieba, 8,6 roku \u015Bwietlnego od nas. Ma ma\u0142ego, gor\u0105cego towarzysza: bia\u0142ego kar\u0142a Syriusza B.",
+            vegaName: "Wega",
+            vegaBlurb:
+              "Jasna bia\u0142a gwiazda w Lutni, oko\u0142o 25 lat \u015Bwietlnych st\u0105d. Otacza j\u0105 ogromny py\u0142owy dysk, a za oko\u0142o 12 000 lat stanie si\u0119 nasz\u0105 Gwiazd\u0105 Polarn\u0105.",
+            fomalhautName: "Fomalhaut",
+            fomalhautBlurb:
+              "M\u0142oda jasna gwiazda oko\u0142o 25 lat \u015Bwietlnych st\u0105d, s\u0142ynna z wielkich pier\u015Bcieni py\u0142u. Obiekt nazwany kiedy\u015B \u2018Fomalhaut b\u2019 wygl\u0105da dzi\u015B raczej na chmur\u0119 py\u0142u po zderzeniu.",
+            arcturusName: "Arktur",
+            arcturusBlurb:
+              "Rozd\u0119ty pomara\u0144czowo-czerwony olbrzym oddalony o 36,7 roku \u015Bwietlnego. To najja\u015Bniejsza gwiazda p\u00F3\u0142nocnej p\u00F3\u0142kuli niebieskiej i zapowied\u017A przysz\u0142o\u015Bci naszego S\u0142o\u0144ca.",
+            rigelName: "Rigel",
+            rigelBlurb:
+              "Niebiesko-bia\u0142a stopa Oriona, oko\u0142o 860 lat \u015Bwietlnych st\u0105d. To masywny nadolbrzym i prawdopodobny przysz\u0142y kandydat na supernow\u0105.",
+            antaresName: "Antares",
+            antaresBlurb:
+              "Czerwone serce Skorpiona, oko\u0142o 550 lat \u015Bwietlnych st\u0105d. Gdyby zast\u0105pi\u0142 S\u0142o\u0144ce, si\u0119ga\u0142by daleko poza orbit\u0119 Marsa.",
+            pCygniName: "P Cygni",
+            pCygniBlurb:
+              "Rzadka, niestabilna olbrzymia gwiazda w \u0141ab\u0119dziu, oddalona o kilka tysi\u0119cy lat \u015Bwietlnych. Rozb\u0142ys\u0142a w 1600 roku i da\u0142a astronomom s\u0142ynny \u2018profil P Cygni\u2019.",
+            gammaVelName: "Gamma Velorum",
+            gammaVelBlurb:
+              "Najbli\u017Cszy uk\u0142ad z gwiazd\u0105 Wolfa-Rayeta, oko\u0142o 1100 lat \u015Bwietlnych st\u0105d. Ogo\u0142ocona gwiazda wyrzuca materi\u0119 pot\u0119\u017Cnym wiatrem, kr\u0105\u017C\u0105c wok\u00F3\u0142 gor\u0105cego masywnego towarzysza.",
+            infoIntro:
+              "Stwórz gwiazdę i patrz, jak żyje i umiera. Małe gwiazdy oszczędnie zużywają paliwo i żyją biliony lat. Duże gwiazdy spalają je szybko i umierają w spektakularnych eksplozjach.",
+            infoBinaryNote:
+              "W układzie podwójnym biały karzeł może kraść materię od towarzysza. Jeśli uzbiera wystarczająco dużo masy, może wybuchnąć jako supernowa typu Ia \u2014 nie zostawiając nic po sobie.",
+            infoUncertainNote:
+              "Gwiazdy o tej masie są na granicy. Dokładny koniec zależy od tego, ile materiału gwiazda traci w trakcie życia. Astronomowie określają taki wynik jako \u201Eprawdopodobny\u201D.",
+            infoBoundaryNote:
+              "Gwiazdy o tej masie są na granicy między różnymi zakończeniami. Dokładny wynik zależy od utraty masy w trakcie życia gwiazdy. Astronomowie wciąż pracują nad ustaleniem tych przejść.",
+            infoBinaryMassiveNote:
+              "Oddziaływania w układach podwójnych silnie wpływają na ewolucję masywnych gwiazd, ale ten uproszczony model nie uwzględnia tych efektów.",
+            endedText: "Ta gwiazda osiągnęła koniec swojego życia.",
+            orbitMercury: "Orbita Merkurego",
+            lblDistance: "Odległość",
+            lblComparison: "Skala",
+            orbitEarth: "Orbita Ziemi",
+            orbitJupiter: "Orbita Jowisza",
+            now: "TERAZ",
+            scaleCity: "Miasto",
+            scaleEarth: "Ziemia",
+            scaleJupiter: "Jowisz",
+            scaleSun: "Słońce",
+            scaleMercuryOrbit: "Orbita Merkurego",
+            scaleEarthOrbit: "Orbita Ziemi",
+            scaleJupiterOrbit: "Orbita Jowisza",
+            zoomingIn: "Przybliżenie",
+            zoomingOut: "Oddalenie",
+            magnified: "Powiększenie",
+            orbitSafe: "Mniejsza niż",
+            orbitNear: "Zbliża się do",
+            orbitEngulfed: "Pochłonięta",
+            compCity: "Rozmiar miasta",
+            compEarths: "~ {n}\u00D7 szeroko\u015B\u0107 Ziemi",
+            compJupiters: "~ {n}\u00D7 szeroko\u015B\u0107 Jowisza",
+            compSuns: "~ {n}\u00D7 szeroko\u015B\u0107 S\u0142o\u0144ca",
+            compMercury: "Sięga orbity Merkurego",
+            compEarthOrbit: "Sięga orbity Ziemi",
+            compJupiterOrbit: "Sięga orbity Jowisza",
+            /* Accessibility strings */
+            ariaSwitchLang: "Zmień język",
+            ariaCanvas: "Symulacja cyklu życia gwiazdy",
+            ariaDecreaseMass: "Zmniejsz masę",
+            ariaIncreaseMass: "Zwiększ masę",
+            ariaStarType: "Typ gwiazdy",
+            ariaRealStar: "Prawdziwa gwiazda",
+            ariaAdvanced: "Opcje zaawansowane",
+            ariaPlay: "Odtwórz",
+            ariaNextPhase: "Następna faza",
+            ariaReset: "Resetuj",
+            /* Phase card UI labels */
+            phaseCardDuration: "Czas trwania",
+            phaseCardTemp: "Temperatura",
+            phaseCardSize: "Zakres rozmiaru",
+            phaseCardTransition: "Co się dzieje",
+            phaseCardCoreTemp: "Temperatura jądra",
+            phaseCardVisibility: "Widoczna przez",
+            phaseCardPeakDuration: "Szczyt jasności",
+            phaseCardTimescale: "Skala czasu",
+            phaseCardHorizon: "Horyzont zdarzeń",
+            statCoolsBillions: "Stygnie przez miliardy lat",
+            statPersists: "Istnieje praktycznie wiecznie",
+            statWeeksToMonths: "Tygodnie do miesięcy",
+            statNebulaExpands: "Powłoka gazu rozszerza się, a jądro kurczy",
+            /* Phase descriptions */
+            phaseDesc_protostar:
+              "Ogromna chmura gazu i py\u0142u zapada si\u0119 pod w\u0142asnym ci\u0119\u017Carem, staj\u0105c si\u0119 coraz gor\u0119tsza i g\u0119stsza. \u015Awieci od ciep\u0142a zapadania, ale fuzja wodoru w j\u0105drze jeszcze si\u0119 nie rozpocz\u0119\u0142a.",
+            phaseWow_protostar:
+              "Ta chmura może być setki razy większa niż cały nasz Układ Słoneczny!",
+            phaseDesc_main_sequence:
+              "Gwiazda spokojnie zamienia wodór w hel w swoim jądrze. To najdłuższy i najbardziej stabilny okres w życiu gwiazdy.",
+            phaseWow_main_sequence:
+              "Nasze Słońce jest w tej fazie od 4,6 miliarda lat \u2014 i ma przed sobą jeszcze około 5 miliardów!",
+            phaseDesc_red_dwarf_main_sequence:
+              "Ta maleńka gwiazda spala wodór bardzo powoli. Jest tak chłodna, że świeci na czerwono. Będzie świecić przez biliony lat \u2014 znacznie dłużej niż obecny wiek Wszechświata.",
+            phaseWow_red_dwarf_main_sequence:
+              "Czerwone karły to najczęstsze gwiazdy w galaktyce \u2014 około 3 na 4 gwiazdy to czerwone karły!",
+            phaseDesc_subgiant:
+              "Gwiazda wyczerpała wodór w jądrze. Jądro się kurczy, a zewnętrzne warstwy zaczynają się rozszerzać i ochładzać.",
+            phaseWow_subgiant:
+              "Ta faza to krótkie przejście \u2014 w skali astronomicznej trwa mgnienie oka.",
+            phaseDesc_red_giant:
+              "Zewnętrzne warstwy gwiazdy ogromnie spuchły. Jest teraz dziesiątki lub setki razy szersza niż na ciągu głównym i świeci na czerwono, bo powierzchnia ostygła.",
+            phaseWow_red_giant:
+              "Gdy nasze Słońce stanie się czerwonym olbrzymem, urośnie na tyle, by pochłonąć Merkurego, Wenus, a może i Ziemię!",
+            phaseDesc_helium_burning:
+              "Jądro rozgrzało się na tyle, by zamieniać hel w węgiel i tlen. Gwiazda nieco się kurczy i na jakiś czas stabilizuje.",
+            phaseWow_helium_burning:
+              "Fuzja helu wymaga temperatur powyżej 100 milionów stopni \u2014 dziesięć razy więcej niż spalanie wodoru!",
+            phaseDesc_asymptotic_giant_branch:
+              "Gwiazda spala paliwo w powłokach wokół jądra i pulsuje rozmiarem. Zrzuca zewnętrzne warstwy w przestrzeń, tworząc piękne powłoki świecącego gazu.",
+            phaseWow_asymptotic_giant_branch:
+              "Gwiazdy AGB to fabryki ciężkich pierwiastków \u2014 większość węgla w twoim ciele powstała wewnątrz takiej gwiazdy!",
+            phaseDesc_planetary_nebula:
+              "Umierająca gwiazda odrzuciła swoje zewnętrzne warstwy, tworząc kolorową, świecącą powłokę. Gorące, odsłonięte jądro oświetla gaz od środka.",
+            phaseWow_planetary_nebula:
+              "Mimo nazwy nie mają nic wspólnego z planetami \u2014 dawni astronomowie myśleli, że wyglądają jak planety przez małe teleskopy!",
+            phaseDesc_blue_dwarf:
+              "Po bilionach lat ten czerwony karze\u0142 zu\u017Cy\u0142 wystarczaj\u0105co du\u017Co wodoru, by si\u0119 skurczy\u0107, rozgrza\u0107 i za\u015Bwieci\u0107 na bia\u0142o-niebiesko. Faza teoretyczna \u2014 Wszech\u015Bwiat jest za m\u0142ody, by taki obiekt m\u00F3g\u0142 jeszcze powsta\u0107.",
+            phaseWow_blue_dwarf:
+              "Żaden niebieski karzeł nigdy nie został zaobserwowany \u2014 Wszechświat musiałby być wielokrotnie starszy!",
+            phaseDesc_white_dwarf:
+              "Z gwiazdy pozostało tylko jądro \u2014 gorąca, gęsta kula wielkości Ziemi, ale o masie Słońca. Powoli stygnie i gaśnie przez miliardy lat.",
+            phaseWow_white_dwarf:
+              "Łyżeczka materii białego karła ważyłaby około 5 ton \u2014 tyle co słoń!",
+            phaseDesc_unstable_massive_star:
+              "Ta ekstremalnie masywna gwiazda jest gwałtownie niestabilna i traci ogromne ilości masy w erupcjach. Jej potężna jasność rozrywa ją od środka.",
+            phaseWow_unstable_massive_star:
+              "Gwiazdy takie jak Eta Carinae mogą stracić masę równą całemu Słońcu w jednej erupcji!",
+            phaseDesc_red_supergiant:
+              "Ta masywna gwiazda rozrosła się do ogromnych rozmiarów \u2014 setki, a nawet tysiąc razy szersza niż Słońce. W jądrze syntetyzuje coraz cięższe pierwiastki.",
+            phaseWow_red_supergiant:
+              "Gdybyś umieścił Betelgezę w miejscu Słońca, pochłonęłaby Merkurego, Wenus, Ziemię, Marsa i prawie sięgnęłaby Jowisza!",
+            phaseDesc_blue_supergiant:
+              "Ta bardzo masywna, gorąca gwiazda szybko zużywa paliwo. Jej ekstremalna temperatura sprawia, że świeci na biało-niebiesko, i jest jednym z najjaśniejszych typów gwiazd.",
+            phaseWow_blue_supergiant:
+              "Niebieskie nadolbrzymy mogą być setki tysięcy razy jaśniejsze od Słońca!",
+            phaseDesc_stripped_hot_star:
+              "Silne wiatry gwiazdowe zdmuchnęły zewnętrzne warstwy wodoru, odsłaniając gorące jądro helowe. Te gwiazdy Wolfa-Rayeta mają jedne z najszybszych wiatrów gwiazdowych.",
+            phaseWow_stripped_hot_star:
+              "Wiatry gwiazd Wolfa-Rayeta p\u0119dz\u0105 z pr\u0119dko\u015Bci\u0105 kilku milion\u00F3w kilometr\u00F3w na godzin\u0119 \u2014 jedne z najszybszych wiatr\u00F3w gwiazdowych!",
+            phaseDesc_core_collapse_supernova:
+              "Żelazne jądro gwiazdy zapada się w ułamku sekundy, a zewnętrzne warstwy zostają wyrzucone w tytanicznej eksplozji. Przez kilka tygodni przyćmiewa całą galaktykę.",
+            phaseWow_core_collapse_supernova:
+              "Przez kr\u00F3tki czas supernowa mo\u017Ce przy\u0107mi\u0107 ca\u0142\u0105 galaktyk\u0119 \u2014 miliardy gwiazd razem wzi\u0119tych!",
+            phaseDesc_type_ia_supernova:
+              "Biały karzeł w układzie podwójnym zyskał za dużo masy od towarzysza i eksplodował całkowicie. W przeciwieństwie do supernowej z kolapsu jądra, nic nie zostaje.",
+            phaseWow_type_ia_supernova:
+              "Supernowe typu Ia eksplodują niemal z tą samą jasnością, więc astronomowie używają ich do mierzenia odległości we Wszechświecie!",
+            phaseDesc_neutron_star:
+              "Po eksplozji jądro zostało zmiażdżone w niewiarygodnie gęstą kulę złożoną prawie w całości z neutronów. Ma rozmiar miasta, ale masę większą niż Słońce.",
+            phaseWow_neutron_star:
+              "Gwiazdy neutronowe mogą obracać się setki razy na sekundę i mają pola magnetyczne biliony razy silniejsze niż ziemskie!",
+            phaseDesc_black_hole:
+              "Jądro było tak masywne, że nic nie mogło powstrzymać jego kolapsu. Stało się obszarem przestrzeni, w którym grawitacja jest tak silna, że nic \u2014 nawet światło \u2014 nie może uciec.",
+            phaseWow_black_hole:
+              "Czarne dziury s\u0105 same w sobie niewidoczne \u2014 astronomowie znajduj\u0105 je, obserwuj\u0105c, jak pobliski gaz i gwiazdy kr\u0105\u017C\u0105 wok\u00F3\u0142 pustego miejsca!",
+            /* Transition descriptions */
+            transTrigger_protostar_red_dwarf_main_sequence:
+              "Rozpoczyna się fuzja wodoru",
+            transDesc_protostar_red_dwarf_main_sequence:
+              "Zapadająca się chmura rozgrzała się i zgęstniała w jądrze na tyle, by zacząć syntezę wodoru. Gwiazda jest teraz prawdziwą gwiazdą \u2014 ale tak małą i chłodną, że świeci na czerwono.",
+            transTrigger_red_dwarf_main_sequence_blue_dwarf:
+              "Zapas wodoru się wyczerpuje",
+            transDesc_red_dwarf_main_sequence_blue_dwarf:
+              "Po bilionach lat czerwony karzeł zużył większość wodoru. Kurczy się i rozgrzewa, zmieniając kolor z czerwonego na biało-niebieski.",
+            transTrigger_blue_dwarf_white_dwarf: "Paliwo całkowicie wyczerpane",
+            transDesc_blue_dwarf_white_dwarf:
+              "Bez wodoru do syntezy gwiazda nie może już wytwarzać energii. Kurczy się w gęstego białego karła i zaczyna powoli stygnąć.",
+            transTrigger_protostar_main_sequence: "Zapala się fuzja wodoru",
+            transDesc_protostar_main_sequence:
+              "J\u0105dro rozgrza\u0142o si\u0119 wystarczaj\u0105co \u2014 do milion\u00F3w stopni \u2014 by j\u0105dra wodoru \u0142\u0105czy\u0142y si\u0119 w hel. Gwiazda teraz sama wytwarza energi\u0119 i si\u0119 stabilizuje.",
+            transTrigger_main_sequence_subgiant: "Wodór w jądrze się kończy",
+            transDesc_main_sequence_subgiant:
+              "Po miliardach lat wodór w jądrze się wyczerpuje. Fuzja trwa nadal w powłoce wokół jądra, a gwiazda zaczyna się rozszerzać.",
+            transTrigger_subgiant_red_giant: "Wzmaga się spalanie powłokowe",
+            transDesc_subgiant_red_giant:
+              "Powłoka wodorowa rozgrzewa się, a zewnętrzne warstwy pęcznieją dramatycznie. Powierzchnia ochładza się w miarę rozszerzania, zmieniając kolor gwiazdy na czerwony.",
+            transTrigger_red_giant_helium_burning: "Rozpoczyna się fuzja helu",
+            transDesc_red_giant_helium_burning:
+              "J\u0105dro osi\u0105ga oko\u0142o 100 milion\u00F3w stopni i hel zaczyna si\u0119 \u0142\u0105czy\u0107 w w\u0119giel. W mniejszych gwiazdach dzieje si\u0119 to b\u0142yskawicznie, w jednym gwa\u0142townym wybuchu.",
+            transTrigger_helium_burning_asymptotic_giant_branch:
+              "Hel w jądrze się kończy",
+            transDesc_helium_burning_asymptotic_giant_branch:
+              "Hel w jądrze jest wyczerpany. Gwiazda ponownie się rozszerza, jeszcze bardziej niż wcześniej, spalając wodór i hel w naprzemiennych powłokach.",
+            transTrigger_asymptotic_giant_branch_planetary_nebula:
+              "Odrzucenie zewnętrznych warstw",
+            transDesc_asymptotic_giant_branch_planetary_nebula:
+              "Pulsacje termiczne i silne wiatry gwiazdowe zdejmują zewnętrzne warstwy gwiazdy, wysyłając je w przestrzeń jako świecącą mgławicę.",
+            transTrigger_planetary_nebula_white_dwarf:
+              "Mgławica gaśnie, jądro odsłonięte",
+            transDesc_planetary_nebula_white_dwarf:
+              "Rozszerzająca się powłoka gazu rzednie i blednie. Pozostaje gorące, gęste jądro \u2014 biały karzeł, który będzie stygł przez miliardy lat.",
+            transTrigger_main_sequence_red_supergiant:
+              "Wodór w jądrze wyczerpany",
+            transDesc_main_sequence_red_supergiant:
+              "Ta masywna gwiazda szybko zużywa wodór. Gdy paliwo w jądrze się kończy, gwiazda gwałtownie rozszerza się w ogromnego czerwonego nadolbrzyma.",
+            transTrigger_red_supergiant_core_collapse_supernova:
+              "Żelazne jądro zapada się",
+            transDesc_red_supergiant_core_collapse_supernova:
+              "Gwiazda syntetyzowała pierwiastki aż do żelaza, ale fuzja żelaza pochłania energię zamiast ją uwalniać. Jądro zapada się w milisekundach, wywołując katastrofalną eksplozję.",
+            transTrigger_core_collapse_supernova_neutron_star:
+              "Jądro odbija się jako kula neutronów",
+            transDesc_core_collapse_supernova_neutron_star:
+              "Zapadające się jądro odbija, gdy neutrony upakują się jak najciaśniej. Zewnętrzne warstwy zostają odrzucone, pozostawiając maleńką, ultramasywną gwiazdę neutronową.",
+            transTrigger_main_sequence_blue_supergiant:
+              "Paliwo wodorowe wyczerpane",
+            transDesc_main_sequence_blue_supergiant:
+              "Ta bardzo masywna gwiazda wyczerpuje wodór w jądrze i schodzi z ciągu głównego. Pozostaje gorąca i niebieska dzięki swojej ogromnej masie.",
+            transTrigger_blue_supergiant_stripped_hot_star:
+              "Wiatry gwiazdowe zdmuchują warstwy",
+            transDesc_blue_supergiant_stripped_hot_star:
+              "Pot\u0119\u017Cne wiatry gwiazdowe zdmuchuj\u0105 zewn\u0119trzne warstwy wodoru gwiazdy, ods\u0142aniaj\u0105c znacznie gor\u0119tsze j\u0105dro pod spodem.",
+            transTrigger_stripped_hot_star_core_collapse_supernova:
+              "Żelazne jądro zapada się",
+            transDesc_stripped_hot_star_core_collapse_supernova:
+              "Podobnie jak inne masywne gwiazdy, gwiazda Wolfa-Rayeta buduje żelazne jądro, które nie może utrzymać fuzji. Jądro zapada się i gwiazda eksploduje jako supernowa.",
+            transTrigger_core_collapse_supernova_black_hole:
+              "Jądro zbyt masywne, by się zatrzymać",
+            transDesc_core_collapse_supernova_black_hole:
+              "Pozosta\u0142e j\u0105dro jest tak masywne, \u017Ce nic nie mo\u017Ce powstrzyma\u0107 jego kolapsu. Kurczy si\u0119 poza punkt bez powrotu, tworz\u0105c czarn\u0105 dziur\u0119.",
+            transTrigger_main_sequence_unstable_massive_star:
+              "Ekstremalna jasność destabilizuje gwiazdę",
+            transDesc_main_sequence_unstable_massive_star:
+              "Ta gigantyczna gwiazda \u015Bwieci tak intensywnie, \u017Ce jej w\u0142asne \u015Bwiat\u0142o wypycha materi\u0119 na zewn\u0105trz i niemal j\u0105 rozrywa. Wchodzi w gwa\u0142townie niestabiln\u0105 faz\u0119 z dramatycznymi erupcjami.",
+            transTrigger_unstable_massive_star_core_collapse_supernova:
+              "Żelazne jądro zapada się",
+            transDesc_unstable_massive_star_core_collapse_supernova:
+              "Mimo chaotycznego życia, koniec gwiazdy jest taki sam: tworzy się żelazne jądro, które zapada się, wywołując supernową \u2014 być może jedną z najenergetyczniejszych eksplozji we Wszechświecie.",
+          },
+        };
+
+        function T(key) {
+          return I18N[state.lang][key] || key;
+        }
+
+        /* ============================================================
+         *  CONSTANTS & SCIENCE DATA
+         * ============================================================ */
+        const TIMELINE_HEIGHT = 110;
+        const TIMELINE_MARGIN = 16;
+        const MIN_SEGMENT_PX = 22;
+        const AU_TO_RSUN = 215;
+
+        const ORBIT_RADII_AU = {
+          mercury: 0.39,
+          earth: 1.0,
+          jupiter: 5.2,
+        };
+
+        const NON_PHOTOSPHERE_STAGES = new Set([
+          "planetary_nebula",
+          "core_collapse_supernova",
+          "type_ia_supernova",
+          "neutron_star",
+          "black_hole",
+        ]);
+
+        const STAGES = {
+          protostar: { color: "#ffaa44" },
+          main_sequence: { color: "#ffee88" },
+          red_dwarf_main_sequence: { color: "#ff8866" },
+          subgiant: { color: "#ffcc66" },
+          red_giant: { color: "#ff8844" },
+          helium_burning: { color: "#ffcc55" },
+          asymptotic_giant_branch: { color: "#ff7733" },
+          planetary_nebula: { color: "#44ddff" },
+          blue_dwarf: { color: "#aaccff" },
+          white_dwarf: { color: "#aaccff" },
+          unstable_massive_star: { color: "#aabbff" },
+          red_supergiant: { color: "#ff7744" },
+          blue_supergiant: { color: "#aaccff" },
+          stripped_hot_star: { color: "#bbccff" },
+          core_collapse_supernova: { color: "#ffffff" },
+          type_ia_supernova: { color: "#ffffff" },
+          neutron_star: { color: "#ddddff" },
+          black_hole: { color: "#222244" },
+        };
+
+        const PHASE_EDUCATION = {
+          protostar: {
+            descKey: "phaseDesc_protostar",
+            wowKey: "phaseWow_protostar",
+          },
+          main_sequence: {
+            descKey: "phaseDesc_main_sequence",
+            wowKey: "phaseWow_main_sequence",
+          },
+          red_dwarf_main_sequence: {
+            descKey: "phaseDesc_red_dwarf_main_sequence",
+            wowKey: "phaseWow_red_dwarf_main_sequence",
+          },
+          subgiant: {
+            descKey: "phaseDesc_subgiant",
+            wowKey: "phaseWow_subgiant",
+          },
+          red_giant: {
+            descKey: "phaseDesc_red_giant",
+            wowKey: "phaseWow_red_giant",
+          },
+          helium_burning: {
+            descKey: "phaseDesc_helium_burning",
+            wowKey: "phaseWow_helium_burning",
+          },
+          asymptotic_giant_branch: {
+            descKey: "phaseDesc_asymptotic_giant_branch",
+            wowKey: "phaseWow_asymptotic_giant_branch",
+          },
+          planetary_nebula: {
+            descKey: "phaseDesc_planetary_nebula",
+            wowKey: "phaseWow_planetary_nebula",
+          },
+          blue_dwarf: {
+            descKey: "phaseDesc_blue_dwarf",
+            wowKey: "phaseWow_blue_dwarf",
+          },
+          white_dwarf: {
+            descKey: "phaseDesc_white_dwarf",
+            wowKey: "phaseWow_white_dwarf",
+          },
+          unstable_massive_star: {
+            descKey: "phaseDesc_unstable_massive_star",
+            wowKey: "phaseWow_unstable_massive_star",
+          },
+          red_supergiant: {
+            descKey: "phaseDesc_red_supergiant",
+            wowKey: "phaseWow_red_supergiant",
+          },
+          blue_supergiant: {
+            descKey: "phaseDesc_blue_supergiant",
+            wowKey: "phaseWow_blue_supergiant",
+          },
+          stripped_hot_star: {
+            descKey: "phaseDesc_stripped_hot_star",
+            wowKey: "phaseWow_stripped_hot_star",
+          },
+          core_collapse_supernova: {
+            descKey: "phaseDesc_core_collapse_supernova",
+            wowKey: "phaseWow_core_collapse_supernova",
+          },
+          type_ia_supernova: {
+            descKey: "phaseDesc_type_ia_supernova",
+            wowKey: "phaseWow_type_ia_supernova",
+          },
+          neutron_star: {
+            descKey: "phaseDesc_neutron_star",
+            wowKey: "phaseWow_neutron_star",
+          },
+          black_hole: {
+            descKey: "phaseDesc_black_hole",
+            wowKey: "phaseWow_black_hole",
+          },
+        };
+
+        const TRANSITION_EDUCATION = {
+          "protostar->red_dwarf_main_sequence": {
+            triggerKey: "transTrigger_protostar_red_dwarf_main_sequence",
+            descKey: "transDesc_protostar_red_dwarf_main_sequence",
+          },
+          "red_dwarf_main_sequence->blue_dwarf": {
+            triggerKey: "transTrigger_red_dwarf_main_sequence_blue_dwarf",
+            descKey: "transDesc_red_dwarf_main_sequence_blue_dwarf",
+          },
+          "blue_dwarf->white_dwarf": {
+            triggerKey: "transTrigger_blue_dwarf_white_dwarf",
+            descKey: "transDesc_blue_dwarf_white_dwarf",
+          },
+          "protostar->main_sequence": {
+            triggerKey: "transTrigger_protostar_main_sequence",
+            descKey: "transDesc_protostar_main_sequence",
+          },
+          "main_sequence->subgiant": {
+            triggerKey: "transTrigger_main_sequence_subgiant",
+            descKey: "transDesc_main_sequence_subgiant",
+          },
+          "subgiant->red_giant": {
+            triggerKey: "transTrigger_subgiant_red_giant",
+            descKey: "transDesc_subgiant_red_giant",
+          },
+          "red_giant->helium_burning": {
+            triggerKey: "transTrigger_red_giant_helium_burning",
+            descKey: "transDesc_red_giant_helium_burning",
+          },
+          "helium_burning->asymptotic_giant_branch": {
+            triggerKey: "transTrigger_helium_burning_asymptotic_giant_branch",
+            descKey: "transDesc_helium_burning_asymptotic_giant_branch",
+          },
+          "asymptotic_giant_branch->planetary_nebula": {
+            triggerKey: "transTrigger_asymptotic_giant_branch_planetary_nebula",
+            descKey: "transDesc_asymptotic_giant_branch_planetary_nebula",
+          },
+          "planetary_nebula->white_dwarf": {
+            triggerKey: "transTrigger_planetary_nebula_white_dwarf",
+            descKey: "transDesc_planetary_nebula_white_dwarf",
+          },
+          "main_sequence->red_supergiant": {
+            triggerKey: "transTrigger_main_sequence_red_supergiant",
+            descKey: "transDesc_main_sequence_red_supergiant",
+          },
+          "red_supergiant->core_collapse_supernova": {
+            triggerKey: "transTrigger_red_supergiant_core_collapse_supernova",
+            descKey: "transDesc_red_supergiant_core_collapse_supernova",
+          },
+          "core_collapse_supernova->neutron_star": {
+            triggerKey: "transTrigger_core_collapse_supernova_neutron_star",
+            descKey: "transDesc_core_collapse_supernova_neutron_star",
+          },
+          "main_sequence->blue_supergiant": {
+            triggerKey: "transTrigger_main_sequence_blue_supergiant",
+            descKey: "transDesc_main_sequence_blue_supergiant",
+          },
+          "blue_supergiant->stripped_hot_star": {
+            triggerKey: "transTrigger_blue_supergiant_stripped_hot_star",
+            descKey: "transDesc_blue_supergiant_stripped_hot_star",
+          },
+          "stripped_hot_star->core_collapse_supernova": {
+            triggerKey:
+              "transTrigger_stripped_hot_star_core_collapse_supernova",
+            descKey: "transDesc_stripped_hot_star_core_collapse_supernova",
+          },
+          "core_collapse_supernova->black_hole": {
+            triggerKey: "transTrigger_core_collapse_supernova_black_hole",
+            descKey: "transDesc_core_collapse_supernova_black_hole",
+          },
+          "main_sequence->unstable_massive_star": {
+            triggerKey: "transTrigger_main_sequence_unstable_massive_star",
+            descKey: "transDesc_main_sequence_unstable_massive_star",
+          },
+          "unstable_massive_star->core_collapse_supernova": {
+            triggerKey:
+              "transTrigger_unstable_massive_star_core_collapse_supernova",
+            descKey: "transDesc_unstable_massive_star_core_collapse_supernova",
+          },
+        };
+
+        /* Lifetime anchor table (mass in Msun, years) */
+        const LIFETIME_ANCHORS = [
+          { mass: 0.08, years: 1.2e14 },
+          { mass: 0.1, years: 6e13 },
+          { mass: 0.33, years: 1.4e13 },
+          { mass: 0.5, years: 5.6e10 },
+          { mass: 0.8, years: 1.7e10 },
+          { mass: 1.0, years: 1.0e10 },
+          { mass: 1.1, years: 8.0e9 },
+          { mass: 1.7, years: 3.0e9 },
+          { mass: 3.5, years: 4.4e8 },
+          { mass: 8.0, years: 3.5e7 },
+          { mass: 18, years: 1.1e7 },
+          { mass: 25, years: 7.0e6 },
+          { mass: 40, years: 5.0e6 },
+          { mass: 60, years: 3.8e6 },
+          { mass: 100, years: 3.0e6 },
+          { mass: 150, years: 2.5e6 },
+        ];
+
+        const METALLICITY_FACTOR = { low: 1.15, solar: 1.0, high: 0.9 };
+
+        /* Phase allocation templates by mass class */
+        const PHASE_TEMPLATES = [
+          {
+            massMin: 0.08,
+            massMax: 0.25,
+            outcome: "he_white_dwarf",
+            uncertain: false,
+            stages: [
+              { id: "protostar", frac: 0.001 },
+              { id: "red_dwarf_main_sequence", frac: 0.95 },
+              { id: "blue_dwarf", frac: 0.048 },
+              { id: "white_dwarf", frac: 0.001 },
+            ],
+          },
+          {
+            massMin: 0.25,
+            massMax: 2.0,
+            outcome: "co_white_dwarf",
+            uncertain: false,
+            stages: [
+              { id: "protostar", frac: 0.003 },
+              { id: "main_sequence", frac: 0.88 },
+              { id: "subgiant", frac: 0.04 },
+              { id: "red_giant", frac: 0.05 },
+              { id: "helium_burning", frac: 0.02 },
+              { id: "asymptotic_giant_branch", frac: 0.005 },
+              { id: "planetary_nebula", frac: 0.001 },
+              { id: "white_dwarf", frac: 0.001 },
+            ],
+          },
+          {
+            massMin: 2.0,
+            massMax: 8.0,
+            outcome: "co_white_dwarf",
+            uncertain: false,
+            stages: [
+              { id: "protostar", frac: 0.002 },
+              { id: "main_sequence", frac: 0.85 },
+              { id: "subgiant", frac: 0.03 },
+              { id: "red_giant", frac: 0.06 },
+              { id: "helium_burning", frac: 0.03 },
+              { id: "asymptotic_giant_branch", frac: 0.02 },
+              { id: "planetary_nebula", frac: 0.005 },
+              { id: "white_dwarf", frac: 0.003 },
+            ],
+          },
+          {
+            massMin: 8.0,
+            massMax: 10.0,
+            outcome: "neutron_star_outcome",
+            uncertain: false,
+            stages: [
+              { id: "protostar", frac: 0.002 },
+              { id: "main_sequence", frac: 0.7 },
+              { id: "red_supergiant", frac: 0.27 },
+              { id: "core_collapse_supernova", frac: 0.003 },
+              { id: "neutron_star", frac: 0.025 },
+            ],
+          },
+          {
+            massMin: 10.0,
+            massMax: 20.0,
+            outcome: "neutron_star_outcome",
+            uncertain: false,
+            stages: [
+              { id: "protostar", frac: 0.002 },
+              { id: "main_sequence", frac: 0.65 },
+              { id: "red_supergiant", frac: 0.32 },
+              { id: "core_collapse_supernova", frac: 0.003 },
+              { id: "neutron_star", frac: 0.025 },
+            ],
+          },
+          {
+            massMin: 20.0,
+            massMax: 40.0,
+            outcome: "black_hole_outcome",
+            uncertain: false,
+            stages: [
+              { id: "protostar", frac: 0.002 },
+              { id: "main_sequence", frac: 0.75 },
+              { id: "blue_supergiant", frac: 0.1 },
+              { id: "stripped_hot_star", frac: 0.12 },
+              { id: "core_collapse_supernova", frac: 0.003 },
+              { id: "black_hole", frac: 0.025 },
+            ],
+          },
+          {
+            massMin: 40.0,
+            massMax: 200.0,
+            outcome: "black_hole_outcome",
+            uncertain: false,
+            stages: [
+              { id: "protostar", frac: 0.002 },
+              { id: "main_sequence", frac: 0.7 },
+              { id: "unstable_massive_star", frac: 0.22 },
+              { id: "core_collapse_supernova", frac: 0.003 },
+              { id: "black_hole", frac: 0.075 },
+            ],
+          },
+        ];
+
+        /* Real star presets */
+        const REAL_STARS = [
+          {
+            id: "sun",
+            massMsun: 1.0,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 4.6e9,
+            ageConfidence: "high",
+            distanceLy: 0,
+            currentStageId: "main_sequence",
+            futureOutcomeId: "co_white_dwarf",
+          },
+          {
+            id: "proxima",
+            massMsun: 0.12,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 4.85e9,
+            ageConfidence: "low",
+            distanceLy: 4.24,
+            currentStageId: "red_dwarf_main_sequence",
+            futureOutcomeId: "he_white_dwarf",
+          },
+          {
+            id: "betelgeuse",
+            massMsun: 15,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 1.0e7,
+            ageConfidence: "low",
+            distanceLy: 700,
+            currentStageId: "red_supergiant",
+            futureOutcomeId: "neutron_star_outcome",
+          },
+          {
+            id: "eta_carinae",
+            massMsun: 90,
+            metallicityMode: "solar",
+            binaryMode: "close",
+            ageYears: 2.5e6,
+            ageConfidence: "low",
+            distanceLy: 8000,
+            currentStageId: "unstable_massive_star",
+            futureOutcomeId: "black_hole_outcome",
+          },
+          {
+            id: "barnard",
+            massMsun: 0.16,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 1.0e10,
+            ageConfidence: "low",
+            distanceLy: 5.96,
+            currentStageId: "red_dwarf_main_sequence",
+            futureOutcomeId: "he_white_dwarf",
+          },
+          {
+            id: "trappist",
+            massMsun: 0.09,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 7.6e9,
+            ageConfidence: "low",
+            distanceLy: 39.1,
+            currentStageId: "red_dwarf_main_sequence",
+            futureOutcomeId: "he_white_dwarf",
+          },
+          {
+            id: "sirius",
+            massMsun: 2.06,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 2.4e8,
+            ageConfidence: "high",
+            distanceLy: 8.6,
+            currentStageId: "main_sequence",
+            futureOutcomeId: "co_white_dwarf",
+          },
+          {
+            id: "vega",
+            massMsun: 2.15,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 4.55e8,
+            ageConfidence: "low",
+            distanceLy: 25.0,
+            currentStageId: "main_sequence",
+            futureOutcomeId: "co_white_dwarf",
+          },
+          {
+            id: "fomalhaut",
+            massMsun: 1.9,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 4.4e8,
+            ageConfidence: "low",
+            distanceLy: 25.0,
+            currentStageId: "main_sequence",
+            futureOutcomeId: "co_white_dwarf",
+          },
+          {
+            id: "arcturus",
+            massMsun: 1.15,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 6.9e9,
+            ageConfidence: "low",
+            distanceLy: 36.7,
+            currentStageId: "red_giant",
+            futureOutcomeId: "co_white_dwarf",
+          },
+          {
+            id: "rigel",
+            massMsun: 20.0,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 7.9e6,
+            ageConfidence: "low",
+            distanceLy: 860,
+            currentStageId: "blue_supergiant",
+            futureOutcomeId: "black_hole_outcome",
+          },
+          {
+            id: "antares",
+            massMsun: 15.0,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 1.15e7,
+            ageConfidence: "low",
+            distanceLy: 550,
+            currentStageId: "red_supergiant",
+            futureOutcomeId: "neutron_star_outcome",
+          },
+          {
+            id: "p_cygni",
+            massMsun: 50.0,
+            metallicityMode: "solar",
+            binaryMode: "single",
+            ageYears: 3.8e6,
+            ageConfidence: "low",
+            distanceLy: 5500,
+            currentStageId: "unstable_massive_star",
+            futureOutcomeId: "black_hole_outcome",
+          },
+          {
+            id: "gamma_velorum",
+            massMsun: 30.0,
+            metallicityMode: "solar",
+            binaryMode: "close",
+            ageYears: 5.8e6,
+            ageConfidence: "low",
+            distanceLy: 1120,
+            currentStageId: "stripped_hot_star",
+            futureOutcomeId: "black_hole_outcome",
+          },
+        ];
+
+        const SPEED_PARAMS = {
+          story: { totalScreenTime: 25, transitionSlowdown: 0.3, snovaHold: 3 },
+          fast: { totalScreenTime: 12, transitionSlowdown: 0.5, snovaHold: 2 },
+          turbo: {
+            totalScreenTime: 6,
+            transitionSlowdown: 0.8,
+            snovaHold: 1.5,
+          },
+        };
+
+        const MASS_PRESETS = [
+          { value: "1.0", mass: 1.0, key: "presetSun" },
+          { value: "0.12", mass: 0.12, key: "presetTiny" },
+          { value: "2.5", mass: 2.5, key: "presetBright" },
+          { value: "15", mass: 15, key: "presetGiant" },
+          { value: "60", mass: 60, key: "presetMonster" },
+        ];
+
+        /* ============================================================
+         *  UTILITIES
+         * ============================================================ */
+        function clamp(v, lo, hi) {
+          return v < lo ? lo : v > hi ? hi : v;
+        }
+        function lerp(a, b, t) {
+          return a + (b - a) * t;
+        }
+        function logLerp(a, b, t) {
+          if (a <= 0) a = 1e-30;
+          if (b <= 0) b = 1e-30;
+          return Math.exp(Math.log(a) + t * (Math.log(b) - Math.log(a)));
+        }
+
+        /* Stages exempt from Stefan-Boltzmann (not photospheric) */
+        const SB_EXEMPT_STAGES = new Set([
+          "core_collapse_supernova",
+          "type_ia_supernova",
+          "black_hole",
+        ]);
+
+        /* Stefan-Boltzmann luminosity: L/Lsun = (R/Rsun)^2 * (T/5778)^4 */
+        function stefanBoltzmannL(rRsun, tK) {
+          return rRsun * rRsun * Math.pow(tK / 5778, 4);
+        }
+
+        /* Log slider mapping: 0-1000 -> 0.08-100 Msun */
+        const LOG_MIN = Math.log10(0.08);
+        const LOG_MAX = Math.log10(100);
+        function sliderToMass(s) {
+          return Math.pow(10, LOG_MIN + (s / 1000) * (LOG_MAX - LOG_MIN));
+        }
+        function massToSlider(m) {
+          return (
+            ((Math.log10(clamp(m, 0.08, 100)) - LOG_MIN) /
+              (LOG_MAX - LOG_MIN)) *
+            1000
+          );
+        }
+
+        /* Age formatting */
+        function formatAge(years) {
+          if (years < 1000) return Math.round(years) + " yr";
+          if (years < 1e6) return (years / 1e3).toFixed(1) + " kyr";
+          if (years < 1e9) return (years / 1e6).toFixed(1) + " Myr";
+          if (years < 1e12) return (years / 1e9).toFixed(2) + " Gyr";
+          return (years / 1e12).toFixed(1) + " Tyr";
+        }
+
+        function formatAgeSplit(years) {
+          if (years < 1000)
+            return { num: String(Math.round(years)), unit: "yr" };
+          if (years < 1e6)
+            return { num: (years / 1e3).toFixed(1), unit: "kyr" };
+          if (years < 1e9)
+            return { num: (years / 1e6).toFixed(1), unit: "Myr" };
+          if (years < 1e12)
+            return { num: (years / 1e9).toFixed(2), unit: "Gyr" };
+          return { num: (years / 1e12).toFixed(1), unit: "Tyr" };
+        }
+
+        function formatAgeKids(years) {
+          const pl = state.lang === "pl";
+          if (years < 1000) {
+            const n = Math.round(years);
+            return n + (pl ? (n === 1 ? " rok" : " lat") : " years");
+          }
+          if (years < 1e6) {
+            const n = +(years / 1e3).toFixed(1);
+            return (
+              n.toLocaleString() + (pl ? " tysięcy lat" : " thousand years")
+            );
+          }
+          if (years < 1e9) {
+            const n = +(years / 1e6).toFixed(1);
+            return (
+              n.toLocaleString() + (pl ? " milionów lat" : " million years")
+            );
+          }
+          if (years < 1e12) {
+            const n = +(years / 1e9).toFixed(1);
+            return (
+              n.toLocaleString() + (pl ? " miliardów lat" : " billion years")
+            );
+          }
+          const n = +(years / 1e12).toFixed(1);
+          return (
+            n.toLocaleString() + (pl ? " bilionów lat" : " trillion years")
+          );
+        }
+
+        function formatMass(m) {
+          if (m < 0.1) return m.toFixed(3) + " M\u2609";
+          if (m < 10) return m.toFixed(2) + " M\u2609";
+          return m.toFixed(0) + " M\u2609";
+        }
+
+        function formatTemp(k) {
+          if (k >= 1e6) return (k / 1e6).toFixed(1) + " MK";
+          return Math.round(k).toLocaleString() + " K";
+        }
+
+        function formatRadius(r) {
+          if (r < 0.001) return (r * 695700).toFixed(0) + " km";
+          if (r < 0.1) return r.toFixed(4) + " R\u2609";
+          if (r < 100) return r.toFixed(2) + " R\u2609";
+          return r.toFixed(0) + " R\u2609";
+        }
+
+        function formatLuminosity(l) {
+          if (l < 0.01) return l.toExponential(1) + " L\u2609";
+          if (l < 100) return l.toFixed(2) + " L\u2609";
+          if (l < 1e6) return Math.round(l).toLocaleString() + " L\u2609";
+          return l.toExponential(1) + " L\u2609";
+        }
+
+        function el(tag, classOrText, children) {
+          const e = document.createElement(tag);
+          if (typeof classOrText === "string" && !children) {
+            e.textContent = classOrText;
+            return e;
+          }
+          if (classOrText) e.className = classOrText;
+          if (children) {
+            for (let i = 0; i < children.length; i++) {
+              const c = children[i];
+              e.appendChild(
+                typeof c === "string" ? document.createTextNode(c) : c,
+              );
+            }
+          }
+          return e;
+        }
+
+        function elStyled(tag, style, children) {
+          const e = document.createElement(tag);
+          e.style.cssText = style;
+          if (children) {
+            for (let i = 0; i < children.length; i++) {
+              const c = children[i];
+              e.appendChild(
+                typeof c === "string" ? document.createTextNode(c) : c,
+              );
+            }
+          }
+          return e;
+        }
+
+        /* Blackbody temperature to RGB (Tanner Helland algorithm) */
+        function tempToColor(tempK) {
+          const t = clamp(tempK, 1000, 50000) / 100;
+          let r, g, b;
+          if (t <= 66) {
+            r = 255;
+            g = 99.4708025861 * Math.log(t) - 161.1195681661;
+            b =
+              t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+          } else {
+            r = 329.698727446 * Math.pow(t - 60, -0.1332047592);
+            g = 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+            b = 255;
+          }
+          return [
+            clamp(Math.round(r), 0, 255),
+            clamp(Math.round(g), 0, 255),
+            clamp(Math.round(b), 0, 255),
+          ];
+        }
+
+        function rgbStr(c) {
+          return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+        }
+        function rgbaStr(c, a) {
+          return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")";
+        }
+
+        /* ============================================================
+         *  STELLAR EVOLUTION ENGINE
+         * ============================================================ */
+
+        /* Compute total lifetime from mass using log-log interpolation */
+        function computeLifetime(massMsun, metallicityMode) {
+          const m = clamp(massMsun, 0.08, 150);
+          const logM = Math.log10(m);
+          const anchors = LIFETIME_ANCHORS;
+          /* Clamp to table range */
+          if (logM <= Math.log10(anchors[0].mass))
+            return anchors[0].years * METALLICITY_FACTOR[metallicityMode];
+          if (logM >= Math.log10(anchors[anchors.length - 1].mass))
+            return (
+              anchors[anchors.length - 1].years *
+              METALLICITY_FACTOR[metallicityMode]
+            );
+          for (let i = 0; i < anchors.length - 1; i++) {
+            const logM1 = Math.log10(anchors[i].mass);
+            const logM2 = Math.log10(anchors[i + 1].mass);
+            if (logM >= logM1 && logM <= logM2) {
+              const t = (logM - logM1) / (logM2 - logM1);
+              const logY1 = Math.log10(anchors[i].years);
+              const logY2 = Math.log10(anchors[i + 1].years);
+              const years = Math.pow(10, lerp(logY1, logY2, t));
+              return years * METALLICITY_FACTOR[metallicityMode];
+            }
+          }
+          return 1e10 * METALLICITY_FACTOR[metallicityMode];
+        }
+
+        /* Get stage physical properties based on stage ID and mass.
+           R and T are the two independent variables for photospheric stages.
+           L is derived from Stefan-Boltzmann: L = R^2 * (T/5778)^4.
+           SB-exempt stages (supernovae, black hole) keep hardcoded L values. */
+        function getStageProperties(stageId, massMsun) {
+          const m = massMsun;
+          /* Main sequence scaling: R~M^0.8, T~M^0.57 */
+          const msR = Math.pow(m, 0.8);
+          const msT = 5778 * Math.pow(m, 0.57);
+
+          let props;
+          switch (stageId) {
+            case "protostar":
+              props = {
+                rStart: msR * 3,
+                rEnd: msR * 1.2,
+                tStart: 3500,
+                tEnd: msT * 0.9,
+              };
+              break;
+            case "main_sequence":
+              props = {
+                rStart: msR * 0.9,
+                rEnd: msR * 1.4,
+                tStart: msT,
+                tEnd: msT * 0.95,
+              };
+              break;
+            case "red_dwarf_main_sequence":
+              props = {
+                rStart: msR * 0.9,
+                rEnd: msR * 1.05,
+                tStart: clamp(msT, 2400, 3800),
+                tEnd: clamp(msT * 0.95, 2300, 3600),
+              };
+              break;
+            case "subgiant":
+              props = {
+                rStart: msR * 1.5,
+                rEnd: msR * 3,
+                tStart: msT * 0.95,
+                tEnd: 5200,
+              };
+              break;
+            case "red_giant": {
+              const rgMax = m < 2 ? 120 : 100 + m * 8;
+              props = {
+                rStart: msR * 5,
+                rEnd: rgMax,
+                tStart: 5000,
+                tEnd: 3300,
+              };
+              break;
+            }
+            case "helium_burning":
+              props = {
+                rStart: m < 2 ? 10 : 50,
+                rEnd: m < 2 ? 12 : 40,
+                tStart: 4500,
+                tEnd: 5000,
+              };
+              break;
+            case "asymptotic_giant_branch": {
+              const agbMax = m < 2 ? 150 : 200 + m * 20;
+              props = {
+                rStart: m < 2 ? 30 : 50,
+                rEnd: agbMax,
+                tStart: 4000,
+                tEnd: 3200,
+              };
+              break;
+            }
+            case "planetary_nebula":
+              props = {
+                rStart: 2.5,
+                rEnd: 0.04,
+                tStart: 30000,
+                tEnd: 100000,
+              };
+              break;
+            case "blue_dwarf":
+              props = {
+                rStart: msR * 0.8,
+                rEnd: msR * 0.5,
+                tStart: clamp(msT * 1.5, 4000, 6000),
+                tEnd: clamp(msT * 2.5, 6000, 8000),
+              };
+              break;
+            case "white_dwarf":
+              props = {
+                rStart: 0.012,
+                rEnd: 0.01,
+                tStart: 50000,
+                tEnd: 10000,
+              };
+              break;
+            case "red_supergiant": {
+              const rsgMax = 200 + m * 30;
+              props = {
+                rStart: m * 5,
+                rEnd: rsgMax,
+                tStart: 4500,
+                tEnd: 3400,
+              };
+              break;
+            }
+            case "blue_supergiant":
+              props = {
+                rStart: m * 2,
+                rEnd: m * 5,
+                tStart: 25000,
+                tEnd: 12000,
+              };
+              break;
+            case "unstable_massive_star":
+              props = {
+                rStart: m * 3,
+                rEnd: m * 8,
+                tStart: 30000,
+                tEnd: 15000,
+              };
+              break;
+            case "stripped_hot_star":
+              props = {
+                rStart: m * 0.3,
+                rEnd: m * 0.2,
+                tStart: 50000,
+                tEnd: 80000,
+              };
+              break;
+            case "core_collapse_supernova":
+              return {
+                rStart: 0.01,
+                rEnd: 0.01,
+                tStart: 1e9,
+                tEnd: 1e6,
+                lStart: 1e10,
+                lEnd: 1e6,
+              };
+            case "type_ia_supernova":
+              return {
+                rStart: 0.01,
+                rEnd: 0.01,
+                tStart: 1e9,
+                tEnd: 1e6,
+                lStart: 5e9,
+                lEnd: 1e5,
+              };
+            case "neutron_star":
+              props = {
+                rStart: 1.5e-5,
+                rEnd: 1.5e-5,
+                tStart: 1e6,
+                tEnd: 500000,
+              };
+              break;
+            case "black_hole": {
+              const mRemnant = m < 25 ? m * 0.1 : m < 40 ? m * 0.3 : m * 0.5;
+              const rBH = 4.24e-6 * mRemnant;
+              return {
+                rStart: rBH,
+                rEnd: rBH,
+                tStart: 0,
+                tEnd: 0,
+                lStart: 0,
+                lEnd: 0,
+              };
+            }
+            default:
+              props = {
+                rStart: 1,
+                rEnd: 1,
+                tStart: 5778,
+                tEnd: 5778,
+              };
+              break;
+          }
+
+          /* Derive luminosity from Stefan-Boltzmann for photospheric stages */
+          props.lStart = stefanBoltzmannL(props.rStart, props.tStart);
+          props.lEnd = stefanBoltzmannL(props.rEnd, props.tEnd);
+          return props;
+        }
+
+        /* Determine visual mode for a given stage */
+        function getVisualMode(stageId) {
+          switch (stageId) {
+            case "protostar":
+              return "contracting_cloud";
+            case "red_giant":
+            case "asymptotic_giant_branch":
+            case "red_supergiant":
+              return "giant_with_orbits";
+            case "planetary_nebula":
+              return "nebula_shell";
+            case "blue_dwarf":
+              return "glowing_sphere";
+            case "white_dwarf":
+              return "compact_remnant";
+            case "neutron_star":
+              return "compact_remnant";
+            case "black_hole":
+              return "black_hole_vis";
+            case "core_collapse_supernova":
+            case "type_ia_supernova":
+              return "supernova_flash";
+            default:
+              return "glowing_sphere";
+          }
+        }
+
+        /* Absolute durations for stages with known physical timescales */
+        function getAbsoluteDuration(stageId, massMsun, totalLife) {
+          switch (stageId) {
+            case "protostar":
+              return Math.min(
+                4e7 * Math.pow(massMsun, -2.5),
+                1e8,
+                0.01 * totalLife,
+              );
+            case "planetary_nebula":
+              return 2e4;
+            case "core_collapse_supernova":
+              return 1;
+            case "type_ia_supernova":
+              return 1;
+            case "white_dwarf":
+              return 1e4;
+            case "neutron_star":
+              return 1e4;
+            case "black_hole":
+              return 1e4;
+            default:
+              return null;
+          }
+        }
+
+        /* Build the track from current state parameters */
+        function buildTrack() {
+          const m = state.massMsun;
+          const met = state.metallicityMode;
+          const bin = state.binaryMode;
+
+          const totalLife = computeLifetime(m, met);
+          state.totalLifetimeYears = totalLife;
+
+          /* Select phase template */
+          let tpl = null;
+          for (let i = 0; i < PHASE_TEMPLATES.length; i++) {
+            if (
+              m >= PHASE_TEMPLATES[i].massMin &&
+              m < PHASE_TEMPLATES[i].massMax
+            ) {
+              tpl = PHASE_TEMPLATES[i];
+              break;
+            }
+          }
+          if (!tpl) tpl = PHASE_TEMPLATES[PHASE_TEMPLATES.length - 1];
+
+          /* Pass 1: compute absolute vs fractional durations */
+          let absoluteTotal = 0;
+          let fracTotal = 0;
+          const stageDurations = [];
+          for (let j = 0; j < tpl.stages.length; j++) {
+            const s = tpl.stages[j];
+            const absDur = getAbsoluteDuration(s.id, m, totalLife);
+            if (absDur !== null) {
+              stageDurations.push({ abs: absDur });
+              absoluteTotal += absDur;
+            } else {
+              stageDurations.push({ frac: s.frac });
+              fracTotal += s.frac;
+            }
+          }
+          const remaining = Math.max(0, totalLife - absoluteTotal);
+
+          /* Pass 2: build track with computed durations */
+          const track = [];
+          let ageAccum = 0;
+          for (let j = 0; j < tpl.stages.length; j++) {
+            const s = tpl.stages[j];
+            const sd = stageDurations[j];
+            const duration =
+              sd.abs !== undefined
+                ? sd.abs
+                : fracTotal > 0
+                  ? (sd.frac / fracTotal) * remaining
+                  : 0;
+            const props = getStageProperties(s.id, m);
+            track.push({
+              id: s.id,
+              ageStartYears: ageAccum,
+              ageEndYears: ageAccum + duration,
+              radiusRsunStart: props.rStart,
+              radiusRsunEnd: props.rEnd,
+              tempKStart: props.tStart,
+              tempKEnd: props.tEnd,
+              luminosityLsunStart: props.lStart,
+              luminosityLsunEnd: props.lEnd,
+              visualMode: getVisualMode(s.id),
+            });
+            ageAccum += duration;
+          }
+
+          /* Chain properties: each stage starts where the previous ended.
+             Skip explosive transitions (supernova) where a jump is physical. */
+          for (let k = 1; k < track.length; k++) {
+            const prev = track[k - 1];
+            const cur = track[k];
+            const explosive =
+              cur.id === "core_collapse_supernova" ||
+              cur.id === "type_ia_supernova";
+            if (!explosive) {
+              cur.radiusRsunStart = prev.radiusRsunEnd;
+              cur.tempKStart = prev.tempKEnd;
+              cur.luminosityLsunStart = SB_EXEMPT_STAGES.has(cur.id)
+                ? prev.luminosityLsunEnd
+                : stefanBoltzmannL(cur.radiusRsunStart, cur.tempKStart);
+            }
+          }
+
+          state.outcomeId = tpl.outcome;
+          state.outcomeUncertain = tpl.uncertain;
+
+          /* Apply binary branch: CO-WD in close binary -> Type Ia path */
+          if (bin === "close" && tpl.outcome === "co_white_dwarf") {
+            /* Remove the final white_dwarf stage, add accretion + Type Ia */
+            const lastStage = track[track.length - 1];
+            if (lastStage.id === "white_dwarf") {
+              const wdEnd = lastStage.ageEndYears;
+              const accDuration = 1000;
+              track[track.length - 1].ageEndYears = wdEnd;
+              track.push({
+                id: "type_ia_supernova",
+                ageStartYears: wdEnd,
+                ageEndYears: wdEnd + accDuration,
+                radiusRsunStart: 0.01,
+                radiusRsunEnd: 0.01,
+                tempKStart: 1e9,
+                tempKEnd: 1e6,
+                luminosityLsunStart: 5e9,
+                luminosityLsunEnd: 1e5,
+                visualMode: "supernova_flash",
+              });
+              state.outcomeId = "type_ia_outcome";
+              state.outcomeUncertain = false;
+            }
+          } else if (bin === "close" && m >= 10) {
+            /* Binary doesn't materially change the massive-star outcome */
+          }
+
+          state.track = track;
+          state.screenTimeBudgets = computeScreenTimeBudgets(
+            track,
+            state.playbackSpeed,
+          );
+        }
+
+        /* Interpolate physical properties at a given age */
+        function interpolateAtAge(track, ageYears) {
+          if (!track || track.length === 0) {
+            return {
+              stageIndex: 0,
+              stageProgress: 0,
+              radiusRsun: 1,
+              tempK: 5778,
+              luminosityLsun: 1,
+            };
+          }
+          const age = clamp(
+            ageYears,
+            track[0].ageStartYears,
+            track[track.length - 1].ageEndYears,
+          );
+          for (let i = 0; i < track.length; i++) {
+            const s = track[i];
+            const isLast = i === track.length - 1;
+            if (
+              age >= s.ageStartYears &&
+              (isLast ? age <= s.ageEndYears : age < s.ageEndYears)
+            ) {
+              const dur = s.ageEndYears - s.ageStartYears;
+              const t = dur > 0 ? (age - s.ageStartYears) / dur : 0;
+              const r = logLerp(s.radiusRsunStart, s.radiusRsunEnd, t);
+              const tk = logLerp(s.tempKStart, s.tempKEnd, t);
+              const lum = SB_EXEMPT_STAGES.has(s.id)
+                ? logLerp(s.luminosityLsunStart, s.luminosityLsunEnd, t)
+                : stefanBoltzmannL(r, tk);
+              return {
+                stageIndex: i,
+                stageProgress: t,
+                radiusRsun: r,
+                tempK: tk,
+                luminosityLsun: lum,
+              };
+            }
+          }
+          /* Past the end */
+          const last = track[track.length - 1];
+          return {
+            stageIndex: track.length - 1,
+            stageProgress: 1,
+            radiusRsun: last.radiusRsunEnd,
+            tempK: last.tempKEnd,
+            luminosityLsun: SB_EXEMPT_STAGES.has(last.id)
+              ? last.luminosityLsunEnd
+              : stefanBoltzmannL(last.radiusRsunEnd, last.tempKEnd),
+          };
+        }
+
+        /* ============================================================
+         *  PLAYBACK ENGINE
+         * ============================================================ */
+
+        function computeScreenTimeBudgets(track, speedMode) {
+          if (!track || track.length === 0) return [];
+          const params = SPEED_PARAMS[speedMode] || SPEED_PARAMS.story;
+          const totalTime = params.totalScreenTime;
+          const budgets = [];
+          const logWeights = [];
+          let totalWeight = 0;
+          for (let i = 0; i < track.length; i++) {
+            const dur = track[i].ageEndYears - track[i].ageStartYears;
+            let w = dur > 0 ? Math.max(0.5, Math.log10(dur + 1)) : 0.5;
+            /* Give terminal events a boost */
+            const sid = track[i].id;
+            if (
+              sid === "core_collapse_supernova" ||
+              sid === "type_ia_supernova" ||
+              sid === "neutron_star" ||
+              sid === "black_hole" ||
+              sid === "white_dwarf" ||
+              sid === "planetary_nebula"
+            ) {
+              w = Math.max(w, 2);
+            }
+            logWeights.push(w);
+            totalWeight += w;
+          }
+          for (let j = 0; j < track.length; j++) {
+            budgets.push(
+              Math.max(1.0, (logWeights[j] / totalWeight) * totalTime),
+            );
+          }
+          return budgets;
+        }
+
+        function computeAgeStep(dt) {
+          if (!state.track || state.track.length === 0) return 0;
+          const idx = state.currentStageIndex;
+          const stage = state.track[idx];
+          const budget = state.screenTimeBudgets[idx] || 2;
+          const stageDuration = stage.ageEndYears - stage.ageStartYears;
+          if (stageDuration <= 0 || budget <= 0) return stageDuration;
+
+          let rate = stageDuration / budget; /* sim years per real second */
+
+          /* Transition slowdown: last 15% of stage */
+          const params =
+            SPEED_PARAMS[state.playbackSpeed] || SPEED_PARAMS.story;
+          const progress = state.stageProgress;
+          if (progress > 0.85) {
+            const slowFactor = lerp(
+              1,
+              params.transitionSlowdown,
+              (progress - 0.85) / 0.15,
+            );
+            rate *= slowFactor;
+          }
+
+          /* Supernova hold */
+          const sid = stage.id;
+          if (
+            sid === "core_collapse_supernova" ||
+            sid === "type_ia_supernova"
+          ) {
+            rate = stageDuration / params.snovaHold;
+          }
+
+          return dt * rate;
+        }
+
+        /* ============================================================
+         *  STATE
+         * ============================================================ */
+        const state = {
+          lang:
+            navigator.language && navigator.language.startsWith("pl")
+              ? "pl"
+              : "en",
+          mode: "custom",
+          realStarId: "sun",
+          startFromNow: true,
+
+          massMsun: 1.0,
+          massSliderVal: 354,
+          metallicityMode: "solar",
+          binaryMode: "single",
+
+          track: null,
+          totalLifetimeYears: 0,
+          outcomeId: "",
+          outcomeUncertain: false,
+          screenTimeBudgets: [],
+
+          playing: false,
+          playbackSpeed: "story",
+          currentAgeYears: 0,
+          currentStageIndex: 0,
+          stageProgress: 0,
+          finished: false,
+          supernovaTimer: 0,
+
+          radiusRsun: 1,
+          tempK: 5778,
+          luminosityLsun: 1,
+          displayRadiusPx: 60,
+          starColor: [255, 255, 200],
+
+          nowAgeYears: 0,
+          advancedOpen: false,
+          prevVisualMode: "",
+          visualTransition: 0,
+          prevDisplayRadius: 60,
+          prevStarColor: [255, 255, 200],
+          prevStageId: "",
+          bgStars: [],
+          W: 0,
+          H: 0,
+          animTime: 0,
+        };
+
+        /* ============================================================
+         *  STATE TRANSITIONS
+         * ============================================================ */
+
+        function setMass(m) {
+          state.massMsun = clamp(m, 0.08, 100);
+          state.massSliderVal = massToSlider(state.massMsun);
+          buildTrack();
+          resetPlayback();
+        }
+
+        function loadRealStar(id) {
+          let star = null;
+          for (let i = 0; i < REAL_STARS.length; i++) {
+            if (REAL_STARS[i].id === id) {
+              star = REAL_STARS[i];
+              break;
+            }
+          }
+          if (!star) return;
+          state.realStarId = id;
+          state.massMsun = star.massMsun;
+          state.massSliderVal = massToSlider(star.massMsun);
+          state.metallicityMode = star.metallicityMode;
+          state.binaryMode = star.binaryMode;
+          state.nowAgeYears = star.ageYears || 0;
+          buildTrack();
+          /* Validate preset: check computed stage matches expected */
+          if (star.ageYears && star.currentStageId && state.track.length > 0) {
+            const interp = interpolateAtAge(state.track, star.ageYears);
+            const computedId = state.track[interp.stageIndex].id;
+            if (computedId !== star.currentStageId) {
+              console.warn(
+                "Star preset '" +
+                  id +
+                  "': expected stage '" +
+                  star.currentStageId +
+                  "' at age " +
+                  star.ageYears +
+                  " yr, but computed stage is '" +
+                  computedId +
+                  "'",
+              );
+            }
+          }
+          if (state.startFromNow && star.ageYears) {
+            state.currentAgeYears = star.ageYears;
+          } else {
+            state.currentAgeYears = 0;
+          }
+          state.finished = false;
+          state.playing = false;
+          state.supernovaTimer = 0;
+          updateDerivedValues();
+        }
+
+        function resetPlayback() {
+          if (state.mode === "real" && state.startFromNow) {
+            let star = null;
+            for (let i = 0; i < REAL_STARS.length; i++) {
+              if (REAL_STARS[i].id === state.realStarId) {
+                star = REAL_STARS[i];
+                break;
+              }
+            }
+            state.currentAgeYears = star ? star.ageYears || 0 : 0;
+          } else {
+            state.currentAgeYears = 0;
+          }
+          state.finished = false;
+          state.playing = false;
+          state.supernovaTimer = 0;
+          updateDerivedValues();
+          updatePlayBtnText();
+        }
+
+        const TRANSITION_DURATION = 0.6; /* seconds for visual mode crossfade */
+
+        function updateDerivedValues() {
+          if (!state.track || state.track.length === 0) return;
+          const interp = interpolateAtAge(state.track, state.currentAgeYears);
+          const oldStageIndex = state.currentStageIndex;
+          state.currentStageIndex = interp.stageIndex;
+          state.stageProgress = interp.stageProgress;
+          state.radiusRsun = interp.radiusRsun;
+          state.tempK = interp.tempK;
+          state.luminosityLsun = interp.luminosityLsun;
+          checkZoomTransition(interp.radiusRsun);
+
+          const newVM = state.track[interp.stageIndex].visualMode;
+          const oldVM =
+            oldStageIndex < state.track.length
+              ? state.track[oldStageIndex].visualMode
+              : "";
+
+          /* Detect visual mode change and start crossfade */
+          if (oldVM && newVM !== oldVM && state.playing) {
+            state.prevVisualMode = oldVM;
+            state.prevDisplayRadius = state.displayRadiusPx;
+            state.prevStarColor = state.starColor.slice();
+            state.prevStageId =
+              oldStageIndex < state.track.length
+                ? state.track[oldStageIndex].id
+                : "";
+            state.visualTransition = TRANSITION_DURATION;
+          }
+
+          state.displayRadiusPx = physicalToDisplayRadius(interp.radiusRsun);
+          state.starColor = tempToColor(interp.tempK);
+        }
+
+        function jumpToNextPhase() {
+          if (!state.track) return;
+          const idx = state.currentStageIndex;
+          if (idx < state.track.length - 1) {
+            state.currentAgeYears = state.track[idx + 1].ageStartYears;
+            updateDerivedValues();
+          } else {
+            /* Already at last stage - go to end */
+            state.currentAgeYears =
+              state.track[state.track.length - 1].ageEndYears;
+            state.finished = true;
+            state.playing = false;
+            updateDerivedValues();
+            updatePlayBtnText();
+          }
+        }
+
+        /* ============================================================
+         *  DISPLAY SCALE
+         * ============================================================ */
+
+        function physicalToDisplayRadius(radiusRsun) {
+          const h = state.H - TIMELINE_HEIGHT;
+          const maxPx = h * 0.42;
+          const minPx = 24;
+          if (radiusRsun <= 0) return minPx;
+
+          /* Non-linear mapping via log */
+          const logR = Math.log10(radiusRsun + 0.001);
+          const logMin = Math.log10(1e-6);
+          const logMax = Math.log10(1500);
+          let t = (logR - logMin) / (logMax - logMin);
+          t = clamp(t, 0, 1);
+          const px = minPx + (maxPx - minPx) * Math.pow(t, 0.7);
+          return clamp(px, minPx, maxPx);
+        }
+
+        /* ============================================================
+         *  CANVAS SETUP
+         * ============================================================ */
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        function resize() {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          state.W = rect.width;
+          state.H = rect.height;
+          canvas.width = state.W * dpr;
+          canvas.height = state.H * dpr;
+          canvas.style.width = state.W + "px";
+          canvas.style.height = state.H + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          if (state.bgStars.length === 0) initBgStars(200);
+        }
+
+        function initBgStars(count) {
+          state.bgStars = [];
+          for (let i = 0; i < count; i++) {
+            state.bgStars.push({
+              x: Math.random(),
+              y: Math.random(),
+              size: 0.5 + Math.random() * 1.5,
+              alpha: 0.3 + Math.random() * 0.7,
+              twinkleSpeed: 0.5 + Math.random() * 2,
+            });
+          }
+        }
+
+        /* ============================================================
+         *  DRAWING FUNCTIONS
+         * ============================================================ */
+
+        function drawStarfield() {
+          const W = state.W;
+          const H = state.H;
+          const time = state.animTime;
+          for (let i = 0; i < state.bgStars.length; i++) {
+            const s = state.bgStars[i];
+            const twinkle =
+              0.4 + 0.6 * Math.abs(Math.sin(time * s.twinkleSpeed + i));
+            ctx.globalAlpha = s.alpha * twinkle;
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(s.x * W, s.y * H, s.size, s.size);
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        /* --- Star visual modes --- */
+
+        function drawContractingCloud(cx, cy, radius, color, progress) {
+          const cloudR = radius * (3 - 2 * progress);
+          for (let i = 3; i >= 0; i--) {
+            const r = cloudR * (1 + i * 0.3);
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+            grad.addColorStop(0, rgbaStr(color, 0.3 / (i + 1)));
+            grad.addColorStop(1, rgbaStr(color, 0));
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          /* Inner bright core forming */
+          const coreR = radius * 0.3 * progress;
+          if (coreR > 2) {
+            const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+            coreGrad.addColorStop(0, rgbaStr(color, 0.9));
+            coreGrad.addColorStop(0.7, rgbaStr(color, 0.3));
+            coreGrad.addColorStop(1, rgbaStr(color, 0));
+            ctx.fillStyle = coreGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        function drawGlowingSphere(cx, cy, radius, color) {
+          /* Outer glow */
+          const glowR = radius * 1.6;
+          const glow = ctx.createRadialGradient(
+            cx,
+            cy,
+            radius * 0.5,
+            cx,
+            cy,
+            glowR,
+          );
+          glow.addColorStop(0, rgbaStr(color, 0.15));
+          glow.addColorStop(1, rgbaStr(color, 0));
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+          ctx.fill();
+
+          /* Main body with limb darkening */
+          const bodyGrad = ctx.createRadialGradient(
+            cx - radius * 0.15,
+            cy - radius * 0.15,
+            0,
+            cx,
+            cy,
+            radius,
+          );
+          bodyGrad.addColorStop(
+            0,
+            rgbStr([
+              Math.min(255, color[0] + 40),
+              Math.min(255, color[1] + 40),
+              Math.min(255, color[2] + 40),
+            ]),
+          );
+          bodyGrad.addColorStop(0.7, rgbStr(color));
+          bodyGrad.addColorStop(
+            1,
+            rgbStr([
+              Math.round(color[0] * 0.4),
+              Math.round(color[1] * 0.4),
+              Math.round(color[2] * 0.4),
+            ]),
+          );
+          ctx.fillStyle = bodyGrad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        function drawGiantWithOrbits(cx, cy, radius, color, massMsun) {
+          drawGlowingSphere(cx, cy, radius, color);
+          drawOrbitOverlays(cx, cy);
+        }
+
+        function drawOrbitOverlays(cx, cy) {
+          const starR = state.radiusRsun;
+          const orbitData = [
+            { au: ORBIT_RADII_AU.mercury, lbl: T("orbitMercury") },
+            { au: ORBIT_RADII_AU.earth, lbl: T("orbitEarth") },
+            { au: ORBIT_RADII_AU.jupiter, lbl: T("orbitJupiter") },
+          ];
+          for (let i = 0; i < orbitData.length; i++) {
+            const orbitRsun = orbitData[i].au * AU_TO_RSUN;
+            /* Show orbit as comparison whenever star is at least 10% of orbit */
+            if (starR < orbitRsun * 0.1) continue;
+            const dispR = physicalToDisplayRadius(orbitRsun);
+            if (dispR < 10 || dispR > state.W * 0.8) continue;
+
+            /* Determine orbit status */
+            const ratio = starR / orbitRsun;
+            let ringColor, ringAlpha, statusText;
+            if (ratio >= 1.0) {
+              ringColor = "255,80,60";
+              ringAlpha = 0.5;
+              statusText = T("orbitEngulfed");
+            } else if (ratio >= 0.8) {
+              ringColor = "255,180,60";
+              ringAlpha = 0.45;
+              statusText = T("orbitNear");
+            } else {
+              ringColor = "255,255,255";
+              ringAlpha = 0.2;
+              statusText = "";
+            }
+
+            ctx.setLineDash([4, 6]);
+            ctx.strokeStyle = "rgba(" + ringColor + "," + ringAlpha + ")";
+            ctx.lineWidth = ratio >= 1.0 ? 2 : 1;
+            ctx.beginPath();
+            ctx.arc(cx, cy, dispR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            /* Label with optional status */
+            ctx.font = '15px "Share Tech Mono", monospace';
+            ctx.textAlign = "center";
+            const label = statusText
+              ? orbitData[i].lbl + " \u2014 " + statusText
+              : orbitData[i].lbl;
+            ctx.fillStyle = "rgba(" + ringColor + "," + (ringAlpha + 0.1) + ")";
+            ctx.fillText(label, cx, cy - dispR - 6);
+          }
+          ctx.textAlign = "start";
+        }
+
+        function drawNebulaShell(cx, cy, coreRadius, progress) {
+          /* Expanding shell */
+          const shellR = coreRadius + state.displayRadiusPx * 2 * progress;
+          const shellAlpha = 0.6 * (1 - progress * 0.7);
+          const colors = [
+            [68, 221, 255],
+            [100, 255, 180],
+            [200, 150, 255],
+          ];
+          for (let i = 0; i < colors.length; i++) {
+            const r = shellR * (0.7 + i * 0.15);
+            ctx.strokeStyle = rgbaStr(colors[i], shellAlpha * (1 - i * 0.2));
+            ctx.lineWidth = 3 - i;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          /* Central white dwarf core */
+          const cr = Math.max(4, coreRadius * 0.2);
+          const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+          coreGrad.addColorStop(0, "rgba(200,220,255,1)");
+          coreGrad.addColorStop(0.6, "rgba(170,200,255,0.6)");
+          coreGrad.addColorStop(1, "rgba(150,180,255,0)");
+          ctx.fillStyle = coreGrad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        function drawCompactRemnant(cx, cy, radius, stageId) {
+          const isNS = stageId === "neutron_star";
+          const color = isNS ? [220, 220, 255] : [180, 200, 255];
+          const r = Math.max(isNS ? 8 : 14, radius);
+
+          /* Glow */
+          const glowR = r * 3;
+          const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+          glow.addColorStop(0, rgbaStr(color, 0.4));
+          glow.addColorStop(0.5, rgbaStr(color, 0.1));
+          glow.addColorStop(1, rgbaStr(color, 0));
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+          ctx.fill();
+
+          /* Core */
+          const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+          coreGrad.addColorStop(0, "#fff");
+          coreGrad.addColorStop(0.5, rgbStr(color));
+          coreGrad.addColorStop(1, rgbaStr(color, 0.3));
+          ctx.fillStyle = coreGrad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+
+          /* Neutron star: rotating beam */
+          if (isNS) {
+            const angle = state.animTime * 6;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            ctx.strokeStyle = rgbaStr([200, 200, 255], 0.4);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(r * 5, 0);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-r * 5, 0);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          /* Size + magnification label (top-right corner) */
+          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.fillStyle = "rgba(255,255,255,0.5)";
+          ctx.textAlign = "right";
+          const sizeDesc = isNS ? T("realSizeNS") : T("realSizeWD");
+          const sunPx = physicalToDisplayRadius(1);
+          const truePx = state.radiusRsun * sunPx;
+          const magFactor = truePx > 0.01 ? Math.round(r / truePx) : 0;
+          ctx.fillText(sizeDesc, state.W - 12, 20);
+          if (magFactor > 1) {
+            ctx.fillText(
+              T("magnified") + " ~" + magFactor.toLocaleString() + "x",
+              state.W - 12,
+              38,
+            );
+          }
+          ctx.textAlign = "start";
+        }
+
+        function drawBlackHoleVis(cx, cy, radius) {
+          const r = Math.max(20, radius);
+
+          /* Accretion ring (tilted ellipse) */
+          const ringR = r * 2.2;
+          ctx.save();
+          ctx.translate(cx, cy);
+
+          /* Lensing glow arc */
+          const lensGrad = ctx.createRadialGradient(
+            0,
+            0,
+            r * 0.8,
+            0,
+            0,
+            ringR * 1.3,
+          );
+          lensGrad.addColorStop(0, "rgba(255,170,50,0)");
+          lensGrad.addColorStop(0.5, "rgba(255,170,50,0.15)");
+          lensGrad.addColorStop(0.8, "rgba(255,120,30,0.2)");
+          lensGrad.addColorStop(1, "rgba(255,80,20,0)");
+          ctx.fillStyle = lensGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, ringR * 1.3, 0, Math.PI * 2);
+          ctx.fill();
+
+          /* Ring - back half */
+          ctx.strokeStyle = "rgba(255,160,60,0.5)";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, ringR, ringR * 0.3, 0, Math.PI, Math.PI * 2);
+          ctx.stroke();
+
+          /* Dark center */
+          const darkGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+          darkGrad.addColorStop(0, "#000");
+          darkGrad.addColorStop(0.7, "#050508");
+          darkGrad.addColorStop(1, "rgba(20,15,30,0.8)");
+          ctx.fillStyle = darkGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          ctx.fill();
+
+          /* Ring - front half */
+          ctx.strokeStyle = "rgba(255,180,80,0.7)";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, ringR, ringR * 0.3, 0, 0, Math.PI);
+          ctx.stroke();
+
+          ctx.restore();
+
+          /* Label with magnification (top-right corner) */
+          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.fillStyle = "rgba(255,255,255,0.5)";
+          ctx.textAlign = "right";
+          const bhSunPx = physicalToDisplayRadius(1);
+          const bhTruePx = state.radiusRsun * bhSunPx;
+          const bhMag = bhTruePx > 0.01 ? Math.round(r / bhTruePx) : 0;
+          ctx.fillText(T("realSizeBH"), state.W - 12, 20);
+          if (bhMag > 1) {
+            ctx.fillText(
+              T("magnified") + " ~" + bhMag.toLocaleString() + "x",
+              state.W - 12,
+              38,
+            );
+          }
+          ctx.textAlign = "start";
+        }
+
+        function drawSupernovaFlash(cx, cy, timer) {
+          /* timer in seconds since supernova stage started */
+          const params =
+            SPEED_PARAMS[state.playbackSpeed] || SPEED_PARAMS.story;
+          const holdTime = params.snovaHold;
+          const t = clamp(timer / holdTime, 0, 1);
+
+          if (t < 0.3) {
+            /* Phase 1: Bright expanding white flash */
+            const flashP = t / 0.3;
+            const flashR = 30 + flashP * state.H * 0.4;
+            const flashAlpha = 1 - flashP * 0.3;
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, flashR);
+            grad.addColorStop(0, rgbaStr([255, 255, 255], flashAlpha));
+            grad.addColorStop(0.4, rgbaStr([255, 240, 200], flashAlpha * 0.6));
+            grad.addColorStop(1, rgbaStr([255, 200, 100], 0));
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, flashR, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (t < 0.7) {
+            /* Phase 2: Expanding colored shell */
+            const shellP = (t - 0.3) / 0.4;
+            const shellR = state.H * 0.2 + shellP * state.H * 0.3;
+            const shellAlpha = 0.7 - shellP * 0.4;
+            ctx.strokeStyle = rgbaStr([255, 100, 50], shellAlpha);
+            ctx.lineWidth = 6 - shellP * 3;
+            ctx.beginPath();
+            ctx.arc(cx, cy, shellR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            /* Inner glow fading */
+            const innerR = state.H * 0.1 * (1 - shellP * 0.5);
+            const innerGrad = ctx.createRadialGradient(
+              cx,
+              cy,
+              0,
+              cx,
+              cy,
+              innerR,
+            );
+            innerGrad.addColorStop(
+              0,
+              rgbaStr([255, 220, 180], 0.5 * (1 - shellP)),
+            );
+            innerGrad.addColorStop(1, rgbaStr([255, 150, 80], 0));
+            ctx.fillStyle = innerGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            /* Phase 3: Shell fading, remnant appearing */
+            const fadeP = (t - 0.7) / 0.3;
+            const fadingR = state.H * 0.4 + fadeP * state.H * 0.1;
+            ctx.strokeStyle = rgbaStr([255, 100, 50], 0.3 * (1 - fadeP));
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, fadingR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            /* Show the emerging remnant */
+            const remnantAlpha = fadeP;
+            ctx.globalAlpha = remnantAlpha;
+            const lastStage = state.track[state.track.length - 1];
+            if (lastStage && lastStage.id === "black_hole") {
+              drawBlackHoleVis(cx, cy, 20);
+            } else if (lastStage && lastStage.id === "neutron_star") {
+              drawCompactRemnant(cx, cy, 8, "neutron_star");
+            }
+            ctx.globalAlpha = 1;
+          }
+        }
+
+        /* --- Timeline --- */
+
+        function computeTimelineSegments(track, totalWidth) {
+          if (!track || track.length === 0) return [];
+          const segments = [];
+          const logWeights = [];
+          let totalWeight = 0;
+          for (let i = 0; i < track.length; i++) {
+            const dur = track[i].ageEndYears - track[i].ageStartYears;
+            const w = dur > 0 ? Math.max(0.3, Math.log10(dur + 1)) : 0.3;
+            logWeights.push(w);
+            totalWeight += w;
+          }
+          /* Minimum pixel allocation */
+          const minTotal = MIN_SEGMENT_PX * track.length;
+          const available = Math.max(0, totalWidth - minTotal);
+          for (let j = 0; j < track.length; j++) {
+            segments.push({
+              id: track[j].id,
+              ageStart: track[j].ageStartYears,
+              ageEnd: track[j].ageEndYears,
+              width:
+                MIN_SEGMENT_PX +
+                (totalWeight > 0
+                  ? (logWeights[j] / totalWeight) * available
+                  : 0),
+            });
+          }
+          return segments;
+        }
+
+        function ageToTimelineX(age, segments, marginLeft) {
+          if (!segments || segments.length === 0) return marginLeft;
+          let x = marginLeft;
+          for (let i = 0; i < segments.length; i++) {
+            const s = segments[i];
+            if (age <= s.ageEnd) {
+              const dur = s.ageEnd - s.ageStart;
+              const t = dur > 0 ? clamp((age - s.ageStart) / dur, 0, 1) : 0;
+              return x + t * s.width;
+            }
+            x += s.width;
+          }
+          return x;
+        }
+
+        function drawTimeline() {
+          const W = state.W;
+          const H = state.H;
+          const track = state.track;
+          if (!track || track.length === 0) return;
+
+          const tlY = H - TIMELINE_HEIGHT;
+          const tlW = W - TIMELINE_MARGIN * 2;
+
+          /* Background panel */
+          ctx.fillStyle = "rgba(11, 15, 24, 0.88)";
+          ctx.beginPath();
+          roundRect(ctx, TIMELINE_MARGIN - 4, tlY, tlW + 8, TIMELINE_HEIGHT, 8);
+          ctx.fill();
+
+          const segments = computeTimelineSegments(track, tlW);
+          const segY = tlY + 12;
+          const segH = 50;
+          let x = TIMELINE_MARGIN;
+
+          for (let i = 0; i < segments.length; i++) {
+            const seg = segments[i];
+            const stageData = STAGES[seg.id];
+            /* Colored segment — use temperature-derived color for photospheric stages */
+            let segColor;
+            if (!NON_PHOTOSPHERE_STAGES.has(seg.id) && track[i]) {
+              const midT = Math.sqrt(track[i].tempKStart * track[i].tempKEnd);
+              segColor = rgbStr(tempToColor(midT));
+            } else {
+              segColor = stageData ? stageData.color : "#888";
+            }
+            ctx.fillStyle = segColor;
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(x, segY, seg.width, segH);
+            ctx.globalAlpha = 1;
+
+            /* Active stage highlight */
+            if (i === state.currentStageIndex && !state.finished) {
+              ctx.strokeStyle = "#fff";
+              ctx.lineWidth = 3;
+              ctx.strokeRect(x + 1.5, segY + 1.5, seg.width - 3, segH - 3);
+            }
+
+            /* Stage label (inside segment, two-line if multi-word) */
+            if (seg.width > 18) {
+              ctx.font = '12px "Share Tech Mono", monospace';
+              ctx.fillStyle = "#fff";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              let label = T(seg.id);
+              if (seg.width < 70) {
+                label = label.substring(0, Math.floor(seg.width / 7));
+              }
+              const cx = x + seg.width / 2;
+              const cy = segY + segH / 2;
+              const words = label.split(" ");
+              if (words.length >= 2 && seg.width >= 40) {
+                ctx.fillText(words[0], cx, cy - 7);
+                ctx.fillText(words.slice(1).join(" "), cx, cy + 7);
+              } else {
+                ctx.fillText(label, cx, cy);
+              }
+              ctx.textBaseline = "alphabetic";
+            }
+
+            /* Vertical separator between phases */
+            if (i < segments.length - 1) {
+              ctx.strokeStyle = "rgba(255,255,255,0.25)";
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(x + seg.width, segY);
+              ctx.lineTo(x + seg.width, segY + segH);
+              ctx.stroke();
+            }
+
+            /* Age label at end boundary (two lines: number + unit) */
+            if (i < segments.length - 1 && seg.width > 30) {
+              ctx.font = '11px "Share Tech Mono", monospace';
+              ctx.fillStyle = "rgba(255,255,255,0.35)";
+              ctx.textAlign = "center";
+              const ageParts = formatAgeSplit(seg.ageEnd);
+              ctx.fillText(ageParts.num, x + seg.width, segY + segH + 12);
+              ctx.fillText(ageParts.unit, x + seg.width, segY + segH + 24);
+            }
+
+            x += seg.width;
+          }
+
+          /* Hover highlight */
+          if (hoverCardVisible && hoverSegIndex >= 0) {
+            let hx = TIMELINE_MARGIN;
+            for (let hi = 0; hi < hoverSegIndex; hi++) {
+              hx += segments[hi].width;
+            }
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            if (
+              hoverCardTransKey !== null &&
+              hoverSegIndex < segments.length - 1
+            ) {
+              /* Transition: narrow strip around the boundary */
+              const bx = hx + segments[hoverSegIndex].width;
+              const tz = TRANSITION_ZONE_PX;
+              ctx.fillRect(bx - tz, segY, tz * 2, segH);
+            } else if (hoverCardPhaseId !== null) {
+              /* Single phase */
+              ctx.fillRect(hx, segY, segments[hoverSegIndex].width, segH);
+            }
+          }
+
+          /* Final age label (two lines: number + unit) */
+          ctx.font = '12px "Share Tech Mono", monospace';
+          ctx.fillStyle = "rgba(255,255,255,0.5)";
+          ctx.textAlign = "right";
+          const finalParts = formatAgeSplit(
+            track[track.length - 1].ageEndYears,
+          );
+          ctx.fillText(finalParts.num, TIMELINE_MARGIN + tlW, segY + segH + 12);
+          ctx.fillText(
+            finalParts.unit,
+            TIMELINE_MARGIN + tlW,
+            segY + segH + 24,
+          );
+
+          /* Playhead */
+          const playX = ageToTimelineX(
+            state.currentAgeYears,
+            segments,
+            TIMELINE_MARGIN,
+          );
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.moveTo(playX, segY - 2);
+          ctx.lineTo(playX - 5, segY - 10);
+          ctx.lineTo(playX + 5, segY - 10);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,0.6)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(playX, segY);
+          ctx.lineTo(playX, segY + segH);
+          ctx.stroke();
+
+          /* "Now" marker in real star mode (above bar, pointing down) */
+          if (state.mode === "real" && state.nowAgeYears > 0) {
+            const nowX = ageToTimelineX(
+              state.nowAgeYears,
+              segments,
+              TIMELINE_MARGIN,
+            );
+            ctx.fillStyle = var_accent;
+            ctx.beginPath();
+            ctx.moveTo(nowX, segY - 2);
+            ctx.lineTo(nowX - 5, segY - 11);
+            ctx.lineTo(nowX + 5, segY - 11);
+            ctx.closePath();
+            ctx.fill();
+            ctx.font = '13px "Share Tech Mono", monospace';
+            ctx.fillStyle = var_accent;
+            ctx.textAlign = "center";
+            ctx.fillText(T("now"), nowX, segY - 14);
+          }
+
+          /* Compressed timeline label */
+          ctx.font = '11px "Share Tech Mono", monospace';
+          ctx.fillStyle = "rgba(255,255,255,0.2)";
+          ctx.textAlign = "left";
+          ctx.fillText(T("timelineCompressed"), TIMELINE_MARGIN, H - 5);
+          ctx.textAlign = "start";
+        }
+
+        const var_accent = "#58a6ff";
+
+        function roundRect(context, x, y, w, h, r) {
+          context.moveTo(x + r, y);
+          context.lineTo(x + w - r, y);
+          context.quadraticCurveTo(x + w, y, x + w, y + r);
+          context.lineTo(x + w, y + h - r);
+          context.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+          context.lineTo(x + r, y + h);
+          context.quadraticCurveTo(x, y + h, x, y + h - r);
+          context.lineTo(x, y + r);
+          context.quadraticCurveTo(x, y, x + r, y);
+        }
+
+        /* --- Phase label near star --- */
+        /* --- Scale ruler landmarks (in Rsun) --- */
+        const SCALE_LANDMARKS = [
+          { key: "scaleCity", rSun: 2.87e-5 },
+          { key: "scaleEarth", rSun: 0.00916 },
+          { key: "scaleJupiter", rSun: 0.1005 },
+          { key: "scaleSun", rSun: 1 },
+          { key: "scaleMercuryOrbit", rSun: 0.39 * AU_TO_RSUN },
+          { key: "scaleEarthOrbit", rSun: 1.0 * AU_TO_RSUN },
+          { key: "scaleJupiterOrbit", rSun: 5.2 * AU_TO_RSUN },
+        ];
+        const RULER_LOG_MIN = -5;
+        const RULER_LOG_MAX = 3.1;
+
+        function drawScaleRuler(radiusRsun) {
+          const starAreaH = state.H - TIMELINE_HEIGHT;
+          if (starAreaH < 200) return;
+          const rulerX = 18;
+          const rulerTop = 30;
+          const rulerBot = starAreaH - 20;
+          const rulerH = rulerBot - rulerTop;
+
+          /* Ruler line */
+          ctx.strokeStyle = "rgba(255,255,255,0.12)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(rulerX, rulerTop);
+          ctx.lineTo(rulerX, rulerBot);
+          ctx.stroke();
+
+          /* Landmarks */
+          ctx.font = '12px "Share Tech Mono", monospace';
+          ctx.textAlign = "left";
+          for (let i = 0; i < SCALE_LANDMARKS.length; i++) {
+            const lm = SCALE_LANDMARKS[i];
+            const logR = Math.log10(lm.rSun);
+            const t = (logR - RULER_LOG_MIN) / (RULER_LOG_MAX - RULER_LOG_MIN);
+            if (t < 0 || t > 1) continue;
+            const y = rulerBot - t * rulerH;
+
+            /* Tick */
+            ctx.strokeStyle = "rgba(255,255,255,0.2)";
+            ctx.beginPath();
+            ctx.moveTo(rulerX - 4, y);
+            ctx.lineTo(rulerX + 4, y);
+            ctx.stroke();
+
+            /* Label */
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            ctx.fillText(T(lm.key), rulerX + 8, y + 3);
+          }
+
+          /* Current star marker */
+          if (radiusRsun > 0) {
+            const logStar = Math.log10(radiusRsun);
+            const tStar =
+              (logStar - RULER_LOG_MIN) / (RULER_LOG_MAX - RULER_LOG_MIN);
+            const yStar = rulerBot - clamp(tStar, 0, 1) * rulerH;
+
+            /* Marker triangle */
+            ctx.fillStyle = "rgba(255,200,60,0.8)";
+            ctx.beginPath();
+            ctx.moveTo(rulerX - 7, yStar - 5);
+            ctx.lineTo(rulerX, yStar);
+            ctx.lineTo(rulerX - 7, yStar + 5);
+            ctx.closePath();
+            ctx.fill();
+
+            /* Highlight line */
+            ctx.strokeStyle = "rgba(255,200,60,0.25)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(rulerX, yStar);
+            ctx.lineTo(rulerX + 80, yStar);
+            ctx.stroke();
+          }
+          ctx.textAlign = "start";
+        }
+
+        /* --- Child-friendly radius comparison --- */
+        const EARTH_RSUN = 0.00916;
+        const JUPITER_RSUN = 0.1005;
+
+        function describeRadiusForKids(radiusRsun) {
+          if (radiusRsun <= 0) return "";
+          if (radiusRsun < EARTH_RSUN * 0.5) return T("compCity");
+          if (radiusRsun < JUPITER_RSUN * 0.8) {
+            const n = Math.round((radiusRsun * 2) / EARTH_RSUN);
+            return T("compEarths").replace("{n}", n);
+          }
+          if (radiusRsun < 0.8) {
+            const n = Math.round(((radiusRsun * 2) / JUPITER_RSUN) * 10) / 10;
+            return T("compJupiters").replace("{n}", n);
+          }
+          const orbitMercury = 0.39 * AU_TO_RSUN;
+          const orbitEarth = 1.0 * AU_TO_RSUN;
+          const orbitJupiter = 5.2 * AU_TO_RSUN;
+          if (radiusRsun >= orbitJupiter) return T("compJupiterOrbit");
+          if (radiusRsun >= orbitEarth) return T("compEarthOrbit");
+          if (radiusRsun >= orbitMercury) return T("compMercury");
+          const n = Math.round(radiusRsun * 2 * 10) / 10;
+          return T("compSuns").replace("{n}", n);
+        }
+
+        /* --- Zoom badge state --- */
+        let zoomBadgeTimer = 0;
+        let zoomBadgeText = "";
+        let prevScaleRegime = "";
+
+        function getScaleRegime(radiusRsun) {
+          if (radiusRsun < EARTH_RSUN * 0.5) return "compact";
+          if (radiusRsun < 10) return "stellar";
+          return "solar_system";
+        }
+
+        function checkZoomTransition(radiusRsun) {
+          const regime = getScaleRegime(radiusRsun);
+          if (prevScaleRegime && regime !== prevScaleRegime) {
+            const oldR = state.prevRadiusForZoom || 1;
+            const ratio = oldR > 0 ? radiusRsun / oldR : 1;
+            const absRatio = ratio > 1 ? ratio : 1 / ratio;
+            if (absRatio > 10) {
+              const factor = Math.round(absRatio);
+              const dir = ratio < 1 ? T("zoomingIn") : T("zoomingOut");
+              zoomBadgeText = dir + " ~" + factor.toLocaleString() + "x";
+              zoomBadgeTimer = 3;
+            }
+          }
+          prevScaleRegime = regime;
+          state.prevRadiusForZoom = radiusRsun;
+        }
+
+        function drawZoomBadge(dt) {
+          if (zoomBadgeTimer <= 0) return;
+          zoomBadgeTimer -= dt;
+          const alpha = clamp(zoomBadgeTimer / 0.5, 0, 1);
+          ctx.save();
+          ctx.font = '16px "Share Tech Mono", monospace';
+          ctx.textAlign = "center";
+          ctx.fillStyle = "rgba(255,200,60," + 0.7 * alpha + ")";
+          const starAreaH = state.H - TIMELINE_HEIGHT;
+          ctx.fillText(zoomBadgeText, state.W * 0.5, starAreaH - 20);
+          ctx.restore();
+          ctx.textAlign = "start";
+        }
+
+        function blendColor(a, b, t) {
+          return [
+            Math.round(lerp(a[0], b[0], t)),
+            Math.round(lerp(a[1], b[1], t)),
+            Math.round(lerp(a[2], b[2], t)),
+          ];
+        }
+
+        function drawVisualMode(vm, cx, cy, r, color, stageId) {
+          switch (vm) {
+            case "contracting_cloud":
+              drawContractingCloud(cx, cy, r, color, state.stageProgress);
+              break;
+            case "giant_with_orbits":
+              drawGiantWithOrbits(cx, cy, r, color, state.massMsun);
+              break;
+            case "nebula_shell":
+              drawNebulaShell(cx, cy, r, state.stageProgress);
+              break;
+            case "compact_remnant":
+              drawCompactRemnant(cx, cy, r, stageId);
+              break;
+            case "black_hole_vis":
+              drawBlackHoleVis(cx, cy, r);
+              break;
+            case "supernova_flash":
+              drawSupernovaFlash(cx, cy, state.supernovaTimer);
+              break;
+            default:
+              drawGlowingSphere(cx, cy, r, color);
+              break;
+          }
+        }
+
+        /* --- Main draw composition --- */
+        function drawScene() {
+          const W = state.W;
+          const H = state.H;
+          if (W === 0 || H === 0) return;
+
+          /* Clear */
+          ctx.fillStyle = "#080c14";
+          ctx.fillRect(0, 0, W, H);
+
+          drawStarfield();
+
+          if (!state.track || state.track.length === 0) {
+            drawTimeline();
+            return;
+          }
+
+          const starAreaH = H - TIMELINE_HEIGHT;
+          const cx = W * 0.5;
+          const cy = starAreaH * 0.5;
+          const r = state.displayRadiusPx;
+          const color = state.starColor;
+          const stage = state.track[state.currentStageIndex];
+          const vm = stage.visualMode;
+          const inTransition = state.visualTransition > 0;
+          const transAlpha = inTransition
+            ? clamp(state.visualTransition / TRANSITION_DURATION, 0, 1)
+            : 0;
+
+          /* Draw previous visual mode fading out during transition */
+          if (inTransition && state.prevVisualMode) {
+            ctx.globalAlpha = transAlpha * 0.8;
+            drawVisualMode(
+              state.prevVisualMode,
+              cx,
+              cy,
+              lerp(r, state.prevDisplayRadius, transAlpha),
+              blendColor(color, state.prevStarColor, transAlpha),
+              state.prevStageId,
+            );
+            ctx.globalAlpha = 1;
+          }
+
+          /* Draw current visual mode (full opacity, or fading in during transition) */
+          if (inTransition) {
+            ctx.globalAlpha = 1 - transAlpha * 0.6;
+          }
+          drawVisualMode(vm, cx, cy, r, color, stage.id);
+          ctx.globalAlpha = 1;
+
+          drawScaleRuler(state.radiusRsun);
+          drawZoomBadge(state.dt || 0);
+          drawTimeline();
+        }
+
+        /* ============================================================
+         *  UI EVENT WIRING
+         * ============================================================ */
+
+        const massSlider = document.getElementById("massSlider");
+        const massValEl = document.getElementById("massVal");
+        const massFill = document.getElementById("massFill");
+        const massTrack = document.getElementById("massTrack");
+
+        function updateMassDisplay() {
+          massSlider.value = Math.round(state.massSliderVal);
+          massValEl.textContent = formatMass(state.massMsun);
+          massFill.style.width = (state.massSliderVal / 1000) * 100 + "%";
+          const msTemp = 5778 * Math.pow(state.massMsun, 0.57);
+          massFill.style.backgroundColor = rgbaStr(tempToColor(msTemp), 0.6);
+        }
+
+        function applyMassSlider(val) {
+          state.massSliderVal = clamp(val, 0, 1000);
+          state.massMsun = sliderToMass(state.massSliderVal);
+          buildTrack();
+          resetPlayback();
+          updateMassDisplay();
+          updateReadouts();
+        }
+
+        /* Speed-bar drag interaction for mass */
+        (function () {
+          let dragging = false;
+          function sliderFromX(clientX) {
+            const rect = massTrack.getBoundingClientRect();
+            return Math.round(
+              clamp((clientX - rect.left) / rect.width, 0, 1) * 1000,
+            );
+          }
+          function onDown(e) {
+            e.preventDefault();
+            dragging = true;
+            const t = e.touches ? e.touches[0] : e;
+            applyMassSlider(sliderFromX(t.clientX));
+          }
+          function onMove(e) {
+            if (!dragging) return;
+            e.preventDefault();
+            const t = e.touches ? e.touches[0] : e;
+            applyMassSlider(sliderFromX(t.clientX));
+          }
+          function onUp() {
+            dragging = false;
+          }
+          massTrack.addEventListener("mousedown", onDown);
+          document.addEventListener("mousemove", onMove);
+          document.addEventListener("mouseup", onUp);
+          massTrack.addEventListener("touchstart", onDown, { passive: false });
+          document.addEventListener(
+            "touchmove",
+            function (e) {
+              if (dragging) onMove(e);
+            },
+            { passive: false },
+          );
+          document.addEventListener("touchend", onUp);
+        })();
+
+        /* Hold-to-repeat for ± buttons */
+        (function () {
+          const STEP = 20;
+          let holdTimer = null;
+          let holdInterval = null;
+          function startHold(delta) {
+            applyMassSlider(state.massSliderVal + delta * STEP);
+            holdTimer = setTimeout(function () {
+              holdInterval = setInterval(function () {
+                applyMassSlider(state.massSliderVal + delta * STEP);
+              }, 30);
+            }, 300);
+          }
+          function stopHold() {
+            clearTimeout(holdTimer);
+            clearInterval(holdInterval);
+          }
+          const minusBtn = document.getElementById("massDown");
+          const plusBtn = document.getElementById("massUp");
+          minusBtn.addEventListener("mousedown", function () {
+            startHold(-1);
+          });
+          minusBtn.addEventListener("mouseup", stopHold);
+          minusBtn.addEventListener("mouseleave", stopHold);
+          plusBtn.addEventListener("mousedown", function () {
+            startHold(1);
+          });
+          plusBtn.addEventListener("mouseup", stopHold);
+          plusBtn.addEventListener("mouseleave", stopHold);
+          minusBtn.addEventListener(
+            "touchstart",
+            function (e) {
+              e.preventDefault();
+              startHold(-1);
+            },
+            { passive: false },
+          );
+          minusBtn.addEventListener("touchend", function (e) {
+            e.preventDefault();
+            stopHold();
+          });
+          plusBtn.addEventListener(
+            "touchstart",
+            function (e) {
+              e.preventDefault();
+              startHold(1);
+            },
+            { passive: false },
+          );
+          plusBtn.addEventListener("touchend", function (e) {
+            e.preventDefault();
+            stopHold();
+          });
+        })();
+
+        const massPresetSelect = document.getElementById("massPresetSelect");
+        massPresetSelect.addEventListener("change", function () {
+          const mass = parseFloat(this.value);
+          if (!isNaN(mass)) {
+            state.massMsun = mass;
+            state.massSliderVal = massToSlider(mass);
+            buildTrack();
+            resetPlayback();
+            updateMassDisplay();
+            updateReadouts();
+          }
+        });
+
+        /* Mode toggle */
+        const modeCustomBtn = document.getElementById("modeCustomBtn");
+        const modeRealBtn = document.getElementById("modeRealBtn");
+        const grpCustom = document.getElementById("grpCustom");
+        const grpReal = document.getElementById("grpReal");
+
+        modeCustomBtn.addEventListener("click", function () {
+          state.mode = "custom";
+          modeCustomBtn.classList.add("active");
+          modeRealBtn.classList.remove("active");
+          grpCustom.classList.remove("hidden");
+          grpReal.classList.add("hidden");
+          state.nowAgeYears = 0;
+          setMass(state.massMsun);
+          updateReadouts();
+        });
+
+        modeRealBtn.addEventListener("click", function () {
+          state.mode = "real";
+          modeRealBtn.classList.add("active");
+          modeCustomBtn.classList.remove("active");
+          grpReal.classList.remove("hidden");
+          grpCustom.classList.add("hidden");
+          loadRealStar(state.realStarId);
+          updateRealStarBlurb();
+          updateReadouts();
+        });
+
+        /* Real star select */
+        const realStarSelect = document.getElementById("realStarSelect");
+        realStarSelect.addEventListener("change", function () {
+          loadRealStar(this.value);
+          updateRealStarBlurb();
+          updateReadouts();
+        });
+
+        function updateRealStarBlurb() {
+          const blurbEl = document.getElementById("realStarBlurb");
+          const blurbKeys = {
+            sun: "sunBlurb",
+            proxima: "proximaBlurb",
+            betelgeuse: "betelgeuseBlurb",
+            eta_carinae: "etaCarBlurb",
+            barnard: "barnardBlurb",
+            trappist: "trappistBlurb",
+            sirius: "siriusBlurb",
+            vega: "vegaBlurb",
+            fomalhaut: "fomalhautBlurb",
+            arcturus: "arcturusBlurb",
+            rigel: "rigelBlurb",
+            antares: "antaresBlurb",
+            p_cygni: "pCygniBlurb",
+            gamma_velorum: "gammaVelBlurb",
+          };
+          blurbEl.textContent = T(blurbKeys[state.realStarId] || "sunBlurb");
+        }
+
+        /* Start from now / birth */
+        const startNowBtn = document.getElementById("startNowBtn");
+        const startBirthBtn = document.getElementById("startBirthBtn");
+
+        startNowBtn.addEventListener("click", function () {
+          state.startFromNow = true;
+          startNowBtn.classList.add("active");
+          startBirthBtn.classList.remove("active");
+          resetPlayback();
+          updateReadouts();
+        });
+
+        startBirthBtn.addEventListener("click", function () {
+          state.startFromNow = false;
+          startBirthBtn.classList.add("active");
+          startNowBtn.classList.remove("active");
+          resetPlayback();
+          updateReadouts();
+        });
+
+        /* Advanced toggle */
+        const advancedToggle = document.getElementById("advancedToggle");
+        const grpAdvanced = document.getElementById("grpAdvanced");
+
+        advancedToggle.addEventListener("click", function () {
+          state.advancedOpen = !state.advancedOpen;
+          grpAdvanced.classList.toggle("hidden");
+          advancedToggle.textContent = "\u2699";
+        });
+
+        /* Metallicity toggle */
+        function setActiveBtn(groupIds, activeId) {
+          groupIds.forEach(function (id) {
+            document
+              .getElementById(id)
+              .classList.toggle("active", id === activeId);
+          });
+        }
+
+        const metalIds = ["metalLow", "metalSolar", "metalHigh"];
+        const metalModes = {
+          metalLow: "low",
+          metalSolar: "solar",
+          metalHigh: "high",
+        };
+        metalIds.forEach(function (id) {
+          document.getElementById(id).addEventListener("click", function () {
+            state.metallicityMode = metalModes[id];
+            setActiveBtn(metalIds, id);
+            buildTrack();
+            resetPlayback();
+            updateReadouts();
+          });
+        });
+
+        /* Binary toggle */
+        const binaryIds = ["binarySingle", "binaryClose"];
+        const binaryModes = { binarySingle: "single", binaryClose: "close" };
+        binaryIds.forEach(function (id) {
+          document.getElementById(id).addEventListener("click", function () {
+            state.binaryMode = binaryModes[id];
+            setActiveBtn(binaryIds, id);
+            buildTrack();
+            resetPlayback();
+            updateReadouts();
+          });
+        });
+
+        /* Playback controls */
+        const playBtn = document.getElementById("playBtn");
+        const nextPhaseBtn = document.getElementById("nextPhaseBtn");
+        const resetBtnEl = document.getElementById("resetBtn");
+
+        function updatePlayBtnText() {
+          playBtn.textContent = state.playing ? "\u275A\u275A" : "\u25B6";
+        }
+
+        playBtn.addEventListener("click", function () {
+          if (state.finished) {
+            resetPlayback();
+          }
+          state.playing = !state.playing;
+          updatePlayBtnText();
+        });
+
+        nextPhaseBtn.addEventListener("click", function () {
+          jumpToNextPhase();
+          updateReadouts();
+        });
+
+        resetBtnEl.addEventListener("click", function () {
+          resetPlayback();
+          updateReadouts();
+        });
+
+        /* Speed toggle */
+        const speedIds = ["speedStory", "speedFast", "speedTurbo"];
+        const speedModes = {
+          speedStory: "story",
+          speedFast: "fast",
+          speedTurbo: "turbo",
+        };
+        speedIds.forEach(function (id) {
+          document.getElementById(id).addEventListener("click", function () {
+            state.playbackSpeed = speedModes[id];
+            setActiveBtn(speedIds, id);
+            if (state.track) {
+              state.screenTimeBudgets = computeScreenTimeBudgets(
+                state.track,
+                state.playbackSpeed,
+              );
+            }
+          });
+        });
+
+        /* Language toggle */
+        const langBtn = document.getElementById("langBtn");
+        langBtn.addEventListener("click", function () {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        });
+
+        /* ============================================================
+         *  READOUTS & TRANSLATIONS
+         * ============================================================ */
+
+        function updateReadouts() {
+          if (!state.track || state.track.length === 0) return;
+          const stage = state.track[state.currentStageIndex];
+          document.getElementById("readPhase").textContent = T(stage.id);
+          document.getElementById("readAge").textContent = formatAge(
+            state.currentAgeYears,
+          );
+          document.getElementById("readInitMass").textContent = formatMass(
+            state.massMsun,
+          );
+
+          document.getElementById("readEnding").textContent = T(
+            state.outcomeId,
+          );
+
+          document.getElementById("readTemp").textContent = formatTemp(
+            state.tempK,
+          );
+          document.getElementById("readRadius").textContent = formatRadius(
+            state.radiusRsun,
+          );
+          document.getElementById("readLuminosity").textContent =
+            formatLuminosity(state.luminosityLsun);
+
+          /* Child-friendly scale comparison */
+          document.getElementById("readComparison").textContent =
+            describeRadiusForKids(state.radiusRsun);
+
+          /* Distance (real stars only) */
+          const distRow = document.getElementById("rowDistance");
+          if (state.mode === "real" && state.realStarId) {
+            let rStar = null;
+            for (let i = 0; i < REAL_STARS.length; i++) {
+              if (REAL_STARS[i].id === state.realStarId) {
+                rStar = REAL_STARS[i];
+                break;
+              }
+            }
+            if (rStar && rStar.distanceLy > 0) {
+              distRow.classList.remove("hidden");
+              document.getElementById("readDistance").textContent =
+                rStar.distanceLy.toLocaleString() + " ly";
+            } else {
+              distRow.classList.add("hidden");
+            }
+          } else {
+            distRow.classList.add("hidden");
+          }
+
+          /* Info text */
+          const infoEl = document.getElementById("infoText");
+          const mInfo = state.massMsun;
+          if (state.finished) {
+            infoEl.textContent = T("endedText");
+          } else if (
+            (mInfo >= 8 && mInfo < 10) ||
+            (mInfo >= 20 && mInfo < 40)
+          ) {
+            infoEl.textContent = T("infoBoundaryNote");
+          } else if (
+            state.binaryMode === "close" &&
+            state.outcomeId === "type_ia_outcome"
+          ) {
+            infoEl.textContent = T("infoBinaryNote");
+          } else if (state.binaryMode === "close" && mInfo >= 10) {
+            infoEl.textContent = T("infoBinaryMassiveNote");
+          } else {
+            infoEl.textContent = T("infoIntro");
+          }
+        }
+
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
+          langBtn.textContent = state.lang === "en" ? "PL" : "EN";
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          modeCustomBtn.textContent = T("modeCustom");
+          modeRealBtn.textContent = T("modeReal");
+          document.getElementById("lblMass").textContent = T("lblMass");
+          document.getElementById("lblRealStar").textContent = T("lblRealStar");
+          startNowBtn.textContent = T("startNow");
+          startBirthBtn.textContent = T("startBirth");
+          advancedToggle.textContent = "\u2699";
+          document.getElementById("lblMetallicity").textContent =
+            T("lblMetallicity");
+          document.getElementById("lblMetallicity").title =
+            T("metallicityTooltip");
+          document.getElementById("lblBinary").textContent = T("lblBinary");
+          document.getElementById("lblPlayback").textContent = T("lblPlayback");
+          document.getElementById("lblPreset").textContent = T("lblPreset");
+
+          document.getElementById("metalLow").textContent = T("metalLow");
+          document.getElementById("metalSolar").textContent = T("metalSolar");
+          document.getElementById("metalHigh").textContent = T("metalHigh");
+          document.getElementById("binarySingle").textContent =
+            T("binarySingle");
+          document.getElementById("binaryClose").textContent = T("binaryClose");
+          document.getElementById("speedStory").textContent = T("speedStory");
+          document.getElementById("speedFast").textContent = T("speedFast");
+          document.getElementById("speedTurbo").textContent = T("speedTurbo");
+
+          /* Mass preset dropdown options */
+          const presetOpts = massPresetSelect.options;
+          for (let pi = 0; pi < presetOpts.length; pi++) {
+            const preset = MASS_PRESETS[pi];
+            if (preset) {
+              presetOpts[pi].textContent =
+                T(preset.key) + " (" + formatMass(preset.mass) + ")";
+            }
+          }
+
+          document.getElementById("lblPhase").textContent = T("lblPhase");
+          document.getElementById("lblAge").textContent = T("lblAge");
+          document.getElementById("lblInitMass").textContent = T("lblInitMass");
+          document.getElementById("lblEnding").textContent = T("lblEnding");
+          document.getElementById("lblTemp").textContent = T("lblTemp");
+          document.getElementById("lblRadius").textContent = T("lblRadius");
+          document.getElementById("lblLuminosity").textContent =
+            T("lblLuminosity");
+          document.getElementById("lblDistance").textContent = T("lblDistance");
+          document.getElementById("lblComparison").textContent =
+            T("lblComparison");
+
+          /* Real star select options */
+          const nameKeys = {
+            sun: "sunName",
+            proxima: "proximaName",
+            betelgeuse: "betelgeuseName",
+            eta_carinae: "etaCarName",
+            barnard: "barnardName",
+            trappist: "trappistName",
+            sirius: "siriusName",
+            vega: "vegaName",
+            fomalhaut: "fomalhautName",
+            arcturus: "arcturusName",
+            rigel: "rigelName",
+            antares: "antaresName",
+            p_cygni: "pCygniName",
+            gamma_velorum: "gammaVelName",
+          };
+          const opts = realStarSelect.options;
+          for (let i = 0; i < opts.length; i++) {
+            const key = nameKeys[opts[i].value];
+            if (key) opts[i].textContent = T(key);
+          }
+
+          /* Accessibility attributes */
+          langBtn.title = T("ariaSwitchLang");
+          canvas.setAttribute("aria-label", T("ariaCanvas"));
+          document
+            .getElementById("massDown")
+            .setAttribute("aria-label", T("ariaDecreaseMass"));
+          document
+            .getElementById("massUp")
+            .setAttribute("aria-label", T("ariaIncreaseMass"));
+          document
+            .getElementById("massPresetSelect")
+            .setAttribute("aria-label", T("ariaStarType"));
+          document
+            .getElementById("realStarSelect")
+            .setAttribute("aria-label", T("ariaRealStar"));
+          advancedToggle.setAttribute("aria-label", T("ariaAdvanced"));
+          document
+            .getElementById("playBtn")
+            .setAttribute("aria-label", T("ariaPlay"));
+          document
+            .getElementById("nextPhaseBtn")
+            .setAttribute("aria-label", T("ariaNextPhase"));
+          document
+            .getElementById("resetBtn")
+            .setAttribute("aria-label", T("ariaReset"));
+
+          updateRealStarBlurb();
+          updateMassDisplay();
+          updateReadouts();
+
+          /* Re-render visible phase card in new language */
+          if (hoverCardVisible && hoverSegIndex >= 0) {
+            if (hoverCardPhaseId !== null) {
+              showPhaseCard(hoverSegIndex);
+            } else if (hoverCardTransKey !== null) {
+              showTransitionCard(hoverSegIndex);
+            }
+          }
+        }
+
+        /* ============================================================
+         *  ANIMATION LOOP
+         * ============================================================ */
+
+        let lastTime = 0;
+        const DT_CAP = 0.05;
+
+        function animate(timestamp) {
+          if (!lastTime) lastTime = timestamp;
+          const dt = Math.min((timestamp - lastTime) / 1000, DT_CAP);
+          lastTime = timestamp;
+          state.animTime += dt;
+          state.dt = dt;
+
+          if (state.playing && state.track && !state.finished) {
+            const ageStep = computeAgeStep(dt);
+            state.currentAgeYears += ageStep;
+
+            /* Check if we reached the end */
+            const lastStage = state.track[state.track.length - 1];
+            if (state.currentAgeYears >= lastStage.ageEndYears) {
+              state.currentAgeYears = lastStage.ageEndYears;
+              state.finished = true;
+              state.playing = false;
+              updatePlayBtnText();
+            }
+
+            updateDerivedValues();
+
+            /* Supernova timer */
+            const sid = state.track[state.currentStageIndex].id;
+            if (
+              sid === "core_collapse_supernova" ||
+              sid === "type_ia_supernova"
+            ) {
+              state.supernovaTimer += dt;
+            } else {
+              state.supernovaTimer = 0;
+            }
+
+            updateReadouts();
+          }
+
+          /* Tick visual transition timer */
+          if (state.visualTransition > 0) {
+            state.visualTransition = Math.max(0, state.visualTransition - dt);
+          }
+
+          drawScene();
+          requestAnimationFrame(animate);
+        }
+
+        /* ============================================================
+         *  PHASE HOVER CARDS
+         * ============================================================ */
+
+        const phaseCardOverlay = document.getElementById("phaseCardOverlay");
+        let hoverCardVisible = false;
+        let hoverCardPhaseId = null;
+        let hoverCardTransKey = null;
+        let hoverDebounceTimer = null;
+        let hoverSegIndex = -1;
+        const HOVER_DEBOUNCE_MS = 80;
+        const TRANSITION_ZONE_PX = 6;
+
+        function showPhaseCard(segIndex) {
+          const seg = state.track[segIndex];
+          if (!seg) return;
+          const edu = PHASE_EDUCATION[seg.id];
+          if (!edu) return;
+          let stageColor;
+          if (!NON_PHOTOSPHERE_STAGES.has(seg.id)) {
+            const midT = Math.sqrt(seg.tempKStart * seg.tempKEnd);
+            stageColor = rgbStr(tempToColor(midT));
+          } else {
+            stageColor = STAGES[seg.id] ? STAGES[seg.id].color : "#888";
+          }
+          const dur = seg.ageEndYears - seg.ageStartYears;
+
+          phaseCardOverlay.textContent = "";
+
+          const header = el("div", "pc-header", []);
+          header.style.color = stageColor;
+          header.textContent = T(seg.id);
+          phaseCardOverlay.appendChild(header);
+
+          phaseCardOverlay.appendChild(el("div", "pc-body", [T(edu.descKey)]));
+
+          function stat(lbl, val) {
+            return el("div", "pc-stat", [
+              el("span", "pc-stat-label", [lbl]),
+              el("span", null, [val]),
+            ]);
+          }
+          const stats = [];
+          const sid = seg.id;
+          if (sid === "planetary_nebula") {
+            stats.push(stat(T("phaseCardVisibility"), formatAgeKids(dur)));
+            stats.push(
+              stat(T("phaseCardCoreTemp"), formatTemp(seg.tempKStart)),
+            );
+            stats.push(stat(T("phaseCardSize"), T("statNebulaExpands")));
+          } else if (
+            sid === "core_collapse_supernova" ||
+            sid === "type_ia_supernova"
+          ) {
+            stats.push(
+              stat(T("phaseCardPeakDuration"), T("statWeeksToMonths")),
+            );
+          } else if (sid === "white_dwarf") {
+            stats.push(stat(T("phaseCardTimescale"), T("statCoolsBillions")));
+            stats.push(stat(T("phaseCardTemp"), formatTemp(seg.tempKStart)));
+            stats.push(
+              stat(T("phaseCardSize"), formatRadius(seg.radiusRsunStart)),
+            );
+          } else if (sid === "neutron_star") {
+            stats.push(stat(T("phaseCardTimescale"), T("statPersists")));
+            stats.push(
+              stat(T("phaseCardSize"), formatRadius(seg.radiusRsunStart)),
+            );
+          } else if (sid === "black_hole") {
+            stats.push(stat(T("phaseCardTimescale"), T("statPersists")));
+            stats.push(
+              stat(T("phaseCardHorizon"), formatRadius(seg.radiusRsunStart)),
+            );
+          } else {
+            stats.push(stat(T("phaseCardDuration"), formatAgeKids(dur)));
+            stats.push(
+              stat(
+                T("phaseCardTemp"),
+                formatTemp(seg.tempKStart) +
+                  " \u2192 " +
+                  formatTemp(seg.tempKEnd),
+              ),
+            );
+            stats.push(
+              stat(
+                T("phaseCardSize"),
+                formatRadius(seg.radiusRsunStart) +
+                  " \u2192 " +
+                  formatRadius(seg.radiusRsunEnd),
+              ),
+            );
+          }
+          phaseCardOverlay.appendChild(el("div", "pc-stats", stats));
+
+          phaseCardOverlay.appendChild(el("div", "pc-wow", [T(edu.wowKey)]));
+
+          positionPhaseCard();
+          hoverCardVisible = true;
+          hoverCardPhaseId = seg.id;
+          hoverCardTransKey = null;
+          hoverSegIndex = segIndex;
+        }
+
+        function showTransitionCard(segIndex) {
+          const from = state.track[segIndex];
+          const to = state.track[segIndex + 1];
+          if (!from || !to) return;
+          const key = from.id + "->" + to.id;
+          const edu = TRANSITION_EDUCATION[key];
+          if (!edu) return;
+
+          function stageDisplayColor(stage) {
+            if (!NON_PHOTOSPHERE_STAGES.has(stage.id)) {
+              const midT = Math.sqrt(stage.tempKStart * stage.tempKEnd);
+              return rgbStr(tempToColor(midT));
+            }
+            return STAGES[stage.id] ? STAGES[stage.id].color : "#888";
+          }
+          const fromColor = stageDisplayColor(from);
+          const toColor = stageDisplayColor(to);
+
+          phaseCardOverlay.textContent = "";
+
+          const header = el("div", "pc-header", []);
+          const fromSpan = elStyled("span", "color:" + fromColor, [T(from.id)]);
+          const arrow = el("span", "pc-arrow", ["\u2192"]);
+          const toSpan = elStyled("span", "color:" + toColor, [T(to.id)]);
+          header.appendChild(fromSpan);
+          header.appendChild(arrow);
+          header.appendChild(toSpan);
+          phaseCardOverlay.appendChild(header);
+
+          phaseCardOverlay.appendChild(
+            el("div", "pc-meta", [T(edu.triggerKey)]),
+          );
+
+          phaseCardOverlay.appendChild(el("div", "pc-body", [T(edu.descKey)]));
+
+          positionPhaseCard();
+          hoverCardVisible = true;
+          hoverCardTransKey = key;
+          hoverCardPhaseId = null;
+          hoverSegIndex = segIndex;
+        }
+
+        function positionPhaseCard() {
+          const rect = canvas.getBoundingClientRect();
+          const starAreaH = rect.height - TIMELINE_HEIGHT;
+          phaseCardOverlay.style.display = "block";
+          phaseCardOverlay.style.left =
+            Math.max(10, (rect.width - 340) / 2) + "px";
+          phaseCardOverlay.style.top =
+            Math.max(10, starAreaH * 0.35 - 60) + "px";
+          phaseCardOverlay.classList.remove("visible");
+          setTimeout(function () {
+            phaseCardOverlay.classList.add("visible");
+          }, 10);
+        }
+
+        function hidePhaseCard() {
+          if (!hoverCardVisible) return;
+          phaseCardOverlay.classList.remove("visible");
+          hoverCardVisible = false;
+          hoverCardPhaseId = null;
+          hoverCardTransKey = null;
+          hoverSegIndex = -1;
+          setTimeout(function () {
+            if (!hoverCardVisible) {
+              phaseCardOverlay.style.display = "none";
+            }
+          }, 150);
+        }
+
+        canvas.addEventListener("mousemove", function (e) {
+          if (!state.track || state.track.length === 0) return;
+          const rect = canvas.getBoundingClientRect();
+          const mx = e.clientX - rect.left;
+          const my = e.clientY - rect.top;
+          const tlY = rect.height - TIMELINE_HEIGHT;
+          const segY = tlY + 12;
+          const segH = 50;
+
+          if (my < segY || my > segY + segH) {
+            clearTimeout(hoverDebounceTimer);
+            hidePhaseCard();
+            canvas.style.cursor = "";
+            return;
+          }
+
+          const tlW = rect.width - TIMELINE_MARGIN * 2;
+          const segments = computeTimelineSegments(state.track, tlW);
+          let x = TIMELINE_MARGIN;
+
+          for (let i = 0; i < segments.length; i++) {
+            const right = x + segments[i].width;
+
+            /* Transition zone at right boundary */
+            if (
+              i < segments.length - 1 &&
+              segments[i].width > 3 * TRANSITION_ZONE_PX
+            ) {
+              if (
+                mx >= right - TRANSITION_ZONE_PX &&
+                mx <= right + TRANSITION_ZONE_PX
+              ) {
+                const tKey = segments[i].id + "->" + segments[i + 1].id;
+                if (hoverCardTransKey === tKey) return;
+                clearTimeout(hoverDebounceTimer);
+                const idx = i;
+                hoverDebounceTimer = setTimeout(function () {
+                  showTransitionCard(idx);
+                }, HOVER_DEBOUNCE_MS);
+                canvas.style.cursor = "pointer";
+                return;
+              }
+            }
+
+            /* Segment interior */
+            if (mx >= x && mx < right) {
+              if (hoverCardPhaseId === segments[i].id) return;
+              clearTimeout(hoverDebounceTimer);
+              const idx = i;
+              hoverDebounceTimer = setTimeout(function () {
+                showPhaseCard(idx);
+              }, HOVER_DEBOUNCE_MS);
+              canvas.style.cursor = "pointer";
+              return;
+            }
+
+            x = right;
+          }
+
+          clearTimeout(hoverDebounceTimer);
+          hidePhaseCard();
+          canvas.style.cursor = "";
+        });
+
+        canvas.addEventListener("mouseleave", function () {
+          clearTimeout(hoverDebounceTimer);
+          hidePhaseCard();
+          canvas.style.cursor = "";
+        });
+
+        canvas.addEventListener("click", function (e) {
+          if (!state.track || state.track.length === 0) return;
+          const rect = canvas.getBoundingClientRect();
+          const mx = e.clientX - rect.left;
+          const my = e.clientY - rect.top;
+          const tlY = rect.height - TIMELINE_HEIGHT;
+          const segY = tlY + 12;
+          const segH = 50;
+
+          if (my < segY || my > segY + segH) return;
+
+          const tlW = rect.width - TIMELINE_MARGIN * 2;
+          const segments = computeTimelineSegments(state.track, tlW);
+          let x = TIMELINE_MARGIN;
+
+          for (let i = 0; i < segments.length; i++) {
+            const right = x + segments[i].width;
+
+            /* Transition zone — jump to the next stage */
+            if (
+              i < segments.length - 1 &&
+              segments[i].width > 3 * TRANSITION_ZONE_PX &&
+              mx >= right - TRANSITION_ZONE_PX &&
+              mx <= right + TRANSITION_ZONE_PX
+            ) {
+              state.currentAgeYears = state.track[i + 1].ageStartYears;
+              state.finished = false;
+              updateDerivedValues();
+              return;
+            }
+
+            /* Segment interior */
+            if (mx >= x && mx < right) {
+              if (i === state.currentStageIndex && !state.finished) {
+                state.playing = !state.playing;
+                updatePlayBtnText();
+              } else {
+                state.currentAgeYears = state.track[i].ageStartYears;
+                state.finished = false;
+                updateDerivedValues();
+              }
+              return;
+            }
+
+            x = right;
+          }
+        });
+
+        /* ============================================================
+         *  INITIALIZATION
+         * ============================================================ */
+
+        resize();
+        setMass(1.0);
+        applyTranslations();
+        updateReadouts();
+        requestAnimationFrame(animate);
+
+        window.addEventListener("resize", resize);
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) lastTime = 0;
+        });
+      })();
+    </script>
+  </body>
+</html>
