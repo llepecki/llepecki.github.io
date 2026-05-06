@@ -1064,6 +1064,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             equalQuestion: "Equal?",
             correct: "Correct!",
             tryAgain: "Look again.",
+            reward3: "3 stars!",
+            reward2: "2 stars!",
+            reward1: "1 star!",
             nextRound: "Next round",
             reprBar: "Bar",
             reprFraction: "Fraction",
@@ -1147,6 +1150,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             equalQuestion: "Równe?",
             correct: "Dobrze!",
             tryAgain: "Spróbuj jeszcze raz.",
+            reward3: "3 gwiazdki!",
+            reward2: "2 gwiazdki!",
+            reward1: "1 gwiazdka!",
             nextRound: "Następna runda",
             reprBar: "Pasek",
             reprFraction: "Ułamek",
@@ -5994,6 +6000,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             repairOnboardingSeen: false,
             hoverTarget: null,
             hoverSegIdx: -1,
+            roundWrongAttempts: 0,
+            lastRewardStars: 0,
+            rewardVisible: false,
           },
         };
 
@@ -6676,10 +6685,32 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         function renderStepGoal(mainY) {
           const step = getCurrentStep();
           const goalStr = stepText(step, "goal");
-          if (goalStr) {
+          if (!goalStr) return;
+          const gy = (mainY || 40) + 35;
+          /* Parse fractions like "1/4" or "3/8" and render canonically */
+          const fracRe = /(\d+)\/(\d+)/g;
+          const parts = [];
+          let last = 0;
+          let m;
+          while ((m = fracRe.exec(goalStr)) !== null) {
+            if (m.index > last) {
+              parts.push({ type: "text", str: goalStr.slice(last, m.index) });
+            }
+            parts.push({
+              type: "frac",
+              n: parseInt(m[1], 10),
+              d: parseInt(m[2], 10),
+            });
+            last = m.index + m[0].length;
+          }
+          if (last < goalStr.length) {
+            parts.push({ type: "text", str: goalStr.slice(last) });
+          }
+          /* If no fractions found, render as plain text */
+          if (parts.length <= 1 && parts[0] && parts[0].type === "text") {
             const goalEl = svgEl("text", {
               x: 400,
-              y: (mainY || 40) + 35,
+              y: gy,
               "text-anchor": "middle",
               "font-family": "'Outfit', sans-serif",
               "font-size": "13",
@@ -6687,7 +6718,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             });
             goalEl.textContent = goalStr;
             boardSvg.appendChild(goalEl);
+            return;
           }
+          /* Mixed layout: render into a group, measure, center */
+          renderSvgEquation(boardSvg, 400, gy, parts, 10, "#90A4AE");
         }
 
         function nlBenchmarks(nlMax) {
@@ -7616,7 +7650,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const denom = b.target ? b.target.d : b.denominator;
           if (denom !== b.denominator) {
             b.denominator = denom;
-            const total = denom * LEVEL_CFG[state.level].maxWholes;
+            const neededWholes = Math.ceil(b.target.n / denom);
+            const total =
+              denom * Math.max(LEVEL_CFG[state.level].maxWholes, neededWholes);
             b.filledSegments = new Array(total).fill(false);
             b.currentValue = { n: 0, d: denom };
           }
@@ -7801,7 +7837,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const nlY = 320;
           const nlW = totalW;
           const nlX = startX;
-          const nlMax = LEVEL_CFG[state.level].nlMax;
+          const nlMax = Math.max(
+            LEVEL_CFG[state.level].nlMax,
+            Math.ceil(b.target.n / denom),
+          );
           const currentVal = {
             n: b.currentValue.n,
             d: b.currentValue.d,
@@ -7902,7 +7941,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           renderBuildBoard();
           updatePanel();
-          checkBuildComplete();
+          if (!checkBuildComplete()) {
+            recordWrongAttempt();
+          }
         }
 
         function animateRepartition(callback) {
@@ -8000,7 +8041,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             } else {
               onSuccess();
             }
+            return true;
           }
+          return false;
         }
 
         /* ═══════════════════════════════════════════
@@ -8285,6 +8328,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               c.phase = "reveal";
               const cmp = fracCompare(c.cardA, c.cardB);
               c.correctAnswer = cmp > 0 ? "left" : "right";
+              recordWrongAttempt();
               state.ui.feedbackText = T("tryAgain");
               state.ui.feedbackType = "error";
               updateHintDisplay();
@@ -8312,12 +8356,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               },
             );
           } else if (c.isEqual) {
+            recordWrongAttempt();
             state.ui.feedbackText = T("theyAreEqual");
             state.ui.feedbackType = "error";
             updateHintDisplay();
           } else {
             c.phase = "reveal";
             c.correctAnswer = cmp > 0 ? "left" : cmp < 0 ? "right" : "equal";
+            recordWrongAttempt();
             state.ui.feedbackText = T("tryAgain");
             state.ui.feedbackType = "error";
             updateHintDisplay();
@@ -8342,6 +8388,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             state.compare.phase = "reveal";
             const cmp = fracCompare(state.compare.cardA, state.compare.cardB);
             state.compare.correctAnswer = cmp > 0 ? "left" : "right";
+            recordWrongAttempt();
             state.ui.feedbackText = T("tryAgain");
             state.ui.feedbackType = "error";
             updateHintDisplay();
@@ -8747,6 +8794,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             _placeSettle(idx, lay);
           } else {
             /* Wrong snap tick */
+            recordWrongAttempt();
             state.ui.feedbackText = T("tryAgain");
             state.ui.feedbackType = "error";
             updateHintDisplay();
@@ -9087,6 +9135,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               checkMatchComplete();
             } else {
               /* Wrong pair — shake + red flash */
+              recordWrongAttempt();
               m._rejectPair = [m.selectedCard, id];
               m._rejectShake = 0;
               state.ui.feedbackText = T("tryAgain");
@@ -9668,6 +9717,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 onSuccess();
               }, 400);
             } else {
+              recordWrongAttempt();
               state.ui.feedbackText = T("tryAgain");
               state.ui.feedbackType = "error";
               updateHintDisplay();
@@ -9701,6 +9751,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               }, 50);
             } else {
               /* Wrong guess — shake the tapped card */
+              recordWrongAttempt();
               _repairShake(repr, function () {
                 state.ui.animating = false;
               });
@@ -10177,6 +10228,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               onSuccess();
             }, 50);
           } else {
+            recordWrongAttempt();
             state.ui.feedbackText = T("tryAgain");
             state.ui.feedbackType = "error";
             updateHintDisplay();
@@ -10645,6 +10697,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               onSuccess();
             }, 50);
           } else {
+            recordWrongAttempt();
             state.ui.feedbackText = T("tryAgain");
             state.ui.feedbackType = "error";
             updateHintDisplay();
@@ -11112,6 +11165,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               onSuccess();
             }, 50);
           } else {
+            recordWrongAttempt();
             state.ui.feedbackText = T("tryAgain");
             state.ui.feedbackType = "error";
             updateHintDisplay();
@@ -11378,6 +11432,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               onSuccess();
             }, 50);
           } else {
+            recordWrongAttempt();
             state.ui.feedbackText = T("tryAgain");
             state.ui.feedbackType = "error";
             updateHintDisplay();
@@ -11874,6 +11929,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.ui.feedbackText = "";
           state.ui.feedbackType = "";
           state.ui.stepComplete = false;
+          state.ui.roundWrongAttempts = 0;
+          state.ui.rewardVisible = false;
           document.getElementById("nextBtn").disabled = true;
 
           if (state.activity === "build") {
@@ -11881,9 +11938,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             const target = step.target;
             state.build.target = target;
             state.build.denominator = target.d;
-            state.build.maxWholes = cfg.maxWholes;
+            const neededWholes = Math.ceil(target.n / target.d);
+            state.build.maxWholes = Math.max(cfg.maxWholes, neededWholes);
             state.build.showGhost = true;
-            const total = target.d * cfg.maxWholes;
+            const total = target.d * state.build.maxWholes;
             state.build.filledSegments = new Array(total).fill(false);
             state.build.currentValue = { n: 0, d: target.d };
           } else if (state.activity === "compare") {
@@ -12019,6 +12077,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         function loadRandomStep() {
+          state.ui.roundWrongAttempts = 0;
+          state.ui.rewardVisible = false;
           if (state.activity === "build") {
             const cfg = LEVEL_CFG[state.level];
             const denoms = cfg.denoms.filter((d) => d <= 12);
@@ -12311,42 +12371,135 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           updateHintDisplay();
         }
 
-        function showSuccessCelebration() {
-          const emoji = svgEl("text", {
-            x: 400,
-            y: 260,
-            "text-anchor": "middle",
-            "dominant-baseline": "middle",
-            "font-size": "64",
-            opacity: "1",
-            class: "celebrate-emoji",
-          });
-          emoji.textContent = "\uD83C\uDF89";
-          boardSvg.appendChild(emoji);
+        function recordWrongAttempt() {
+          state.ui.roundWrongAttempts++;
+        }
 
-          let frame = 0;
-          const totalFrames = 40;
-          function fadeOut() {
-            frame++;
-            const t = frame / totalFrames;
-            const scale = 1 + t * 0.3;
-            const opacity = Math.max(0, 1 - t);
-            emoji.setAttribute("opacity", opacity);
-            emoji.setAttribute(
-              "transform",
-              "translate(400," +
-                260 +
+        function getRewardStars() {
+          const w = state.ui.roundWrongAttempts;
+          if (w === 0) return 3;
+          if (w === 1) return 2;
+          return 1;
+        }
+
+        function showSuccessStars(stars) {
+          const g = svgEl("g", {
+            "pointer-events": "none",
+            class: "reward-stars",
+          });
+          const starPath =
+            "M0,-12 L3.5,-4 12,-4 5.5,2 7.5,11 0,6 -7.5,11 -5.5,2 -12,-4 -3.5,-4Z";
+          const cx = 400;
+          const cy = 260;
+          const gap = 44;
+          const reducedMotion = window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+          ).matches;
+
+          for (let i = 0; i < 3; i++) {
+            const earned = i < stars;
+            const sx = cx + (i - 1) * gap;
+            const star = svgEl("path", {
+              d: starPath,
+              fill: earned ? "#FFB300" : "#CFD8DC",
+              opacity: earned ? "1" : "0.35",
+              transform:
+                "translate(" +
+                sx +
+                "," +
+                cy +
                 ") scale(" +
-                scale +
-                ") translate(-400,-260)",
-            );
-            if (frame < totalFrames) {
-              requestAnimationFrame(fadeOut);
-            } else if (emoji.parentNode) {
-              emoji.parentNode.removeChild(emoji);
-            }
+                (reducedMotion ? (earned ? 1.6 : 1.2) : 0) +
+                ")",
+            });
+            g.appendChild(star);
           }
-          setTimeout(() => requestAnimationFrame(fadeOut), 600);
+          boardSvg.appendChild(g);
+
+          /* Aria announcement */
+          const key =
+            stars === 3 ? "reward3" : stars === 2 ? "reward2" : "reward1";
+          let announcer = document.getElementById("rewardAnnounce");
+          if (!announcer) {
+            announcer = document.createElement("div");
+            announcer.id = "rewardAnnounce";
+            announcer.setAttribute("aria-live", "polite");
+            announcer.setAttribute("role", "status");
+            announcer.style.cssText =
+              "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)";
+            document.body.appendChild(announcer);
+          }
+          announcer.textContent = T(key);
+
+          /* Animate: staggered pop then fade */
+          const starEls = g.querySelectorAll("path");
+          if (reducedMotion) {
+            /* Static display, then remove after delay */
+            setTimeout(function () {
+              let frame = 0;
+              const totalFrames = 20;
+              function fade() {
+                frame++;
+                g.setAttribute("opacity", Math.max(0, 1 - frame / totalFrames));
+                if (frame < totalFrames) {
+                  requestAnimationFrame(fade);
+                } else if (g.parentNode) {
+                  g.parentNode.removeChild(g);
+                }
+              }
+              requestAnimationFrame(fade);
+            }, 1000);
+          } else {
+            /* Staggered pop-in */
+            let popDone = 0;
+            starEls.forEach(function (el, i) {
+              const earned = i < stars;
+              const sx = cx + (i - 1) * gap;
+              const targetScale = earned ? 1.6 : 1.2;
+              const delay = i * 80;
+              setTimeout(function () {
+                let frame = 0;
+                const popFrames = 12;
+                function pop() {
+                  frame++;
+                  const t = frame / popFrames;
+                  const ease = 1 - Math.pow(1 - t, 3);
+                  const s = ease * targetScale;
+                  el.setAttribute(
+                    "transform",
+                    "translate(" + sx + "," + cy + ") scale(" + s + ")",
+                  );
+                  if (frame < popFrames) {
+                    requestAnimationFrame(pop);
+                  } else {
+                    popDone++;
+                    if (popDone === 3) {
+                      /* All popped — hold then fade */
+                      setTimeout(function () {
+                        let ff = 0;
+                        const fadeFrames = 30;
+                        function fadeAll() {
+                          ff++;
+                          const fo = Math.max(0, 1 - ff / fadeFrames);
+                          g.setAttribute("opacity", fo);
+                          if (ff < fadeFrames) {
+                            requestAnimationFrame(fadeAll);
+                          } else if (g.parentNode) {
+                            g.parentNode.removeChild(g);
+                          }
+                        }
+                        requestAnimationFrame(fadeAll);
+                      }, 700);
+                    }
+                  }
+                }
+                requestAnimationFrame(pop);
+              }, delay);
+            });
+          }
+
+          state.ui.rewardVisible = true;
+          state.ui.lastRewardStars = stars;
         }
 
         function onSuccess() {
@@ -12360,7 +12513,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           updateHintDisplay();
           updateProgressDisplay();
           renderBoard();
-          showSuccessCelebration();
+          showSuccessStars(getRewardStars());
         }
 
         function nextRound() {
