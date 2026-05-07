@@ -1126,22 +1126,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             progress: "Postęp",
             denominator: "Mianownik",
             numerator: "Licznik",
-            buildSummary: "Wypełnij pasek, aby pokazać ułamek.",
-            compareSummary: "Wybierz większą wartość.",
-            matchSummary: "Połącz karty, które pokazują tę samą ilość.",
-            placeSummary: "Przeciągnij kartę na odpowiednie miejsce na osi.",
+            buildSummary: "Wypełnij pasek, aby pokazać wartość docelową.",
+            compareSummary:
+              "Wybierz większą wartość albo sprawdź, czy są równe.",
+            matchSummary: "Połącz karty, które pokazują tę samą wartość.",
+            placeSummary: "Przeciągnij wartość na odpowiednie miejsce na osi.",
             placeDrag:
               "Przeciągnij kartę tak, aby pinezka trafiła we właściwe miejsce.",
             placeWatch: "Obserwuj świecący znacznik na osi.",
             repairSummary: "Znajdź i popraw błędną reprezentację.",
             repairRule:
-              "Te 4 obrazki powinny pokazywać tę samą wartość. Jeden jest błędny.",
+              "Te 4 reprezentacje powinny pokazywać tę samą wartość. Jedna jest błędna.",
             repairStep1: "Znajdź",
             repairStep2: "Napraw",
             repairSuccess: "Teraz wszystkie się zgadzają!",
             repairOnboarding:
-              "Wszystkie cztery powinny się zgadzać. Znajdź błędne i popraw je.",
-            repairFixPrompt: "Teraz wybierz wartość, która naprawi tę kartę.",
+              "Wszystkie cztery powinny pokazywać tę samą wartość. Znajdź błędną reprezentację i ją popraw.",
+            repairFixPrompt:
+              "Teraz wybierz wartość, która naprawi tę reprezentację.",
             repairIdentifyPrompt: "Wskaż ten, który nie pasuje do pozostałych.",
             exploreSummary: "Swobodna zabawa — zmieniaj wartości i obserwuj.",
             tapBigger: "Która jest większa, a może są równe?",
@@ -1162,7 +1164,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ariaBackToLearn: "Powrót do nauki",
             ariaSwitchLang: "Zmień język",
             ariaNextRound: "Następna runda",
-            ariaBoard: "Tablica aktywności z ułamkami",
+            ariaBoard: "Tablica aktywności z ułamkami i liczbami dziesiętnymi",
             ariaEqual: "Wartości są równe",
             ariaDecDenom: "Zmniejsz mianownik",
             ariaIncDenom: "Zwiększ mianownik",
@@ -2775,13 +2777,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                   reprTypes: ["fraction", "bar"],
                   hint1: "Each fraction has a bar that shows the same amount.",
                   hint1_pl:
-                    "Każdy ułamek ma pasek, który pokazuje tę samą ilość.",
+                    "Każdy ułamek ma pasek, który pokazuje tę samą wartość.",
                   hint2: "Count the filled parts in each bar.",
                   hint2_pl: "Policz wypełnione części w każdym pasku.",
                   feedbackSuccess:
                     "All matched! Same amounts, different pictures.",
                   feedbackSuccess_pl:
-                    "Dopasowane! Te same ilości, różne obrazki.",
+                    "Dopasowane! Te same wartości, różne reprezentacje.",
                 },
                 {
                   goal: "Match fractions to decimals",
@@ -2866,7 +2868,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                   ],
                   reprTypes: ["fraction", "bar"],
                   hint1: "One of these pairs shows the same amount!",
-                  hint1_pl: "Jedna z tych par pokazuje tę samą ilość!",
+                  hint1_pl: "Jedna z tych par pokazuje tę samą wartość!",
                   hint2: "2/4 = 1/2. Match them carefully.",
                   hint2_pl: "2/4 = 1/2. Dopasuj ostrożnie.",
                   feedbackSuccess: "2/4 and 1/2 both have the same bar!",
@@ -2886,11 +2888,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                   equivMap: { "1/2": { n: 2, d: 4 }, "2/3": { n: 4, d: 6 } },
                   hint1:
                     "Some fractions are different names for the same amount.",
-                  hint1_pl: "Niektóre ułamki to inne nazwy tej samej ilości.",
+                  hint1_pl: "Niektóre ułamki to inne nazwy tej samej wartości.",
                   hint2: "Multiply top and bottom by the same number.",
                   hint2_pl: "Pomnóż licznik i mianownik przez tę samą liczbę.",
                   feedbackSuccess: "Same amounts — just different names!",
-                  feedbackSuccess_pl: "Te same ilości — tylko inne nazwy!",
+                  feedbackSuccess_pl: "Te same wartości — tylko inne nazwy!",
                 },
                 {
                   goal: "Match eighths to decimals",
