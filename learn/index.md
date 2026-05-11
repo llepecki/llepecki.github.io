@@ -21,6 +21,10 @@ Launch projectiles on a spinning platform and watch them curve in the rotating f
 
 Change the materials and angle to see when the brick slips. Explore how static and kinetic friction work on an inclined plane, compare material pairs, and watch force arrows and charts update in real time.
 
+### [Forces Game](forces.html) `Classical mechanics`
+
+Add the pushes in your head and pick where the puck will cross the ring. Mentally combine several force arrows acting on a top-down puck, place a prediction on a fixed ring, then watch the green net force reveal and the puck travel the proven direction. Three levels with two, three, and four forces.
+
 ### [Bug Hill Work Lab](bughill.html) `Classical mechanics` `Under development`
 
 Draw a route for a cartoon bug climbing a hill and discover the difference between force, distance, and work. Compare steep direct climbs with gentle zigzags to see why same height means same ideal work.
@@ -84,6 +88,10 @@ Fire single photons through a beam-splitter setup and watch quantum interference
 ### [Battery Connection Lab](batteries.html) `Electrical circuits` `Under development`
 
 Learn how batteries connect in series, parallel, and mixed configurations. Drag cells onto the board, test your circuit, and see the bulb respond. Includes guided lessons, challenge mode, and a free sandbox.
+
+### [Current Paths Lab](currentlab.html) `Electrical circuits`
+
+Explore why power grids use AC, where DC is better, and how voltage, current, power, and losses shape every electrical route. Watch charge markers flow, adjust voltage to reduce wire heat, place transformers and converters, and build complete power chains from source to device. Five modes across two families with 150 guided rounds and free-play explore.
 
 ### [Water Tank Negative Feedback Lab](feedbacktank.html) `Control theory`
 

@@ -1,0 +1,2207 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- forces.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forces</title>
+    <meta
+      name="description"
+      content="A child-friendly game that teaches graphical vector addition of forces. Look at the arrows pushing a puck, mentally combine them, and predict where the puck will first cross a ring around it."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --f1: #d32f2f;
+        --f2: #1565c0;
+        --f3: #f9a825;
+        --f4: #00897b;
+        --net: #00c853;
+        --perfect: #00c853;
+        --close: #1976d2;
+        --far: #f9a825;
+        --miss: #d32f2f;
+      }
+      body {
+        min-height: 100vh;
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        font-family: "Outfit", sans-serif;
+        color: var(--text);
+        -webkit-tap-highlight-color: transparent;
+      }
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .header-emoji {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+      .canvas-wrap {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: default;
+      }
+      canvas.aiming {
+        cursor: crosshair;
+      }
+      canvas.hover-marker {
+        cursor: grab;
+      }
+      canvas.dragging {
+        cursor: grabbing;
+      }
+      canvas:focus-visible {
+        outline: none;
+        box-shadow: inset 0 0 0 2px var(--accent);
+      }
+      .canvas-prompt {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 18px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid var(--panel-border);
+        font-family: "Outfit", sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-dim);
+        text-align: center;
+        pointer-events: none;
+        transition:
+          color 0.3s,
+          border-color 0.3s,
+          background 0.3s;
+        white-space: nowrap;
+        z-index: 5;
+        max-width: calc(100% - 40px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .canvas-prompt.active {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+      .canvas-prompt.resolved {
+        color: var(--net);
+        border-color: var(--net);
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .panel {
+        width: 320px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .panel-section {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .panel-section.grow {
+        flex: 1;
+      }
+      .section-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+      .level-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .level-btn {
+        width: 36px;
+        height: 40px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        padding: 0;
+      }
+      .level-btn:hover {
+        background: #f0ede6;
+      }
+      .level-btn.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+      .level-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .mission {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-head);
+        line-height: 1.4;
+      }
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .action-btn {
+        flex: 1;
+        padding: 10px 8px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        min-height: 40px;
+      }
+      .action-btn:hover:not(:disabled) {
+        background: #f0ede6;
+        border-color: var(--accent);
+      }
+      .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .action-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .action-btn.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .action-btn.primary:hover:not(:disabled) {
+        background: #37474f;
+        border-color: #37474f;
+      }
+      .readout-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .readout-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+      .readout-val {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .readout-val.perfect {
+        color: var(--perfect);
+      }
+      .readout-val.close {
+        color: var(--close);
+      }
+      .readout-val.far {
+        color: var(--far);
+      }
+      .readout-val.miss {
+        color: var(--miss);
+      }
+      .resultant-placeholder {
+        font-size: 13px;
+        color: var(--text-dim);
+        font-style: italic;
+        line-height: 1.45;
+      }
+      .resultant-card {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #fafaf7;
+        border: 1px solid var(--panel-border);
+        border-radius: 6px;
+      }
+      .resultant-card.hidden {
+        display: none;
+      }
+      .resultant-caption {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 11px;
+        color: var(--text-dim);
+        text-align: center;
+      }
+      .info-text {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.5;
+      }
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+        padding: 24px;
+        text-align: center;
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        font-family: "Outfit", sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        margin-top: 16px;
+        color: #fff;
+        letter-spacing: 0.5px;
+      }
+      .overlay-sub {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 16px;
+        margin-top: 10px;
+        color: rgba(255, 255, 255, 0.92);
+        letter-spacing: 1px;
+      }
+      .overlay-hint {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        margin-top: 18px;
+        color: rgba(255, 255, 255, 0.7);
+      }
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      @media (max-width: 720px) {
+        .main {
+          flex-direction: column;
+          height: auto;
+          min-height: calc(100vh - 46px);
+        }
+        .canvas-wrap {
+          min-height: 360px;
+          height: 56vh;
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+        }
+        .panel {
+          width: 100%;
+        }
+        .canvas-prompt {
+          font-size: 13px;
+          padding: 6px 14px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .result-overlay {
+          animation: none;
+        }
+        .overlay-emoji {
+          animation: none;
+        }
+        .canvas-prompt {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-emoji">&#x1F3AF;</span></a>
+          <span id="titleText">Forces</span>
+        </h1>
+        <p id="subtitleText">
+          Add the pushes in your head and pick where the puck will cross the
+          ring.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+      >
+        PL
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="canvas-wrap">
+        <canvas id="board" tabindex="0" aria-label="Forces game board"></canvas>
+        <div class="canvas-prompt" id="canvasPrompt"></div>
+        <div class="sr-only" id="ariaLive" aria-live="polite"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-section">
+          <span class="section-label" id="lblLevel">Level</span>
+          <div class="level-row">
+            <button
+              type="button"
+              class="level-btn active"
+              data-level="1"
+              id="lvlBtn1"
+            >
+              1
+            </button>
+            <button type="button" class="level-btn" data-level="2" id="lvlBtn2">
+              2
+            </button>
+            <button type="button" class="level-btn" data-level="3" id="lvlBtn3">
+              3
+            </button>
+            <button type="button" class="level-btn" data-level="4" id="lvlBtn4">
+              4
+            </button>
+            <button type="button" class="level-btn" data-level="5" id="lvlBtn5">
+              5
+            </button>
+            <button type="button" class="level-btn" data-level="6" id="lvlBtn6">
+              6
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <span class="section-label" id="lblMission">Mission</span>
+          <div class="mission" id="missionText">
+            Pick the ring point the puck reaches first.
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <span class="section-label" id="lblControls">Controls</span>
+          <div class="btn-row">
+            <button
+              type="button"
+              class="action-btn primary"
+              id="testBtn"
+              disabled
+            >
+              Test path
+            </button>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="action-btn" id="retryBtn">
+              Retry same forces
+            </button>
+            <button type="button" class="action-btn" id="newRoundBtn">
+              New round
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <span class="section-label" id="lblReadouts">Readouts</span>
+          <div class="readout-section">
+            <div class="readout-row">
+              <span class="readout-label" id="lblReadLevel">Level</span>
+              <span class="readout-val" id="readLevel">1</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblReadForces">Forces</span>
+              <span class="readout-val" id="readForces">2</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblReadRound">Round</span>
+              <span class="readout-val" id="readRound">1</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-label" id="lblReadResult">Last result</span>
+              <span class="readout-val" id="readResult">&mdash;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <span class="section-label" id="lblResultant">Resultant</span>
+          <div id="resultantBox">
+            <div class="resultant-placeholder" id="resultantPlaceholder">
+              Test the path to reveal the net force.
+            </div>
+            <svg
+              class="resultant-card hidden"
+              id="resultantCard"
+              viewBox="0 0 300 260"
+              aria-hidden="true"
+            ></svg>
+          </div>
+        </div>
+
+        <div class="panel-section grow">
+          <span class="section-label" id="lblInfo">Info</span>
+          <div class="info-text" id="infoText">
+            All arrows push through the centre. The puck starts from rest.
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        /* ───────── I18N ───────── */
+        const I18N = {
+          en: {
+            title: "Forces",
+            subtitle:
+              "Add the pushes in your head and pick where the puck will cross the ring.",
+            level: "Level",
+            mission: "Mission",
+            controls: "Controls",
+            readouts: "Readouts",
+            resultant: "Resultant",
+            info: "Info",
+            forcesReadout: "Forces",
+            round: "Round",
+            lastResult: "Last result",
+            testPath: "Test path",
+            retry: "Retry same forces",
+            newRound: "New round",
+            missionLine: "Pick the ring point the puck reaches first.",
+            promptAim: "Tap anywhere to place your guess on the ring.",
+            promptAimed: "Drag around the ring, then test the path.",
+            promptRevealed: "The green arrow is the net force.",
+            infoPre:
+              "All arrows push through the centre. The puck starts from rest.",
+            infoPost:
+              "Because the puck started from rest, it first moved along the net force.",
+            resultantPlaceholder: "Test the path to reveal the net force.",
+            resultantCaption: "Net force = sum of all pushes",
+            perfectHit: "Perfect hit",
+            closeHit: "Close hit",
+            farHit: "Far hit",
+            miss: "Miss",
+            offBy: "Off by {0}°",
+            clickToDismiss: "Click to continue",
+            ariaBoard: "Forces game board",
+            ariaLevel1: "Level 1, two forces",
+            ariaLevel2: "Level 2, two forces, tighter hit zone",
+            ariaLevel3: "Level 3, three forces",
+            ariaLevel4: "Level 4, three forces, tighter hit zone",
+            ariaLevel5: "Level 5, four forces",
+            ariaLevel6: "Level 6, four forces, tightest hit zone",
+            ariaTest: "Test path",
+            ariaRetry: "Retry with the same forces",
+            ariaNewRound: "Generate a new round",
+            ariaLang: "Switch language",
+            ariaResultPerfect:
+              "Perfect hit. Your guess was {0} degrees from the net force.",
+            ariaResultClose:
+              "Close hit. Your guess was {0} degrees from the net force.",
+            ariaResultFar:
+              "Far hit. Your guess was {0} degrees from the net force.",
+            ariaResultMiss:
+              "Miss. Your guess was {0} degrees from the net force.",
+            dash: "—",
+          },
+          pl: {
+            title: "Siły",
+            subtitle:
+              "Dodaj w głowie wszystkie pchnięcia i wskaż, gdzie krążek przetnie pierścień.",
+            level: "Poziom",
+            mission: "Misja",
+            controls: "Sterowanie",
+            readouts: "Odczyty",
+            resultant: "Wypadkowa",
+            info: "Info",
+            forcesReadout: "Siły",
+            round: "Runda",
+            lastResult: "Ostatni wynik",
+            testPath: "Sprawdź tor",
+            retry: "Te same siły",
+            newRound: "Nowa runda",
+            missionLine:
+              "Wskaż punkt pierścienia, do którego krążek dotrze najpierw.",
+            promptAim:
+              "Stuknij gdziekolwiek, aby umieścić zgadnięcie na pierścieniu.",
+            promptAimed: "Przesuwaj wokół pierścienia, potem sprawdź tor.",
+            promptRevealed: "Zielona strzałka to siła wypadkowa.",
+            infoPre:
+              "Wszystkie strzałki przechodzą przez środek. Krążek startuje w spoczynku.",
+            infoPost:
+              "Ponieważ krążek startował w spoczynku, najpierw poruszył się wzdłuż siły wypadkowej.",
+            resultantPlaceholder: "Sprawdź tor, aby zobaczyć siłę wypadkową.",
+            resultantCaption: "Wypadkowa = suma wszystkich pchnięć",
+            perfectHit: "Idealne trafienie",
+            closeHit: "Bliskie trafienie",
+            farHit: "Dalekie trafienie",
+            miss: "Pudło",
+            offBy: "Różnica: {0}°",
+            clickToDismiss: "Kliknij, aby kontynuować",
+            ariaBoard: "Plansza gry sił",
+            ariaLevel1: "Poziom 1, dwie siły",
+            ariaLevel2: "Poziom 2, dwie siły, węższa strefa trafienia",
+            ariaLevel3: "Poziom 3, trzy siły",
+            ariaLevel4: "Poziom 4, trzy siły, węższa strefa trafienia",
+            ariaLevel5: "Poziom 5, cztery siły",
+            ariaLevel6: "Poziom 6, cztery siły, najwęższa strefa trafienia",
+            ariaTest: "Sprawdź tor",
+            ariaRetry: "Powtórz z tymi samymi siłami",
+            ariaNewRound: "Wygeneruj nową rundę",
+            ariaLang: "Zmień język",
+            ariaResultPerfect:
+              "Idealne trafienie. Twój strzał był {0} stopni od siły wypadkowej.",
+            ariaResultClose:
+              "Bliskie trafienie. Twój strzał był {0} stopni od siły wypadkowej.",
+            ariaResultFar:
+              "Dalekie trafienie. Twój strzał był {0} stopni od siły wypadkowej.",
+            ariaResultMiss:
+              "Pudło. Twój strzał był {0} stopni od siły wypadkowej.",
+            dash: "—",
+          },
+        };
+
+        function T(key) {
+          return I18N[state.lang][key];
+        }
+
+        function fmt(template, value) {
+          return template.replace("{0}", String(value));
+        }
+
+        /* ───────── CONSTANTS ───────── */
+        const FORCE_COLORS = ["#d32f2f", "#1565c0", "#f9a825", "#00897b"];
+        const FORCE_LABELS = ["F1", "F2", "F3", "F4"];
+        const NET_COLOR = "#00c853";
+        const PERFECT_DEG = 4;
+        const ANGLE_GRID = 30;
+        const GENERATOR_MAX_ATTEMPTS = 200;
+
+        /* Six difficulty levels mapped onto three vector-count families.
+           Perfect tolerance is fixed at 4° everywhere; close and far tighten
+           monotonically from level 1 to level 6. */
+        const DIFFICULTY_LEVELS = {
+          1: { level: 1, vectorCount: 2, closeDeg: 12, farDeg: 18 },
+          2: { level: 2, vectorCount: 2, closeDeg: 10, farDeg: 16 },
+          3: { level: 3, vectorCount: 3, closeDeg: 9, farDeg: 14 },
+          4: { level: 4, vectorCount: 3, closeDeg: 8, farDeg: 12 },
+          5: { level: 5, vectorCount: 4, closeDeg: 7, farDeg: 10 },
+          6: { level: 6, vectorCount: 4, closeDeg: 6, farDeg: 8 },
+        };
+
+        function getDifficulty(level) {
+          return DIFFICULTY_LEVELS[level];
+        }
+        const ARROW_GROW_MS = 350;
+        const PUCK_MOVE_MS = 850;
+        const WEDGES_FADE_MS = 300;
+        /* After the wedges fade in, hold the resolved board still for a beat so
+           the child can study the green Net arrow, the cross-point, and the
+           three wedge tiers before the result overlay covers everything. */
+        const RESULT_SETTLE_MS = 1100;
+        const OVERLAY_DELAY_MS =
+          ARROW_GROW_MS + PUCK_MOVE_MS + WEDGES_FADE_MS + 50;
+
+        /* Authored fallback bank keyed by vector count (also the QA validation
+           sets per spec §15). Only used when the generator exhausts its 200
+           attempts at a valid random round. */
+        const AUTHORED_BANK = {
+          2: [
+            [
+              { mag: 4, angleDeg: 0 },
+              { mag: 3, angleDeg: 90 },
+            ],
+            [
+              { mag: 5, angleDeg: 30 },
+              { mag: 4, angleDeg: 150 },
+            ],
+            [
+              { mag: 6, angleDeg: 60 },
+              { mag: 3, angleDeg: 180 },
+            ],
+            [
+              { mag: 3, angleDeg: 0 },
+              { mag: 5, angleDeg: 120 },
+            ],
+          ],
+          3: [
+            [
+              { mag: 6, angleDeg: 0 },
+              { mag: 4, angleDeg: 120 },
+              { mag: 2, angleDeg: 240 },
+            ],
+            [
+              { mag: 5, angleDeg: 30 },
+              { mag: 4, angleDeg: 150 },
+              { mag: 3, angleDeg: 270 },
+            ],
+            [
+              { mag: 4, angleDeg: 60 },
+              { mag: 5, angleDeg: 180 },
+              { mag: 3, angleDeg: 300 },
+            ],
+          ],
+          4: [
+            [
+              { mag: 5, angleDeg: 0 },
+              { mag: 4, angleDeg: 90 },
+              { mag: 3, angleDeg: 180 },
+              { mag: 2, angleDeg: 270 },
+            ],
+            [
+              { mag: 4, angleDeg: 30 },
+              { mag: 4, angleDeg: 210 },
+              { mag: 5, angleDeg: 90 },
+              { mag: 2, angleDeg: 330 },
+            ],
+            [
+              { mag: 5, angleDeg: 60 },
+              { mag: 5, angleDeg: 240 },
+              { mag: 4, angleDeg: 150 },
+              { mag: 3, angleDeg: 0 },
+            ],
+          ],
+        };
+
+        /* ───────── STATE ───────── */
+        const state = {
+          lang:
+            navigator.language && navigator.language.startsWith("pl")
+              ? "pl"
+              : "en",
+          level: 1,
+          vectorCount: 2,
+          roundNumber: 1,
+          forces: [],
+          resultant: { x: 0, y: 0, mag: 0, angleDeg: 0 },
+          guessAngleDeg: null,
+          phase: "aim",
+          lastResult: null,
+          lastDelta: null,
+          revealStart: 0,
+          authoredIndex: { 2: 0, 3: 0, 4: 0 },
+          reducedMotion: false,
+        };
+
+        /* ───────── CANVAS ───────── */
+        const canvas = document.getElementById("board");
+        const ctx = canvas.getContext("2d");
+        let W = 0;
+        let H = 0;
+        let cx = 0;
+        let cy = 0;
+        let ringR = 0;
+        let puckR = 0;
+        let arrowMax = 0;
+        let unitPx = 0;
+
+        function resize() {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          W = rect.width;
+          H = rect.height;
+          canvas.width = Math.max(1, Math.round(W * dpr));
+          canvas.height = Math.max(1, Math.round(H * dpr));
+          canvas.style.width = W + "px";
+          canvas.style.height = H + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          cx = W / 2;
+          cy = H / 2;
+          ringR = clamp(Math.min(W, H) * 0.4, 160, 300);
+          puckR = clamp(ringR * 0.1, 20, 30);
+          arrowMax = ringR * 0.78;
+          /* Reserve unit length so the longest possible magnitude (6) fits. */
+          unitPx = arrowMax / 6;
+          drawAll();
+        }
+
+        window.addEventListener("resize", resize);
+
+        /* ───────── MATH ───────── */
+        function clamp(v, lo, hi) {
+          return Math.max(lo, Math.min(hi, v));
+        }
+
+        function deg2rad(d) {
+          return (d * Math.PI) / 180;
+        }
+
+        function rad2deg(r) {
+          return (r * 180) / Math.PI;
+        }
+
+        function normalizeDeg(d) {
+          let x = d % 360;
+          if (x < 0) x += 360;
+          return x;
+        }
+
+        /* Smallest absolute angular difference around the circle (spec §16.2). */
+        function angularDelta(a, b) {
+          return Math.abs(((((a - b) % 360) + 540) % 360) - 180);
+        }
+
+        /* Smallest circular separation between two directions, range [0, 180]. */
+        function circularSeparation(a, b) {
+          return angularDelta(a, b);
+        }
+
+        /* Compute resultant via component sum (spec §12.3). */
+        function computeResultant(forces) {
+          let rx = 0;
+          let ry = 0;
+          for (const f of forces) {
+            const r = deg2rad(f.angleDeg);
+            rx += f.mag * Math.cos(r);
+            ry += f.mag * Math.sin(r);
+          }
+          const mag = Math.hypot(rx, ry);
+          const angleDeg =
+            mag > 1e-9 ? normalizeDeg(rad2deg(Math.atan2(ry, rx))) : 0;
+          return { x: rx, y: ry, mag: mag, angleDeg: angleDeg };
+        }
+
+        /* Convert a logical angle (CCW from +x, math convention) to canvas y-down. */
+        function angleToPoint(angleDeg, r) {
+          const rad = deg2rad(angleDeg);
+          return { x: cx + Math.cos(rad) * r, y: cy - Math.sin(rad) * r };
+        }
+
+        function pointToAngle(px, py) {
+          const dx = px - cx;
+          const dy = cy - py;
+          return normalizeDeg(rad2deg(Math.atan2(dy, dx)));
+        }
+
+        /* ───────── ROUND GENERATION ───────── */
+        function validateGlobal(forces, R) {
+          if (R.mag < 1.8) return false;
+          /* No duplicate directions. */
+          const seen = new Set();
+          for (const f of forces) {
+            const k = Math.round(normalizeDeg(f.angleDeg));
+            if (seen.has(k)) return false;
+            seen.add(k);
+          }
+          /* No round where all forces lie in the same 90° sector. */
+          if (allWithinSector(forces, 90)) return false;
+          return true;
+        }
+
+        /* True if all force directions fit inside some sector of `span` degrees. */
+        function allWithinSector(forces, span) {
+          const angles = forces.map((f) => normalizeDeg(f.angleDeg));
+          for (let i = 0; i < 360; i += 1) {
+            const lo = i;
+            const hi = i + span;
+            let allIn = true;
+            for (const a of angles) {
+              const norm = a < lo ? a + 360 : a;
+              if (norm > hi) {
+                allIn = false;
+                break;
+              }
+            }
+            if (allIn) return true;
+          }
+          return false;
+        }
+
+        function validateLevel1(forces, R) {
+          if (forces.length !== 2) return false;
+          const sep = circularSeparation(
+            forces[0].angleDeg,
+            forces[1].angleDeg,
+          );
+          if (sep < 60 || sep > 150) return false;
+          if (sep > 179.5) return false;
+          if (R.mag < 2.5) return false;
+          return true;
+        }
+
+        function validateLevel2(forces, R) {
+          if (forces.length !== 3) return false;
+          if (R.mag < 2.0) return false;
+          let hasNearOpp = false;
+          for (let i = 0; i < forces.length; i += 1) {
+            for (let j = i + 1; j < forces.length; j += 1) {
+              const sep = circularSeparation(
+                forces[i].angleDeg,
+                forces[j].angleDeg,
+              );
+              if (sep >= 120 && sep <= 180) hasNearOpp = true;
+            }
+          }
+          if (!hasNearOpp) return false;
+          for (const f of forces) {
+            if (angularDelta(R.angleDeg, f.angleDeg) < 8) return false;
+          }
+          return true;
+        }
+
+        function validateLevel3(forces, R) {
+          if (forces.length !== 4) return false;
+          if (R.mag < 2.0) return false;
+          let oppPair = null;
+          for (let i = 0; i < forces.length; i += 1) {
+            for (let j = i + 1; j < forces.length; j += 1) {
+              const sep = circularSeparation(
+                forces[i].angleDeg,
+                forces[j].angleDeg,
+              );
+              if (sep >= 150 && sep <= 180) {
+                if (Math.abs(forces[i].mag - forces[j].mag) <= 1) {
+                  oppPair = [i, j];
+                  break;
+                }
+              }
+            }
+            if (oppPair) break;
+          }
+          if (!oppPair) return false;
+          /* Pair's axis = average direction of the two near-opposed forces (mod 180). */
+          const axis = normalizeDeg(
+            (forces[oppPair[0]].angleDeg + forces[oppPair[1]].angleDeg + 180) /
+              2,
+          );
+          let offAxis = false;
+          for (let k = 0; k < forces.length; k += 1) {
+            if (k === oppPair[0] || k === oppPair[1]) continue;
+            const offset = Math.min(
+              angularDelta(forces[k].angleDeg, axis),
+              angularDelta(forces[k].angleDeg, normalizeDeg(axis + 180)),
+            );
+            if (offset >= 30) offAxis = true;
+          }
+          if (!offAxis) return false;
+          return true;
+        }
+
+        function randomMagnitude() {
+          return 2 + Math.floor(Math.random() * 5); // 2..6 inclusive
+        }
+
+        function randomGridAngle() {
+          return Math.floor(Math.random() * 12) * ANGLE_GRID; // 0,30,...,330
+        }
+
+        function sampleRound(vectorCount) {
+          const directions = [];
+          const used = new Set();
+          while (directions.length < vectorCount) {
+            const a = randomGridAngle();
+            if (used.has(a)) continue;
+            used.add(a);
+            directions.push(a);
+          }
+          return directions.map((a) => ({
+            mag: randomMagnitude(),
+            angleDeg: a,
+          }));
+        }
+
+        function generateRound(level) {
+          const cfg = getDifficulty(level);
+          const n = cfg.vectorCount;
+          const validator =
+            n === 2
+              ? validateLevel1
+              : n === 3
+                ? validateLevel2
+                : validateLevel3;
+          for (
+            let attempt = 0;
+            attempt < GENERATOR_MAX_ATTEMPTS;
+            attempt += 1
+          ) {
+            const forces = sampleRound(n);
+            const R = computeResultant(forces);
+            if (!validateGlobal(forces, R)) continue;
+            if (!validator(forces, R)) continue;
+            return { forces: forces, resultant: R };
+          }
+          return loadAuthoredFallback(n);
+        }
+
+        function loadAuthoredFallback(vectorCount) {
+          const bank = AUTHORED_BANK[vectorCount];
+          const idx = state.authoredIndex[vectorCount] % bank.length;
+          state.authoredIndex[vectorCount] = idx + 1;
+          const forces = bank[idx].map((f) => ({
+            mag: f.mag,
+            angleDeg: f.angleDeg,
+          }));
+          const R = computeResultant(forces);
+          return { forces: forces, resultant: R };
+        }
+
+        function decorateForces(forces) {
+          return forces.map((f, i) => ({
+            mag: f.mag,
+            angleDeg: f.angleDeg,
+            color: FORCE_COLORS[i],
+            label: FORCE_LABELS[i],
+          }));
+        }
+
+        function newRound(level) {
+          state.level = level;
+          state.vectorCount = getDifficulty(level).vectorCount;
+          state.roundNumber += 1;
+          const round = generateRound(level);
+          state.forces = decorateForces(round.forces);
+          state.resultant = round.resultant;
+          resetGuessAndPhase();
+          updateReadouts();
+          updateInfoText();
+          updateResultantPanel();
+          updatePromptByPhase();
+          drawAll();
+        }
+
+        function resetGuessAndPhase() {
+          state.guessAngleDeg = null;
+          state.phase = "aim";
+          state.revealStart = 0;
+          document.getElementById("testBtn").disabled = true;
+          /* Cancel any pending result-overlay settle so a quick retry / new
+             round doesn't get hit by a late overlay popup. */
+          if (overlayTimeoutId) {
+            clearTimeout(overlayTimeoutId);
+            overlayTimeoutId = 0;
+          }
+          updateCanvasCursor();
+        }
+
+        function updateCanvasCursor() {
+          /* aiming = crosshair anywhere on the board during the aim phase.
+             hover-marker = open hand (grab) only when the pointer is over the
+             blue marker. dragging = closed hand (grabbing) while held down. */
+          if (state.phase === "aim") {
+            canvas.classList.add("aiming");
+          } else {
+            canvas.classList.remove("aiming");
+            canvas.classList.remove("hover-marker");
+          }
+          if (!dragging) {
+            canvas.classList.remove("dragging");
+          }
+        }
+
+        function pointerNearMarker(e) {
+          if (state.guessAngleDeg === null) return false;
+          const rect = canvas.getBoundingClientRect();
+          const px = e.clientX - rect.left;
+          const py = e.clientY - rect.top;
+          const m = angleToPoint(state.guessAngleDeg, ringR);
+          /* 16 px hit area is forgiving without overlapping nearby tick marks. */
+          return Math.hypot(px - m.x, py - m.y) <= 16;
+        }
+
+        /* ───────── DRAWING ───────── */
+        function drawAll() {
+          if (!W || !H) return;
+          drawBackground();
+          drawRing();
+          drawTicks();
+          /* World-fixed reveal extras: trail line + tolerance wedges. The
+             wedges anchor at the original centre because they show angular
+             tolerance from the prediction origin, not from the moving body. */
+          if (state.phase === "revealing" || state.phase === "resolved") {
+            drawRevealLayers();
+          }
+          if (state.phase === "aim" && state.guessAngleDeg !== null) {
+            drawAimVector();
+          }
+          /* Puck shadow stays at canvas centre across every phase, so when the
+             body lifts off and rides the resultant the shadow remains as a
+             footprint of where the journey started. */
+          drawPuckShadow();
+          /* The moveable rigid body — puck disc, F1..F4, and the Net arrow —
+             translates together along the resultant during the motion phase.
+             Wrapping them in a single ctx.translate keeps every draw call
+             unchanged while the whole group rides the trajectory. */
+          const offset = computeRevealOffset();
+          ctx.save();
+          ctx.translate(offset.x, offset.y);
+          if (state.phase === "revealing" || state.phase === "resolved") {
+            drawNetDuringReveal();
+          }
+          drawForces();
+          drawPuck();
+          ctx.restore();
+          if (state.guessAngleDeg !== null && state.phase !== "revealing") {
+            drawGuessMarker();
+          }
+        }
+
+        function computeRevealOffset() {
+          if (state.phase !== "revealing" && state.phase !== "resolved") {
+            return { x: 0, y: 0 };
+          }
+          const rad = deg2rad(state.resultant.angleDeg);
+          const maxDist = ringR - puckR;
+          if (state.phase === "resolved" || state.reducedMotion) {
+            return {
+              x: Math.cos(rad) * maxDist,
+              y: -Math.sin(rad) * maxDist,
+            };
+          }
+          const elapsed = performance.now() - state.revealStart;
+          if (elapsed <= ARROW_GROW_MS) return { x: 0, y: 0 };
+          const motionT = clamp((elapsed - ARROW_GROW_MS) / PUCK_MOVE_MS, 0, 1);
+          /* s ∝ t² acceleration-from-rest profile (spec §12.6). */
+          const s = motionT * motionT;
+          return {
+            x: Math.cos(rad) * maxDist * s,
+            y: -Math.sin(rad) * maxDist * s,
+          };
+        }
+
+        function drawNetDuringReveal() {
+          const isResolved = state.phase === "resolved";
+          const elapsed = isResolved
+            ? Number.POSITIVE_INFINITY
+            : performance.now() - state.revealStart;
+          const growT =
+            state.reducedMotion || isResolved
+              ? 1
+              : clamp(elapsed / ARROW_GROW_MS, 0, 1);
+          const netLen = arrowMax * 0.95 * growT;
+          drawNetArrowAt(state.resultant.angleDeg, netLen);
+        }
+
+        function drawAimVector() {
+          const rad = deg2rad(state.guessAngleDeg);
+          const startR = puckR * 0.92;
+          const sx = cx + Math.cos(rad) * startR;
+          const sy = cy - Math.sin(rad) * startR;
+          const ex = cx + Math.cos(rad) * ringR;
+          const ey = cy - Math.sin(rad) * ringR;
+          ctx.save();
+          ctx.strokeStyle = "rgba(25, 118, 210, 0.45)";
+          ctx.lineWidth = 1.5;
+          ctx.lineCap = "round";
+          ctx.setLineDash([4, 5]);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawBackground() {
+          ctx.fillStyle = "#f5f3ee";
+          ctx.fillRect(0, 0, W, H);
+          /* Subtle radial construction lines. */
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.06)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let a = 0; a < 360; a += 30) {
+            const rad = deg2rad(a);
+            const r0 = ringR * 0.15;
+            const r1 = ringR * 1.25;
+            ctx.moveTo(cx + Math.cos(rad) * r0, cy - Math.sin(rad) * r0);
+            ctx.lineTo(cx + Math.cos(rad) * r1, cy - Math.sin(rad) * r1);
+          }
+          ctx.stroke();
+          /* Two faint concentric guide circles. */
+          ctx.beginPath();
+          ctx.arc(cx, cy, ringR * 0.55, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(cx, cy, ringR * 0.85, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        function drawRing() {
+          ctx.save();
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.55)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 5]);
+          ctx.beginPath();
+          ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawTicks() {
+          ctx.save();
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.45)";
+          ctx.lineWidth = 1.5;
+          for (let a = 0; a < 360; a += ANGLE_GRID) {
+            const rad = deg2rad(a);
+            const inner = ringR - 6;
+            const outer = ringR + 6;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(rad) * inner, cy - Math.sin(rad) * inner);
+            ctx.lineTo(cx + Math.cos(rad) * outer, cy - Math.sin(rad) * outer);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        function drawPuckShadow() {
+          /* World-fixed shadow at canvas centre. During aim it sits directly
+             under the puck; during reveal the body lifts off and the shadow
+             stays behind as a footprint of where the journey began. */
+          const r = puckR;
+          ctx.fillStyle = "rgba(0,0,0,0.18)";
+          ctx.beginPath();
+          ctx.arc(cx + 2, cy + 3, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        function drawPuck() {
+          /* Echoes the central disc styling from angularmomentum.html. The
+             shadow lives in drawPuckShadow so it can stay anchored when the
+             body translates along the resultant. */
+          const r = puckR;
+          /* Body */
+          const grad = ctx.createRadialGradient(
+            cx - r * 0.3,
+            cy - r * 0.3,
+            r * 0.1,
+            cx,
+            cy,
+            r,
+          );
+          grad.addColorStop(0, "#f5f7f9");
+          grad.addColorStop(0.55, "#cdd1d5");
+          grad.addColorStop(1, "#8a9097");
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+          /* Rim */
+          ctx.strokeStyle = "#5d6770";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        function drawForces() {
+          for (let i = 0; i < state.forces.length; i += 1) {
+            const f = state.forces[i];
+            drawForceArrow(f, false);
+          }
+        }
+
+        function drawForceArrow(f, isNet) {
+          const rad = deg2rad(f.angleDeg);
+          /* Magnitude in canvas pixels. */
+          const len = isNet
+            ? Math.min(arrowMax * 1.0, f.mag * unitPx)
+            : f.mag * unitPx;
+          /* Force arrows start at the puck rim so they look like they push the
+             puck rather than emerge from inside it; the line still encodes the
+             centre as the point of application because every arrow points
+             outward through the centre. */
+          const startR = puckR * 0.92;
+          const sx = cx + Math.cos(rad) * startR;
+          const sy = cy - Math.sin(rad) * startR;
+          const ex = cx + Math.cos(rad) * (startR + len);
+          const ey = cy - Math.sin(rad) * (startR + len);
+          const color = isNet ? NET_COLOR : f.color;
+          const headLen = isNet ? 22 : 20;
+          const lineWidth = isNet ? 6 : 4.5;
+          drawArrowSegment(sx, sy, ex, ey, color, lineWidth, headLen);
+          /* Label near tip, offset perpendicular for legibility. */
+          const px = -Math.sin(rad);
+          const py = -Math.cos(rad);
+          const labelOff = isNet ? 24 : 20;
+          const lx = ex + px * labelOff + Math.cos(rad) * 8;
+          const ly = ey + py * labelOff - Math.sin(rad) * 8;
+          ctx.save();
+          ctx.fillStyle = color;
+          ctx.font = "700 18px 'Share Tech Mono', monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(f.label, lx, ly);
+          ctx.restore();
+        }
+
+        function drawArrowSegment(sx, sy, ex, ey, color, lineWidth, headLen) {
+          const ang = Math.atan2(ey - sy, ex - sx);
+          ctx.save();
+          ctx.strokeStyle = color;
+          ctx.fillStyle = color;
+          ctx.lineWidth = lineWidth;
+          ctx.lineCap = "round";
+          /* Shorten the line so the head sits at the true tip. */
+          const shortenedEx = ex - Math.cos(ang) * (headLen * 0.6);
+          const shortenedEy = ey - Math.sin(ang) * (headLen * 0.6);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(shortenedEx, shortenedEy);
+          ctx.stroke();
+          /* Filled triangle head. */
+          const headHalfWidth = headLen * 0.45;
+          ctx.beginPath();
+          ctx.moveTo(ex, ey);
+          ctx.lineTo(
+            ex - Math.cos(ang) * headLen + Math.sin(ang) * headHalfWidth,
+            ey - Math.sin(ang) * headLen - Math.cos(ang) * headHalfWidth,
+          );
+          ctx.lineTo(
+            ex - Math.cos(ang) * headLen - Math.sin(ang) * headHalfWidth,
+            ey - Math.sin(ang) * headLen + Math.cos(ang) * headHalfWidth,
+          );
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        function drawGuessMarker() {
+          const p = angleToPoint(state.guessAngleDeg, ringR);
+          ctx.save();
+          /* Soft drop shadow so the marker reads as a physical chip sliding
+             around the ring rather than a flat overlay. */
+          ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
+          ctx.beginPath();
+          ctx.arc(p.x + 2, p.y + 3, 9, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#1976d2";
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          /* Inner cross-hair matches the actual ring-cross indicator. */
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(p.x - 4, p.y);
+          ctx.lineTo(p.x + 4, p.y);
+          ctx.moveTo(p.x, p.y - 4);
+          ctx.lineTo(p.x, p.y + 4);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawRevealLayers() {
+          const isResolved = state.phase === "resolved";
+          const elapsed = isResolved
+            ? Number.POSITIVE_INFINITY
+            : performance.now() - state.revealStart;
+          /* Dashed trail line: lengthens behind the moving body. */
+          if (elapsed > ARROW_GROW_MS) {
+            const motionT =
+              state.reducedMotion || isResolved
+                ? 1
+                : clamp((elapsed - ARROW_GROW_MS) / PUCK_MOVE_MS, 0, 1);
+            const s = motionT * motionT;
+            drawPathTrail(state.resultant.angleDeg, s);
+          }
+          /* Wedges fade in after the motion finishes. */
+          if (elapsed > ARROW_GROW_MS + PUCK_MOVE_MS) {
+            const wedgeT =
+              state.reducedMotion || isResolved
+                ? 1
+                : clamp(
+                    (elapsed - ARROW_GROW_MS - PUCK_MOVE_MS) / WEDGES_FADE_MS,
+                    0,
+                    1,
+                  );
+            drawWedges(state.resultant.angleDeg, wedgeT);
+          }
+        }
+
+        function drawNetArrowAt(angleDeg, len) {
+          if (len <= 0) return;
+          const rad = deg2rad(angleDeg);
+          const startR = puckR * 0.92;
+          const sx = cx + Math.cos(rad) * startR;
+          const sy = cy - Math.sin(rad) * startR;
+          const ex = cx + Math.cos(rad) * (startR + len);
+          const ey = cy - Math.sin(rad) * (startR + len);
+          /* Tip sized like the force arrows (head 20); line stays thicker so
+             the Net still reads as the dominant arrow. */
+          drawArrowSegment(sx, sy, ex, ey, NET_COLOR, 6.5, 20);
+        }
+
+        function drawPathTrail(angleDeg, s) {
+          /* s is normalized [0,1] along the puck path; the path reaches the ring
+             at s = 1, measured along the resultant ray from puck rim. */
+          const dist = (ringR - puckR) * s;
+          const target = angleToPoint(angleDeg, puckR + dist);
+          ctx.save();
+          ctx.strokeStyle = "rgba(0, 200, 83, 0.55)";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([3, 4]);
+          ctx.beginPath();
+          const startP = angleToPoint(angleDeg, puckR);
+          ctx.moveTo(startP.x, startP.y);
+          ctx.lineTo(target.x, target.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawWedges(centerDeg, alpha) {
+          if (alpha <= 0) return;
+          const cfg = getDifficulty(state.level);
+          const tiers = [
+            { half: cfg.farDeg, fill: "rgba(249, 168, 37, 0.18)" },
+            { half: cfg.closeDeg, fill: "rgba(25, 118, 210, 0.20)" },
+            { half: PERFECT_DEG, fill: "rgba(0, 200, 83, 0.28)" },
+          ];
+          const reach = ringR + 10;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          for (const tier of tiers) {
+            const a1 = deg2rad(centerDeg - tier.half);
+            const a2 = deg2rad(centerDeg + tier.half);
+            /* Trapezoid bounded by the puck rim (inner) and the reach radius
+               (outer), so the wedge never overlaps the puck body. The side
+               rays still emanate from puck center, which keeps the angular
+               width geometrically correct at the prediction ring. */
+            const innerA = {
+              x: cx + Math.cos(a1) * puckR,
+              y: cy - Math.sin(a1) * puckR,
+            };
+            const innerB = {
+              x: cx + Math.cos(a2) * puckR,
+              y: cy - Math.sin(a2) * puckR,
+            };
+            const outerA = {
+              x: cx + Math.cos(a1) * reach,
+              y: cy - Math.sin(a1) * reach,
+            };
+            const outerB = {
+              x: cx + Math.cos(a2) * reach,
+              y: cy - Math.sin(a2) * reach,
+            };
+            ctx.beginPath();
+            ctx.moveTo(innerA.x, innerA.y);
+            ctx.lineTo(outerA.x, outerA.y);
+            ctx.lineTo(outerB.x, outerB.y);
+            ctx.lineTo(innerB.x, innerB.y);
+            ctx.closePath();
+            ctx.fillStyle = tier.fill;
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        /* ───────── INPUT ───────── */
+        function pointerToBoardAngle(e) {
+          const rect = canvas.getBoundingClientRect();
+          const px = e.clientX - rect.left;
+          const py = e.clientY - rect.top;
+          return pointToAngle(px, py);
+        }
+
+        let dragging = false;
+
+        canvas.addEventListener("pointerdown", (e) => {
+          if (state.phase !== "aim") return;
+          canvas.setPointerCapture(e.pointerId);
+          canvas.focus();
+          dragging = true;
+          canvas.classList.add("dragging");
+          const a = pointerToBoardAngle(e);
+          setGuess(a);
+          e.preventDefault();
+        });
+
+        canvas.addEventListener("pointermove", (e) => {
+          if (state.phase !== "aim") return;
+          if (dragging) {
+            const a = pointerToBoardAngle(e);
+            setGuess(a);
+            return;
+          }
+          /* Hover state for the marker only — everywhere else the canvas keeps
+             the aiming crosshair. */
+          if (pointerNearMarker(e)) {
+            canvas.classList.add("hover-marker");
+          } else {
+            canvas.classList.remove("hover-marker");
+          }
+        });
+
+        canvas.addEventListener("pointerup", (e) => {
+          dragging = false;
+          canvas.classList.remove("dragging");
+          if (canvas.hasPointerCapture(e.pointerId)) {
+            canvas.releasePointerCapture(e.pointerId);
+          }
+        });
+
+        canvas.addEventListener("pointercancel", () => {
+          dragging = false;
+          canvas.classList.remove("dragging");
+        });
+
+        canvas.addEventListener("pointerleave", () => {
+          canvas.classList.remove("hover-marker");
+        });
+
+        canvas.addEventListener("keydown", (e) => {
+          if (handleKey(e)) {
+            e.preventDefault();
+          }
+        });
+
+        document.addEventListener("keydown", (e) => {
+          /* Global level-switch + R/N shortcuts when focus is off the board, so
+             a child who reached the test button with Tab can still issue them. */
+          if (
+            e.target === canvas ||
+            e.target === document.body ||
+            e.target.tagName === "BUTTON"
+          ) {
+            const key = e.key;
+            if (key >= "1" && key <= "6" && key.length === 1) {
+              setLevel(Number(key));
+              e.preventDefault();
+            } else if (key === "r" || key === "R") {
+              if (state.phase !== "revealing") retrySameForces();
+              e.preventDefault();
+            } else if (key === "n" || key === "N") {
+              if (state.phase !== "revealing") newRound(state.level);
+              e.preventDefault();
+            }
+          }
+        });
+
+        function handleKey(e) {
+          if (state.phase === "revealing") return false;
+          const key = e.key;
+          if (key === "Enter" || key === " ") {
+            if (state.phase === "aim" && state.guessAngleDeg !== null) {
+              startReveal();
+              return true;
+            }
+            return false;
+          }
+          if (state.phase !== "aim") return false;
+          const step = e.shiftKey ? 0.5 : 2;
+          if (key === "ArrowLeft") {
+            const next =
+              state.guessAngleDeg === null ? 0 : state.guessAngleDeg + step;
+            setGuess(next);
+            return true;
+          }
+          if (key === "ArrowRight") {
+            const next =
+              state.guessAngleDeg === null ? 0 : state.guessAngleDeg - step;
+            setGuess(next);
+            return true;
+          }
+          if (key === "ArrowUp" || key === "ArrowDown") {
+            /* Reserve vertical arrows for fine-tuning too, mapped same as L/R. */
+            const dir = key === "ArrowUp" ? step : -step;
+            const next =
+              state.guessAngleDeg === null ? 0 : state.guessAngleDeg + dir;
+            setGuess(next);
+            return true;
+          }
+          return false;
+        }
+
+        function setGuess(angleDeg) {
+          state.guessAngleDeg = normalizeDeg(angleDeg);
+          document.getElementById("testBtn").disabled = false;
+          updatePromptByPhase();
+          drawAll();
+        }
+
+        /* ───────── CONTROLS ───────── */
+        function setLevel(level) {
+          if (state.phase === "revealing") return;
+          state.level = level;
+          state.roundNumber = 0;
+          state.authoredIndex[getDifficulty(level).vectorCount] = 0;
+          updateLevelButtons();
+          newRound(level);
+        }
+
+        function updateLevelButtons() {
+          for (let i = 1; i <= 6; i += 1) {
+            const btn = document.getElementById("lvlBtn" + i);
+            if (i === state.level) {
+              btn.classList.add("active");
+            } else {
+              btn.classList.remove("active");
+            }
+          }
+        }
+
+        function retrySameForces() {
+          resetGuessAndPhase();
+          updateResultantPanel();
+          updateInfoText();
+          updatePromptByPhase();
+          drawAll();
+        }
+
+        /* ───────── READOUTS + COPY ───────── */
+        function updateReadouts() {
+          document.getElementById("readLevel").textContent = String(
+            state.level,
+          );
+          document.getElementById("readForces").textContent = String(
+            state.vectorCount,
+          );
+          document.getElementById("readRound").textContent = String(
+            state.roundNumber,
+          );
+          const resEl = document.getElementById("readResult");
+          resEl.classList.remove("perfect", "close", "far", "miss");
+          if (state.lastResult === null) {
+            resEl.textContent = T("dash");
+          } else {
+            const map = {
+              perfect: "perfectHit",
+              close: "closeHit",
+              far: "farHit",
+              miss: "miss",
+            };
+            resEl.textContent = T(map[state.lastResult]);
+            resEl.classList.add(state.lastResult);
+          }
+        }
+
+        function updateInfoText() {
+          const el = document.getElementById("infoText");
+          el.textContent =
+            state.phase === "resolved" ? T("infoPost") : T("infoPre");
+        }
+
+        function updatePromptByPhase() {
+          const el = document.getElementById("canvasPrompt");
+          el.classList.remove("active", "resolved");
+          if (state.phase === "aim") {
+            if (state.guessAngleDeg === null) {
+              el.textContent = T("promptAim");
+            } else {
+              el.textContent = T("promptAimed");
+              el.classList.add("active");
+            }
+          } else if (state.phase === "revealing") {
+            el.textContent = T("promptAimed");
+            el.classList.add("active");
+          } else if (state.phase === "resolved") {
+            el.textContent = T("promptRevealed");
+            el.classList.add("resolved");
+          }
+        }
+
+        function clearSvg(svg) {
+          while (svg.firstChild) svg.removeChild(svg.firstChild);
+        }
+
+        function updateResultantPanel() {
+          const placeholder = document.getElementById("resultantPlaceholder");
+          const card = document.getElementById("resultantCard");
+          if (state.phase === "resolved") {
+            placeholder.style.display = "none";
+            card.classList.remove("hidden");
+            renderResultantCard();
+          } else {
+            placeholder.style.display = "";
+            placeholder.textContent = T("resultantPlaceholder");
+            card.classList.add("hidden");
+            clearSvg(card);
+          }
+        }
+
+        function renderResultantCard() {
+          const card = document.getElementById("resultantCard");
+          clearSvg(card);
+          const svgNS = "http://www.w3.org/2000/svg";
+          const viewW = 300;
+          const viewH = 260;
+          const captionH = 22;
+          const legendH = 36;
+          const diagramH = viewH - captionH - legendH;
+          /* Build head-to-tail point chain in math coords. */
+          const pts = [{ x: 0, y: 0 }];
+          let curX = 0;
+          let curY = 0;
+          for (const f of state.forces) {
+            const rad = deg2rad(f.angleDeg);
+            curX += f.mag * Math.cos(rad);
+            curY += f.mag * Math.sin(rad);
+            pts.push({ x: curX, y: curY });
+          }
+          /* Bounding box across all chain points AND origin. */
+          let minX = 0;
+          let maxX = 0;
+          let minY = 0;
+          let maxY = 0;
+          for (const p of pts) {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+          }
+          const spanX = maxX - minX || 1;
+          const spanY = maxY - minY || 1;
+          const pad = 26;
+          const sx = (viewW - pad * 2) / spanX;
+          const sy = (diagramH - pad * 2) / spanY;
+          const s = Math.min(sx, sy);
+          const offsetX = pad + (viewW - pad * 2 - spanX * s) / 2 - minX * s;
+          const offsetY =
+            captionH +
+            pad +
+            (diagramH - pad * 2 - spanY * s) / 2 +
+            maxY * s; /* math y up → svg y down */
+          /* Caption row at top. */
+          const caption = document.createElementNS(svgNS, "text");
+          caption.setAttribute("x", String(viewW / 2));
+          caption.setAttribute("y", "18");
+          caption.setAttribute("font-family", "'Share Tech Mono', monospace");
+          caption.setAttribute("font-size", "12");
+          caption.setAttribute("fill", "#78909c");
+          caption.setAttribute("text-anchor", "middle");
+          caption.textContent = T("resultantCaption");
+          card.appendChild(caption);
+          /* Faded contributing force arrows, tip-to-tail. No labels in-figure —
+             the legend strip below maps colors to names. Dots at tail and tip
+             keep the joints legible even when the chain overlaps the Net. */
+          for (let i = 0; i < state.forces.length; i += 1) {
+            const p0 = pts[i];
+            const p1 = pts[i + 1];
+            const ax = offsetX + p0.x * s;
+            const ay = offsetY - p0.y * s;
+            const bx = offsetX + p1.x * s;
+            const by = offsetY - p1.y * s;
+            appendArrow(
+              card,
+              ax,
+              ay,
+              bx,
+              by,
+              state.forces[i].color,
+              2,
+              9,
+              0.45,
+            );
+            appendDot(card, ax, ay, state.forces[i].color, 2.5);
+            appendDot(card, bx, by, state.forces[i].color, 2.5);
+          }
+          /* Bold Net resultant on top, first tail → last head. */
+          const start = pts[0];
+          const end = pts[pts.length - 1];
+          appendArrow(
+            card,
+            offsetX + start.x * s,
+            offsetY - start.y * s,
+            offsetX + end.x * s,
+            offsetY - end.y * s,
+            NET_COLOR,
+            5.5,
+            18,
+            1,
+          );
+          /* Legend strip below the diagram. */
+          renderLegend(card, viewW, viewH - legendH);
+        }
+
+        function renderLegend(card, viewW, yTop) {
+          const svgNS = "http://www.w3.org/2000/svg";
+          const entries = [];
+          for (let i = 0; i < state.forces.length; i += 1) {
+            entries.push({
+              label: state.forces[i].label,
+              color: state.forces[i].color,
+              opacity: 0.55,
+              stroke: 2,
+              headLen: 7,
+            });
+          }
+          entries.push({
+            label: "Net",
+            color: NET_COLOR,
+            opacity: 1,
+            stroke: 4,
+            headLen: 10,
+          });
+          const fontSize = 12;
+          const charW = 8; /* Share Tech Mono approx px per glyph at 12px. */
+          const swatchW = 20;
+          const swatchToText = 6;
+          const widths = entries.map(
+            (e) => swatchW + swatchToText + e.label.length * charW,
+          );
+          let gap = 14;
+          const sumWidths = widths.reduce((a, b) => a + b, 0);
+          if (sumWidths + gap * (entries.length - 1) > viewW - 12) {
+            gap = 10;
+          }
+          const totalW = sumWidths + gap * (entries.length - 1);
+          let x = (viewW - totalW) / 2;
+          const y = yTop + 18; /* Vertical center of the legend strip. */
+          for (let i = 0; i < entries.length; i += 1) {
+            const e = entries[i];
+            appendArrow(
+              card,
+              x,
+              y,
+              x + swatchW,
+              y,
+              e.color,
+              e.stroke,
+              e.headLen,
+              e.opacity,
+            );
+            const lbl = document.createElementNS(svgNS, "text");
+            lbl.setAttribute("x", String(x + swatchW + swatchToText));
+            lbl.setAttribute("y", String(y));
+            lbl.setAttribute("font-family", "'Share Tech Mono', monospace");
+            lbl.setAttribute("font-weight", "700");
+            lbl.setAttribute("font-size", String(fontSize));
+            lbl.setAttribute("fill", e.color);
+            lbl.setAttribute("dominant-baseline", "middle");
+            lbl.textContent = e.label;
+            card.appendChild(lbl);
+            x += widths[i] + gap;
+          }
+        }
+
+        function appendDot(svg, cx, cy, color, r) {
+          const svgNS = "http://www.w3.org/2000/svg";
+          const circle = document.createElementNS(svgNS, "circle");
+          circle.setAttribute("cx", String(cx));
+          circle.setAttribute("cy", String(cy));
+          circle.setAttribute("r", String(r));
+          circle.setAttribute("fill", color);
+          svg.appendChild(circle);
+        }
+
+        function appendArrow(
+          svg,
+          sx,
+          sy,
+          ex,
+          ey,
+          color,
+          width,
+          headLen,
+          opacity,
+        ) {
+          const svgNS = "http://www.w3.org/2000/svg";
+          const ang = Math.atan2(ey - sy, ex - sx);
+          const lx = ex - Math.cos(ang) * (headLen * 0.6);
+          const ly = ey - Math.sin(ang) * (headLen * 0.6);
+          const line = document.createElementNS(svgNS, "line");
+          line.setAttribute("x1", String(sx));
+          line.setAttribute("y1", String(sy));
+          line.setAttribute("x2", String(lx));
+          line.setAttribute("y2", String(ly));
+          line.setAttribute("stroke", color);
+          line.setAttribute("stroke-width", String(width));
+          line.setAttribute("stroke-linecap", "round");
+          if (opacity !== undefined && opacity < 1) {
+            line.setAttribute("opacity", String(opacity));
+          }
+          svg.appendChild(line);
+          const headHalf = headLen * 0.45;
+          const tri = document.createElementNS(svgNS, "polygon");
+          const p1x = ex;
+          const p1y = ey;
+          const p2x = ex - Math.cos(ang) * headLen + Math.sin(ang) * headHalf;
+          const p2y = ey - Math.sin(ang) * headLen - Math.cos(ang) * headHalf;
+          const p3x = ex - Math.cos(ang) * headLen - Math.sin(ang) * headHalf;
+          const p3y = ey - Math.sin(ang) * headLen + Math.cos(ang) * headHalf;
+          tri.setAttribute(
+            "points",
+            p1x + "," + p1y + " " + p2x + "," + p2y + " " + p3x + "," + p3y,
+          );
+          tri.setAttribute("fill", color);
+          if (opacity !== undefined && opacity < 1) {
+            tri.setAttribute("opacity", String(opacity));
+          }
+          svg.appendChild(tri);
+        }
+
+        /* ───────── REVEAL + SCORING ───────── */
+        let rafId = 0;
+        let overlayTimeoutId = 0;
+
+        function startReveal() {
+          if (state.guessAngleDeg === null) return;
+          state.phase = "revealing";
+          state.revealStart = performance.now();
+          document.getElementById("testBtn").disabled = true;
+          updatePromptByPhase();
+          updateCanvasCursor();
+          if (state.reducedMotion) {
+            finishReveal();
+            return;
+          }
+          if (rafId) cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(revealStep);
+        }
+
+        function revealStep(ts) {
+          const elapsed = ts - state.revealStart;
+          drawAll();
+          if (elapsed >= OVERLAY_DELAY_MS) {
+            finishReveal();
+            return;
+          }
+          rafId = requestAnimationFrame(revealStep);
+        }
+
+        function finishReveal() {
+          state.phase = "resolved";
+          const delta = angularDelta(
+            state.guessAngleDeg,
+            state.resultant.angleDeg,
+          );
+          state.lastDelta = delta;
+          state.lastResult = classifyDelta(delta);
+          updateReadouts();
+          updateInfoText();
+          updateResultantPanel();
+          updatePromptByPhase();
+          updateCanvasCursor();
+          drawAll();
+          announceResult();
+          /* Hold the resolved board still for a beat before the overlay covers
+             it. The phase check guards against retry / new-round / level-switch
+             during the settle — those move the phase away from "resolved" and
+             this callback then no-ops. */
+          if (overlayTimeoutId) clearTimeout(overlayTimeoutId);
+          overlayTimeoutId = window.setTimeout(() => {
+            overlayTimeoutId = 0;
+            if (state.phase === "resolved") {
+              showResultOverlay();
+            }
+          }, RESULT_SETTLE_MS);
+        }
+
+        function classifyDelta(delta) {
+          if (delta <= PERFECT_DEG) return "perfect";
+          const cfg = getDifficulty(state.level);
+          if (delta <= cfg.closeDeg) return "close";
+          if (delta <= cfg.farDeg) return "far";
+          return "miss";
+        }
+
+        function announceResult() {
+          const live = document.getElementById("ariaLive");
+          const map = {
+            perfect: "ariaResultPerfect",
+            close: "ariaResultClose",
+            far: "ariaResultFar",
+            miss: "ariaResultMiss",
+          };
+          const rounded = Math.round(state.lastDelta);
+          live.textContent = fmt(T(map[state.lastResult]), rounded);
+        }
+
+        /* ───────── RESULT OVERLAY ───────── */
+        function showResultOverlay() {
+          hideResultOverlay();
+          const overlay = document.createElement("div");
+          overlay.className = "result-overlay";
+          const tier = state.lastResult;
+          const palette = {
+            perfect: {
+              bg: "rgba(0,200,83,0.92)",
+              emoji: "🎯",
+            },
+            close: {
+              bg: "rgba(25,118,210,0.90)",
+              emoji: "👍",
+            },
+            far: {
+              bg: "rgba(249,168,37,0.92)",
+              emoji: "🤔",
+            },
+            miss: {
+              bg: "rgba(211,47,47,0.92)",
+              emoji: "❌",
+            },
+          };
+          const titleKey = {
+            perfect: "perfectHit",
+            close: "closeHit",
+            far: "farHit",
+            miss: "miss",
+          }[tier];
+          overlay.style.background = palette[tier].bg;
+          const emojiEl = document.createElement("div");
+          emojiEl.className = "overlay-emoji";
+          emojiEl.textContent = palette[tier].emoji;
+          overlay.appendChild(emojiEl);
+          const msgEl = document.createElement("div");
+          msgEl.className = "overlay-msg";
+          msgEl.textContent = T(titleKey);
+          overlay.appendChild(msgEl);
+          const subEl = document.createElement("div");
+          subEl.className = "overlay-sub";
+          subEl.textContent = fmt(T("offBy"), Math.round(state.lastDelta));
+          overlay.appendChild(subEl);
+          const hintEl = document.createElement("div");
+          hintEl.className = "overlay-hint";
+          hintEl.textContent = T("clickToDismiss");
+          overlay.appendChild(hintEl);
+          overlay.addEventListener("click", hideResultOverlay);
+          document.body.appendChild(overlay);
+          /* Esc / Enter / Space dismiss too. */
+          document.addEventListener("keydown", overlayKey);
+        }
+
+        function overlayKey(e) {
+          if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+            hideResultOverlay();
+            e.preventDefault();
+          }
+        }
+
+        function hideResultOverlay() {
+          const existing = document.querySelector(".result-overlay");
+          if (existing) existing.remove();
+          document.removeEventListener("keydown", overlayKey);
+        }
+
+        /* ───────── TRANSLATIONS ───────── */
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
+          document.getElementById("titleText").textContent = T("title");
+          document.getElementById("subtitleText").textContent = T("subtitle");
+          document.getElementById("langBtn").textContent =
+            state.lang === "en" ? "PL" : "EN";
+          document
+            .getElementById("langBtn")
+            .setAttribute("aria-label", T("ariaLang"));
+          document.getElementById("lblLevel").textContent = T("level");
+          document.getElementById("lblMission").textContent = T("mission");
+          document.getElementById("lblControls").textContent = T("controls");
+          document.getElementById("lblReadouts").textContent = T("readouts");
+          document.getElementById("lblResultant").textContent = T("resultant");
+          document.getElementById("lblInfo").textContent = T("info");
+          document.getElementById("lblReadLevel").textContent = T("level");
+          document.getElementById("lblReadForces").textContent =
+            T("forcesReadout");
+          document.getElementById("lblReadRound").textContent = T("round");
+          document.getElementById("lblReadResult").textContent =
+            T("lastResult");
+          document.getElementById("missionText").textContent = T("missionLine");
+          document.getElementById("testBtn").textContent = T("testPath");
+          document
+            .getElementById("testBtn")
+            .setAttribute("aria-label", T("ariaTest"));
+          document.getElementById("retryBtn").textContent = T("retry");
+          document
+            .getElementById("retryBtn")
+            .setAttribute("aria-label", T("ariaRetry"));
+          document.getElementById("newRoundBtn").textContent = T("newRound");
+          document
+            .getElementById("newRoundBtn")
+            .setAttribute("aria-label", T("ariaNewRound"));
+          document
+            .getElementById("board")
+            .setAttribute("aria-label", T("ariaBoard"));
+          for (let i = 1; i <= 6; i += 1) {
+            document
+              .getElementById("lvlBtn" + i)
+              .setAttribute("aria-label", T("ariaLevel" + i));
+          }
+          updateReadouts();
+          updateInfoText();
+          updateResultantPanel();
+          updatePromptByPhase();
+          /* Refresh any live overlay's text without reopening it. */
+          const overlay = document.querySelector(".result-overlay");
+          if (overlay) {
+            showResultOverlay();
+          }
+        }
+
+        function toggleLang() {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        }
+
+        /* ───────── INIT ───────── */
+        function init() {
+          state.reducedMotion = window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+          ).matches;
+          resize();
+          /* First round comes from the L1 authored bank so the very first board
+             a child sees is the deterministic 4@0° + 3@90° QA case. */
+          state.roundNumber = 0;
+          newRound(1);
+          applyTranslations();
+
+          document
+            .getElementById("langBtn")
+            .addEventListener("click", toggleLang);
+          document.getElementById("testBtn").addEventListener("click", () => {
+            if (state.phase === "aim" && state.guessAngleDeg !== null) {
+              startReveal();
+            }
+          });
+          document.getElementById("retryBtn").addEventListener("click", () => {
+            if (state.phase !== "revealing") retrySameForces();
+          });
+          document
+            .getElementById("newRoundBtn")
+            .addEventListener("click", () => {
+              if (state.phase !== "revealing") newRound(state.level);
+            });
+          for (let i = 1; i <= 6; i += 1) {
+            const btn = document.getElementById("lvlBtn" + i);
+            btn.addEventListener("click", () => setLevel(i));
+          }
+
+          const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+          if (mq.addEventListener) {
+            mq.addEventListener("change", (e) => {
+              state.reducedMotion = e.matches;
+            });
+          }
+
+          /* When the tab is hidden during a reveal, rebase the timing reference
+             on return so the animation never jumps past the overlay trigger. */
+          document.addEventListener("visibilitychange", () => {
+            if (!document.hidden && state.phase === "revealing") {
+              state.revealStart = performance.now();
+            }
+          });
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>
