@@ -11,7 +11,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
     <title>Forces</title>
     <meta
       name="description"
-      content="A child-friendly game that teaches graphical vector addition of forces. Look at the arrows pushing a puck, mentally combine them, and predict where the puck will first cross a ring around it."
+      content="A child-friendly game that teaches graphical vector addition of forces. Look at the arrows pushing a puck, mentally combine them, and predict where the puck will first reach a ring around it."
     />
     <link
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
@@ -212,7 +212,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         flex-wrap: wrap;
       }
       .level-btn {
-        width: 36px;
+        width: 32px;
         height: 40px;
         border-radius: 6px;
         border: 1.5px solid var(--panel-border);
@@ -263,11 +263,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         transition: all 0.15s;
         text-align: center;
         touch-action: manipulation;
-        min-height: 40px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .action-btn svg {
+        display: block;
       }
       .action-btn:hover:not(:disabled) {
         background: #f0ede6;
         border-color: var(--accent);
+        color: var(--accent);
       }
       .action-btn:disabled {
         opacity: 0.4;
@@ -283,6 +290,228 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border-color: var(--accent);
       }
       .action-btn.primary:hover:not(:disabled) {
+        background: #37474f;
+        border-color: #37474f;
+      }
+      .play-now {
+        position: absolute;
+        width: 44px;
+        height: 44px;
+        margin: -22px 0 0 -22px;
+        border-radius: 8px;
+        background: #1976d2;
+        color: #fff;
+        border: 2px solid #fff;
+        box-shadow: 0 3px 10px rgba(25, 118, 210, 0.4);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 6;
+        padding: 0;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s,
+          background 0.15s;
+      }
+      .play-now svg {
+        display: block;
+      }
+      .play-now:hover {
+        background: #1565c0;
+        transform: scale(1.08);
+        box-shadow: 0 5px 16px rgba(25, 118, 210, 0.5);
+      }
+      .play-now:focus-visible {
+        outline: 2px solid #1976d2;
+        outline-offset: 3px;
+      }
+      .play-now[hidden] {
+        display: none;
+      }
+      /* Intro mode: hide every normal panel section while .panel carries
+         the intro-mode class. The dedicated intro panel sits inside .panel
+         as well and is exempted via the :not selector below. */
+      .panel.intro-mode > .panel-section {
+        display: none;
+      }
+      .panel.intro-mode > .intro-panel {
+        display: flex;
+      }
+      .intro-panel {
+        display: none;
+        padding: 18px 20px 20px;
+        flex-direction: column;
+        gap: 14px;
+        flex: 1;
+        background: var(--panel);
+      }
+      .intro-back {
+        flex: none;
+        align-self: stretch;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        min-height: 40px;
+      }
+      .intro-back svg {
+        display: block;
+      }
+      .intro-back:hover {
+        background: #f0ede6;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .intro-back:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .intro-step-title {
+        font-family: "Outfit", sans-serif;
+        font-size: 19px;
+        font-weight: 700;
+        color: var(--text-head);
+        line-height: 1.25;
+        margin: 0;
+      }
+      .intro-commentary {
+        font-size: 14px;
+        color: #546e7a;
+        line-height: 1.55;
+        margin: 0;
+        white-space: pre-line;
+      }
+      .intro-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .intro-nav-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      .intro-nav-btn svg {
+        display: block;
+      }
+      .intro-nav-btn:hover:not(:disabled) {
+        background: #f0ede6;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .intro-nav-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .intro-nav-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .intro-counter {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-dim);
+        min-width: 60px;
+        text-align: center;
+      }
+      .intro-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 44px;
+      }
+      .intro-controls:empty {
+        display: none;
+      }
+      .intro-seg {
+        display: flex;
+        gap: 6px;
+      }
+      .intro-seg-btn {
+        flex: 1;
+        padding: 8px 4px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        touch-action: manipulation;
+        min-height: 40px;
+      }
+      .intro-seg-btn:hover {
+        background: #f0ede6;
+      }
+      .intro-seg-btn.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+      .intro-seg-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .intro-action-btn {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+      }
+      .intro-action-btn:hover {
+        background: #f0ede6;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .intro-action-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .intro-action-btn.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .intro-action-btn.primary:hover {
         background: #37474f;
         border-color: #37474f;
       }
@@ -447,8 +676,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           <span id="titleText">Forces</span>
         </h1>
         <p id="subtitleText">
-          Add the pushes in your head and pick where the puck will cross the
-          ring.
+          Add the pushes in your head and pick where the puck will reach the
+          ring first.
         </p>
       </div>
       <button
@@ -465,6 +694,23 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       <div class="canvas-wrap">
         <canvas id="board" tabindex="0" aria-label="Forces game board"></canvas>
         <div class="canvas-prompt" id="canvasPrompt"></div>
+        <button
+          type="button"
+          class="play-now"
+          id="playNowBtn"
+          aria-label="Test path"
+          hidden
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <polygon points="7,5 19,12 7,19" />
+          </svg>
+        </button>
         <div class="sr-only" id="ariaLive" aria-live="polite"></div>
       </div>
 
@@ -495,6 +741,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             <button type="button" class="level-btn" data-level="6" id="lvlBtn6">
               6
             </button>
+            <button type="button" class="level-btn" data-level="7" id="lvlBtn7">
+              7
+            </button>
           </div>
         </div>
 
@@ -510,19 +759,97 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           <div class="btn-row">
             <button
               type="button"
-              class="action-btn primary"
-              id="testBtn"
-              disabled
+              class="action-btn"
+              id="btnIntro"
+              aria-label="Intro"
+              title="Intro"
             >
-              Test path
+              <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  d="M9 21h6v-1H9v1zm3-19c-4.41 0-8 3.59-8 8 0 2.55 1.21 4.82 3.08 6.27.27.21.46.51.55.84L8 19h8l.37-1.89c.09-.33.28-.63.55-.84A7.985 7.985 0 0 0 20 10c0-4.41-3.59-8-8-8zm3.69 12.74c-.5.39-.86.94-1.02 1.57L14.34 17h-4.68l-.33-1.69c-.16-.63-.52-1.18-1.02-1.57A5.984 5.984 0 0 1 6 10c0-3.31 2.69-6 6-6s6 2.69 6 6c0 1.94-.93 3.71-2.31 4.74z"
+                />
+              </svg>
             </button>
-          </div>
-          <div class="btn-row">
-            <button type="button" class="action-btn" id="retryBtn">
-              Retry same forces
+            <button
+              type="button"
+              class="action-btn"
+              id="newRoundBtn"
+              aria-label="New round"
+              title="New round"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="3" />
+                <circle
+                  cx="8.5"
+                  cy="8.5"
+                  r="1.4"
+                  fill="currentColor"
+                  stroke="none"
+                />
+                <circle
+                  cx="15.5"
+                  cy="8.5"
+                  r="1.4"
+                  fill="currentColor"
+                  stroke="none"
+                />
+                <circle
+                  cx="8.5"
+                  cy="15.5"
+                  r="1.4"
+                  fill="currentColor"
+                  stroke="none"
+                />
+                <circle
+                  cx="15.5"
+                  cy="15.5"
+                  r="1.4"
+                  fill="currentColor"
+                  stroke="none"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="1.4"
+                  fill="currentColor"
+                  stroke="none"
+                />
+              </svg>
             </button>
-            <button type="button" class="action-btn" id="newRoundBtn">
-              New round
+            <button
+              type="button"
+              class="action-btn"
+              id="retryBtn"
+              aria-label="Retry same forces"
+              title="Retry same forces"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  d="M17.65 6.35A7.96 7.96 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A6 6 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                />
+              </svg>
             </button>
           </div>
         </div>
@@ -570,6 +897,82 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             All arrows push through the centre. The puck starts from rest.
           </div>
         </div>
+
+        <div class="intro-panel" id="introPanel" aria-hidden="true">
+          <span class="section-label" id="lblIntroTitle">Intro</span>
+          <button
+            type="button"
+            class="intro-back"
+            id="btnIntroExit"
+            aria-label="Exit intro"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            <span id="introExitLabel">Back to game</span>
+          </button>
+          <h2 class="intro-step-title" id="introStepTitle">The Puck</h2>
+          <p class="intro-commentary" id="introCommentary"></p>
+          <div class="intro-nav">
+            <button
+              type="button"
+              class="intro-nav-btn"
+              id="btnIntroPrev"
+              aria-label="Previous step"
+              title="Previous step"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <span class="intro-counter" id="introCounter" aria-live="polite"
+              >1 / 9</span
+            >
+            <button
+              type="button"
+              class="intro-nav-btn"
+              id="btnIntroNext"
+              aria-label="Next step"
+              title="Next step"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+          <div class="intro-controls" id="introControls"></div>
+        </div>
       </div>
     </main>
 
@@ -582,7 +985,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           en: {
             title: "Forces",
             subtitle:
-              "Add the pushes in your head and pick where the puck will cross the ring.",
+              "Add the pushes in your head and pick where the puck will reach the ring first.",
             level: "Level",
             mission: "Mission",
             controls: "Controls",
@@ -592,7 +995,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             forcesReadout: "Forces",
             round: "Round",
             lastResult: "Last result",
-            testPath: "Test path",
             retry: "Retry same forces",
             newRound: "New round",
             missionLine: "Pick the ring point the puck reaches first.",
@@ -605,6 +1007,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "Because the puck started from rest, it first moved along the net force.",
             resultantPlaceholder: "Test the path to reveal the net force.",
             resultantCaption: "Net force = sum of all pushes",
+            netLabel: "Net",
             perfectHit: "Perfect hit",
             closeHit: "Close hit",
             farHit: "Far hit",
@@ -618,6 +1021,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ariaLevel4: "Level 4, three forces, tighter hit zone",
             ariaLevel5: "Level 5, four forces",
             ariaLevel6: "Level 6, four forces, tightest hit zone",
+            ariaLevel7: "Level 7, five forces, ultimate",
             ariaTest: "Test path",
             ariaRetry: "Retry with the same forces",
             ariaNewRound: "Generate a new round",
@@ -631,22 +1035,65 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ariaResultMiss:
               "Miss. Your guess was {0} degrees from the net force.",
             dash: "—",
+            intro: "Intro",
+            introTitle: "How forces work",
+            introExit: "Exit intro",
+            introBack: "Back to game",
+            introPrev: "Previous step",
+            introNext: "Next step",
+            introCounter: "{0} / {1}",
+            introStartGame: "Start game",
+            introReplayMotion: "Replay motion",
+            introShuffleOrder: "Shuffle order",
+            introPartial: "Partial",
+            introBalanced: "Balanced",
+            introCalloutDirection: "direction",
+            introCalloutLength: "length = strength",
+            introNetForceZero: "net force = 0",
+            introReducedMotionNote:
+              "Motion is paused — your device has reduced-motion on.",
+            introStep1Title: "The Puck",
+            introStep1Body:
+              "This app uses a top-down puck. It starts each round at rest.\n\nWe ignore friction here so we can focus on how pushes combine.",
+            introStep2Title: "One Force Arrow",
+            introStep2Body:
+              "A force arrow tells you two things: its direction and its size.\n\nThe arrow points where the push acts, and a longer arrow means a stronger push.",
+            introStep3Title: "Through The Centre",
+            introStep3Body:
+              "In this app, every push acts through the centre of the puck.\n\nThat is why we can ignore spinning here and focus only on the combined push.",
+            introStep4Title: "Same Direction Adds",
+            introStep4Body:
+              "If two pushes point the same way, they add into one longer push in that same direction.\n\nHere the green arrow is the net force.",
+            introStep5Title: "Opposite Directions Cancel",
+            introStep5Body:
+              "Opposite pushes subtract. If they are equal, the net force is zero.\n\nZero net force does not mean “no forces”. It means the forces balance.",
+            introStep6Title: "Angled Forces Add Head-To-Tail",
+            introStep6Body:
+              "For angled pushes, slide one arrow so its tail meets the other arrow’s head.\n\nThe green arrow from the first tail to the last head is the resultant.",
+            introStep7Title: "Order Does Not Matter",
+            introStep7Body:
+              "You can add the same forces in a different order and still get the same net force.\n\nThe chain changes shape, but the green answer stays the same.",
+            introStep8Title: "From Net Force To Motion",
+            introStep8Body:
+              "The green arrow is the net force, so it sets the puck’s acceleration.\n\nBecause this puck starts from rest and the pushes stay on, it first moves along the green arrow.",
+            introStep9Title: "How The Game Works",
+            introStep9Body:
+              "In the game, you will see only the colored force arrows first.\n\nYour job is to predict where the puck will reach the ring first. Then the app reveals the green net force and the real path.",
           },
           pl: {
             title: "Siły",
             subtitle:
-              "Dodaj w głowie wszystkie pchnięcia i wskaż, gdzie krążek przetnie pierścień.",
+              "Dodaj w głowie wszystkie pchnięcia i wskaż, gdzie krążek dotrze do pierścienia najpierw.",
             level: "Poziom",
             mission: "Misja",
             controls: "Sterowanie",
             readouts: "Odczyty",
             resultant: "Wypadkowa",
-            info: "Info",
+            info: "Informacje",
             forcesReadout: "Siły",
             round: "Runda",
             lastResult: "Ostatni wynik",
-            testPath: "Sprawdź tor",
-            retry: "Te same siły",
+            retry: "Powtórz te same siły",
             newRound: "Nowa runda",
             missionLine:
               "Wskaż punkt pierścienia, do którego krążek dotrze najpierw.",
@@ -660,9 +1107,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "Ponieważ krążek startował w spoczynku, najpierw poruszył się wzdłuż siły wypadkowej.",
             resultantPlaceholder: "Sprawdź tor, aby zobaczyć siłę wypadkową.",
             resultantCaption: "Wypadkowa = suma wszystkich pchnięć",
+            netLabel: "Wypadkowa",
             perfectHit: "Idealne trafienie",
             closeHit: "Bliskie trafienie",
-            farHit: "Dalekie trafienie",
+            farHit: "Niedokładne trafienie",
             miss: "Pudło",
             offBy: "Różnica: {0}°",
             clickToDismiss: "Kliknij, aby kontynuować",
@@ -673,19 +1121,64 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ariaLevel4: "Poziom 4, trzy siły, węższa strefa trafienia",
             ariaLevel5: "Poziom 5, cztery siły",
             ariaLevel6: "Poziom 6, cztery siły, najwęższa strefa trafienia",
+            ariaLevel7: "Poziom 7, pięć sił, najwyższy poziom",
             ariaTest: "Sprawdź tor",
             ariaRetry: "Powtórz z tymi samymi siłami",
             ariaNewRound: "Wygeneruj nową rundę",
             ariaLang: "Zmień język",
             ariaResultPerfect:
-              "Idealne trafienie. Twój strzał był {0} stopni od siły wypadkowej.",
+              "Idealne trafienie. Twoje wskazanie było oddalone o {0}° od siły wypadkowej.",
             ariaResultClose:
-              "Bliskie trafienie. Twój strzał był {0} stopni od siły wypadkowej.",
+              "Bliskie trafienie. Twoje wskazanie było oddalone o {0}° od siły wypadkowej.",
             ariaResultFar:
-              "Dalekie trafienie. Twój strzał był {0} stopni od siły wypadkowej.",
+              "Niedokładne trafienie. Twoje wskazanie było oddalone o {0}° od siły wypadkowej.",
             ariaResultMiss:
-              "Pudło. Twój strzał był {0} stopni od siły wypadkowej.",
+              "Pudło. Twoje wskazanie było oddalone o {0}° od siły wypadkowej.",
             dash: "—",
+            intro: "Wstęp",
+            introTitle: "Jak działają siły",
+            introExit: "Wyjdź ze wstępu",
+            introBack: "Wróć do gry",
+            introPrev: "Poprzedni krok",
+            introNext: "Następny krok",
+            introCounter: "{0} / {1}",
+            introStartGame: "Zacznij grę",
+            introReplayMotion: "Powtórz ruch",
+            introShuffleOrder: "Zmień kolejność",
+            introPartial: "Częściowo",
+            introBalanced: "Równowaga",
+            introCalloutDirection: "kierunek",
+            introCalloutLength: "długość = siła",
+            introNetForceZero: "siła wypadkowa = 0",
+            introReducedMotionNote:
+              "Ruch jest wyłączony — twoje urządzenie ma włączony tryb ograniczonej animacji.",
+            introStep1Title: "Krążek",
+            introStep1Body:
+              "Ta aplikacja pokazuje krążek z góry. W każdej rundzie startuje on ze spoczynku.\n\nPomijamy tutaj tarcie, żeby skupić się na tym, jak pchnięcia łączą się ze sobą.",
+            introStep2Title: "Jedna strzałka siły",
+            introStep2Body:
+              "Strzałka siły mówi o dwóch rzeczach: o kierunku i o wielkości siły.\n\nStrzałka pokazuje, w którą stronę działa pchnięcie, a dłuższa strzałka oznacza silniejsze pchnięcie.",
+            introStep3Title: "Przez środek",
+            introStep3Body:
+              "W tej aplikacji każde pchnięcie działa przez środek krążka.\n\nDlatego możemy pominąć obrót i skupić się tylko na pchnięciu wypadkowym.",
+            introStep4Title: "Siły o tym samym kierunku się dodają",
+            introStep4Body:
+              "Jeśli dwa pchnięcia są skierowane tak samo, dodają się do jednej dłuższej strzałki w tym samym kierunku.\n\nTutaj zielona strzałka to siła wypadkowa.",
+            introStep5Title: "Siły o przeciwnych kierunkach się znoszą",
+            introStep5Body:
+              "Pchnięcia w przeciwnych kierunkach odejmują się od siebie. Jeśli są równe, siła wypadkowa wynosi zero.\n\nZero siły wypadkowej nie znaczy „brak sił”. To znaczy, że siły się równoważą.",
+            introStep6Title: "Siły pod kątem dodajemy metodą „głowa do ogona”",
+            introStep6Body:
+              "Przy pchnięciach pod kątem przesuń jedną strzałkę tak, aby jej ogon spotkał się z głową drugiej.\n\nZielona strzałka od pierwszego ogona do ostatniej głowy to wypadkowa.",
+            introStep7Title: "Kolejność nie ma znaczenia",
+            introStep7Body:
+              "Te same siły możesz dodać w innej kolejności i nadal otrzymasz tę samą siłę wypadkową.\n\nŁańcuch zmienia kształt, ale zielona odpowiedź pozostaje taka sama.",
+            introStep8Title: "Od siły wypadkowej do ruchu",
+            introStep8Body:
+              "Zielona strzałka to siła wypadkowa, więc wyznacza przyspieszenie krążka.\n\nPonieważ ten krążek startuje ze spoczynku, a pchnięcia cały czas działają, najpierw porusza się wzdłuż zielonej strzałki.",
+            introStep9Title: "Jak działa gra",
+            introStep9Body:
+              "W grze najpierw zobaczysz tylko kolorowe strzałki sił.\n\nTwoim zadaniem jest przewidzieć, gdzie krążek dotrze do pierścienia najpierw. Potem aplikacja pokaże zieloną siłę wypadkową i prawdziwy tor ruchu.",
           },
         };
 
@@ -698,8 +1191,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         /* ───────── CONSTANTS ───────── */
-        const FORCE_COLORS = ["#d32f2f", "#1565c0", "#f9a825", "#00897b"];
-        const FORCE_LABELS = ["F1", "F2", "F3", "F4"];
+        const FORCE_COLORS = [
+          "#d32f2f",
+          "#1565c0",
+          "#f9a825",
+          "#00897b",
+          "#7b1fa2",
+        ];
+        const FORCE_LABELS = ["F1", "F2", "F3", "F4", "F5"];
         const NET_COLOR = "#00c853";
         const PERFECT_DEG = 4;
         const ANGLE_GRID = 30;
@@ -715,20 +1214,26 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           4: { level: 4, vectorCount: 3, closeDeg: 8, farDeg: 12 },
           5: { level: 5, vectorCount: 4, closeDeg: 7, farDeg: 10 },
           6: { level: 6, vectorCount: 4, closeDeg: 6, farDeg: 8 },
+          7: { level: 7, vectorCount: 5, closeDeg: 6, farDeg: 8 },
         };
 
         function getDifficulty(level) {
           return DIFFICULTY_LEVELS[level];
         }
         const ARROW_GROW_MS = 350;
-        const PUCK_MOVE_MS = 850;
+        /* Time from motion start until the body's leading rim first touches
+           the prediction ring — the scoring moment. */
+        const RING_REACH_MS = 850;
+        /* Total motion duration. After ring contact the body keeps
+           accelerating along the resultant (no friction in this model) and
+           exits the canvas viewport before the motion phase ends. */
+        const PUCK_MOVE_MS = 1650;
         const WEDGES_FADE_MS = 300;
-        /* After the wedges fade in, hold the resolved board still for a beat so
-           the child can study the green Net arrow, the cross-point, and the
-           three wedge tiers before the result overlay covers everything. */
+        /* After the wedges fade in, hold the resolved board still for a beat
+           so the child can study the trail, the wedges, and the head-to-tail
+           card before the result overlay appears. */
         const RESULT_SETTLE_MS = 1100;
-        const OVERLAY_DELAY_MS =
-          ARROW_GROW_MS + PUCK_MOVE_MS + WEDGES_FADE_MS + 50;
+        const OVERLAY_DELAY_MS = ARROW_GROW_MS + PUCK_MOVE_MS + 50;
 
         /* Authored fallback bank keyed by vector count (also the QA validation
            sets per spec §15). Only used when the generator exhausts its 200
@@ -789,6 +1294,36 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               { mag: 3, angleDeg: 0 },
             ],
           ],
+          5: [
+            [
+              { mag: 5, angleDeg: 0 },
+              { mag: 5, angleDeg: 180 },
+              { mag: 3, angleDeg: 90 },
+              { mag: 2, angleDeg: 270 },
+              { mag: 3, angleDeg: 30 },
+            ],
+            [
+              { mag: 4, angleDeg: 30 },
+              { mag: 4, angleDeg: 210 },
+              { mag: 3, angleDeg: 90 },
+              { mag: 2, angleDeg: 270 },
+              { mag: 5, angleDeg: 60 },
+            ],
+            [
+              { mag: 5, angleDeg: 60 },
+              { mag: 5, angleDeg: 240 },
+              { mag: 3, angleDeg: 0 },
+              { mag: 4, angleDeg: 150 },
+              { mag: 2, angleDeg: 120 },
+            ],
+            [
+              { mag: 6, angleDeg: 0 },
+              { mag: 5, angleDeg: 180 },
+              { mag: 3, angleDeg: 60 },
+              { mag: 4, angleDeg: 270 },
+              { mag: 2, angleDeg: 330 },
+            ],
+          ],
         };
 
         /* ───────── STATE ───────── */
@@ -807,8 +1342,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           lastResult: null,
           lastDelta: null,
           revealStart: 0,
-          authoredIndex: { 2: 0, 3: 0, 4: 0 },
+          authoredIndex: { 2: 0, 3: 0, 4: 0, 5: 0 },
           reducedMotion: false,
+          unitPx: 0,
+          /* Intro mode state. introReturnState snapshots the normal-game
+             state so we can restore it cleanly on exit. introSceneState is
+             tiny per-step mutable state (variant choice, order index,
+             replay start time, autoplay loop position). */
+          introActive: false,
+          introStep: 1,
+          introSeen: false,
+          introReturnState: null,
+          introSceneState: {},
         };
 
         /* ───────── CANVAS ───────── */
@@ -821,7 +1366,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         let ringR = 0;
         let puckR = 0;
         let arrowMax = 0;
-        let unitPx = 0;
 
         function resize() {
           const rect = canvas.parentElement.getBoundingClientRect();
@@ -838,9 +1382,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ringR = clamp(Math.min(W, H) * 0.4, 160, 300);
           puckR = clamp(ringR * 0.1, 20, 30);
           arrowMax = ringR * 0.78;
-          /* Reserve unit length so the longest possible magnitude (6) fits. */
-          unitPx = arrowMax / 6;
+          recomputeUnitPx();
           drawAll();
+          updatePlayNowButton();
+        }
+
+        /* Adaptive per-round scale: arrow length encodes magnitude, and the
+           Net resultant must use the same scale as the input forces so the
+           graphical vector addition reads honestly. The shared denominator is
+           the largest magnitude in the current round including the Net. */
+        function recomputeUnitPx() {
+          let maxMag = 6;
+          if (state.forces && state.forces.length > 0) {
+            maxMag = state.resultant.mag;
+            for (const f of state.forces) {
+              if (f.mag > maxMag) maxMag = f.mag;
+            }
+          }
+          state.unitPx = arrowMax / Math.max(maxMag, 1);
         }
 
         window.addEventListener("resize", resize);
@@ -1005,6 +1564,46 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           return true;
         }
 
+        function validateLevel4(forces, R) {
+          /* Identical structure to validateLevel3 (near-opposition pair + an
+             off-axis vector), but for the 5-vector family. The puzzle gets
+             harder purely through having one more vector to track. */
+          if (forces.length !== 5) return false;
+          if (R.mag < 2.0) return false;
+          let oppPair = null;
+          for (let i = 0; i < forces.length; i += 1) {
+            for (let j = i + 1; j < forces.length; j += 1) {
+              const sep = circularSeparation(
+                forces[i].angleDeg,
+                forces[j].angleDeg,
+              );
+              if (sep >= 150 && sep <= 180) {
+                if (Math.abs(forces[i].mag - forces[j].mag) <= 1) {
+                  oppPair = [i, j];
+                  break;
+                }
+              }
+            }
+            if (oppPair) break;
+          }
+          if (!oppPair) return false;
+          const axis = normalizeDeg(
+            (forces[oppPair[0]].angleDeg + forces[oppPair[1]].angleDeg + 180) /
+              2,
+          );
+          let offAxis = false;
+          for (let k = 0; k < forces.length; k += 1) {
+            if (k === oppPair[0] || k === oppPair[1]) continue;
+            const offset = Math.min(
+              angularDelta(forces[k].angleDeg, axis),
+              angularDelta(forces[k].angleDeg, normalizeDeg(axis + 180)),
+            );
+            if (offset >= 30) offAxis = true;
+          }
+          if (!offAxis) return false;
+          return true;
+        }
+
         function randomMagnitude() {
           return 2 + Math.floor(Math.random() * 5); // 2..6 inclusive
         }
@@ -1036,7 +1635,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               ? validateLevel1
               : n === 3
                 ? validateLevel2
-                : validateLevel3;
+                : n === 4
+                  ? validateLevel3
+                  : validateLevel4;
           for (
             let attempt = 0;
             attempt < GENERATOR_MAX_ATTEMPTS;
@@ -1079,6 +1680,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const round = generateRound(level);
           state.forces = decorateForces(round.forces);
           state.resultant = round.resultant;
+          recomputeUnitPx();
           resetGuessAndPhase();
           updateReadouts();
           updateInfoText();
@@ -1091,7 +1693,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.guessAngleDeg = null;
           state.phase = "aim";
           state.revealStart = 0;
-          document.getElementById("testBtn").disabled = true;
           /* Cancel any pending result-overlay settle so a quick retry / new
              round doesn't get hit by a late overlay popup. */
           if (overlayTimeoutId) {
@@ -1099,6 +1700,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             overlayTimeoutId = 0;
           }
           updateCanvasCursor();
+          updatePlayNowButton();
+        }
+
+        /* Position and visibility of the on-canvas Play button. It sits just
+           outside the prediction ring along the guess angle, replacing the
+           old side-panel "Test path" button. Visible only during aim with a
+           guess placed. */
+        function updatePlayNowButton() {
+          const btn = document.getElementById("playNowBtn");
+          if (state.phase !== "aim" || state.guessAngleDeg === null) {
+            btn.hidden = true;
+            return;
+          }
+          const offsetFromRing = 56;
+          const p = angleToPoint(state.guessAngleDeg, ringR + offsetFromRing);
+          btn.style.left = p.x + "px";
+          btn.style.top = p.y + "px";
+          btn.hidden = false;
         }
 
         function updateCanvasCursor() {
@@ -1129,6 +1748,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         /* ───────── DRAWING ───────── */
         function drawAll() {
           if (!W || !H) return;
+          if (state.introActive) {
+            renderIntroBoard();
+            return;
+          }
           drawBackground();
           drawRing();
           drawTicks();
@@ -1158,7 +1781,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           drawForces();
           drawPuck();
           ctx.restore();
-          if (state.guessAngleDeg !== null && state.phase !== "revealing") {
+          if (state.guessAngleDeg !== null) {
             drawGuessMarker();
           }
         }
@@ -1168,21 +1791,31 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             return { x: 0, y: 0 };
           }
           const rad = deg2rad(state.resultant.angleDeg);
-          const maxDist = ringR - puckR;
+          const ringDist = ringR - puckR;
+          /* End-of-motion distance: continuous s ∝ t² profile through and
+             beyond the ring. With PUCK_MOVE_MS ≈ 1.94 × RING_REACH_MS this is
+             ~3.77× the ring distance — far enough to clear the canvas at any
+             realistic board size. */
+          const endRatio = PUCK_MOVE_MS / RING_REACH_MS;
+          const endDist = ringDist * endRatio * endRatio;
           if (state.phase === "resolved" || state.reducedMotion) {
             return {
-              x: Math.cos(rad) * maxDist,
-              y: -Math.sin(rad) * maxDist,
+              x: Math.cos(rad) * endDist,
+              y: -Math.sin(rad) * endDist,
             };
           }
           const elapsed = performance.now() - state.revealStart;
           if (elapsed <= ARROW_GROW_MS) return { x: 0, y: 0 };
-          const motionT = clamp((elapsed - ARROW_GROW_MS) / PUCK_MOVE_MS, 0, 1);
-          /* s ∝ t² acceleration-from-rest profile (spec §12.6). */
-          const s = motionT * motionT;
+          const t = clamp(elapsed - ARROW_GROW_MS, 0, PUCK_MOVE_MS);
+          /* Single continuous s ∝ t² acceleration-from-rest profile. At
+             t = RING_REACH_MS the body's leading rim touches the ring
+             (the scoring moment). The body keeps accelerating past it under
+             the same constant-force / no-friction model. */
+          const motionT = t / RING_REACH_MS;
+          const dist = ringDist * motionT * motionT;
           return {
-            x: Math.cos(rad) * maxDist * s,
-            y: -Math.sin(rad) * maxDist * s,
+            x: Math.cos(rad) * dist,
+            y: -Math.sin(rad) * dist,
           };
         }
 
@@ -1195,7 +1828,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             state.reducedMotion || isResolved
               ? 1
               : clamp(elapsed / ARROW_GROW_MS, 0, 1);
-          const netLen = arrowMax * 0.95 * growT;
+          /* Net length is now |R| × the per-round unit scale so the green
+             arrow honestly represents the resultant magnitude — sharing one
+             scale with the input arrows is the foundation of graphical
+             vector addition. */
+          const netLen = state.resultant.mag * state.unitPx * growT;
           drawNetArrowAt(state.resultant.angleDeg, netLen);
         }
 
@@ -1311,38 +1948,30 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         function drawForces() {
           for (let i = 0; i < state.forces.length; i += 1) {
-            const f = state.forces[i];
-            drawForceArrow(f, false);
+            drawForceArrow(state.forces[i]);
           }
         }
 
-        function drawForceArrow(f, isNet) {
+        function drawForceArrow(f) {
           const rad = deg2rad(f.angleDeg);
-          /* Magnitude in canvas pixels. */
-          const len = isNet
-            ? Math.min(arrowMax * 1.0, f.mag * unitPx)
-            : f.mag * unitPx;
-          /* Force arrows start at the puck rim so they look like they push the
-             puck rather than emerge from inside it; the line still encodes the
-             centre as the point of application because every arrow points
-             outward through the centre. */
-          const startR = puckR * 0.92;
-          const sx = cx + Math.cos(rad) * startR;
-          const sy = cy - Math.sin(rad) * startR;
-          const ex = cx + Math.cos(rad) * (startR + len);
-          const ey = cy - Math.sin(rad) * (startR + len);
-          const color = isNet ? NET_COLOR : f.color;
-          const headLen = isNet ? 22 : 20;
-          const lineWidth = isNet ? 6 : 4.5;
-          drawArrowSegment(sx, sy, ex, ey, color, lineWidth, headLen);
+          /* Visible length encodes magnitude in pixels. */
+          const visibleLen = f.mag * state.unitPx;
+          /* Tail at puck centre so each force's line of action passes through
+             the centre — the puck disc (drawn after drawForces) covers the
+             inner shaft, leaving only the rim-outward portion visible. The
+             visible length still encodes magnitude. */
+          const sx = cx;
+          const sy = cy;
+          const ex = cx + Math.cos(rad) * (puckR + visibleLen);
+          const ey = cy - Math.sin(rad) * (puckR + visibleLen);
+          drawArrowSegment(sx, sy, ex, ey, f.color, 4.5, 20);
           /* Label near tip, offset perpendicular for legibility. */
           const px = -Math.sin(rad);
           const py = -Math.cos(rad);
-          const labelOff = isNet ? 24 : 20;
-          const lx = ex + px * labelOff + Math.cos(rad) * 8;
-          const ly = ey + py * labelOff - Math.sin(rad) * 8;
+          const lx = ex + px * 20 + Math.cos(rad) * 8;
+          const ly = ey + py * 20 - Math.sin(rad) * 8;
           ctx.save();
-          ctx.fillStyle = color;
+          ctx.fillStyle = f.color;
           ctx.font = "700 18px 'Share Tech Mono', monospace";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
@@ -1382,30 +2011,59 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         function drawGuessMarker() {
-          const p = angleToPoint(state.guessAngleDeg, ringR);
+          drawViewfinderAt(state.guessAngleDeg);
+        }
+
+        function drawViewfinderAt(angleDeg) {
+          const p = angleToPoint(angleDeg, ringR);
+          const r = 10;
+          const armOuter = 15;
+          const armInner = 4;
           ctx.save();
-          /* Soft drop shadow so the marker reads as a physical chip sliding
-             around the ring rather than a flat overlay. */
-          ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
+          /* Soft drop shadow so the marker reads as a physical reticle on
+             the ring rather than a flat overlay. */
+          ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
           ctx.beginPath();
-          ctx.arc(p.x + 2, p.y + 3, 9, 0, Math.PI * 2);
+          ctx.arc(p.x + 2, p.y + 3, r + 1, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = "#1976d2";
-          ctx.strokeStyle = "#fff";
+          /* White halo behind everything so the reticle stays legible on
+             any background colour. */
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(p.x - armOuter, p.y);
+          ctx.lineTo(p.x - armInner, p.y);
+          ctx.moveTo(p.x + armInner, p.y);
+          ctx.lineTo(p.x + armOuter, p.y);
+          ctx.moveTo(p.x, p.y - armOuter);
+          ctx.lineTo(p.x, p.y - armInner);
+          ctx.moveTo(p.x, p.y + armInner);
+          ctx.lineTo(p.x, p.y + armOuter);
+          ctx.stroke();
+          /* Blue reticle on top of the halo. */
+          ctx.strokeStyle = "#1976d2";
           ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
           ctx.stroke();
-          /* Inner cross-hair matches the actual ring-cross indicator. */
-          ctx.strokeStyle = "#fff";
-          ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.moveTo(p.x - 4, p.y);
-          ctx.lineTo(p.x + 4, p.y);
-          ctx.moveTo(p.x, p.y - 4);
-          ctx.lineTo(p.x, p.y + 4);
+          ctx.moveTo(p.x - armOuter, p.y);
+          ctx.lineTo(p.x - armInner, p.y);
+          ctx.moveTo(p.x + armInner, p.y);
+          ctx.lineTo(p.x + armOuter, p.y);
+          ctx.moveTo(p.x, p.y - armOuter);
+          ctx.lineTo(p.x, p.y - armInner);
+          ctx.moveTo(p.x, p.y + armInner);
+          ctx.lineTo(p.x, p.y + armOuter);
           ctx.stroke();
+          /* Centre dot — locks the eye to the exact angle. */
+          ctx.fillStyle = "#1976d2";
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+          ctx.fill();
           ctx.restore();
         }
 
@@ -1414,53 +2072,55 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const elapsed = isResolved
             ? Number.POSITIVE_INFINITY
             : performance.now() - state.revealStart;
-          /* Dashed trail line: lengthens behind the moving body. */
-          if (elapsed > ARROW_GROW_MS) {
-            const motionT =
-              state.reducedMotion || isResolved
-                ? 1
-                : clamp((elapsed - ARROW_GROW_MS) / PUCK_MOVE_MS, 0, 1);
-            const s = motionT * motionT;
-            drawPathTrail(state.resultant.angleDeg, s);
+          /* Dashed trail line: lengthens with the body's current displacement
+             and naturally extends off-canvas once the body has exited. */
+          if (elapsed > ARROW_GROW_MS || isResolved) {
+            const offset = computeRevealOffset();
+            const dist = Math.hypot(offset.x, offset.y);
+            drawPathTrail(state.resultant.angleDeg, dist);
           }
-          /* Wedges fade in after the motion finishes. */
-          if (elapsed > ARROW_GROW_MS + PUCK_MOVE_MS) {
+          /* Wedges fade in starting at ring contact (RING_REACH_MS into the
+             motion phase) so the tolerance bands appear right as the body
+             crosses the ring — the moment scoring decides. */
+          const wedgeStart = ARROW_GROW_MS + RING_REACH_MS;
+          if (elapsed > wedgeStart) {
             const wedgeT =
               state.reducedMotion || isResolved
                 ? 1
-                : clamp(
-                    (elapsed - ARROW_GROW_MS - PUCK_MOVE_MS) / WEDGES_FADE_MS,
-                    0,
-                    1,
-                  );
+                : clamp((elapsed - wedgeStart) / WEDGES_FADE_MS, 0, 1);
             drawWedges(state.resultant.angleDeg, wedgeT);
           }
         }
 
-        function drawNetArrowAt(angleDeg, len) {
-          if (len <= 0) return;
+        function drawNetArrowAt(angleDeg, visibleLen) {
+          if (visibleLen <= 0) return;
           const rad = deg2rad(angleDeg);
-          const startR = puckR * 0.92;
-          const sx = cx + Math.cos(rad) * startR;
-          const sy = cy - Math.sin(rad) * startR;
-          const ex = cx + Math.cos(rad) * (startR + len);
-          const ey = cy - Math.sin(rad) * (startR + len);
+          /* Same through-centre geometry as the input force arrows: tail at
+             puck centre, visible portion runs from the rim outward. The puck
+             disc (drawn later inside the translated group) covers the inner
+             shaft segment. */
+          const sx = cx;
+          const sy = cy;
+          const ex = cx + Math.cos(rad) * (puckR + visibleLen);
+          const ey = cy - Math.sin(rad) * (puckR + visibleLen);
           /* Tip sized like the force arrows (head 20); line stays thicker so
              the Net still reads as the dominant arrow. */
           drawArrowSegment(sx, sy, ex, ey, NET_COLOR, 6.5, 20);
         }
 
-        function drawPathTrail(angleDeg, s) {
-          /* s is normalized [0,1] along the puck path; the path reaches the ring
-             at s = 1, measured along the resultant ray from puck rim. */
-          const dist = (ringR - puckR) * s;
+        function drawPathTrail(angleDeg, dist) {
+          /* dist is the body's current displacement from canvas centre along
+             the resultant ray. Trail goes from the original puck rim outward
+             to the current leading rim. Canvas clipping handles the case
+             where the body has exited the viewport. */
+          if (dist <= 0) return;
+          const startP = angleToPoint(angleDeg, puckR);
           const target = angleToPoint(angleDeg, puckR + dist);
           ctx.save();
           ctx.strokeStyle = "rgba(0, 200, 83, 0.55)";
           ctx.lineWidth = 2;
           ctx.setLineDash([3, 4]);
           ctx.beginPath();
-          const startP = angleToPoint(angleDeg, puckR);
           ctx.moveTo(startP.x, startP.y);
           ctx.lineTo(target.x, target.y);
           ctx.stroke();
@@ -1524,6 +2184,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         let dragging = false;
 
         canvas.addEventListener("pointerdown", (e) => {
+          if (state.introActive) return;
           if (state.phase !== "aim") return;
           canvas.setPointerCapture(e.pointerId);
           canvas.focus();
@@ -1535,6 +2196,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         });
 
         canvas.addEventListener("pointermove", (e) => {
+          if (state.introActive) return;
           if (state.phase !== "aim") return;
           if (dragging) {
             const a = pointerToBoardAngle(e);
@@ -1568,12 +2230,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         });
 
         canvas.addEventListener("keydown", (e) => {
+          if (state.introActive) return;
           if (handleKey(e)) {
             e.preventDefault();
           }
         });
 
         document.addEventListener("keydown", (e) => {
+          if (state.introActive) {
+            handleIntroKey(e);
+            return;
+          }
           /* Global level-switch + R/N shortcuts when focus is off the board, so
              a child who reached the test button with Tab can still issue them. */
           if (
@@ -1582,7 +2249,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             e.target.tagName === "BUTTON"
           ) {
             const key = e.key;
-            if (key >= "1" && key <= "6" && key.length === 1) {
+            if (key >= "1" && key <= "7" && key.length === 1) {
               setLevel(Number(key));
               e.preventDefault();
             } else if (key === "r" || key === "R") {
@@ -1594,6 +2261,21 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             }
           }
         });
+
+        function handleIntroKey(e) {
+          const key = e.key;
+          if (key === "Escape") {
+            exitIntro();
+            e.preventDefault();
+          } else if (key === "ArrowLeft") {
+            setIntroStep(state.introStep - 1);
+            e.preventDefault();
+          } else if (key === "ArrowRight") {
+            setIntroStep(state.introStep + 1);
+            e.preventDefault();
+          }
+          /* Enter / Space fall through to native button activation. */
+        }
 
         function handleKey(e) {
           if (state.phase === "revealing") return false;
@@ -1632,7 +2314,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         function setGuess(angleDeg) {
           state.guessAngleDeg = normalizeDeg(angleDeg);
-          document.getElementById("testBtn").disabled = false;
+          updatePlayNowButton();
           updatePromptByPhase();
           drawAll();
         }
@@ -1648,7 +2330,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         function updateLevelButtons() {
-          for (let i = 1; i <= 6; i += 1) {
+          for (let i = 1; i <= 7; i += 1) {
             const btn = document.getElementById("lvlBtn" + i);
             if (i === state.level) {
               btn.classList.add("active");
@@ -1744,7 +2426,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const viewW = 300;
           const viewH = 260;
           const captionH = 22;
-          const legendH = 36;
+          /* Legend grows to two rows when force-count + 1 (Net) exceeds five
+             entries (i.e., at Level 7 with five forces). The diagram zone
+             shrinks accordingly so nothing overflows. */
+          const totalLegendEntries = state.forces.length + 1;
+          const legendRows = totalLegendEntries > 5 ? 2 : 1;
+          const legendH = legendRows === 2 ? 50 : 36;
           const diagramH = viewH - captionH - legendH;
           /* Build head-to-tail point chain in math coords. */
           const pts = [{ x: 0, y: 0 }];
@@ -1832,10 +2519,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         function renderLegend(card, viewW, yTop) {
-          const svgNS = "http://www.w3.org/2000/svg";
-          const entries = [];
+          const forceEntries = [];
           for (let i = 0; i < state.forces.length; i += 1) {
-            entries.push({
+            forceEntries.push({
               label: state.forces[i].label,
               color: state.forces[i].color,
               opacity: 0.55,
@@ -1843,13 +2529,27 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               headLen: 7,
             });
           }
-          entries.push({
-            label: "Net",
+          const netEntry = {
+            label: T("netLabel"),
             color: NET_COLOR,
             opacity: 1,
             stroke: 4,
             headLen: 10,
-          });
+          };
+          /* Two rows once force count + Net would crowd the single-row layout
+             (at Level 7, where five force entries plus Net don't fit). Top row
+             carries the contributing forces; bottom row centers the Net
+             alone, emphasising it as "the answer". */
+          if (forceEntries.length + 1 > 5) {
+            drawLegendRow(card, viewW, yTop + 12, forceEntries);
+            drawLegendRow(card, viewW, yTop + 34, [netEntry]);
+          } else {
+            drawLegendRow(card, viewW, yTop + 18, [...forceEntries, netEntry]);
+          }
+        }
+
+        function drawLegendRow(card, viewW, yCenter, entries) {
+          const svgNS = "http://www.w3.org/2000/svg";
           const fontSize = 12;
           const charW = 8; /* Share Tech Mono approx px per glyph at 12px. */
           const swatchW = 20;
@@ -1864,15 +2564,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
           const totalW = sumWidths + gap * (entries.length - 1);
           let x = (viewW - totalW) / 2;
-          const y = yTop + 18; /* Vertical center of the legend strip. */
           for (let i = 0; i < entries.length; i += 1) {
             const e = entries[i];
             appendArrow(
               card,
               x,
-              y,
+              yCenter,
               x + swatchW,
-              y,
+              yCenter,
               e.color,
               e.stroke,
               e.headLen,
@@ -1880,7 +2579,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             );
             const lbl = document.createElementNS(svgNS, "text");
             lbl.setAttribute("x", String(x + swatchW + swatchToText));
-            lbl.setAttribute("y", String(y));
+            lbl.setAttribute("y", String(yCenter));
             lbl.setAttribute("font-family", "'Share Tech Mono', monospace");
             lbl.setAttribute("font-weight", "700");
             lbl.setAttribute("font-size", String(fontSize));
@@ -1956,7 +2655,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           if (state.guessAngleDeg === null) return;
           state.phase = "revealing";
           state.revealStart = performance.now();
-          document.getElementById("testBtn").disabled = true;
+          updatePlayNowButton();
           updatePromptByPhase();
           updateCanvasCursor();
           if (state.reducedMotion) {
@@ -2102,6 +2801,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           document
             .getElementById("langBtn")
             .setAttribute("aria-label", T("ariaLang"));
+          document
+            .getElementById("langBtn")
+            .setAttribute("title", T("ariaLang"));
           document.getElementById("lblLevel").textContent = T("level");
           document.getElementById("lblMission").textContent = T("mission");
           document.getElementById("lblControls").textContent = T("controls");
@@ -2115,22 +2817,25 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           document.getElementById("lblReadResult").textContent =
             T("lastResult");
           document.getElementById("missionText").textContent = T("missionLine");
-          document.getElementById("testBtn").textContent = T("testPath");
-          document
-            .getElementById("testBtn")
-            .setAttribute("aria-label", T("ariaTest"));
-          document.getElementById("retryBtn").textContent = T("retry");
+          /* Play-now and Retry / New round are icon-only buttons; only the
+             aria-label is localized (textContent would erase their SVGs). */
+          const playBtn = document.getElementById("playNowBtn");
+          playBtn.setAttribute("aria-label", T("ariaTest"));
+          playBtn.setAttribute("title", T("ariaTest"));
           document
             .getElementById("retryBtn")
             .setAttribute("aria-label", T("ariaRetry"));
-          document.getElementById("newRoundBtn").textContent = T("newRound");
+          document.getElementById("retryBtn").setAttribute("title", T("retry"));
           document
             .getElementById("newRoundBtn")
             .setAttribute("aria-label", T("ariaNewRound"));
           document
+            .getElementById("newRoundBtn")
+            .setAttribute("title", T("newRound"));
+          document
             .getElementById("board")
             .setAttribute("aria-label", T("ariaBoard"));
-          for (let i = 1; i <= 6; i += 1) {
+          for (let i = 1; i <= 7; i += 1) {
             document
               .getElementById("lvlBtn" + i)
               .setAttribute("aria-label", T("ariaLevel" + i));
@@ -2139,16 +2844,1120 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           updateInfoText();
           updateResultantPanel();
           updatePromptByPhase();
+          document
+            .getElementById("btnIntro")
+            .setAttribute("aria-label", T("intro"));
+          document.getElementById("btnIntro").setAttribute("title", T("intro"));
           /* Refresh any live overlay's text without reopening it. */
           const overlay = document.querySelector(".result-overlay");
           if (overlay) {
             showResultOverlay();
+          }
+          /* Refresh intro UI if it's open so titles, body, buttons, and
+             counter update on lang toggle. */
+          if (state.introActive) {
+            renderIntroPanel();
+            drawAll();
           }
         }
 
         function toggleLang() {
           state.lang = state.lang === "en" ? "pl" : "en";
           applyTranslations();
+        }
+
+        /* ───────── INTRO MODE ───────── */
+
+        const INTRO_TOTAL = 9;
+        const INTRO_STORAGE_KEY = "forcesIntroSeenV1";
+        /* Step 9 autoplay loop timeline (ms). */
+        const INTRO_DEMO_PHASE_A = 1200;
+        const INTRO_DEMO_PHASE_B = 2100;
+        const INTRO_DEMO_PHASE_C = 3000;
+        const INTRO_DEMO_PHASE_D = 3600;
+        /* Step 8 motion replay timings — independent of normal game so the
+           intro stays self-contained. Motion continues past ring contact
+           (EXTEND) to match the game's off-canvas Newton's-1st-law reveal. */
+        const INTRO_REPLAY_GROW_MS = 350;
+        const INTRO_REPLAY_REACH_MS = 850;
+        const INTRO_REPLAY_EXTEND_MS = 800;
+        const INTRO_REPLAY_HOLD_MS = 500;
+        const INTRO_REPLAY_MOTION_MS =
+          INTRO_REPLAY_REACH_MS + INTRO_REPLAY_EXTEND_MS;
+        const INTRO_REPLAY_TOTAL_MS =
+          INTRO_REPLAY_GROW_MS + INTRO_REPLAY_MOTION_MS + INTRO_REPLAY_HOLD_MS;
+        /* Three fixed permutations for step 7 (Order Does Not Matter). */
+        const INTRO_STEP7_ORDERS = [
+          [0, 1, 2],
+          [1, 2, 0],
+          [2, 0, 1],
+        ];
+
+        const INTRO_STEPS = [
+          {
+            id: "puck",
+            titleKey: "introStep1Title",
+            bodyKey: "introStep1Body",
+            controlType: "none",
+            ringVisible: false,
+            forces: [],
+            resultantAngleDeg: null,
+            resultantMag: 0,
+            hasInset: false,
+            hasMotion: false,
+            hasAutoplay: false,
+            hasGuessMarker: false,
+            lineOfActionForceIdx: -1,
+            callouts: [],
+          },
+          {
+            id: "one-force",
+            titleKey: "introStep2Title",
+            bodyKey: "introStep2Body",
+            controlType: "none",
+            ringVisible: false,
+            forces: [{ mag: 4, angleDeg: 30, colorIdx: 0, labelIdx: 0 }],
+            resultantAngleDeg: null,
+            resultantMag: 0,
+            hasInset: false,
+            hasMotion: false,
+            hasAutoplay: false,
+            hasGuessMarker: false,
+            lineOfActionForceIdx: -1,
+            callouts: ["direction", "length"],
+          },
+          {
+            id: "through-centre",
+            titleKey: "introStep3Title",
+            bodyKey: "introStep3Body",
+            controlType: "none",
+            ringVisible: false,
+            forces: [{ mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 }],
+            resultantAngleDeg: null,
+            resultantMag: 0,
+            hasInset: false,
+            hasMotion: false,
+            hasAutoplay: false,
+            hasGuessMarker: false,
+            lineOfActionForceIdx: 0,
+            callouts: [],
+          },
+          {
+            id: "same-direction",
+            titleKey: "introStep4Title",
+            bodyKey: "introStep4Body",
+            controlType: "none",
+            ringVisible: false,
+            forces: [
+              {
+                mag: 4,
+                angleDeg: 0,
+                colorIdx: 0,
+                labelIdx: 0,
+                perpOffset: -10,
+              },
+              { mag: 2, angleDeg: 0, colorIdx: 1, labelIdx: 1, perpOffset: 10 },
+            ],
+            resultantAngleDeg: 0,
+            resultantMag: 6,
+            hasInset: true,
+            insetSize: "compact",
+            hasMotion: false,
+            hasAutoplay: false,
+            hasGuessMarker: false,
+            lineOfActionForceIdx: -1,
+            callouts: [],
+          },
+          {
+            id: "opposite-cancel",
+            titleKey: "introStep5Title",
+            bodyKey: "introStep5Body",
+            controlType: "partialBalanced",
+            ringVisible: false,
+            /* Variants resolved at render time from introSceneState.variant.
+               Inset shows the head-to-tail proof — partial: green resultant
+               = 3; balanced: chain closes back to origin (visual cancellation). */
+            hasInset: true,
+            insetSize: "compact",
+            hasMotion: false,
+            hasAutoplay: false,
+            hasGuessMarker: false,
+            lineOfActionForceIdx: -1,
+            callouts: [],
+            initialSceneState: { variant: "partial" },
+          },
+          {
+            id: "angled-addition",
+            titleKey: "introStep6Title",
+            bodyKey: "introStep6Body",
+            controlType: "none",
+            ringVisible: false,
+            forces: [
+              { mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
+              { mag: 4, angleDeg: 90, colorIdx: 1, labelIdx: 1 },
+            ],
+            resultantAngleDeg: 45,
+            resultantMag: Math.hypot(4, 4),
+            hasInset: true,
+            insetSize: "large",
+            hasMotion: false,
+            hasAutoplay: false,
+            hasGuessMarker: false,
+            lineOfActionForceIdx: -1,
+            callouts: [],
+          },
+          {
+            id: "order-does-not-matter",
+            titleKey: "introStep7Title",
+            bodyKey: "introStep7Body",
+            controlType: "shuffleOrder",
+            ringVisible: false,
+            forces: [
+              { mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
+              { mag: 4, angleDeg: 90, colorIdx: 1, labelIdx: 1 },
+              { mag: 4, angleDeg: 180, colorIdx: 2, labelIdx: 2 },
+            ],
+            resultantAngleDeg: 90,
+            resultantMag: 4,
+            hasInset: true,
+            insetSize: "large",
+            hasMotion: false,
+            hasAutoplay: false,
+            hasGuessMarker: false,
+            lineOfActionForceIdx: -1,
+            callouts: [],
+            initialSceneState: { orderIdx: 0 },
+          },
+          {
+            id: "net-to-motion",
+            titleKey: "introStep8Title",
+            bodyKey: "introStep8Body",
+            controlType: "replayMotion",
+            ringVisible: true,
+            forces: [
+              { mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
+              { mag: 4, angleDeg: 90, colorIdx: 1, labelIdx: 1 },
+            ],
+            resultantAngleDeg: 45,
+            resultantMag: Math.hypot(4, 4),
+            hasInset: false,
+            hasMotion: true,
+            hasAutoplay: false,
+            hasGuessMarker: false,
+            lineOfActionForceIdx: -1,
+            callouts: [],
+            initialSceneState: { replayStart: null },
+          },
+          {
+            id: "how-to-play",
+            titleKey: "introStep9Title",
+            bodyKey: "introStep9Body",
+            controlType: "startGame",
+            ringVisible: true,
+            forces: [
+              { mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
+              { mag: 3, angleDeg: 120, colorIdx: 1, labelIdx: 1 },
+              { mag: 2, angleDeg: 240, colorIdx: 2, labelIdx: 2 },
+            ],
+            /* Demo resultant is computed from the forces above at render
+               time so we don't hard-code it; for reference it's
+               approximately mag 2.65 at angle ≈ 33° from the +x axis. */
+            hasInset: false,
+            hasMotion: false,
+            hasAutoplay: true,
+            hasGuessMarker: true,
+            /* The blue guess marker sits a bit off the resultant so the
+               scoring concept is visible. */
+            guessAngleDeg: 60,
+            lineOfActionForceIdx: -1,
+            callouts: [],
+            initialSceneState: { demoStart: null },
+          },
+        ];
+
+        let introRafId = 0;
+
+        function introStepConfig() {
+          return INTRO_STEPS[state.introStep - 1];
+        }
+
+        function resetIntroSceneState(stepIdx) {
+          const cfg = INTRO_STEPS[stepIdx - 1];
+          if (cfg.initialSceneState) {
+            state.introSceneState = Object.assign({}, cfg.initialSceneState);
+          } else {
+            state.introSceneState = {};
+          }
+          /* Initialize animation timestamps before the first draw so the
+             renderer never sees a missing-start frame (which would fall
+             through to "final state" and flash the solved scene). */
+          state.introSceneState.replayStart = null;
+          state.introSceneState.demoStart =
+            cfg.hasAutoplay && !state.reducedMotion ? performance.now() : null;
+        }
+
+        function cancelIntroAnimation() {
+          if (introRafId) {
+            cancelAnimationFrame(introRafId);
+            introRafId = 0;
+          }
+        }
+
+        function startIntroAnimationIfNeeded() {
+          cancelIntroAnimation();
+          const cfg = introStepConfig();
+          if (state.reducedMotion) return;
+          if (cfg.hasAutoplay) {
+            introRafId = requestAnimationFrame(introAnimationLoop);
+          } else if (cfg.hasMotion && state.introSceneState.replayStart) {
+            introRafId = requestAnimationFrame(introAnimationLoop);
+          }
+        }
+
+        function introAnimationLoop() {
+          if (!state.introActive) {
+            introRafId = 0;
+            return;
+          }
+          const cfg = introStepConfig();
+          renderIntroBoard();
+          if (cfg.hasAutoplay) {
+            /* Loop forever while step 9 is active. */
+            const start = state.introSceneState.demoStart || performance.now();
+            const elapsed = performance.now() - start;
+            if (elapsed >= INTRO_DEMO_PHASE_D) {
+              state.introSceneState.demoStart = performance.now();
+            }
+            introRafId = requestAnimationFrame(introAnimationLoop);
+          } else if (cfg.hasMotion && state.introSceneState.replayStart) {
+            const elapsed =
+              performance.now() - state.introSceneState.replayStart;
+            if (elapsed >= INTRO_REPLAY_TOTAL_MS) {
+              /* Hold the final frame; stop ticking. */
+              introRafId = 0;
+              return;
+            }
+            introRafId = requestAnimationFrame(introAnimationLoop);
+          } else {
+            introRafId = 0;
+          }
+        }
+
+        function enterIntro() {
+          if (state.phase === "revealing") return;
+          if (state.introActive) return;
+          /* Snapshot enough normal-game state to restore on exit. The
+             snapshot keeps the in-progress round intact: same forces,
+             same resultant, same guess, same phase, same readouts. */
+          state.introReturnState = {
+            level: state.level,
+            vectorCount: state.vectorCount,
+            roundNumber: state.roundNumber,
+            forces: state.forces,
+            resultant: state.resultant,
+            guessAngleDeg: state.guessAngleDeg,
+            phase: state.phase,
+            lastResult: state.lastResult,
+            lastDelta: state.lastDelta,
+            unitPx: state.unitPx,
+            authoredIndex: Object.assign({}, state.authoredIndex),
+          };
+          /* Don't let any pending overlay or revealing tick leak into intro. */
+          if (overlayTimeoutId) {
+            clearTimeout(overlayTimeoutId);
+            overlayTimeoutId = 0;
+          }
+          hideResultOverlay();
+          state.introActive = true;
+          state.introSeen = true;
+          state.introStep = 1;
+          resetIntroSceneState(1);
+          try {
+            window.localStorage.setItem(INTRO_STORAGE_KEY, "1");
+          } catch (_storageErr) {
+            /* localStorage may throw in private-mode Safari; ignore. */
+            void _storageErr;
+          }
+          document.querySelector(".panel").classList.add("intro-mode");
+          document
+            .getElementById("introPanel")
+            .setAttribute("aria-hidden", "false");
+          document.getElementById("playNowBtn").hidden = true;
+          document.getElementById("canvasPrompt").style.display = "none";
+          canvas.classList.remove("aiming", "hover-marker", "dragging");
+          renderIntroPanel();
+          drawAll();
+          startIntroAnimationIfNeeded();
+          /* Focus the exit button so keyboard users land in the panel. */
+          setTimeout(() => {
+            const exitBtn = document.getElementById("btnIntroExit");
+            if (exitBtn && state.introActive) exitBtn.focus();
+          }, 0);
+        }
+
+        function exitIntro() {
+          if (!state.introActive) return;
+          cancelIntroAnimation();
+          state.introActive = false;
+          /* Restore normal-game state from the snapshot. */
+          if (state.introReturnState) {
+            const snap = state.introReturnState;
+            state.level = snap.level;
+            state.vectorCount = snap.vectorCount;
+            state.roundNumber = snap.roundNumber;
+            state.forces = snap.forces;
+            state.resultant = snap.resultant;
+            state.guessAngleDeg = snap.guessAngleDeg;
+            state.phase = snap.phase;
+            state.lastResult = snap.lastResult;
+            state.lastDelta = snap.lastDelta;
+            state.unitPx = snap.unitPx;
+            state.authoredIndex = snap.authoredIndex;
+            state.introReturnState = null;
+          }
+          document.querySelector(".panel").classList.remove("intro-mode");
+          document
+            .getElementById("introPanel")
+            .setAttribute("aria-hidden", "true");
+          document.getElementById("canvasPrompt").style.display = "";
+          updateLevelButtons();
+          updateReadouts();
+          updateInfoText();
+          updateResultantPanel();
+          updatePromptByPhase();
+          updateCanvasCursor();
+          updatePlayNowButton();
+          drawAll();
+          /* Return focus to the Intro entry button. */
+          setTimeout(() => {
+            const introBtn = document.getElementById("btnIntro");
+            if (introBtn) introBtn.focus();
+          }, 0);
+        }
+
+        function setIntroStep(n) {
+          if (!state.introActive) return;
+          const clamped = Math.max(1, Math.min(INTRO_TOTAL, n));
+          if (clamped === state.introStep) return;
+          cancelIntroAnimation();
+          state.introStep = clamped;
+          resetIntroSceneState(clamped);
+          renderIntroPanel();
+          drawAll();
+          startIntroAnimationIfNeeded();
+        }
+
+        function renderIntroPanel() {
+          if (!state.introActive) return;
+          const cfg = introStepConfig();
+          document.getElementById("lblIntroTitle").textContent =
+            T("introTitle");
+          document.getElementById("introExitLabel").textContent =
+            T("introBack");
+          document
+            .getElementById("btnIntroExit")
+            .setAttribute("aria-label", T("introExit"));
+          document
+            .getElementById("btnIntroExit")
+            .setAttribute("title", T("introBack"));
+          document.getElementById("introStepTitle").textContent = T(
+            cfg.titleKey,
+          );
+          let body = T(cfg.bodyKey);
+          if (state.reducedMotion && (cfg.hasMotion || cfg.hasAutoplay)) {
+            body = body + "\n\n" + T("introReducedMotionNote");
+          }
+          document.getElementById("introCommentary").textContent = body;
+          document.getElementById("introCounter").textContent = fmt(
+            T("introCounter"),
+            state.introStep,
+          ).replace("{1}", String(INTRO_TOTAL));
+          document.getElementById("btnIntroPrev").disabled =
+            state.introStep <= 1;
+          document.getElementById("btnIntroNext").disabled =
+            state.introStep >= INTRO_TOTAL;
+          document
+            .getElementById("btnIntroPrev")
+            .setAttribute("aria-label", T("introPrev"));
+          document
+            .getElementById("btnIntroPrev")
+            .setAttribute("title", T("introPrev"));
+          document
+            .getElementById("btnIntroNext")
+            .setAttribute("aria-label", T("introNext"));
+          document
+            .getElementById("btnIntroNext")
+            .setAttribute("title", T("introNext"));
+          renderIntroControls(cfg);
+        }
+
+        function renderIntroControls(cfg) {
+          const host = document.getElementById("introControls");
+          while (host.firstChild) host.removeChild(host.firstChild);
+          if (cfg.controlType === "partialBalanced") {
+            const row = document.createElement("div");
+            row.className = "intro-seg";
+            const variants = ["partial", "balanced"];
+            for (const v of variants) {
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "intro-seg-btn";
+              if (v === state.introSceneState.variant) {
+                btn.classList.add("active");
+              }
+              btn.textContent =
+                v === "partial" ? T("introPartial") : T("introBalanced");
+              btn.addEventListener("click", () => {
+                state.introSceneState.variant = v;
+                renderIntroControls(cfg);
+                drawAll();
+              });
+              row.appendChild(btn);
+            }
+            host.appendChild(row);
+          } else if (cfg.controlType === "shuffleOrder") {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "intro-action-btn";
+            btn.textContent = T("introShuffleOrder");
+            btn.addEventListener("click", () => {
+              const next =
+                ((state.introSceneState.orderIdx || 0) + 1) %
+                INTRO_STEP7_ORDERS.length;
+              state.introSceneState.orderIdx = next;
+              drawAll();
+            });
+            host.appendChild(btn);
+          } else if (cfg.controlType === "replayMotion") {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "intro-action-btn";
+            btn.textContent = T("introReplayMotion");
+            btn.addEventListener("click", () => {
+              if (state.reducedMotion) {
+                /* Reduced motion: just redraw the final frame. */
+                state.introSceneState.replayStart = null;
+                drawAll();
+                return;
+              }
+              state.introSceneState.replayStart = performance.now();
+              cancelIntroAnimation();
+              introRafId = requestAnimationFrame(introAnimationLoop);
+            });
+            host.appendChild(btn);
+          } else if (cfg.controlType === "startGame") {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "intro-action-btn primary";
+            btn.textContent = T("introStartGame");
+            btn.addEventListener("click", exitIntro);
+            host.appendChild(btn);
+          }
+        }
+
+        /* ───────── INTRO BOARD PRIMITIVES ───────── */
+
+        function drawCenterDot() {
+          ctx.save();
+          ctx.fillStyle = "#37474f";
+          ctx.beginPath();
+          ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        function drawForceArrowScaled(force, unitPx) {
+          const rad = deg2rad(force.angleDeg);
+          const perpOffset = force.perpOffset || 0;
+          const perpX = -Math.sin(rad);
+          const perpY = -Math.cos(rad); /* canvas y-down */
+          const sx = cx + perpX * perpOffset;
+          const sy = cy + perpY * perpOffset;
+          const visibleLen = force.mag * unitPx;
+          const ex = sx + Math.cos(rad) * (puckR + visibleLen);
+          const ey = sy - Math.sin(rad) * (puckR + visibleLen);
+          const color = FORCE_COLORS[force.colorIdx];
+          drawArrowSegment(sx, sy, ex, ey, color, 4.5, 20);
+          /* Label near tip. When the arrow is perpendicular-offset to clear
+             another arrow on the same axis, push the label outward (away
+             from the central axis) so it never lands on top of the sister
+             arrow. perpOffset >= 0 means the arrow is on the
+             "positive-perpendicular" side, so labelDir = +1 keeps the
+             default outward direction; negative offset flips the label. */
+          const lbl = FORCE_LABELS[force.labelIdx];
+          const labelOff = 20;
+          const labelDir = perpOffset >= 0 ? 1 : -1;
+          const lx = ex + perpX * labelOff * labelDir + Math.cos(rad) * 8;
+          const ly = ey + perpY * labelOff * labelDir - Math.sin(rad) * 8;
+          ctx.save();
+          ctx.fillStyle = color;
+          ctx.font = "700 18px 'Share Tech Mono', monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(lbl, lx, ly);
+          ctx.restore();
+        }
+
+        function drawResultantArrowScaled(angleDeg, mag, unitPx) {
+          if (mag <= 0) return;
+          const rad = deg2rad(angleDeg);
+          const visibleLen = mag * unitPx;
+          const ex = cx + Math.cos(rad) * (puckR + visibleLen);
+          const ey = cy - Math.sin(rad) * (puckR + visibleLen);
+          drawArrowSegment(cx, cy, ex, ey, NET_COLOR, 6.5, 20);
+        }
+
+        function drawDashedLineOfAction(angleDeg) {
+          const rad = deg2rad(angleDeg);
+          /* Extend a thin dashed line backward through the puck centre,
+             starting outside the puck on the far side, ending outside the
+             puck on the near side. Visually shows the line of action
+             passing through the centre. */
+          const reachBack = puckR * 3.5;
+          const reachFwd = puckR * 0.9;
+          const sx = cx - Math.cos(rad) * reachBack;
+          const sy = cy + Math.sin(rad) * reachBack;
+          const ex = cx + Math.cos(rad) * reachFwd;
+          const ey = cy - Math.sin(rad) * reachFwd;
+          ctx.save();
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.55)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5, 5]);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawIntroCalloutChip(text, x, y) {
+          ctx.save();
+          ctx.font = "600 12px 'Share Tech Mono', monospace";
+          ctx.textBaseline = "middle";
+          ctx.textAlign = "center";
+          const metrics = ctx.measureText(text);
+          const padX = 9;
+          const padY = 5;
+          const w = metrics.width + padX * 2;
+          const h = 22;
+          const left = x - w / 2;
+          const top = y - h / 2;
+          /* Pill background with soft shadow. */
+          ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(left + 1, top + 2, w, h, 11);
+          } else {
+            ctx.rect(left + 1, top + 2, w, h);
+          }
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.35)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(left, top, w, h, 11);
+          } else {
+            ctx.rect(left, top, w, h);
+          }
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#37474f";
+          ctx.fillText(text, x, y);
+          ctx.restore();
+          /* Used pad variables only when roundRect is present; reference
+             padY here so prettier and the linter don't flag the binding. */
+          void padY;
+        }
+
+        function drawIntroBoardLabel(text, x, y) {
+          /* Slightly bigger label for in-board callouts like "net force = 0".
+             Differs from the small chip in font size and color. */
+          ctx.save();
+          ctx.font = "700 16px 'Outfit', sans-serif";
+          ctx.textBaseline = "middle";
+          ctx.textAlign = "center";
+          const metrics = ctx.measureText(text);
+          const padX = 14;
+          const w = metrics.width + padX * 2;
+          const h = 30;
+          const left = x - w / 2;
+          const top = y - h / 2;
+          ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.4)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(left, top, w, h, 14);
+          } else {
+            ctx.rect(left, top, w, h);
+          }
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#37474f";
+          ctx.fillText(text, x, y);
+          ctx.restore();
+        }
+
+        function drawIntroGuessMarker(angleDeg) {
+          drawViewfinderAt(angleDeg);
+        }
+
+        function drawIntroRing() {
+          ctx.save();
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.55)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 5]);
+          ctx.beginPath();
+          ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawHeadToTailInset(forces, orderIndices, sizeKey) {
+          if (!forces || forces.length === 0) return;
+          const insetW = sizeKey === "large" ? 180 : 140;
+          const insetH = sizeKey === "large" ? 140 : 110;
+          const margin = 14;
+          const rx = W - insetW - margin;
+          const ry = H - insetH - margin;
+          /* Card background. */
+          ctx.save();
+          ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.4)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(rx, ry, insetW, insetH, 8);
+          } else {
+            ctx.rect(rx, ry, insetW, insetH);
+          }
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+          /* Build chain. */
+          const chain = [{ x: 0, y: 0 }];
+          let curX = 0;
+          let curY = 0;
+          for (const idx of orderIndices) {
+            const f = forces[idx];
+            const rad = deg2rad(f.angleDeg);
+            curX += f.mag * Math.cos(rad);
+            curY += f.mag * Math.sin(rad);
+            chain.push({ x: curX, y: curY });
+          }
+          let minX = 0,
+            maxX = 0,
+            minY = 0,
+            maxY = 0;
+          for (const p of chain) {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+          }
+          const spanX = maxX - minX || 1;
+          const spanY = maxY - minY || 1;
+          const pad = 18;
+          const sx = (insetW - pad * 2) / spanX;
+          const sy = (insetH - pad * 2) / spanY;
+          const scale = Math.min(sx, sy);
+          const offsetX =
+            rx + pad + (insetW - pad * 2 - spanX * scale) / 2 - minX * scale;
+          const offsetY =
+            ry + pad + (insetH - pad * 2 - spanY * scale) / 2 + maxY * scale;
+          /* Faded chain arrows. */
+          for (let i = 0; i < orderIndices.length; i += 1) {
+            const f = forces[orderIndices[i]];
+            const p0 = chain[i];
+            const p1 = chain[i + 1];
+            const ax = offsetX + p0.x * scale;
+            const ay = offsetY - p0.y * scale;
+            const bx = offsetX + p1.x * scale;
+            const by = offsetY - p1.y * scale;
+            drawInsetArrow(
+              ax,
+              ay,
+              bx,
+              by,
+              FORCE_COLORS[f.colorIdx],
+              2.5,
+              9,
+              0.55,
+            );
+            /* Small joint dot. */
+            ctx.save();
+            ctx.fillStyle = FORCE_COLORS[f.colorIdx];
+            ctx.beginPath();
+            ctx.arc(ax, ay, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            if (i === orderIndices.length - 1) {
+              ctx.beginPath();
+              ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+          /* Bold Net resultant from first tail to last head. */
+          const start = chain[0];
+          const end = chain[chain.length - 1];
+          const netAx = offsetX + start.x * scale;
+          const netAy = offsetY - start.y * scale;
+          const netBx = offsetX + end.x * scale;
+          const netBy = offsetY - end.y * scale;
+          if (Math.hypot(netBx - netAx, netBy - netAy) > 1) {
+            drawInsetArrow(netAx, netAy, netBx, netBy, NET_COLOR, 4, 12, 1);
+          }
+        }
+
+        function drawInsetArrow(
+          sx,
+          sy,
+          ex,
+          ey,
+          color,
+          lineWidth,
+          headLen,
+          alpha,
+        ) {
+          const ang = Math.atan2(ey - sy, ex - sx);
+          ctx.save();
+          if (alpha !== undefined && alpha < 1) ctx.globalAlpha = alpha;
+          ctx.strokeStyle = color;
+          ctx.fillStyle = color;
+          ctx.lineWidth = lineWidth;
+          ctx.lineCap = "round";
+          const shortenEx = ex - Math.cos(ang) * (headLen * 0.6);
+          const shortenEy = ey - Math.sin(ang) * (headLen * 0.6);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(shortenEx, shortenEy);
+          ctx.stroke();
+          const halfW = headLen * 0.45;
+          ctx.beginPath();
+          ctx.moveTo(ex, ey);
+          ctx.lineTo(
+            ex - Math.cos(ang) * headLen + Math.sin(ang) * halfW,
+            ey - Math.sin(ang) * headLen - Math.cos(ang) * halfW,
+          );
+          ctx.lineTo(
+            ex - Math.cos(ang) * headLen - Math.sin(ang) * halfW,
+            ey - Math.sin(ang) * headLen + Math.cos(ang) * halfW,
+          );
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        function computeIntroUnitPx(forces, resultantMag) {
+          let maxMag = resultantMag || 0;
+          for (const f of forces) {
+            if (f.mag > maxMag) maxMag = f.mag;
+          }
+          if (maxMag <= 0) maxMag = 6;
+          return arrowMax / maxMag;
+        }
+
+        /* ───────── INTRO BOARD RENDER ───────── */
+
+        function renderIntroBoard() {
+          drawBackground();
+          drawTicks();
+          const cfg = introStepConfig();
+          if (cfg.ringVisible) {
+            drawIntroRing();
+          }
+          /* Resolve forces + resultant per step. Step 5 has variant scenes;
+             step 9 reuses the step's authored forces and computes R live. */
+          let forces = cfg.forces;
+          let resultantAngleDeg = cfg.resultantAngleDeg;
+          let resultantMag = cfg.resultantMag;
+          let resultantOnTop = false;
+          let extraLabel = null;
+          if (cfg.id === "opposite-cancel") {
+            const variant = state.introSceneState.variant || "partial";
+            if (variant === "partial") {
+              forces = [
+                { mag: 5, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
+                { mag: 2, angleDeg: 180, colorIdx: 1, labelIdx: 1 },
+              ];
+              resultantAngleDeg = 0;
+              resultantMag = 3;
+              /* F1 and R are collinear; draw R on top of F1 so the green head
+                 sits at 3 units and the red F1 tip stays visible past it. All
+                 lines of action still pass through the puck centre. */
+              resultantOnTop = true;
+            } else {
+              forces = [
+                { mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
+                { mag: 4, angleDeg: 180, colorIdx: 1, labelIdx: 1 },
+              ];
+              resultantAngleDeg = null;
+              resultantMag = 0;
+              extraLabel = T("introNetForceZero");
+            }
+          }
+          if (cfg.id === "how-to-play") {
+            /* Compute the true resultant for the autoplay scene. */
+            const R = computeResultant(forces);
+            resultantAngleDeg = R.angleDeg;
+            resultantMag = R.mag;
+          }
+          const unitPx = computeIntroUnitPx(forces, resultantMag);
+          /* Puck shadow + body at canvas centre. */
+          drawPuckShadow();
+          /* Step 9 autoplay: animate the body riding along the resultant
+             after Phase B. */
+          let bodyOffset = { x: 0, y: 0 };
+          let demoElapsed = 0;
+          let demoPhase = "A";
+          if (cfg.hasAutoplay && resultantAngleDeg !== null) {
+            const start = state.introSceneState.demoStart;
+            if (state.reducedMotion || !start) {
+              demoElapsed = INTRO_DEMO_PHASE_D;
+            } else {
+              demoElapsed = Math.min(
+                performance.now() - start,
+                INTRO_DEMO_PHASE_D,
+              );
+            }
+            if (demoElapsed < INTRO_DEMO_PHASE_A) {
+              demoPhase = "A";
+            } else if (demoElapsed < INTRO_DEMO_PHASE_B) {
+              demoPhase = "B";
+            } else if (demoElapsed < INTRO_DEMO_PHASE_C) {
+              demoPhase = "C";
+            } else {
+              demoPhase = "D";
+            }
+            /* Body motion: starts at Phase B, fully reached ring at Phase C. */
+            if (demoPhase === "B" || demoPhase === "C" || demoPhase === "D") {
+              const motionT = clamp(
+                (demoElapsed - INTRO_DEMO_PHASE_A) /
+                  (INTRO_DEMO_PHASE_C - INTRO_DEMO_PHASE_A),
+                0,
+                1,
+              );
+              const dist = (ringR - puckR) * motionT * motionT;
+              const rad = deg2rad(resultantAngleDeg);
+              bodyOffset = {
+                x: Math.cos(rad) * dist,
+                y: -Math.sin(rad) * dist,
+              };
+            }
+          }
+          /* Step 8 motion replay. */
+          let replayOffset = { x: 0, y: 0 };
+          let replayElapsed = 0;
+          if (cfg.hasMotion && resultantAngleDeg !== null) {
+            const start = state.introSceneState.replayStart;
+            if (state.reducedMotion) {
+              replayElapsed = INTRO_REPLAY_TOTAL_MS;
+            } else if (!start) {
+              /* Pre-replay: puck at rest at centre, no trail, no green Net. */
+              replayElapsed = 0;
+            } else {
+              replayElapsed = Math.min(
+                performance.now() - start,
+                INTRO_REPLAY_TOTAL_MS,
+              );
+            }
+            if (replayElapsed > INTRO_REPLAY_GROW_MS) {
+              /* Continuous s ∝ t² acceleration: motionT reaches 1 at the
+                 ring (scoring moment), then keeps growing through EXTEND so
+                 the body sails off-canvas like in the main game reveal. */
+              const motionRaw =
+                (replayElapsed - INTRO_REPLAY_GROW_MS) / INTRO_REPLAY_REACH_MS;
+              const motionMax = INTRO_REPLAY_MOTION_MS / INTRO_REPLAY_REACH_MS;
+              const motionT = clamp(motionRaw, 0, motionMax);
+              const dist = (ringR - puckR) * motionT * motionT;
+              const rad = deg2rad(resultantAngleDeg);
+              replayOffset = {
+                x: Math.cos(rad) * dist,
+                y: -Math.sin(rad) * dist,
+              };
+            }
+          }
+          /* Step 8: draw the dashed path and ring-reach dot once motion has
+             begun (or always under reduced motion / no replay yet). */
+          if (cfg.hasMotion && resultantAngleDeg !== null) {
+            const replayStart = state.introSceneState.replayStart;
+            const distNow = Math.hypot(replayOffset.x, replayOffset.y);
+            if (distNow > 0) {
+              const startP = angleToPoint(resultantAngleDeg, puckR);
+              const target = angleToPoint(resultantAngleDeg, puckR + distNow);
+              ctx.save();
+              ctx.strokeStyle = "rgba(0, 200, 83, 0.55)";
+              ctx.lineWidth = 2;
+              ctx.setLineDash([3, 4]);
+              ctx.beginPath();
+              ctx.moveTo(startP.x, startP.y);
+              ctx.lineTo(target.x, target.y);
+              ctx.stroke();
+              ctx.restore();
+            }
+            /* Ring-reach dot only once motion is finished (or reduced motion). */
+            const reachT =
+              (replayElapsed - INTRO_REPLAY_GROW_MS) / INTRO_REPLAY_REACH_MS;
+            if (state.reducedMotion || (replayStart && reachT >= 0.999)) {
+              const reachP = angleToPoint(resultantAngleDeg, ringR);
+              ctx.save();
+              ctx.fillStyle = NET_COLOR;
+              ctx.strokeStyle = "#fff";
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(reachP.x, reachP.y, 7, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+          /* Step 9: scripted layered draw. */
+          if (cfg.hasAutoplay) {
+            /* Phase B onward: green resultant + body translation. */
+            if (demoPhase !== "A") {
+              ctx.save();
+              ctx.translate(bodyOffset.x, bodyOffset.y);
+              drawResultantArrowScaled(resultantAngleDeg, resultantMag, unitPx);
+              for (const f of forces) {
+                drawForceArrowScaled(f, unitPx);
+              }
+              drawPuck();
+              drawCenterDot();
+              ctx.restore();
+            } else {
+              for (const f of forces) {
+                drawForceArrowScaled(f, unitPx);
+              }
+              drawPuck();
+              drawCenterDot();
+            }
+            /* Phase C onward: scoring wedges fade in (teaches Perfect /
+               Close / Far bands), then dashed trail + ring-reach dot. */
+            if (demoPhase === "C" || demoPhase === "D") {
+              const wedgeFadeMs = 300;
+              const wedgeT = state.reducedMotion
+                ? 1
+                : clamp((demoElapsed - INTRO_DEMO_PHASE_B) / wedgeFadeMs, 0, 1);
+              if (wedgeT > 0) {
+                drawWedges(resultantAngleDeg, wedgeT);
+              }
+              const dist = Math.hypot(bodyOffset.x, bodyOffset.y);
+              if (dist > 0) {
+                const startP = angleToPoint(resultantAngleDeg, puckR);
+                const target = angleToPoint(resultantAngleDeg, puckR + dist);
+                ctx.save();
+                ctx.strokeStyle = "rgba(0, 200, 83, 0.55)";
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 4]);
+                ctx.beginPath();
+                ctx.moveTo(startP.x, startP.y);
+                ctx.lineTo(target.x, target.y);
+                ctx.stroke();
+                ctx.restore();
+                const reachP = angleToPoint(resultantAngleDeg, ringR);
+                ctx.save();
+                ctx.fillStyle = NET_COLOR;
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(reachP.x, reachP.y, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+              }
+            }
+            /* Blue guess marker for the autoplay scene. */
+            if (cfg.hasGuessMarker && cfg.guessAngleDeg !== undefined) {
+              drawIntroGuessMarker(cfg.guessAngleDeg);
+            }
+          } else if (cfg.hasMotion) {
+            /* Step 8: translated body + green Net rides with it. */
+            const elapsedGrow = state.introSceneState.replayStart
+              ? Math.min(
+                  performance.now() - state.introSceneState.replayStart,
+                  INTRO_REPLAY_GROW_MS,
+                )
+              : state.reducedMotion
+                ? INTRO_REPLAY_GROW_MS
+                : INTRO_REPLAY_GROW_MS;
+            const growT = state.reducedMotion
+              ? 1
+              : !state.introSceneState.replayStart
+                ? 0
+                : clamp(elapsedGrow / INTRO_REPLAY_GROW_MS, 0, 1);
+            ctx.save();
+            ctx.translate(replayOffset.x, replayOffset.y);
+            if (growT > 0) {
+              drawResultantArrowScaled(
+                resultantAngleDeg,
+                resultantMag * growT,
+                unitPx,
+              );
+            }
+            for (const f of forces) {
+              drawForceArrowScaled(f, unitPx);
+            }
+            drawPuck();
+            drawCenterDot();
+            ctx.restore();
+          } else {
+            /* Static intro scenes: line-of-action under, arrows, resultant,
+               puck on top. */
+            if (
+              cfg.lineOfActionForceIdx >= 0 &&
+              forces[cfg.lineOfActionForceIdx]
+            ) {
+              drawDashedLineOfAction(forces[cfg.lineOfActionForceIdx].angleDeg);
+            }
+            const hasResultant = resultantAngleDeg !== null && resultantMag > 0;
+            if (hasResultant && !resultantOnTop) {
+              drawResultantArrowScaled(resultantAngleDeg, resultantMag, unitPx);
+            }
+            for (const f of forces) {
+              drawForceArrowScaled(f, unitPx);
+            }
+            if (hasResultant && resultantOnTop) {
+              drawResultantArrowScaled(resultantAngleDeg, resultantMag, unitPx);
+            }
+            drawPuck();
+            drawCenterDot();
+          }
+          /* Head-to-tail inset (steps 4, 6, 7). */
+          if (cfg.hasInset) {
+            let orderIndices;
+            if (cfg.id === "order-does-not-matter") {
+              orderIndices =
+                INTRO_STEP7_ORDERS[state.introSceneState.orderIdx || 0];
+            } else {
+              orderIndices = forces.map((_, i) => i);
+            }
+            drawHeadToTailInset(forces, orderIndices, cfg.insetSize);
+          }
+          /* Callouts for steps 2 and 3 only. */
+          if (cfg.callouts && cfg.callouts.length > 0) {
+            for (const callout of cfg.callouts) {
+              if (callout === "direction") {
+                const f = forces[0];
+                const rad = deg2rad(f.angleDeg);
+                const dist = puckR + f.mag * unitPx + 18;
+                const x = cx + Math.cos(rad) * dist + 18;
+                const y = cy - Math.sin(rad) * dist - 18;
+                drawIntroCalloutChip(T("introCalloutDirection"), x, y);
+              } else if (callout === "length") {
+                const f = forces[0];
+                const rad = deg2rad(f.angleDeg);
+                const dist = puckR + (f.mag * unitPx) / 2;
+                const x = cx + Math.cos(rad) * dist - Math.sin(rad) * 26;
+                const y = cy - Math.sin(rad) * dist - Math.cos(rad) * 26;
+                drawIntroCalloutChip(T("introCalloutLength"), x, y);
+              }
+            }
+          }
+          /* Step 5 balanced label. */
+          if (extraLabel) {
+            drawIntroBoardLabel(extraLabel, cx, cy + ringR * 0.6);
+          }
         }
 
         /* ───────── INIT ───────── */
@@ -2166,11 +3975,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           document
             .getElementById("langBtn")
             .addEventListener("click", toggleLang);
-          document.getElementById("testBtn").addEventListener("click", () => {
-            if (state.phase === "aim" && state.guessAngleDeg !== null) {
-              startReveal();
-            }
-          });
+          document
+            .getElementById("playNowBtn")
+            .addEventListener("click", () => {
+              if (state.phase === "aim" && state.guessAngleDeg !== null) {
+                startReveal();
+              }
+            });
           document.getElementById("retryBtn").addEventListener("click", () => {
             if (state.phase !== "revealing") retrySameForces();
           });
@@ -2179,9 +3990,36 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             .addEventListener("click", () => {
               if (state.phase !== "revealing") newRound(state.level);
             });
-          for (let i = 1; i <= 6; i += 1) {
+          for (let i = 1; i <= 7; i += 1) {
             const btn = document.getElementById("lvlBtn" + i);
             btn.addEventListener("click", () => setLevel(i));
+          }
+
+          /* Intro wiring. */
+          document
+            .getElementById("btnIntro")
+            .addEventListener("click", enterIntro);
+          document
+            .getElementById("btnIntroExit")
+            .addEventListener("click", exitIntro);
+          document
+            .getElementById("btnIntroPrev")
+            .addEventListener("click", () => setIntroStep(state.introStep - 1));
+          document
+            .getElementById("btnIntroNext")
+            .addEventListener("click", () => setIntroStep(state.introStep + 1));
+
+          /* Auto-open intro on first visit. localStorage may throw in
+             restricted environments — degrade silently in that case. */
+          let firstVisit = true;
+          try {
+            firstVisit = !window.localStorage.getItem(INTRO_STORAGE_KEY);
+          } catch (_storageErr) {
+            firstVisit = false;
+            void _storageErr;
+          }
+          if (firstVisit) {
+            enterIntro();
           }
 
           const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
