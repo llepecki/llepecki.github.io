@@ -32,7 +32,7 @@ users who want to send a thank-you.
 
 ## Critical files
 
-- `learn/gravassist.html` (single-file simulator)
+- `learn/gravassist/index.html` (single-file simulator)
   - **Header HTML** (around lines 221–229) — insert the new coffee button
     before `langBtn`
   - **CSS** — add `.coffee-btn` rule next to `.lang-btn`, plus `.coffee-overlay`

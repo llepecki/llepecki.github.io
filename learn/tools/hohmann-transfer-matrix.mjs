@@ -14,7 +14,7 @@ function fail(message) {
 function extractLiteral(source, name) {
   const marker = `const ${name} =`;
   const start = source.indexOf(marker);
-  if (start < 0) fail(`Could not find ${name} in hohmann.html`);
+  if (start < 0) fail(`Could not find ${name} in hohmann/index.html`);
   const after = start + marker.length;
   const semi = source.indexOf(";", after);
   if (semi < 0) fail(`Could not parse ${name} literal`);
@@ -22,7 +22,7 @@ function extractLiteral(source, name) {
 }
 
 function loadAppConfig() {
-  const file = path.resolve("hohmann.html");
+  const file = path.resolve("hohmann/index.html");
   const source = fs.readFileSync(file, "utf8");
   const muLiteral = extractLiteral(source, "MU_SUN");
   const bodiesLiteral = extractLiteral(source, "BODIES");

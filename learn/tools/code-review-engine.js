@@ -55,7 +55,7 @@ export async function runCli(argv) {
   if (options.help) {
     console.log([
       "Usage:",
-      "  npm run cr -- <app.html> [--json]",
+      "  npm run cr -- <app>/index.html [--json]",
       "  npm run cr -- --all [--json]",
       "",
       "Reports structural, formatting, JS/CSS, duplication, and single-file-app policy issues for the apps in this folder."
@@ -141,12 +141,22 @@ function parseArgs(argv) {
   return options;
 }
 
+const APP_SCAN_SKIP_DIRS = new Set(["node_modules", "tools", "docs"]);
+
 async function listHtmlFiles(cwd) {
   const entries = await fs.readdir(cwd, { withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".html"))
-    .map((entry) => path.join(cwd, entry.name))
-    .sort((left, right) => left.localeCompare(right));
+  const files = [];
+  for (const entry of entries) {
+    if (entry.isFile() && entry.name.toLowerCase().endsWith(".html")) {
+      files.push(path.join(cwd, entry.name));
+    } else if (entry.isDirectory() && !APP_SCAN_SKIP_DIRS.has(entry.name) && !entry.name.startsWith(".")) {
+      const candidate = path.join(cwd, entry.name, "index.html");
+      if (await fileExists(candidate)) {
+        files.push(candidate);
+      }
+    }
+  }
+  return files.sort((left, right) => left.localeCompare(right));
 }
 
 async function fileExists(file) {
@@ -1768,7 +1778,7 @@ function cssContext(rule) {
 function summarizePaths(files, currentFile, limit = 6) {
   const sorted = [...new Set(files)]
     .filter((file) => file !== currentFile)
-    .map((file) => path.basename(file))
+    .map((file) => path.join(path.basename(path.dirname(file)), path.basename(file)))
     .sort((left, right) => left.localeCompare(right));
 
   if (sorted.length <= limit) {
