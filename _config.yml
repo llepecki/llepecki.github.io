@@ -130,6 +130,7 @@ navbar-var-length: false
 # Include files that start with underscore (for Cloudflare Pages deployment)
 include:
   - _headers
+  - _redirects
 
 ######################################
 # --- Colours / background image --- #
@@ -301,6 +302,9 @@ exclude:
   - README.md
   - FAVICON.md
   - docs/
+  - learn/README.md
+  - learn/docs/
+  - learn/*/docs
 
 plugins:
   - jekyll-paginate
