@@ -351,7 +351,142 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         line-height: 1.6;
       }
 
-      .result-overlay {
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+      /* Game-mode-only groups: hidden by default; setMode() toggles display:''. */
+      #grpAltitude,
+      #grpLaunch,
+      #grpGameHud,
+      #grpMissionActions {
+        display: none;
+      }
+
+      /* Launch primary button — visually dominant, color-coded. */
+      .launch-btn {
+        padding: 12px 4px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--bg);
+      }
+      .launch-btn:hover {
+        background: #79b8ff;
+        border-color: #79b8ff;
+      }
+      .launch-btn.is-retry {
+        background: var(--panel);
+        color: var(--accent);
+      }
+      .launch-btn.is-retry:hover {
+        background: var(--panel-border);
+      }
+
+      /* Fuel tank: horizontal bar with gold/silver threshold markers. */
+      .fuel-tank {
+        position: relative;
+        width: 100%;
+        height: 14px;
+        background: var(--panel-border);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+      .fuel-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(
+          90deg,
+          #3fb950 0%,
+          #d4b856 70%,
+          #f97583 100%
+        );
+        transition: width 0.12s ease-out;
+      }
+      .fuel-marker {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        pointer-events: none;
+      }
+      .fuel-marker-silver {
+        background: rgba(207, 216, 220, 0.7);
+      }
+      .fuel-marker-gold {
+        background: rgba(255, 179, 0, 0.9);
+      }
+      .fuel-tank-labels {
+        display: flex;
+        justify-content: space-between;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 10px;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+
+      .hud-mission-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .hud-mission-value {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        color: var(--text);
+      }
+
+      .game-stars {
+        display: block;
+        width: 100%;
+        max-width: 140px;
+        height: 28px;
+        margin: 6px auto 0;
+      }
+      .game-result {
+        padding-top: 8px;
+        border-top: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .result-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+      }
+      .result-label {
+        color: var(--text-dim);
+      }
+      .result-val {
+        color: var(--text);
+      }
+      .result-msg {
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--accent);
+        text-align: center;
+        margin-top: 2px;
+      }
+      .result-msg.is-success {
+        color: var(--gain);
+      }
+      .result-msg.is-fail {
+        color: var(--loss);
+      }
+
+      /* Full-screen result overlay. Tier color (green/blue/yellow/red) is
+         the dominant signal but is always paired with emoji + text + an
+         aria-live announcement (via #rewardAnnounce), so it's never
+         color-only. The overlay is dismissible by click anywhere or by
+         Esc / Enter / Space. */
+      .game-overlay {
         position: fixed;
         inset: 0;
         z-index: 9999;
@@ -359,34 +494,54 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 18px;
+        padding: 24px;
         cursor: pointer;
-        animation: overlayFadeIn 0.3s ease;
+        text-align: center;
+        color: #fff;
+        user-select: none;
+      }
+      /* Honor the [hidden] attribute. Without this, the
+         display:flex above overrides the UA default and the
+         "hidden" overlay still renders, covering the screen
+         and blocking all clicks. */
+      .game-overlay[hidden] {
+        display: none;
+      }
+      .game-overlay--success {
+        background: rgba(0, 200, 83, 0.92);
+      }
+      .game-overlay--close {
+        background: rgba(25, 118, 210, 0.9);
+      }
+      .game-overlay--far {
+        background: rgba(249, 168, 37, 0.92);
+      }
+      .game-overlay--miss {
+        background: rgba(211, 47, 47, 0.92);
       }
       .overlay-emoji {
-        font-size: 72px;
-        animation: overlayPop 0.4s ease;
+        font-size: 6rem;
+        line-height: 1;
+        animation: overlayPop 0.45s ease;
       }
-      .overlay-msg {
-        font-family: "Outfit", sans-serif;
-        font-size: 24px;
+      .overlay-stars {
+        width: 240px;
+        height: 76px;
+      }
+      .overlay-title {
+        font-size: 2.4rem;
         font-weight: 700;
-        margin-top: 16px;
-        color: #fff;
+      }
+      .overlay-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.95;
+        max-width: 540px;
       }
       .overlay-hint {
-        font-family: "Share Tech Mono", monospace;
-        font-size: 12px;
         margin-top: 8px;
-        color: rgba(255, 255, 255, 0.6);
-      }
-
-      @keyframes overlayFadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
+        font-size: 0.95rem;
+        opacity: 0.85;
       }
       @keyframes overlayPop {
         0% {
@@ -400,16 +555,110 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
       }
 
-      .header-icon {
-        font-size: 18px;
-        line-height: 1;
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
-      #grpNewTarget {
-        display: none;
+
+      /* Debug analyzer surface. Intentionally near-invisible (opacity 0.04) so
+         end users don't see it, but locatable in the bottom-left corner if you
+         know where to look. The analyzer is dev tooling only — it must never
+         affect normal gameplay. */
+      #missionAnalyzeBtn {
+        position: fixed;
+        bottom: 6px;
+        left: 6px;
+        width: 32px;
+        height: 32px;
+        opacity: 0.04;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        z-index: 9999;
+        color: var(--text-dim);
+        font-size: 18px;
+        font-family: "Share Tech Mono", monospace;
+        padding: 0;
+      }
+      #missionAnalyzeBtn:hover {
+        opacity: 0.35;
+      }
+
+      .analysis-modal {
+        position: fixed;
+        top: 5%;
+        left: 5%;
+        right: 5%;
+        bottom: 5%;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        z-index: 10000;
+        overflow: auto;
+        padding: 24px;
+        color: var(--text);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .analysis-modal h2 {
+        font-family: "Outfit", sans-serif;
+        font-size: 18px;
+        margin-bottom: 12px;
+      }
+      .analysis-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        background: transparent;
+        border: 1px solid var(--panel-border);
+        color: var(--text);
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 18px;
+      }
+      .analysis-summary > div {
+        margin: 4px 0;
+      }
+      .analysis-warn {
+        color: var(--loss);
+      }
+      .analysis-ok {
+        color: var(--gain);
+      }
+      .analysis-heatmaps {
+        display: flex;
+        gap: 12px;
+        margin: 16px 0;
+        flex-wrap: wrap;
+      }
+      .heatmap {
+        background: var(--bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+      }
+      .analysis-json {
+        background: var(--bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 12px;
+        overflow: auto;
+        font-size: 11px;
+        max-height: 400px;
+        white-space: pre;
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .result-overlay,
+        .game-overlay,
         .overlay-emoji {
           animation: none;
         }
@@ -523,6 +772,38 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           </div>
         </div>
 
+        <div class="ctrl-group" id="grpAltitude">
+          <span class="ctrl-label" id="lblFlybyAlt">Flyby Altitude</span>
+          <div class="slider-row">
+            <button
+              type="button"
+              class="step-btn"
+              id="altDecBtn"
+              aria-label="Decrease flyby altitude"
+            >
+              &minus;
+            </button>
+            <input
+              type="range"
+              id="altSlider"
+              min="10"
+              max="300"
+              value="50"
+              step="5"
+              aria-label="Flyby altitude"
+            />
+            <button
+              type="button"
+              class="step-btn"
+              id="altIncBtn"
+              aria-label="Increase flyby altitude"
+            >
+              +
+            </button>
+            <span class="slider-val" id="altVal">50</span>
+          </div>
+        </div>
+
         <div class="ctrl-group" id="grpAnim">
           <span class="ctrl-label" id="lblTimeWarp">Time Warp</span>
           <div class="type-toggle">
@@ -557,6 +838,27 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               aria-label="Stop"
             >
               &#x25a0;
+            </button>
+          </div>
+        </div>
+
+        <div class="ctrl-group" id="grpLaunch">
+          <button
+            type="button"
+            class="type-btn full-width launch-btn"
+            id="launchBtn"
+          >
+            Launch
+          </button>
+          <div class="type-toggle" id="warpGameGroup" role="group">
+            <button type="button" class="type-btn active" id="warpGame1xBtn">
+              1&times;
+            </button>
+            <button type="button" class="type-btn" id="warpGame3xBtn">
+              3&times;
+            </button>
+            <button type="button" class="type-btn" id="warpGame10xBtn">
+              10&times;
             </button>
           </div>
         </div>
@@ -600,10 +902,15 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           </button>
         </div>
 
-        <div class="ctrl-group" id="grpNewTarget">
-          <button type="button" class="type-btn full-width" id="newTargetBtn">
-            New Target
-          </button>
+        <div class="ctrl-group" id="grpMissionActions">
+          <div class="type-toggle">
+            <button type="button" class="type-btn" id="retryMissionBtn">
+              Retry
+            </button>
+            <button type="button" class="type-btn" id="newMissionBtn">
+              New Mission
+            </button>
+          </div>
         </div>
 
         <div class="ctrl-group readouts" id="grpReadouts">
@@ -650,11 +957,103 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           </div>
         </div>
 
+        <div class="ctrl-group" id="grpGameHud">
+          <div class="hud-mission-label">
+            <span class="ctrl-label" id="lblMissionTitle">Mission</span>
+            <span class="hud-mission-value" id="hudMissionName">&mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblFuelUsed">Fuel used</span>
+            <span class="readout-val" id="hudFuelVal">&mdash;</span>
+          </div>
+          <div class="fuel-tank" aria-hidden="true">
+            <div class="fuel-bar" id="fuelBar"></div>
+            <div
+              class="fuel-marker fuel-marker-silver"
+              id="fuelMarkerSilver"
+            ></div>
+            <div class="fuel-marker fuel-marker-gold" id="fuelMarkerGold"></div>
+          </div>
+          <div class="fuel-tank-labels">
+            <span id="lblFuelGold">Gold &le; &mdash;</span>
+            <span id="lblFuelSilver">Silver &le; &mdash;</span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblBestSession"
+              >Best this session</span
+            >
+            <span class="readout-val" id="hudBestStars">&mdash;</span>
+          </div>
+          <div class="game-result" id="gameResultPanel" hidden>
+            <div class="result-row">
+              <span class="result-label" id="lblResultFuel">Fuel used</span>
+              <span class="result-val" id="resultFuelVal">&mdash;</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label" id="lblResultSpeedIn">Speed in</span>
+              <span class="result-val" id="resultSpeedInVal">&mdash;</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label" id="lblResultSpeedOut">Speed out</span>
+              <span class="result-val" id="resultSpeedOutVal">&mdash;</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label" id="lblResultBoost">Speed boost</span>
+              <span class="result-val" id="resultBoostVal">&mdash;</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label" id="lblResultStars">Stars</span>
+              <span class="result-val" id="resultStarsVal">&mdash;</span>
+            </div>
+            <svg
+              class="game-stars"
+              id="gameStars"
+              viewBox="-50 -16 100 32"
+              aria-hidden="true"
+            ></svg>
+            <div class="result-msg" id="resultMsg"></div>
+          </div>
+          <div
+            id="rewardAnnounce"
+            class="visually-hidden"
+            role="status"
+            aria-live="polite"
+          ></div>
+        </div>
+
+        <div
+          id="gameOverlay"
+          class="game-overlay"
+          hidden
+          role="dialog"
+          aria-live="polite"
+          tabindex="-1"
+        >
+          <div class="overlay-emoji" id="overlayEmoji"></div>
+          <svg
+            class="overlay-stars"
+            id="overlayStars"
+            viewBox="-50 -16 100 32"
+            aria-hidden="true"
+          ></svg>
+          <div class="overlay-title" id="overlayTitle"></div>
+          <div class="overlay-subtitle" id="overlaySubtitle"></div>
+          <div class="overlay-hint" id="overlayHint"></div>
+        </div>
+
         <div class="ctrl-group info-text">
           <span id="infoText"></span>
         </div>
       </div>
     </main>
+
+    <button
+      id="missionAnalyzeBtn"
+      type="button"
+      title="Analyze mission (debug)"
+    >
+      &middot;
+    </button>
 
     <script>
       (function () {
@@ -677,10 +1076,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             warpNormal: "\u25b6",
             warpFast: "\u25b6\u25b6",
             warpFastest: "\u25b6\u25b6\u25b6",
-            launch: "Launch",
-            reset: "Reset",
             stop: "Stop (double-click resets the view)",
-            newTarget: "New Target",
             precision: "Precision (Shift)",
             view: "View",
             fixed: "Auto",
@@ -708,12 +1104,43 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             infoDefault:
               "Drag the arrow body to reposition, or drag the tip to rotate. Increase the planet\u2019s speed to see a bigger boost.",
             infoGame:
-              "Adjust the velocity arrow and flyby altitude to steer the spacecraft through the target. Click Launch when ready!",
+              "Drag the arrow tip to aim. Use Flyby Altitude to set how close you pass. Press Launch when ready — lower fuel + a tight flyby earn more stars.",
             gameSuccess: "Great shot!",
-            gameCloseMiss: "Almost! Try again",
-            gameFarMiss: "Way off! Try again",
             gameCrash: "Crash! Too close",
-            clickToDismiss: "Click to continue",
+            gameMiss: "Missed the target",
+            gameNoAssist:
+              "Hit the target, but the planet barely pushed you. Try a tighter flyby.",
+            gameNoMission:
+              "Couldn't build a mission here right now. Try another planet.",
+            overlayHint: "Tap to continue",
+            overlayClose: "So close!",
+            overlayFar: "Off by a bit",
+            overlayFarFar: "Way off",
+            mission: "Mission",
+            missionLabel: "Gravity Assist",
+            launchBtn: "Launch",
+            retryBtn: "Retry",
+            newMissionBtn: "New Mission",
+            warpLabel: "Warp",
+            fuel: "Fuel",
+            fuelUsed: "Fuel used",
+            gold: "Gold",
+            silver: "Silver",
+            bestSession: "Best this session",
+            reward3: "3 stars!",
+            reward2: "2 stars!",
+            reward1: "1 star!",
+            noStars: "No stars",
+            resultStars: "Stars",
+            resultBoost: "Speed boost",
+            resultFuel: "Fuel used",
+            ariaAltDec: "Decrease flyby altitude",
+            ariaAltInc: "Increase flyby altitude",
+            ariaAltSlider: "Flyby altitude",
+            ariaWarp1x: "1x playback speed",
+            ariaWarp3x: "3x playback speed",
+            ariaWarp10x: "10x playback speed",
+            ariaWarpGroup: "Playback speed",
             mercury: "Mercury",
             venus: "Venus",
             earth: "Earth",
@@ -737,10 +1164,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             warpNormal: "\u25b6",
             warpFast: "\u25b6\u25b6",
             warpFastest: "\u25b6\u25b6\u25b6",
-            launch: "Start",
-            reset: "Resetuj",
             stop: "Zatrzymaj (dwuklik resetuje widok)",
-            newTarget: "Nowy cel",
             precision: "Precyzja (Shift)",
             view: "Widok",
             fixed: "Auto",
@@ -769,12 +1193,43 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             infoDefault:
               "Przeci\u0105gnij cia\u0142o strza\u0142ki, aby zmieni\u0107 pozycj\u0119, lub przeci\u0105gnij grot, aby obr\u00F3ci\u0107. Zwi\u0119ksz pr\u0119dko\u015B\u0107 planety, aby zobaczy\u0107 wi\u0119kszy przyrost.",
             infoGame:
-              "Dopasuj strza\u0142k\u0119 pr\u0119dko\u015Bci i wysoko\u015B\u0107 przelotu, aby poprowadzi\u0107 statek przez cel. Kliknij Start gdy gotowe!",
+              "Przeci\u0105gnij grot strza\u0142ki, aby celowa\u0107. Ustaw Wysoko\u015B\u0107 przelotu, aby przelecie\u0107 blisko planety. Kliknij Start gdy gotowe \u2014 mniejsze paliwo i ciasny przelot daj\u0105 wi\u0119cej gwiazdek.",
             gameSuccess: "\u015Awietny strza\u0142!",
-            gameCloseMiss: "Prawie! Spr\u00F3buj ponownie",
-            gameFarMiss: "Pud\u0142o! Spr\u00F3buj ponownie",
             gameCrash: "Katastrofa! Za blisko",
-            clickToDismiss: "Kliknij, aby kontynuowa\u0107",
+            gameMiss: "Pud\u0142o",
+            gameNoAssist:
+              "Trafiony cel, ale planeta ledwo Ci\u0119 popchn\u0119\u0142a. Spr\u00F3buj bli\u017Cszego przelotu.",
+            gameNoMission:
+              "Nie uda\u0142o si\u0119 zbudowa\u0107 misji dla tej planety. Spr\u00F3buj innej.",
+            overlayHint: "Dotknij, aby kontynuowa\u0107",
+            overlayClose: "Tak blisko!",
+            overlayFar: "Troch\u0119 nie tak",
+            overlayFarFar: "Daleko od celu",
+            mission: "Misja",
+            missionLabel: "Asysta grawitacyjna",
+            launchBtn: "Start",
+            retryBtn: "Pon\u00F3w",
+            newMissionBtn: "Nowa misja",
+            warpLabel: "Tempo",
+            fuel: "Paliwo",
+            fuelUsed: "Zu\u017Cyte paliwo",
+            gold: "Z\u0142oto",
+            silver: "Srebro",
+            bestSession: "Najlepszy wynik",
+            reward3: "3 gwiazdki!",
+            reward2: "2 gwiazdki!",
+            reward1: "1 gwiazdka!",
+            noStars: "Brak gwiazdek",
+            resultStars: "Gwiazdki",
+            resultBoost: "Przyrost pr\u0119dko\u015Bci",
+            resultFuel: "Zu\u017Cyte paliwo",
+            ariaAltDec: "Zmniejsz wysoko\u015B\u0107 przelotu",
+            ariaAltInc: "Zwi\u0119ksz wysoko\u015B\u0107 przelotu",
+            ariaAltSlider: "Wysoko\u015B\u0107 przelotu",
+            ariaWarp1x: "Pr\u0119dko\u015B\u0107 odtwarzania 1x",
+            ariaWarp3x: "Pr\u0119dko\u015B\u0107 odtwarzania 3x",
+            ariaWarp10x: "Pr\u0119dko\u015B\u0107 odtwarzania 10x",
+            ariaWarpGroup: "Pr\u0119dko\u015B\u0107 odtwarzania",
             mercury: "Merkury",
             venus: "Wenus",
             earth: "Ziemia",
@@ -807,6 +1262,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             radiusRatio: 0.383,
             defaultSpeed: 45,
             defaultApproachSpeed: 50,
+            // Weak gravity well (18× weaker than Earth). Even at the most
+            // relaxed gate (minBoost=0.5, minDeflectionDeg=2) and an
+            // increased mission budget, Mercury fails to produce a robust
+            // mission ~33% of the time — too inconsistent for scored play.
+            // Kept in Explore mode so the physics is still visible.
+            scored: false,
+            assistGate: { minBoost: 0.5, minDeflectionDeg: 2 },
+            missionBudget: 60,
             colors: {
               hi: "#b0b0b0",
               mid: "#8a8a8a",
@@ -820,6 +1283,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             radiusRatio: 0.949,
             defaultSpeed: 35,
             defaultApproachSpeed: 50,
+            assistGate: { minBoost: 1.5, minDeflectionDeg: 5 },
+            missionBudget: 30,
             colors: {
               hi: "#f5e6a3",
               mid: "#d4b856",
@@ -833,6 +1298,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             radiusRatio: 1,
             defaultSpeed: 30,
             defaultApproachSpeed: 50,
+            assistGate: { minBoost: 1.5, minDeflectionDeg: 5 },
+            missionBudget: 30,
             colors: {
               hi: "#7ed6f7",
               mid: "#3aa8d8",
@@ -846,6 +1313,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             radiusRatio: 0.532,
             defaultSpeed: 25,
             defaultApproachSpeed: 50,
+            // Low-mass planet; relaxed gate matches the boost Mars can give
+            // (a few km/s at best) while still requiring a real assist.
+            assistGate: { minBoost: 1.0, minDeflectionDeg: 3 },
+            missionBudget: 60,
             colors: {
               hi: "#e8a07a",
               mid: "#c75b3a",
@@ -859,6 +1330,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             radiusRatio: 10.973,
             defaultSpeed: 15,
             defaultApproachSpeed: 100,
+            assistGate: { minBoost: 1.5, minDeflectionDeg: 5 },
+            missionBudget: 30,
             colors: {
               hi: "#f0c590",
               mid: "#d4944a",
@@ -872,6 +1345,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             radiusRatio: 9.14,
             defaultSpeed: 10,
             defaultApproachSpeed: 100,
+            assistGate: { minBoost: 1.5, minDeflectionDeg: 5 },
+            missionBudget: 30,
             colors: {
               hi: "#f0dca0",
               mid: "#c8a84c",
@@ -885,6 +1360,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             radiusRatio: 3.981,
             defaultSpeed: 5,
             defaultApproachSpeed: 80,
+            assistGate: { minBoost: 1.5, minDeflectionDeg: 5 },
+            missionBudget: 30,
             colors: {
               hi: "#b8e8f0",
               mid: "#7cc8d8",
@@ -898,6 +1375,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             radiusRatio: 3.865,
             defaultSpeed: 5,
             defaultApproachSpeed: 80,
+            assistGate: { minBoost: 1.5, minDeflectionDeg: 5 },
+            missionBudget: 30,
             colors: {
               hi: "#7090e0",
               mid: "#4060c0",
@@ -906,6 +1385,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             },
           },
         ];
+
+        // Debug gate: the in-page mission analyzer (button + window
+        // exports) is only attached when the URL contains ?debug=1. In
+        // production the analyzer code stays inert — no DOM button, no
+        // global exports.
+        const DEBUG_ANALYZER = new URLSearchParams(location.search).has(
+          "debug",
+        );
 
         // ══════════════════════════════════════════════
         // STATE
@@ -943,10 +1430,26 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           deflectionAngle: 0,
           maxSpeedSliderUnits: 0,
           hintShown: true,
-          gameTarget: null,
-          gameResult: null,
-          gameLaunched: false,
-          gameGhost: null, // sun-frame trail of the previous attempt (game mode only)
+          // Consolidated game state. mission is non-null only while in game mode
+          // with a generated mission loaded. result is the final outcome after
+          // the run resolves at end-of-trajectory ('success' | 'miss' | 'crash'
+          // | null). ghost stores the sun-frame trail of the previous attempt.
+          game: {
+            mission: null,
+            launched: false,
+            result: null,
+            hitIndex: -1,
+            fuelUsed: 0,
+            lastAttempt: {
+              fuelUsed: 0,
+              stars: 0,
+              boost: 0,
+              vIn: 0,
+              vOut: 0,
+            },
+            bestStarsThisSession: 0,
+            ghost: null,
+          },
           fineDrag: false, // derived: precisionMode XOR shiftHeld
           precisionMode: false, // latched setting (toggled by button click)
           shiftHeld: false, // momentary Shift key tracking
@@ -1004,7 +1507,43 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           document.getElementById("lblTimeWarp").textContent = l.timeWarp;
           document.getElementById("resetBtn").title = l.stop;
           updateWarpBtns();
-          document.getElementById("newTargetBtn").textContent = l.newTarget;
+          document.getElementById("lblFlybyAlt").textContent = l.flybyAlt;
+          document.getElementById("retryMissionBtn").textContent = l.retryBtn;
+          document.getElementById("newMissionBtn").textContent =
+            l.newMissionBtn;
+          document.getElementById("lblMissionTitle").textContent = l.mission;
+          document.getElementById("lblFuelUsed").textContent = l.fuelUsed;
+          document.getElementById("lblBestSession").textContent = l.bestSession;
+          document.getElementById("lblResultFuel").textContent = l.resultFuel;
+          document.getElementById("lblResultSpeedIn").textContent = l.speedIn;
+          document.getElementById("lblResultSpeedOut").textContent = l.speedOut;
+          document.getElementById("lblResultBoost").textContent = l.resultBoost;
+          document.getElementById("lblResultStars").textContent = l.resultStars;
+          // Aria labels for the new game-mode controls. Set programmatically
+          // so they follow the user's language toggle.
+          document
+            .getElementById("altDecBtn")
+            .setAttribute("aria-label", l.ariaAltDec);
+          document
+            .getElementById("altSlider")
+            .setAttribute("aria-label", l.ariaAltSlider);
+          document
+            .getElementById("altIncBtn")
+            .setAttribute("aria-label", l.ariaAltInc);
+          document
+            .getElementById("warpGameGroup")
+            .setAttribute("aria-label", l.ariaWarpGroup);
+          document
+            .getElementById("warpGame1xBtn")
+            .setAttribute("aria-label", l.ariaWarp1x);
+          document
+            .getElementById("warpGame3xBtn")
+            .setAttribute("aria-label", l.ariaWarp3x);
+          document
+            .getElementById("warpGame10xBtn")
+            .setAttribute("aria-label", l.ariaWarp10x);
+          updateLaunchBtn();
+          updateHudMissionName();
           document.getElementById("precisionBtn").textContent = l.precision;
           document.getElementById("lblView").textContent = l.view;
           document.getElementById("autoViewBtn").textContent = l.fixed;
@@ -1044,13 +1583,19 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const sel = document.getElementById("planetSelect");
           const cur = sel.value || state.selectedPlanet;
           sel.replaceChildren();
+          // In game mode, hide planets flagged `scored: false` — they cannot
+          // reliably produce robust missions for the scored loop. Explore
+          // mode always lists every planet.
           PLANET_DATA.forEach(function (p) {
+            if (state.mode === "game" && p.scored === false) return;
             const opt = document.createElement("option");
             opt.value = p.key;
             opt.textContent = T(p.key);
             sel.appendChild(opt);
           });
-          sel.value = cur;
+          sel.value = sel.querySelector('option[value="' + cur + '"]')
+            ? cur
+            : sel.options[0]?.value || "earth";
         }
 
         // ══════════════════════════════════════════════
@@ -1066,206 +1611,1093 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             .getElementById("modeGameBtn")
             .classList.toggle("active", mode === "game");
 
-          document.getElementById("grpReadouts").style.display =
-            mode === "explore" ? "" : "none";
-          document.getElementById("grpNewTarget").style.display =
-            mode === "game" ? "" : "none";
+          // Explore-only groups
+          const exploreOnly = ["grpPlanetVel", "grpAnim", "grpReadouts"];
+          // Game-only groups.
+          // Note: `grpAltitude` is intentionally NOT included here. In
+          // game mode altitude is pinned per mission and the player has
+          // no control over it, so the slider stays hidden in both modes
+          // (the CSS default `#grpAltitude { display: none }` keeps it
+          // out of the way without us touching it on mode switch).
+          const gameOnly = ["grpLaunch", "grpMissionActions", "grpGameHud"];
+          // Explore-only groups have no CSS hide rule, so "" falls back to the
+          // .ctrl-group flex display. Game-only groups DO have a CSS hide rule
+          // (so they don't flash on page load before JS runs), so showing them
+          // requires an explicit "flex" to override the rule.
+          exploreOnly.forEach(function (id) {
+            document.getElementById(id).style.display =
+              mode === "explore" ? "" : "none";
+          });
+          gameOnly.forEach(function (id) {
+            document.getElementById(id).style.display =
+              mode === "game" ? "flex" : "none";
+          });
 
+          // Re-populate the planet dropdown so non-scored planets disappear
+          // when entering game mode and reappear when returning to explore.
+          populatePlanetSelect();
           if (mode === "game") {
+            // If the user was on a non-scored planet (e.g. Mercury) when
+            // they entered game mode, jump them to Earth so the dropdown
+            // and the loaded mission match.
+            const cur = PLANET_DATA.find(function (p) {
+              return p.key === state.selectedPlanet;
+            });
+            if (cur && cur.scored === false) {
+              selectPlanet("earth", false);
+            } else {
+              generateMission(state.selectedPlanet);
+            }
+          } else {
+            state.game.mission = null;
+            state.game.result = null;
+            state.game.launched = false;
+            state.game.ghost = null;
+            state.game.hitIndex = -1;
+            state.game.bestStarsThisSession = 0;
+            closeGameOverlay();
+            document.getElementById("gameResultPanel").hidden = true;
+            // Restore default planet speed so explore behaves as before.
             const planet = PLANET_DATA.find(function (p) {
               return p.key === state.selectedPlanet;
             });
-            state.planetVel = planet.defaultSpeed;
-            document.getElementById("planetVelSlider").value =
-              planet.defaultSpeed;
-            document.getElementById("planetVelVal").textContent =
-              planet.defaultSpeed;
-            generateTarget();
-          } else {
-            state.gameTarget = null;
-            state.gameResult = null;
-            state.gameLaunched = false;
-            state.gameGhost = null;
+            if (planet) {
+              state.planetVel = planet.defaultSpeed;
+              document.getElementById("planetVelSlider").value =
+                planet.defaultSpeed;
+              document.getElementById("planetVelVal").textContent =
+                planet.defaultSpeed;
+            }
           }
+          updateLaunchBtn();
+          updateHudMissionName();
+          updateGameWarpBtns();
           updateInfo();
         }
 
-        function generateTarget() {
-          state.gameGhost = null; // new target → previous attempts irrelevant
+        // ══════════════════════════════════════════════
+        // MISSION (game mode redesign)
+        // ══════════════════════════════════════════════
+        // Mission generation is a multi-step search:
+        //  1. Sample a witness candidate (angle, periapsisAlt, approachSpeed).
+        //     Simulate it. Reject if it crashes or the trajectory is too short.
+        //  2. Place the target on the witness trajectory's outbound leg, at a
+        //     fraction past closest approach. The target sits exactly on the
+        //     witness path so the mission is provably winnable.
+        //  3. Compute hitRadiusWorld in world units. Fixed for the mission; the
+        //     hit test will use it (M4) and it does not depend on camera scale.
+        //  4. Sample many (angle, alt, speed) triples and keep those whose
+        //     trajectory hits the target on the outbound leg. From the set of
+        //     winning fuels we derive goldFuel (the lowest winning fuel) and
+        //     silverFuel (a mid-band winning fuel). This guarantees gold
+        //     requires both lower speed AND a tight flyby (the only way the
+        //     trajectory can swing wide enough to reach the target at low
+        //     speed is via a real assist around the planet).
+        //  5. Each winning candidate is tested for local robustness: ±5% on
+        //     each axis (6 perturbations). A candidate is "robust" if at
+        //     least 4/6 perturbations also hit with positive Δv. Mission is
+        //     accepted with ≥5 robust positive-Δv winners.
+        //  6. Thresholds: gold = lowest fuel among robust positive-Δv
+        //     winners (the "low-fuel robust frontier"). silver = max(gold+8,
+        //     p60 of all positive-Δv winners). This means gold rewards
+        //     "low fuel + real assist + not a knife-edge fluke".
+        //  7. Defaults are perturbed from the witness so the first launch is
+        //     a legible near-miss — the spacecraft visibly swings around the
+        //     planet but doesn't quite hit the target, which scaffolds
+        //     iteration far better than a wild miss from generic defaults.
+        //
+        // Altitude bounds: validation samples MUST stay inside the player's
+        // slider range so a mission cannot require an altitude the player
+        // can't enter. ALT_MIN_SAMPLE and ALT_MAX_SAMPLE mirror the slider's
+        // min/max attributes (kept in sync via constants below).
+        let missionIdSeq = 0;
+        const MISSION_ATTEMPT_BUDGET = 30;
+        const FUEL_SEARCH_SAMPLES = 60;
+        const PREFERRED_MIN_ROBUST_WINNERS = 5;
+        const FUEL_MIN = 22;
+        const FUEL_MAX_SEARCH = 90;
+        const FUEL_MAX_DISPLAY = 100;
+        // Mirror altSlider min/max/step in gravassist.html so validation
+        // samples cannot exceed reachable inputs.
+        const ALT_MIN_SAMPLE = 10;
+        const ALT_MAX_SAMPLE = 300;
+        // Physics-correctness gates are per-planet: see assistGate on each
+        // PLANET_DATA entry. The witness check, fuel-search filter, robustness
+        // check, and runtime evaluator all read planet.assistGate.minBoost /
+        // .minDeflectionDeg so Mercury and Mars can produce real (if modest)
+        // assists at the magnitudes their weak gravity actually delivers.
+        // Hit-radius derivation: per-mission, bounded by both the no-assist
+        // distance (the teaching gate: hitR ≤ 0.3 × dMin enforces "must
+        // bend around the planet") AND the target's planet-frame distance
+        // at hit time (the visual scale: hitR ≤ 0.3 × targetPlanetDist
+        // keeps the hit zone small relative to the mission's spatial
+        // extent). The two bounds interact correctly across planets:
+        // outer planets get larger absolute hit zones because their
+        // target-planet distance is bigger; inner planets get tighter
+        // zones because their geometry is more compact.
+        const HIT_R_FLOOR = 12;
+        const HIT_R_TO_DMIN_RATIO = 0.3;
+        const HIT_R_TO_TARGET_DIST_RATIO = 0.3;
+        // Cap hit radius at a multiple of the planet's visual radius so the
+        // hit zone never appears more than ~8 planet-widths across on
+        // screen. Outer planets (large radiusRatio) were getting hit zones
+        // 20-40× their own size, breaking the visual sense of "I'm aiming
+        // at a point near the planet". Only binds on Jupiter/Saturn; inner
+        // planets fall under their other bounds.
+        const HIT_R_TO_PLANET_RADIUS_RATIO = 8;
+        const MIN_DMIN = 40;
+        // Robustness check: ±5% perturbation on each player-reachable
+        // axis (angle and speed; altitude is pinned per mission in game
+        // mode). Candidate is robust if ≥3 of 4 perturbations still hit
+        // with positive Δv (~75 %, same threshold as the prior 3D
+        // ≥4-of-6 check).
+        const PERT_PCT = 0.05;
+        const ROBUST_HITS_REQUIRED = 3;
+
+        // Inline simulation helper used by the generator. Mutates state to
+        // run one trajectory and returns whether the target was hit on the
+        // outbound leg plus the resulting Δv. Caller is responsible for
+        // restoring state after a batch of simulations.
+        function simHitWithDeltaV(angle, alt, speed, target, hitRSq) {
+          state.approachAngle = angle;
+          state.periapsisAlt = alt;
+          state.approachSpeed = speed;
+          initVecPosition();
+          computeTrajectory();
+          if (state.crashed) return { hit: false, deltaV: 0 };
+          if (state.trajectory.length < 50) return { hit: false, deltaV: 0 };
+          if (state.closestIndex >= state.trajectory.length - 5)
+            return { hit: false, deltaV: 0 };
+          let hit = false;
+          for (
+            let k = state.closestIndex + 3;
+            k < state.trajectory.length;
+            k++
+          ) {
+            const sf = toSunFrame(k);
+            const dx = sf.x - target.x;
+            const dy = sf.y - target.y;
+            if (dx * dx + dy * dy < hitRSq) {
+              hit = true;
+              break;
+            }
+          }
+          return { hit: hit, deltaV: state.deltaV };
+        }
+
+        function generateMission(planetKey) {
+          if (planetKey && planetKey !== state.selectedPlanet) {
+            state.selectedPlanet = planetKey;
+          }
           const planet = PLANET_DATA.find(function (p) {
             return p.key === state.selectedPlanet;
           });
           state.planetVel = planet.defaultSpeed;
+          document.getElementById("planetVelSlider").value =
+            planet.defaultSpeed;
+          document.getElementById("planetVelVal").textContent =
+            planet.defaultSpeed;
 
-          let target = null;
-          for (let attempt = 0; attempt < 20; attempt++) {
-            const solAngle = Math.PI + (Math.random() - 0.5) * 1.0;
-            const solAlt = state.planetRadius * (1 + Math.random() * 4);
-            const solSpeed = 30 + Math.random() * 50;
+          let mission = null;
+          // Track the best partially-valid candidate (has thresholds but
+          // fewer robust winners than preferred). Used before resorting to
+          // the fabricated-fallback path.
+          let bestCandidate = null;
 
-            state.approachAngle = solAngle;
-            state.periapsisAlt = solAlt;
-            state.approachSpeed = solSpeed;
+          const planetBudget = planet.missionBudget ?? MISSION_ATTEMPT_BUDGET;
+          const planetMinBoost = planet.assistGate.minBoost;
+          const planetMinDeflDeg = planet.assistGate.minDeflectionDeg;
+
+          for (let outer = 0; outer < planetBudget && !mission; outer++) {
+            // Step 1: witness candidate sampled in player-reachable space.
+            const wAngle = Math.PI + (Math.random() - 0.5) * 1.0;
+            const wAlt =
+              ALT_MIN_SAMPLE +
+              Math.random() * (ALT_MAX_SAMPLE - ALT_MIN_SAMPLE);
+            const wSpeed = 30 + Math.random() * 50;
+
+            state.approachAngle = wAngle;
+            state.periapsisAlt = wAlt;
+            state.approachSpeed = wSpeed;
             initVecPosition();
             computeTrajectory();
 
-            if (!state.crashed && state.trajectory.length >= 100) {
-              const outStart = state.closestIndex;
-              const outLen = state.trajectory.length - outStart;
-              const targetIdx = Math.min(
-                outStart + Math.floor(outLen * (0.6 + Math.random() * 0.2)),
-                state.trajectory.length - 1,
-              );
-              const sf = toSunFrame(targetIdx);
-              target = {
-                x: sf.x + (Math.random() - 0.5) * 20,
-                y: sf.y + (Math.random() - 0.5) * 20,
+            if (state.crashed || state.trajectory.length < 100) continue;
+            if (state.closestIndex >= state.trajectory.length - 20) continue;
+
+            // Physics gate: witness must demonstrate a real assist —
+            // positive Δv (boost mission, not brake) and meaningful
+            // deflection. This keeps scored missions aligned with the app's
+            // teaching claim: "use the moving planet to gain free speed".
+            if (state.deltaV < planetMinBoost) continue;
+            if (Math.abs(state.deflectionAngle) < planetMinDeflDeg) continue;
+
+            const witnessDeltaV = state.deltaV;
+            const witnessDeflection = state.deflectionAngle;
+            const witnessVIn = state.vIn;
+            const witnessVOut = state.vOut;
+
+            // Step 2: target placement on outbound leg.
+            const outStart = state.closestIndex;
+            const outLen = state.trajectory.length - outStart;
+            const tFrac = 0.6 + Math.random() * 0.2;
+            const targetIdx = Math.min(
+              outStart + Math.floor(outLen * tFrac),
+              state.trajectory.length - 1,
+            );
+            const sfTarget = toSunFrame(targetIdx);
+            const target = { x: sfTarget.x, y: sfTarget.y };
+
+            // Step 3: no-assist baseline. Temporally-aligned distance: at
+            // the time the gravity-assisted spacecraft is at the target,
+            // where would a no-assist (gravity = 0) spacecraft be? dMin is
+            // the distance between that hypothetical position and the
+            // target — i.e. how much the planet's gravity had to bend the
+            // path. The perpendicular-to-infinite-line variant of this
+            // calculation overcounted for outer planets where the start
+            // position is far away; this temporal alignment captures only
+            // the bend that gravity contributed during the actual flight.
+            const tHit = targetIdx * SIM_DT;
+            const vScSunHit = wSpeed * V_SCALE;
+            const baselineHitX =
+              state.vecPfX + vScSunHit * Math.cos(wAngle) * tHit;
+            const baselineHitY =
+              state.vecPfY + vScSunHit * Math.sin(wAngle) * tHit;
+            const dMinDx = target.x - baselineHitX;
+            const dMinDy = target.y - baselineHitY;
+            const dMin = Math.sqrt(dMinDx * dMinDx + dMinDy * dMinDy);
+            if (dMin < MIN_DMIN) continue;
+            // Target's distance from the planet at hit time (planet frame).
+            // Used as the visual-scale bound on hitR so outer planets get
+            // a larger absolute hit zone in proportion to their mission
+            // geometry, but the hit zone never exceeds the target-planet
+            // separation (which would look absurd).
+            const tt = state.trajectory[targetIdx];
+            const targetPlanetDist = Math.sqrt(tt.x * tt.x + tt.y * tt.y);
+            const hitRadiusWorld = Math.max(
+              HIT_R_FLOOR,
+              Math.min(
+                HIT_R_TO_DMIN_RATIO * dMin,
+                HIT_R_TO_TARGET_DIST_RATIO * targetPlanetDist,
+                HIT_R_TO_PLANET_RADIUS_RATIO * state.planetRadius,
+              ),
+            );
+            const hitRSq = hitRadiusWorld * hitRadiusWorld;
+
+            // Step 4: search for winning fuels with positive-Δv gate.
+            // Altitude is pinned at the witness altitude — game mode
+            // exposes only angle and speed to the player, so we search
+            // the same 2D space the player will actually navigate.
+            const positiveWinners = [];
+            for (let s = 0; s < FUEL_SEARCH_SAMPLES; s++) {
+              const a = wAngle + (Math.random() - 0.5) * 0.5;
+              const speed =
+                FUEL_MIN + Math.random() * (FUEL_MAX_SEARCH - FUEL_MIN);
+              const r = simHitWithDeltaV(a, wAlt, speed, target, hitRSq);
+              if (!r.hit) continue;
+              if (r.deltaV < planetMinBoost) continue;
+              positiveWinners.push({
+                angle: a,
+                alt: wAlt,
+                speed: speed,
+                fuel: Math.round(speed),
+                deltaV: r.deltaV,
+              });
+            }
+
+            if (positiveWinners.length === 0) continue;
+
+            // Step 5: robustness check. Game mode pins altitude per
+            // mission, so the perturbation set is 2D: ±angle, ±speed.
+            // Robust = ≥3 of 4 still hit with positive Δv (same ~75 %
+            // threshold as the prior 3D ≥4 of 6).
+            const robustWinners = [];
+            for (let i = 0; i < positiveWinners.length; i++) {
+              const w = positiveWinners[i];
+              const perts = [
+                [w.angle * (1 + PERT_PCT), w.alt, w.speed],
+                [w.angle * (1 - PERT_PCT), w.alt, w.speed],
+                [
+                  w.angle,
+                  w.alt,
+                  Math.min(FUEL_MAX_DISPLAY, w.speed * (1 + PERT_PCT)),
+                ],
+                [w.angle, w.alt, Math.max(FUEL_MIN, w.speed * (1 - PERT_PCT))],
+              ];
+              let pertHits = 0;
+              for (let p = 0; p < perts.length; p++) {
+                const pr = simHitWithDeltaV(
+                  perts[p][0],
+                  perts[p][1],
+                  perts[p][2],
+                  target,
+                  hitRSq,
+                );
+                if (pr.hit && pr.deltaV >= planetMinBoost) pertHits++;
+              }
+              if (pertHits >= ROBUST_HITS_REQUIRED) {
+                robustWinners.push(w);
+              }
+            }
+
+            if (robustWinners.length === 0) continue;
+
+            // Step 6: threshold derivation. Gold = lowest-fuel robust
+            // positive-Δv winner. Silver = max(gold+8, p60 of positive
+            // winners). The robustness filter keeps gold from being a
+            // knife-edge fluke; the positive-Δv filter keeps it tied to
+            // real-assist usage.
+            robustWinners.sort(function (a, b) {
+              return a.fuel - b.fuel;
+            });
+            const goldFuel = robustWinners[0].fuel;
+            const allFuels = positiveWinners
+              .map(function (w) {
+                return w.fuel;
+              })
+              .sort(function (a, b) {
+                return a - b;
+              });
+            const p60Idx = Math.min(
+              allFuels.length - 1,
+              Math.floor(allFuels.length * 0.6),
+            );
+            const p60 = allFuels[p60Idx];
+            const silverFuel = Math.max(goldFuel + 8, p60);
+            if (goldFuel >= silverFuel) continue;
+            if (silverFuel > FUEL_MAX_DISPLAY) continue;
+
+            const candidate = {
+              target: target,
+              hitRadiusWorld: hitRadiusWorld,
+              thresholds: { goldFuel: goldFuel, silverFuel: silverFuel },
+              witness: {
+                angle: wAngle,
+                periapsisAlt: wAlt,
+                approachSpeed: wSpeed,
+                deltaV: witnessDeltaV,
+                deflection: witnessDeflection,
+                vIn: witnessVIn,
+                vOut: witnessVOut,
+              },
+              robustCount: robustWinners.length,
+              totalWinners: positiveWinners.length,
+              dMin: dMin,
+            };
+
+            if (robustWinners.length >= PREFERRED_MIN_ROBUST_WINNERS) {
+              // Mission accepted (preferred path).
+              missionIdSeq += 1;
+              mission = {
+                id: missionIdSeq,
+                planetKey: state.selectedPlanet,
+                planetSpeed: planet.defaultSpeed,
+                target: candidate.target,
+                hitRadiusWorld: candidate.hitRadiusWorld,
+                defaults: null,
+                thresholds: candidate.thresholds,
+                witness: candidate.witness,
+                altitude: candidate.witness.periapsisAlt,
+                assistGate: {
+                  minBoost: planetMinBoost,
+                  minDeflectionDeg: planetMinDeflDeg,
+                },
               };
-              break;
+            } else if (
+              !bestCandidate ||
+              candidate.robustCount > bestCandidate.robustCount ||
+              (candidate.robustCount === bestCandidate.robustCount &&
+                candidate.totalWinners > bestCandidate.totalWinners)
+            ) {
+              bestCandidate = candidate;
             }
           }
-          if (!target) target = { x: 150, y: -100 };
 
-          state.gameTarget = target;
+          // Validated-fallback path: real thresholds, just fewer robust
+          // winners than the preferred threshold. Still derived from
+          // genuine simulation.
+          if (!mission && bestCandidate) {
+            missionIdSeq += 1;
+            mission = {
+              id: missionIdSeq,
+              planetKey: state.selectedPlanet,
+              planetSpeed: planet.defaultSpeed,
+              target: bestCandidate.target,
+              hitRadiusWorld: bestCandidate.hitRadiusWorld,
+              defaults: null,
+              assistGate: {
+                minBoost: planetMinBoost,
+                minDeflectionDeg: planetMinDeflDeg,
+              },
+              thresholds: bestCandidate.thresholds,
+              witness: bestCandidate.witness,
+              altitude: bestCandidate.witness.periapsisAlt,
+            };
+          }
 
-          // Reset player to defaults
-          state.approachAngle = Math.PI;
-          state.periapsisAlt = 50;
-          state.approachSpeed = 50;
-          state.periapsisAlt = 50;
-          state.approachSpeed = 50;
+          // No fabricated fallback: if the generator could not produce a
+          // real, simulated, robust mission within the planet's budget, we
+          // surface a "no mission available" state instead of handing the
+          // player a non-physical target.
+          if (!mission) {
+            state.game.mission = null;
+            state.game.ghost = null;
+            state.game.launched = false;
+            state.game.result = null;
+            state.game.hitIndex = -1;
+            state.game.fuelUsed = 0;
+            state.game.bestStarsThisSession = 0;
+            state.game.lastAttempt = {
+              fuelUsed: 0,
+              stars: 0,
+              boost: 0,
+              vIn: 0,
+              vOut: 0,
+            };
+            updateHudMissionName();
+            updateFuelHud();
+            updateLaunchBtn();
+            renderNoMissionPanel();
+            return;
+          }
 
+          // Step 7: defaults derived from the witness so the first launch
+          // is a legible near-miss. Angle stays close (small +0.15 rad
+          // offset); altitude and speed are pushed off by ~30/+15 so the
+          // resulting path visibly swings around the planet but misses the
+          // target. If the perturbation still happens to hit (rare with
+          // wider perturbations), we push harder until it misses.
+          const w = mission.witness;
+          const hitRSqDef = mission.hitRadiusWorld * mission.hitRadiusWorld;
+          // Game mode no longer exposes altitude to the player — it's
+          // pinned at mission.altitude. The defaults perturbation only
+          // shifts angle and speed; altitude stays at the pinned value
+          // so the near-miss is reachable from the same 2D control
+          // space the player actually has.
+          const pinnedAlt = mission.altitude;
+          let dAngle = 0.15;
+          let dSpeed = 15;
+          let defaultsLand = { hit: true, deltaV: 0 };
+          for (let attempt = 0; attempt < 5 && defaultsLand.hit; attempt++) {
+            const candAngle = w.angle + dAngle;
+            const candSpeed = Math.max(
+              FUEL_MIN,
+              Math.min(FUEL_MAX_DISPLAY, w.approachSpeed + dSpeed),
+            );
+            defaultsLand = simHitWithDeltaV(
+              candAngle,
+              pinnedAlt,
+              candSpeed,
+              mission.target,
+              hitRSqDef,
+            );
+            if (!defaultsLand.hit) {
+              mission.defaults = {
+                approachAngle: candAngle,
+                periapsisAlt: pinnedAlt,
+                approachSpeed: candSpeed,
+              };
+            } else {
+              dSpeed -= 8;
+              dAngle += 0.1;
+            }
+          }
+          // Defensive fallback: if every perturbation still hit, fall back
+          // to generic defaults rather than handing the player an auto-win.
+          if (!mission.defaults) {
+            mission.defaults = {
+              approachAngle: Math.PI,
+              periapsisAlt: pinnedAlt,
+              approachSpeed: 50,
+            };
+          }
+
+          state.game.mission = mission;
+          state.game.ghost = null;
+          state.game.launched = false;
+          state.game.result = null;
+          state.game.hitIndex = -1;
+          state.game.fuelUsed = 0;
+          state.game.bestStarsThisSession = 0;
+          state.game.lastAttempt = {
+            fuelUsed: 0,
+            stars: 0,
+            boost: 0,
+            vIn: 0,
+            vOut: 0,
+          };
+
+          state.approachAngle = mission.defaults.approachAngle;
+          state.periapsisAlt = mission.defaults.periapsisAlt;
+          state.approachSpeed = mission.defaults.approachSpeed;
+          state.game.result = null;
+          state.game.launched = false;
+          state.playing = false;
+          syncAltitudeSlider();
           initVecPosition();
           recompute();
-          state.gameResult = null;
-          state.gameLaunched = false;
+
+          updateHudMissionName();
+          updateFuelHud();
+          updateLaunchBtn();
+          document.getElementById("gameResultPanel").hidden = true;
+          document.getElementById("hudBestStars").textContent = "—";
+        }
+
+        // Star award (success only): 3 stars if fuelUsed ≤ goldFuel, 2 stars if
+        // fuelUsed ≤ silverFuel, otherwise 1 star. No 0-star success; crash and
+        // miss yield 0 stars and are handled at the result-flow level.
+        function computeStars(fuelUsed, thresholds) {
+          if (!thresholds) return 1;
+          if (fuelUsed <= thresholds.goldFuel) return 3;
+          if (fuelUsed <= thresholds.silverFuel) return 2;
+          return 1;
+        }
+
+        // Reusable star SVG path lifted from fractions.html. Earned stars are
+        // gold and full-size; unearned are gray and slightly smaller. The
+        // container viewBox is set so 3 stars sit centered horizontally.
+        const STAR_PATH =
+          "M0,-12 L3.5,-4 12,-4 5.5,2 7.5,11 0,6 -7.5,11 -5.5,2 -12,-4 -3.5,-4Z";
+        const STAR_SPACING = 28;
+        const STAR_GOLD = "#FFB300";
+        const STAR_GRAY = "#CFD8DC";
+
+        function renderStars(stars, targetId) {
+          const svg = document.getElementById(targetId || "gameStars");
+          if (!svg) return;
+          while (svg.firstChild) svg.removeChild(svg.firstChild);
+          const reduced = window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+          ).matches;
+          for (let i = 0; i < 3; i++) {
+            const earned = i < stars;
+            const x = (i - 1) * STAR_SPACING;
+            const scale = earned ? 1.0 : 0.85;
+            const path = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "path",
+            );
+            path.setAttribute("d", STAR_PATH);
+            path.setAttribute("fill", earned ? STAR_GOLD : STAR_GRAY);
+            path.setAttribute("opacity", earned ? "1" : "0.35");
+            if (reduced) {
+              path.setAttribute(
+                "transform",
+                "translate(" + x + " 0) scale(" + scale + ")",
+              );
+            } else {
+              path.setAttribute("transform", "translate(" + x + " 0) scale(0)");
+              // Staggered pop-in (80 ms per star). CSS animations would also
+              // work, but the inline approach keeps the timing entirely in JS
+              // and respects reduced-motion above without a duplicate path.
+              setTimeout(function () {
+                animateStarScale(path, scale);
+              }, i * 80);
+            }
+            svg.appendChild(path);
+          }
+        }
+
+        function animateStarScale(node, target) {
+          const start = performance.now();
+          const dur = 220;
+          function frame(now) {
+            const t = Math.min(1, (now - start) / dur);
+            // Ease out cubic.
+            const k = 1 - Math.pow(1 - t, 3);
+            const s = k * target;
+            node.setAttribute(
+              "transform",
+              node
+                .getAttribute("transform")
+                .replace(/scale\([^)]*\)/, "scale(" + s + ")"),
+            );
+            if (t < 1) requestAnimationFrame(frame);
+          }
+          requestAnimationFrame(frame);
+        }
+
+        function announceReward(stars) {
+          const el = document.getElementById("rewardAnnounce");
+          if (!el) return;
+          let key = "noStars";
+          if (stars === 3) key = "reward3";
+          else if (stars === 2) key = "reward2";
+          else if (stars === 1) key = "reward1";
+          el.textContent = T(key);
+        }
+
+        // finalizeAttempt is the single result-flow choke point. Called once at
+        // trajectory end. Decides stars (success only), snapshots lastAttempt
+        // for the HUD, populates the result panel, and toggles the Launch
+        // button to Retry. Mid-flight detection only records hitIndex.
+        function finalizeAttempt(outcome) {
+          const m = state.game.mission;
+          if (!m) return;
+          const fuelUsed = state.game.fuelUsed;
+          const stars =
+            outcome === "success" ? computeStars(fuelUsed, m.thresholds) : 0;
+          state.game.lastAttempt = {
+            fuelUsed: fuelUsed,
+            stars: stars,
+            boost: state.deltaV,
+            vIn: state.vIn,
+            vOut: state.vOut,
+            missDistanceWorld: state.game.missDistanceWorld,
+          };
+          if (stars > state.game.bestStarsThisSession) {
+            state.game.bestStarsThisSession = stars;
+          }
+
+          // Sun-frame ghost trail capture for visual reference on the next
+          // attempt. Subsampled to keep memory and render cost bounded.
+          if (state.trajectory.length > 1) {
+            const glen = state.trajectory.length;
+            const gstep = Math.max(1, Math.floor(glen / 4000));
+            state.game.ghost = [];
+            for (let gi = 0; gi < glen; gi += gstep) {
+              const gsf = toSunFrame(gi);
+              state.game.ghost.push({ x: gsf.x, y: gsf.y });
+            }
+          }
+
+          renderResultPanel(outcome, stars);
+          if (outcome === "success") {
+            renderStars(stars);
+            announceReward(stars);
+          } else {
+            // Clear stars SVG and announce no-stars for assistive tech.
+            const svg = document.getElementById("gameStars");
+            if (svg) while (svg.firstChild) svg.removeChild(svg.firstChild);
+            announceReward(0);
+          }
+          openGameOverlay(
+            outcome,
+            stars,
+            state.game.lastAttempt.missDistanceWorld,
+          );
+          updateLaunchBtn();
+          updateFuelHud();
           state.playing = false;
         }
 
+        function renderResultPanel(outcome, stars) {
+          const panel = document.getElementById("gameResultPanel");
+          if (!panel) return;
+          panel.hidden = false;
+          // Re-show stat rows (they may have been hidden by
+          // renderNoMissionPanel on a prior generator failure).
+          const rows = panel.querySelectorAll(".result-row");
+          for (let i = 0; i < rows.length; i++) rows[i].style.display = "";
+          const fuel = state.game.lastAttempt.fuelUsed;
+          const boost = state.game.lastAttempt.boost;
+          const vIn = state.game.lastAttempt.vIn;
+          const vOut = state.game.lastAttempt.vOut;
+          document.getElementById("resultFuelVal").textContent =
+            fuel + " / " + FUEL_MAX_DISPLAY;
+          // vIn / vOut shown in km/s using the existing unit scale; teaches
+          // the kid what the planet gave them directly, beyond just the
+          // boost number. Crash hides them since vOut is meaningless.
+          if (outcome === "crash") {
+            document.getElementById("resultSpeedInVal").textContent = "—";
+            document.getElementById("resultSpeedOutVal").textContent = "—";
+          } else {
+            document.getElementById("resultSpeedInVal").textContent =
+              (vIn * KMS_PER_SLIDER_VEL).toFixed(1) + " km/s";
+            document.getElementById("resultSpeedOutVal").textContent =
+              (vOut * KMS_PER_SLIDER_VEL).toFixed(1) + " km/s";
+          }
+          // Boost is shown as signed km/s using the existing unit scale.
+          const dvKmS = boost * KMS_PER_SLIDER_VEL;
+          let boostText;
+          if (outcome === "crash") {
+            boostText = "—";
+          } else {
+            boostText = (dvKmS >= 0 ? "+" : "") + dvKmS.toFixed(1) + " km/s";
+          }
+          document.getElementById("resultBoostVal").textContent = boostText;
+          document.getElementById("resultStarsVal").textContent =
+            outcome === "success" ? String(stars) : "—";
+
+          const msgEl = document.getElementById("resultMsg");
+          msgEl.classList.remove("is-success", "is-fail");
+          if (outcome === "success") {
+            msgEl.textContent = T("gameSuccess");
+            msgEl.classList.add("is-success");
+          } else if (outcome === "crash") {
+            msgEl.textContent = T("gameCrash");
+            msgEl.classList.add("is-fail");
+          } else if (outcome === "no-assist") {
+            msgEl.textContent = T("gameNoAssist");
+            msgEl.classList.add("is-fail");
+          } else {
+            msgEl.textContent = T("gameMiss");
+            msgEl.classList.add("is-fail");
+          }
+
+          const best = state.game.bestStarsThisSession;
+          document.getElementById("hudBestStars").textContent =
+            best > 0 ? String(best) : "—";
+        }
+
+        // Surfaced when generateMission cannot produce a robust, fully
+        // simulated mission for the selected planet within its budget. The
+        // panel hides the stat rows (meaningless without a mission) and
+        // shows a plain notice telling the player to try another planet.
+        function renderNoMissionPanel() {
+          const panel = document.getElementById("gameResultPanel");
+          if (!panel) return;
+          panel.hidden = false;
+          const rows = panel.querySelectorAll(".result-row");
+          for (let i = 0; i < rows.length; i++) rows[i].style.display = "none";
+          const svg = document.getElementById("gameStars");
+          if (svg) while (svg.firstChild) svg.removeChild(svg.firstChild);
+          const msgEl = document.getElementById("resultMsg");
+          msgEl.classList.remove("is-success");
+          msgEl.classList.add("is-fail");
+          msgEl.textContent = T("gameNoMission");
+          document.getElementById("hudBestStars").textContent = "—";
+        }
+
+        // Tier classification for the full-screen overlay. Color (green
+        // success / blue close / yellow far / red miss-or-crash) is the
+        // visual signal, but the overlay always pairs it with an emoji,
+        // text, and an aria-live announcement (rewardAnnounce) so it's
+        // never color-only.
+        function classifyOverlayTier(outcome, missDistanceWorld, hitR) {
+          if (outcome === "success") {
+            return { tier: "success", emoji: "🎯" };
+          }
+          if (outcome === "no-assist") {
+            // Hit the target spatially, but the assist gate failed — feels
+            // closer to "got there but did it wrong", so use the far/yellow
+            // band as a warning tone rather than the miss/red band.
+            return { tier: "far", emoji: "🤔" };
+          }
+          if (outcome === "crash") {
+            return { tier: "miss", emoji: "💥" };
+          }
+          // Miss: classify by distance in units of hit-radius.
+          const ratio =
+            hitR > 0 && missDistanceWorld != null && isFinite(missDistanceWorld)
+              ? missDistanceWorld / hitR
+              : Infinity;
+          if (ratio <= 2) return { tier: "close", emoji: "👀" };
+          if (ratio <= 5) return { tier: "far", emoji: "🤔" };
+          return { tier: "miss", emoji: "❌" };
+        }
+
+        let overlayDismissHandler = null;
+
+        function closeGameOverlay() {
+          const ov = document.getElementById("gameOverlay");
+          if (!ov || ov.hidden) return;
+          ov.hidden = true;
+          ov.classList.remove(
+            "game-overlay--success",
+            "game-overlay--close",
+            "game-overlay--far",
+            "game-overlay--miss",
+          );
+          if (overlayDismissHandler) {
+            ov.removeEventListener("click", overlayDismissHandler);
+            document.removeEventListener("keydown", overlayDismissHandler);
+            overlayDismissHandler = null;
+          }
+        }
+
+        function openGameOverlay(outcome, stars, missDistanceWorld) {
+          const ov = document.getElementById("gameOverlay");
+          if (!ov) return;
+          const m = state.game.mission;
+          const hitR = m ? m.hitRadiusWorld : 0;
+          const cls = classifyOverlayTier(outcome, missDistanceWorld, hitR);
+
+          // Reset tier classes, then apply the active one.
+          ov.classList.remove(
+            "game-overlay--success",
+            "game-overlay--close",
+            "game-overlay--far",
+            "game-overlay--miss",
+          );
+          ov.classList.add("game-overlay--" + cls.tier);
+
+          document.getElementById("overlayEmoji").textContent = cls.emoji;
+
+          let titleKey = "gameMiss";
+          if (outcome === "success") titleKey = "gameSuccess";
+          else if (outcome === "no-assist") titleKey = "gameNoAssist";
+          else if (outcome === "crash") titleKey = "gameCrash";
+          document.getElementById("overlayTitle").textContent = T(titleKey);
+
+          // Subtitle: success shows "N stars · fuel"; misses show a
+          // short tier label; crash and no-assist leave it blank
+          // (the title already carries the relevant message).
+          let subtitle = "";
+          if (outcome === "success") {
+            const rewardKey =
+              stars === 3 ? "reward3" : stars === 2 ? "reward2" : "reward1";
+            subtitle =
+              T(rewardKey) +
+              " · " +
+              state.game.lastAttempt.fuelUsed +
+              " / " +
+              FUEL_MAX_DISPLAY;
+          } else if (outcome === "miss") {
+            if (cls.tier === "close") subtitle = T("overlayClose");
+            else if (cls.tier === "far") subtitle = T("overlayFar");
+            else subtitle = T("overlayFarFar");
+          }
+          document.getElementById("overlaySubtitle").textContent = subtitle;
+          document.getElementById("overlayHint").textContent = T("overlayHint");
+
+          // Render stars into the overlay SVG (success only). The inline
+          // #gameStars SVG is populated separately by finalizeAttempt.
+          if (outcome === "success") {
+            renderStars(stars, "overlayStars");
+          } else {
+            const ovStars = document.getElementById("overlayStars");
+            if (ovStars)
+              while (ovStars.firstChild)
+                ovStars.removeChild(ovStars.firstChild);
+          }
+
+          ov.hidden = false;
+          ov.focus();
+
+          // One-shot dismiss: click anywhere on the overlay, or
+          // Esc / Enter / Space anywhere on the document.
+          if (overlayDismissHandler) {
+            ov.removeEventListener("click", overlayDismissHandler);
+            document.removeEventListener("keydown", overlayDismissHandler);
+          }
+          overlayDismissHandler = function (e) {
+            if (e.type === "keydown") {
+              if (e.key !== "Escape" && e.key !== "Enter" && e.key !== " ")
+                return;
+              e.preventDefault();
+            }
+            closeGameOverlay();
+          };
+          ov.addEventListener("click", overlayDismissHandler);
+          document.addEventListener("keydown", overlayDismissHandler);
+        }
+
+        function launchMission() {
+          if (state.mode !== "game" || !state.game.mission) return;
+          // Fresh attempt: clear any prior result, snap to start of trajectory.
+          state.currentIndex = 0;
+          stepAccum = 0;
+          state.game.launched = true;
+          state.game.result = null;
+          state.game.hitIndex = -1;
+          state.game.fuelUsed = Math.round(state.approachSpeed);
+          hitScanResume = -1;
+          state.playing = true;
+          closeGameOverlay();
+          document.getElementById("gameResultPanel").hidden = true;
+          updateFuelHud();
+          updateLaunchBtn();
+          updateWarpBtns();
+          updateGameWarpBtns();
+        }
+
+        function retryMission() {
+          if (state.mode !== "game" || !state.game.mission) return;
+          // Preserve the player's aim across retries: only the playback and
+          // result state are cleared. The arrow direction, launch speed, and
+          // flyby altitude carry over so the player can refine their last
+          // attempt instead of starting from scratch every time. The mission
+          // itself (target + thresholds) is also preserved; New Mission is
+          // the only action that regenerates the puzzle.
+          state.currentIndex = 0;
+          stepAccum = 0;
+          state.playing = false;
+          state.game.launched = false;
+          state.game.result = null;
+          state.game.hitIndex = -1;
+          state.game.fuelUsed = 0;
+          hitScanResume = -1;
+          closeGameOverlay();
+          document.getElementById("gameResultPanel").hidden = true;
+          updateFuelHud();
+          updateLaunchBtn();
+          updateWarpBtns();
+        }
+
         // eslint-disable-next-line no-unused-vars
-        function newTarget() {
-          generateTarget();
+        function newMission() {
+          if (state.mode !== "game") return;
+          closeGameOverlay();
+          generateMission(state.selectedPlanet);
         }
 
-        function gameTolerance() {
-          // Constant on-screen radius (~11 px) regardless of planet/zoom. Anchored
-          // to lastScale, which is the current camera scale set every frame in
-          // drawScene; the rendering then computes gtol * scale = 11 px.
-          // Matches Earth's default visual size so the target stays consistent.
-          return 11 / Math.max(lastScale, 0.001);
+        function selectGameWarp(level) {
+          state.warpLevel = level;
+          state.animSpeed = state.warpLevels[level] || 1;
+          updateGameWarpBtns();
         }
 
+        function updateGameWarpBtns() {
+          const map = {
+            warpGame1xBtn: "normal",
+            warpGame3xBtn: "fast",
+            warpGame10xBtn: "fastest",
+          };
+          Object.keys(map).forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle("active", state.warpLevel === map[id]);
+          });
+        }
+
+        function updateLaunchBtn() {
+          const btn = document.getElementById("launchBtn");
+          if (!btn) return;
+          const showRetry = state.mode === "game" && state.game.result;
+          btn.textContent = showRetry ? T("retryBtn") : T("launchBtn");
+          btn.classList.toggle("is-retry", !!showRetry);
+          btn.disabled = state.mode === "game" && !state.game.mission;
+        }
+
+        function updateHudMissionName() {
+          const el = document.getElementById("hudMissionName");
+          if (!el) return;
+          if (state.mode === "game" && state.game.mission) {
+            el.textContent =
+              T("missionLabel") + " · " + T(state.game.mission.planetKey);
+          } else {
+            el.textContent = "—";
+          }
+        }
+
+        function updateFuelHud() {
+          const m = state.game.mission;
+          const fuelValEl = document.getElementById("hudFuelVal");
+          const barEl = document.getElementById("fuelBar");
+          const silverMarker = document.getElementById("fuelMarkerSilver");
+          const goldMarker = document.getElementById("fuelMarkerGold");
+          const goldLbl = document.getElementById("lblFuelGold");
+          const silverLbl = document.getElementById("lblFuelSilver");
+          if (!fuelValEl) return;
+          // Planned fuel = current approach speed (pre-launch). Once launched the
+          // value is frozen into state.game.fuelUsed.
+          const planned =
+            state.game.launched && state.game.fuelUsed
+              ? state.game.fuelUsed
+              : Math.round(state.approachSpeed);
+          const fuelMax = 100;
+          fuelValEl.textContent = planned + " / " + fuelMax;
+          barEl.style.width = Math.min(100, (planned / fuelMax) * 100) + "%";
+          if (m && m.thresholds) {
+            const goldPct = Math.max(
+              0,
+              Math.min(100, (m.thresholds.goldFuel / fuelMax) * 100),
+            );
+            const silverPct = Math.max(
+              0,
+              Math.min(100, (m.thresholds.silverFuel / fuelMax) * 100),
+            );
+            goldMarker.style.left = goldPct + "%";
+            silverMarker.style.left = silverPct + "%";
+            goldMarker.style.display = "";
+            silverMarker.style.display = "";
+            goldLbl.textContent = T("gold") + " ≤ " + m.thresholds.goldFuel;
+            silverLbl.textContent =
+              T("silver") + " ≤ " + m.thresholds.silverFuel;
+          } else {
+            goldMarker.style.display = "none";
+            silverMarker.style.display = "none";
+            goldLbl.textContent = T("gold") + " ≤ —";
+            silverLbl.textContent = T("silver") + " ≤ —";
+          }
+        }
+
+        function syncAltitudeSlider() {
+          const slider = document.getElementById("altSlider");
+          const out = document.getElementById("altVal");
+          if (!slider || !out) return;
+          const v = Math.max(
+            +slider.min,
+            Math.min(+slider.max, Math.round(state.periapsisAlt)),
+          );
+          slider.value = v;
+          out.textContent = v;
+        }
+
+        // Final outcome dispatch at end of trajectory. The hit test uses the
+        // mission's fixed world-space radius (independent of camera scale), and
+        // only counts post-periapsis samples to enforce the "real assist" rule.
         function evaluateGame() {
           if (
             state.mode !== "game" ||
-            !state.gameLaunched ||
-            !state.gameTarget ||
-            state.gameResult
+            !state.game.launched ||
+            !state.game.mission ||
+            state.game.result
           )
             return;
 
           if (state.crashed) {
-            state.gameResult = "crash";
-            showGameOverlay("crash");
+            state.game.result = "crash";
+            finalizeAttempt("crash");
             return;
           }
 
-          const hitTol = gameTolerance();
-          const hitTolSq = hitTol * hitTol;
-          // Close-miss boundary: 3× the hit radius (~33 px on screen). Tight enough
-          // that "almost!" feels honest, generous enough that small misalignments
-          // still get encouragement instead of the discouraging far-miss feedback.
-          const closeTol = hitTol * 3;
-          const closeTolSq = closeTol * closeTol;
-          const gx = state.gameTarget.x,
-            gy = state.gameTarget.y;
-          let minDistSq = Infinity;
+          const m = state.game.mission;
+          const hitR = m.hitRadiusWorld;
+          const hitRSq = hitR * hitR;
+          const gx = m.target.x;
+          const gy = m.target.y;
 
+          // Scan the entire trajectory for both the hit (if any) and the
+          // minimum sun-frame distance² to target. The min distance is used
+          // by the result overlay to classify the miss into close/far/miss
+          // tiers regardless of whether a hit occurred. The scan is NOT
+          // restricted to post-periapsis: the player's trajectory can have
+          // the target on the inbound leg (before their closest approach
+          // to the planet), and limiting the scan would silently drop
+          // valid hits. The "real assist" requirement is enforced
+          // separately via the assistGate (Δv + deflection) below.
+          let hitIndex = state.game.hitIndex;
+          let minDT2 = Infinity;
           for (let i = 0; i < state.trajectory.length; i++) {
             const sf = toSunFrame(i);
-            const dx = sf.x - gx,
-              dy = sf.y - gy;
-            const dSq = dx * dx + dy * dy;
-            if (dSq < minDistSq) minDistSq = dSq;
-            if (dSq < hitTolSq) {
-              state.gameResult = "success";
-              showGameOverlay("success");
-              return;
+            const dx = sf.x - gx;
+            const dy = sf.y - gy;
+            const dT2 = dx * dx + dy * dy;
+            if (dT2 < minDT2) minDT2 = dT2;
+            if (hitIndex < 0 && dT2 < hitRSq) {
+              hitIndex = i;
+              // Don't break — keep scanning so minDT2 reflects the true
+              // closest approach (not just the first sample inside the
+              // hit radius).
             }
           }
+          state.game.hitIndex = hitIndex;
+          state.game.missDistanceWorld =
+            minDT2 < Infinity ? Math.sqrt(minDT2) : Infinity;
 
-          if (minDistSq < closeTolSq) {
-            state.gameResult = "closeMiss";
-            showGameOverlay("closeMiss");
+          if (hitIndex >= 0) {
+            // Runtime mirror of the generator's assist-quality gate:
+            // hitting the target only counts as a scored success if the
+            // flight also delivered the planet's minimum boost AND
+            // deflection. Otherwise the player reached the target on
+            // momentum alone (no real assist) — distinct outcome, 0 stars.
+            const gate = m.assistGate;
+            const passedGate =
+              state.deltaV >= gate.minBoost &&
+              Math.abs(state.deflectionAngle) >= gate.minDeflectionDeg;
+            if (passedGate) {
+              state.game.result = "success";
+              finalizeAttempt("success");
+            } else {
+              state.game.result = "no-assist";
+              finalizeAttempt("no-assist");
+            }
           } else {
-            state.gameResult = "farMiss";
-            showGameOverlay("farMiss");
+            state.game.result = "miss";
+            finalizeAttempt("miss");
           }
-        }
-
-        function showGameOverlay(result) {
-          // Capture the just-finished trajectory as a sun-frame ghost so the next
-          // attempt can reference where the previous one went. Subsampled to keep
-          // the array small (~4000 points max) — at low alpha the ghost only needs
-          // enough resolution to read as a curve.
-          if (state.mode === "game" && state.trajectory.length > 1) {
-            const glen = state.trajectory.length;
-            const gstep = Math.max(1, Math.floor(glen / 4000));
-            state.gameGhost = [];
-            for (let gi = 0; gi < glen; gi += gstep) {
-              const gsf = toSunFrame(gi);
-              state.gameGhost.push({ x: gsf.x, y: gsf.y });
-            }
-            if ((glen - 1) % gstep !== 0) {
-              const glast = toSunFrame(glen - 1);
-              state.gameGhost.push({ x: glast.x, y: glast.y });
-            }
-          }
-
-          const existing = document.querySelector(".result-overlay");
-          if (existing) existing.remove();
-
-          const overlay = document.createElement("div");
-          overlay.className = "result-overlay";
-
-          let emoji, msg, bg;
-          if (result === "success") {
-            emoji = "\uD83C\uDF89";
-            msg = T("gameSuccess");
-            bg = "rgba(63,185,80,0.88)";
-          } else if (result === "crash") {
-            emoji = "\uD83D\uDCA5";
-            msg = T("gameCrash");
-            bg = "rgba(249,117,131,0.88)";
-          } else if (result === "closeMiss") {
-            // Thumbs up with Fitzpatrick Type 1-2 skin tone modifier (light/Caucasian).
-            emoji = "\uD83D\uDC4D\uD83C\uDFFB";
-            msg = T("gameCloseMiss");
-            bg = "rgba(88,166,255,0.88)";
-          } else {
-            // farMiss
-            // Thumbs down with Fitzpatrick Type 1-2 skin tone modifier (light/Caucasian).
-            emoji = "\uD83D\uDC4E\uD83C\uDFFB";
-            msg = T("gameFarMiss");
-            bg = "rgba(240,180,60,0.92)";
-          }
-
-          overlay.style.background = bg;
-          const emojiDiv = document.createElement("div");
-          emojiDiv.className = "overlay-emoji";
-          emojiDiv.textContent = emoji;
-          const msgDiv = document.createElement("div");
-          msgDiv.className = "overlay-msg";
-          msgDiv.textContent = msg;
-          const hintDiv = document.createElement("div");
-          hintDiv.className = "overlay-hint";
-          hintDiv.textContent = T("clickToDismiss");
-          overlay.replaceChildren(emojiDiv, msgDiv, hintDiv);
-
-          overlay.addEventListener("click", function () {
-            overlay.remove();
-          });
-          document.body.appendChild(overlay);
         }
 
         // ══════════════════════════════════════════════
@@ -1358,15 +2790,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           frozenRootY = 0;
         let dragPrevX = 0,
           dragPrevY = 0;
-        let targetScreenX = 0,
-          targetScreenY = 0;
         let cameraMode = "auto";
         let manualScale = 1;
         const manualCamX = 0,
           manualCamY = 0;
         let zoomFactor = 1;
-        let targetGrabOfsX = 0,
-          targetGrabOfsY = 0;
         const MIN_ARROW_PX = 68,
           MAX_ARROW_PX = 188;
 
@@ -1430,6 +2858,28 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           let prevAngle = Math.atan2(y, x);
           let totalAngle = 0;
           let revCounting = false;
+
+          // Game-mode stop criterion: track minimum sun-frame distance² to
+          // the mission target. The integration must run far enough for the
+          // spacecraft to actually fly by the target — measuring "fly by"
+          // against the planet-frame startDist (which the explore-mode break
+          // uses) is wrong here because the target is fixed in sun frame
+          // while the planet drifts. Once the spacecraft has reached its
+          // closest sun-frame distance to the target and then drifted to a
+          // margin past it (max of 3× that minimum or 3× the hit radius),
+          // we stop. See gameModeStop check below.
+          const gameMode =
+            state.mode === "game" &&
+            state.game &&
+            state.game.mission &&
+            state.game.mission.target;
+          const gameTgtX = gameMode ? state.game.mission.target.x : 0;
+          const gameTgtY = gameMode ? state.game.mission.target.y : 0;
+          const gameHitR2 = gameMode
+            ? state.game.mission.hitRadiusWorld *
+              state.game.mission.hitRadiusWorld
+            : 0;
+          let gameMinDT2 = Infinity;
 
           for (let i = 0; i < MAX_STEPS; i++) {
             const r = Math.sqrt(x * x + y * y);
@@ -1498,12 +2948,125 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             }
 
             const rEnd = Math.sqrt(x * x + y * y);
-            if (rEnd > startDist && i > closestIdx + 50) break;
+            if (gameMode) {
+              // In game mode, the integration must run until the spacecraft
+              // has flown by the sun-frame target. Track the minimum
+              // sun-frame distance² to target after we've moved past the
+              // planet; once the current distance exceeds 9× the minimum
+              // (or 9× the hit-radius², whichever is greater), the
+              // spacecraft has clearly flown past — stop. Backstop: 4×
+              // starting planet-frame distance prevents runaway when the
+              // trajectory never approaches the target at all.
+              if (i > closestIdx + 20) {
+                const tRel = i * SIM_DT;
+                const sfX = x + vp * tRel;
+                const sfY = y;
+                const dxT = sfX - gameTgtX;
+                const dyT = sfY - gameTgtY;
+                const dT2 = dxT * dxT + dyT * dyT;
+                if (dT2 < gameMinDT2) gameMinDT2 = dT2;
+                const tol2 = Math.max(9 * gameMinDT2, 9 * gameHitR2);
+                if (gameMinDT2 < Infinity && dT2 > tol2) break;
+              }
+              if (rEnd > 4 * startDist && i > closestIdx + 50) break;
+            } else if (rEnd > startDist && i > closestIdx + 50) {
+              break;
+            }
           }
 
           state.trajectory = points;
           state.closestIndex = closestIdx;
           state.crashed = crashed;
+
+          // For game mode auto-zoom: index where the spacecraft is closest
+          // to the mission target in sun frame. Used by drawScene to clip
+          // the view's trajectory bounding box to the "useful" portion
+          // (everything past this index is orbital tail with no
+          // pedagogical value — including it forces the camera to zoom
+          // way out and pushes the player's arrow/ship/planet/target to
+          // the canvas edges).
+          if (state.mode === "game" && state.game && state.game.mission) {
+            const m = state.game.mission;
+            const tgtX = m.target.x;
+            const tgtY = m.target.y;
+            const vpSun = state.planetVel * V_SCALE;
+            let minD2 = Infinity;
+            let minIdx = points.length - 1;
+            for (let i = 0; i < points.length; i++) {
+              const pt = points[i];
+              const tRel = i * SIM_DT;
+              const sfX = pt.x + vpSun * tRel;
+              const sfY = pt.y;
+              const dx = sfX - tgtX;
+              const dy = sfY - tgtY;
+              const d2 = dx * dx + dy * dy;
+              if (d2 < minD2) {
+                minD2 = d2;
+                minIdx = i;
+              }
+            }
+            state.game.targetReachIdx = minIdx;
+            // Pre-compute static view bounds for drawScene's auto-zoom.
+            // Fixed once per trajectory compute so the camera does NOT
+            // change scale or pan during the flight animation (the zoom
+            // only refreshes when the player drags an input or regenerates
+            // the mission). Bounds are element-only: launch, ship at the
+            // target-reach moment, planet at start, planet at the target-
+            // reach moment, and the target with its hit radius. Trajectory
+            // samples between these are NOT included — far points along
+            // outer-planet captured orbits forced the bounding box to
+            // dominate, shrinking the elements to single pixels.
+            const trIdx = minIdx;
+            const launchSf = {
+              x: points[0].x,
+              y: points[0].y,
+            };
+            const shipTRSf = {
+              x: points[trIdx].x + vpSun * trIdx * SIM_DT,
+              y: points[trIdx].y,
+            };
+            const planetStartSf = { x: 0, y: 0 };
+            const planetTRSf = { x: vpSun * trIdx * SIM_DT, y: 0 };
+            const xs = [
+              launchSf.x,
+              shipTRSf.x,
+              planetStartSf.x,
+              planetTRSf.x,
+              m.target.x,
+            ];
+            const ys = [
+              launchSf.y,
+              shipTRSf.y,
+              planetStartSf.y,
+              planetTRSf.y,
+              m.target.y,
+            ];
+            const elementPad = Math.max(
+              state.planetRadius * 2,
+              m.hitRadiusWorld * 1.2,
+            );
+            let bMinX = xs[0],
+              bMaxX = xs[0],
+              bMinY = ys[0],
+              bMaxY = ys[0];
+            for (let k = 1; k < xs.length; k++) {
+              if (xs[k] < bMinX) bMinX = xs[k];
+              if (xs[k] > bMaxX) bMaxX = xs[k];
+              if (ys[k] < bMinY) bMinY = ys[k];
+              if (ys[k] > bMaxY) bMaxY = ys[k];
+            }
+            state.game.staticBounds = {
+              minX: bMinX - elementPad,
+              maxX: bMaxX + elementPad,
+              minY: bMinY - elementPad,
+              maxY: bMaxY + elementPad,
+            };
+          } else {
+            if (state.game) {
+              state.game.targetReachIdx = null;
+              state.game.staticBounds = null;
+            }
+          }
 
           computeResults();
         }
@@ -1678,37 +3241,57 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const idx = Math.min(state.currentIndex, len - 1);
 
           // ── Camera ──
-          let minX = Infinity,
-            maxX = -Infinity,
-            minY = Infinity,
-            maxY = -Infinity;
-          const sampleStep = Math.max(1, Math.floor(len / 3000));
-          for (let i = 0; i < len; i += sampleStep) {
-            const p = toSunFrame(i);
-            if (p.x < minX) minX = p.x;
-            if (p.x > maxX) maxX = p.x;
-            if (p.y < minY) minY = p.y;
-            if (p.y > maxY) maxY = p.y;
-          }
-          const pL = toSunFrame(len - 1);
-          minX = Math.min(minX, pL.x);
-          maxX = Math.max(maxX, pL.x);
-          minY = Math.min(minY, pL.y);
-          maxY = Math.max(maxY, pL.y);
-
+          // Game mode: frame the key focus elements (launch, ship, planet
+          // at current time, target) directly. Trajectory bounds are NOT
+          // included — for outer planets the launch starts very far from
+          // the planet (computeStartDist scales with gravitational
+          // influence), and long captured orbits can extend tens of
+          // thousands of samples past the target. Including them forced
+          // the camera to zoom out so far that focus elements ended up
+          // at the canvas edges. The predicted trajectory line is still
+          // drawn; it may extend off-frame for unusual orbits, which is
+          // acceptable feedback ("your aim leaves the action area").
+          // Explore mode keeps the previous "fit the whole orbit"
+          // behavior because the entire orbit is the subject matter.
           const plS = planetPos(0);
           const plE = planetPos(len - 1);
-          minX = Math.min(minX, plS.x, plE.x);
-          maxX = Math.max(maxX, plS.x, plE.x);
-          minY = Math.min(minY, plS.y, plE.y, -30);
-          maxY = Math.max(maxY, plS.y, plE.y, 30);
-
-          if (state.mode === "game" && state.gameTarget) {
-            const tol = gameTolerance();
-            minX = Math.min(minX, state.gameTarget.x - tol);
-            maxX = Math.max(maxX, state.gameTarget.x + tol);
-            minY = Math.min(minY, state.gameTarget.y - tol);
-            maxY = Math.max(maxY, state.gameTarget.y + tol);
+          let minX, maxX, minY, maxY;
+          if (
+            state.mode === "game" &&
+            state.game.mission &&
+            state.game.staticBounds
+          ) {
+            // Read static bounds pre-computed in computeTrajectory. These
+            // are recalculated whenever the player drags an input (which
+            // calls recompute → computeTrajectory), but NOT during the
+            // flight animation. Result: zoom stays put once launched.
+            const b = state.game.staticBounds;
+            minX = b.minX;
+            maxX = b.maxX;
+            minY = b.minY;
+            maxY = b.maxY;
+          } else {
+            minX = Infinity;
+            maxX = -Infinity;
+            minY = Infinity;
+            maxY = -Infinity;
+            const sampleStep = Math.max(1, Math.floor(len / 3000));
+            for (let i = 0; i < len; i += sampleStep) {
+              const p = toSunFrame(i);
+              if (p.x < minX) minX = p.x;
+              if (p.x > maxX) maxX = p.x;
+              if (p.y < minY) minY = p.y;
+              if (p.y > maxY) maxY = p.y;
+            }
+            const pL = toSunFrame(len - 1);
+            minX = Math.min(minX, pL.x);
+            maxX = Math.max(maxX, pL.x);
+            minY = Math.min(minY, pL.y);
+            maxY = Math.max(maxY, pL.y);
+            minX = Math.min(minX, plS.x, plE.x);
+            maxX = Math.max(maxX, plS.x, plE.x);
+            minY = Math.min(minY, plS.y, plE.y, -30);
+            maxY = Math.max(maxY, plS.y, plE.y, 30);
           }
 
           const pad = 100;
@@ -1861,17 +3444,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // ── Game ghost (previous attempt's trajectory) — game mode only ──
           if (
             state.mode === "game" &&
-            state.gameGhost &&
-            state.gameGhost.length > 1
+            state.game.ghost &&
+            state.game.ghost.length > 1
           ) {
             ctx.lineWidth = 1.5;
             ctx.strokeStyle = "rgba(255,224,102,0.12)";
             ctx.beginPath();
-            ctx.moveTo(tx(state.gameGhost[0].x), ty(state.gameGhost[0].y));
-            for (let ggi = 1; ggi < state.gameGhost.length; ggi++) {
+            ctx.moveTo(tx(state.game.ghost[0].x), ty(state.game.ghost[0].y));
+            for (let ggi = 1; ggi < state.game.ghost.length; ggi++) {
               ctx.lineTo(
-                tx(state.gameGhost[ggi].x),
-                ty(state.gameGhost[ggi].y),
+                tx(state.game.ghost[ggi].x),
+                ty(state.game.ghost[ggi].y),
               );
             }
             ctx.stroke();
@@ -1886,13 +3469,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           // ── Game target ──
-          if (state.mode === "game" && state.gameTarget) {
-            const gtol = gameTolerance();
-            const gx = tx(state.gameTarget.x);
-            const gy = ty(state.gameTarget.y);
-            targetScreenX = gx;
-            targetScreenY = gy;
-            const gr = gtol * scale;
+          if (state.mode === "game" && state.game.mission) {
+            const m = state.game.mission;
+            const gx = tx(m.target.x);
+            const gy = ty(m.target.y);
+            // Marker is sized in world units so zoom changes its apparent
+            // screen size proportionally — the hit test uses the same world
+            // radius, so what you see is what you get.
+            const gr = m.hitRadiusWorld * scale;
             const pulse = 1 + 0.06 * Math.sin(Date.now() / 250);
 
             ctx.beginPath();
@@ -2298,6 +3882,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         let lastTime = 0;
         let stepAccum = 0;
         let animFrameId = 0;
+        // Cursor for the incremental mid-flight hit scan. Reset to -1 at the
+        // start of each launched attempt so the scan re-arms from periapsis.
+        let hitScanResume = -1;
 
         function animate(timestamp) {
           if (!lastTime) lastTime = timestamp;
@@ -2314,26 +3901,57 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             stepAccum -= steps;
             if (steps > 0) state.currentIndex += steps;
 
-            // Check for target hit mid-flight (game mode)
+            // Mid-flight hit detection. The instant a sample enters the
+            // mission's hit radius, freeze playback at that frame and run
+            // evaluateGame — the result overlay fires immediately so the
+            // player gets feedback at the moment of the hit, not after the
+            // spacecraft flies past.
+            //
+            // Two perf considerations:
+            //   1. Resume scan from hitScanResume rather than re-scanning the
+            //      whole post-periapsis range each frame.
+            //   2. Inline the sun-frame conversion to avoid allocating a fresh
+            //      {x,y,vx,vy} object per sample — that allocation churn was
+            //      the GC-pressure source of visible animation jitter on
+            //      long-trajectory planets (Jupiter ~3000 samples).
             if (
               state.mode === "game" &&
-              state.gameLaunched &&
-              state.gameTarget &&
-              !state.gameResult
+              state.game.launched &&
+              state.game.mission &&
+              state.game.hitIndex < 0
             ) {
-              const tol = gameTolerance(),
-                tolSq = tol * tol;
-              const gx = state.gameTarget.x,
-                gy = state.gameTarget.y;
-              const sc = toSunFrame(
-                Math.min(state.currentIndex, state.trajectory.length - 1),
+              const m = state.game.mission;
+              const tgtX = m.target.x;
+              const tgtY = m.target.y;
+              const hitSq = m.hitRadiusWorld * m.hitRadiusWorld;
+              const upperIdx = Math.min(
+                state.currentIndex,
+                state.trajectory.length - 1,
               );
-              const ddx = sc.x - gx,
-                ddy = sc.y - gy;
-              if (ddx * ddx + ddy * ddy < tolSq) {
-                state.gameResult = "success";
+              // Scan from where we left off last frame. We do NOT restrict
+              // to post-periapsis — the player's trajectory can hit the
+              // target on the inbound leg, and missing those hits silently
+              // is a bug. Δv/deflection gating in evaluateGame enforces the
+              // "real assist" rule instead.
+              const startScan = hitScanResume + 1;
+              const vp = state.planetVel * V_SCALE;
+              const traj = state.trajectory;
+              let hitAt = -1;
+              for (let i = startScan; i <= upperIdx; i++) {
+                const p = traj[i];
+                const dx = p.x + vp * i * SIM_DT - tgtX;
+                const dy = p.y - tgtY;
+                if (dx * dx + dy * dy < hitSq) {
+                  hitAt = i;
+                  break;
+                }
+              }
+              hitScanResume = upperIdx;
+              if (hitAt >= 0) {
+                state.game.hitIndex = hitAt;
+                state.currentIndex = hitAt;
                 state.playing = false;
-                showGameOverlay("success");
+                evaluateGame();
               }
             }
 
@@ -2371,8 +3989,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               }
               state.playing = true;
               if (state.mode === "game") {
-                state.gameLaunched = true;
-                state.gameResult = null;
+                state.game.launched = true;
+                state.game.result = null;
               }
             }
           }
@@ -2445,8 +4063,16 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           stepAccum = 0;
           state.playing = false;
           if (state.mode === "game") {
-            state.gameLaunched = false;
-            state.gameResult = null;
+            // Any input tweak (arrow tip, altitude slider) implicitly arms a
+            // fresh attempt: clear the prior result so the next launch starts
+            // clean, and hide the result panel so the player isn't reading
+            // stale numbers while they aim.
+            state.game.launched = false;
+            state.game.result = null;
+            state.game.hitIndex = -1;
+            const panel = document.getElementById("gameResultPanel");
+            if (panel) panel.hidden = true;
+            updateLaunchBtn();
           }
           updateWarpBtns();
         }
@@ -2487,7 +4113,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           recompute();
 
           if (state.mode === "game" && !keepTarget) {
-            generateTarget();
+            closeGameOverlay();
+            generateMission(key);
           }
         }
 
@@ -2518,6 +4145,19 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         document
           .getElementById("planetVelSlider")
           .addEventListener("input", function (e) {
+            // Defense in depth: the slider control is hidden in game mode via
+            // setMode(), but a programmatic dispatch (or a stale tab open during
+            // a code reload) could still fire input here. Locking the value
+            // protects the mission's fairness contract.
+            if (state.mode === "game") {
+              const planet = PLANET_DATA.find(function (p) {
+                return p.key === state.selectedPlanet;
+              });
+              const locked = planet ? planet.defaultSpeed : state.planetVel;
+              e.target.value = locked;
+              document.getElementById("planetVelVal").textContent = locked;
+              return;
+            }
             state.planetVel = +e.target.value;
             document.getElementById("planetVelVal").textContent =
               e.target.value;
@@ -2657,35 +4297,38 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.approachSpeed = Math.max(10, Math.min(100, Math.round(speed)));
 
           state.currentIndex = 0;
-          computePeriapsisAltFromPosition();
+          // Game mode: altitude is pinned at mission.altitude (set when
+          // the mission is generated). Skip the alt-from-position
+          // recompute so the arrow drag only changes angle and speed.
+          // Explore mode keeps the original behavior — altitude tracks
+          // the arrow body position.
+          if (state.mode !== "game") {
+            computePeriapsisAltFromPosition();
+          }
           computeTrajectory();
 
           updateReadouts();
           updateInfo();
+          // Game-mode HUD updates triggered explicitly here (instead of every
+          // animation frame) so the fuel tank and altitude readout track the
+          // drag without paying a DOM-write cost on the 60Hz draw loop.
+          if (state.mode === "game" && state.game.mission) {
+            updateFuelHud();
+            syncAltitudeSlider();
+          }
         }
 
-        function isNearTarget(pos) {
-          if (state.mode !== "game" || !state.gameTarget) return false;
-          const dx = pos.x - targetScreenX,
-            dy = pos.y - targetScreenY;
-          const hitR = Math.max(30, gameTolerance() * lastScale);
-          return dx * dx + dy * dy < hitR * hitR;
-        }
-
-        function handleTargetDrag(pos) {
-          const sx = pos.x - targetGrabOfsX;
-          const sy = pos.y - targetGrabOfsY;
-          state.gameTarget.x = frozenCamX + (sx - W / 2) / frozenScale;
-          state.gameTarget.y = frozenCamY - (sy - H / 2) / frozenScale;
-        }
-
+        // Root translation is disabled in game mode. Explore mode keeps the
+        // free-form root drag so the existing sandbox interaction is unchanged.
         function isNearRoot(pos) {
+          if (state.mode === "game") return false;
           const dx = pos.x - scStartScreenX,
             dy = pos.y - scStartScreenY;
           return dx * dx + dy * dy < 15 * 15;
         }
 
         function handleTranslateDrag(pos) {
+          if (state.mode === "game") return;
           const dx = pos.x - dragPrevX;
           const dy = pos.y - dragPrevY;
           dragPrevX = pos.x;
@@ -2721,9 +4364,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             dragPrevY = pos.y;
             frozenRootX = scStartScreenX;
             frozenRootY = scStartScreenY;
-          } else if (mode === "target") {
-            targetGrabOfsX = pos.x - targetScreenX;
-            targetGrabOfsY = pos.y - targetScreenY;
           }
         }
 
@@ -2758,11 +4398,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         canvas.addEventListener("mousedown", function (e) {
           const pos = getCanvasPos(e);
-          if (isNearTarget(pos)) {
-            startDrag("target", pos);
-            canvas.style.cursor = "move";
-            e.preventDefault();
-          } else if (isNearRoot(pos)) {
+          if (isNearRoot(pos)) {
             startDrag("translate", pos);
             canvas.style.cursor = "move";
             e.preventDefault();
@@ -2784,12 +4420,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           } else if (state.dragMode === "translate") {
             handleTranslateDrag(pos);
             e.preventDefault();
-          } else if (state.dragMode === "target") {
-            handleTargetDrag(pos);
-            e.preventDefault();
           } else {
-            if (isNearTarget(pos)) canvas.style.cursor = "move";
-            else if (isNearRoot(pos)) canvas.style.cursor = "move";
+            if (isNearRoot(pos)) canvas.style.cursor = "move";
             else if (isNearArrow(pos)) canvas.style.cursor = "grab";
             else canvas.style.cursor = "default";
           }
@@ -2802,10 +4434,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           "touchstart",
           function (e) {
             const pos = getCanvasPos(e);
-            if (isNearTarget(pos)) {
-              startDrag("target", pos);
-              e.preventDefault();
-            } else if (isNearRoot(pos)) {
+            if (isNearRoot(pos)) {
               startDrag("translate", pos);
               e.preventDefault();
             } else if (isNearArrow(pos)) {
@@ -2825,9 +4454,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               e.preventDefault();
             } else if (state.dragMode === "translate") {
               handleTranslateDrag(pos);
-              e.preventDefault();
-            } else if (state.dragMode === "target") {
-              handleTargetDrag(pos);
               e.preventDefault();
             }
           },
@@ -2919,6 +4545,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           if (pct > 100) pct = 100;
           document.getElementById("gaugeFill").style.width =
             pct.toFixed(1) + "%";
+
+          // NOTE: do NOT call updateFuelHud / syncAltitudeSlider here. Per-frame
+          // DOM writes to fuel-bar style.width and slider .value caused visible
+          // animation jitter (DOM mutations trigger layout/paint that competes
+          // with the canvas draw). The HUD is refreshed explicitly from event
+          // handlers that actually change the displayed values (arrow drag,
+          // altitude slider, mission generation, launch/retry, result).
         }
 
         function updateReadouts() {
@@ -2998,6 +4631,981 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         // ══════════════════════════════════════════════
+        // ANALYZER (debug — see plan: mission difficulty)
+        // ══════════════════════════════════════════════
+        // Dense parameter sweep over the player's reachable (angle, alt, speed)
+        // space. Classifies each sample with the same hit logic the game uses
+        // and produces metrics on solvability, threshold achievability, win
+        // corridor breadth, and sensitivity. State is snapshotted and restored
+        // in a finally block so the player's pre-analysis configuration is
+        // untouched after the run.
+        //
+        // Triggered by the transparent #missionAnalyzeBtn button. Also exposed
+        // as window.gravassistAnalyze / window.gravassistRollMissions for
+        // console-driven aggregate runs across planets.
+        const ANALYZER_ANGLE_MIN = Math.PI - Math.PI / 2;
+        const ANALYZER_ANGLE_MAX = Math.PI + Math.PI / 2;
+        const ANALYZER_ALT_MIN = 10;
+        const ANALYZER_ALT_MAX = 300;
+        const ANALYZER_SPEED_MIN = 10;
+        const ANALYZER_SPEED_MAX = 100;
+
+        function simOneAndClassify(angle, alt, speed, target, hitRSq) {
+          state.approachAngle = angle;
+          state.periapsisAlt = alt;
+          state.approachSpeed = speed;
+          initVecPosition();
+          computeTrajectory();
+          if (state.crashed) return "crash";
+          if (state.trajectory.length < 50) return "degenerate";
+          if (state.closestIndex >= state.trajectory.length - 5)
+            return "degenerate";
+          for (
+            let k = state.closestIndex + 3;
+            k < state.trajectory.length;
+            k++
+          ) {
+            const sf = toSunFrame(k);
+            const dx = sf.x - target.x;
+            const dy = sf.y - target.y;
+            if (dx * dx + dy * dy < hitRSq) return "hit";
+          }
+          return "miss";
+        }
+
+        function updateAnalyzerProgress(done, total) {
+          const btn = document.getElementById("missionAnalyzeBtn");
+          if (!btn) return;
+          if (done === null) {
+            btn.style.opacity = "";
+            btn.textContent = "·";
+            btn.title = "Analyze mission (debug)";
+            return;
+          }
+          btn.style.opacity = "0.6";
+          const pct = Math.round((done / total) * 100);
+          btn.textContent = pct + "%";
+          btn.title = "Analyzing " + done + "/" + total;
+        }
+
+        function rangeOf(arr, key) {
+          if (arr.length === 0) return { min: null, max: null, span: null };
+          let mn = Infinity;
+          let mx = -Infinity;
+          for (let i = 0; i < arr.length; i++) {
+            const v = arr[i][key];
+            if (v < mn) mn = v;
+            if (v > mx) mx = v;
+          }
+          return { min: mn, max: mx, span: mx - mn };
+        }
+
+        function arrStats(arr) {
+          if (arr.length === 0) return { mean: null, min: null, max: null };
+          let s = 0;
+          let mn = Infinity;
+          let mx = -Infinity;
+          for (let i = 0; i < arr.length; i++) {
+            const v = arr[i];
+            s += v;
+            if (v < mn) mn = v;
+            if (v > mx) mx = v;
+          }
+          return { mean: s / arr.length, min: mn, max: mx };
+        }
+
+        function percentile(sortedArr, p) {
+          if (sortedArr.length === 0) return null;
+          const idx = Math.min(
+            sortedArr.length - 1,
+            Math.max(0, Math.floor(sortedArr.length * p)),
+          );
+          return sortedArr[idx];
+        }
+
+        async function analyzeCurrentMission(opts) {
+          opts = opts || {};
+          const angleSamples = opts.angleSamples || 16;
+          const speedSamples = opts.speedSamples || 16;
+          if (state.mode !== "game" || !state.game.mission) {
+            throw new Error(
+              "Analyzer requires game mode with a loaded mission",
+            );
+          }
+          const mission = state.game.mission;
+          const hitRSq = mission.hitRadiusWorld * mission.hitRadiusWorld;
+          // Altitude is pinned per mission in game mode; the analyzer
+          // sweeps only the player-reachable (angle, speed) plane.
+          // altSamples is forced to 1 so the rest of the analyzer
+          // pipeline (grid, heatmaps, aggregate stats) stays unchanged.
+          const altSamples = 1;
+
+          const saved = {
+            approachAngle: state.approachAngle,
+            periapsisAlt: state.periapsisAlt,
+            approachSpeed: state.approachSpeed,
+            currentIndex: state.currentIndex,
+          };
+
+          const grid = [];
+          const rawHits = [];
+          const counts = { hits: 0, crashes: 0, misses: 0, degenerate: 0 };
+          let bestHit = null;
+          const totalSims = angleSamples * altSamples * speedSamples;
+          let done = 0;
+          const BATCH = 32;
+          const t0 = performance.now();
+
+          try {
+            for (let ai = 0; ai < angleSamples; ai++) {
+              const angle =
+                ANALYZER_ANGLE_MIN +
+                (ai / Math.max(1, angleSamples - 1)) *
+                  (ANALYZER_ANGLE_MAX - ANALYZER_ANGLE_MIN);
+              grid[ai] = [];
+              for (let pi = 0; pi < altSamples; pi++) {
+                // Pinned at mission altitude — game mode has no
+                // altitude slider so the analyzer reflects what the
+                // player can actually reach.
+                const alt = mission.altitude;
+                grid[ai][pi] = [];
+                for (let si = 0; si < speedSamples; si++) {
+                  const speed =
+                    ANALYZER_SPEED_MIN +
+                    (si / Math.max(1, speedSamples - 1)) *
+                      (ANALYZER_SPEED_MAX - ANALYZER_SPEED_MIN);
+                  const outcome = simOneAndClassify(
+                    angle,
+                    alt,
+                    speed,
+                    mission.target,
+                    hitRSq,
+                  );
+                  grid[ai][pi][si] = outcome;
+                  if (outcome === "hit") {
+                    counts.hits++;
+                    const fuel = Math.round(speed);
+                    const rec = {
+                      angle: angle,
+                      alt: alt,
+                      speed: speed,
+                      fuel: fuel,
+                    };
+                    rawHits.push(rec);
+                    if (!bestHit || fuel < bestHit.fuel) bestHit = rec;
+                  } else if (outcome === "crash") {
+                    counts.crashes++;
+                  } else if (outcome === "miss") {
+                    counts.misses++;
+                  } else {
+                    counts.degenerate++;
+                  }
+                  done++;
+                  if (done % BATCH === 0) {
+                    updateAnalyzerProgress(done, totalSims);
+                    await new Promise(function (r) {
+                      setTimeout(r, 0);
+                    });
+                  }
+                }
+              }
+            }
+          } finally {
+            state.approachAngle = saved.approachAngle;
+            state.periapsisAlt = saved.periapsisAlt;
+            state.approachSpeed = saved.approachSpeed;
+            state.currentIndex = saved.currentIndex;
+            initVecPosition();
+            computeTrajectory();
+            updateAnalyzerProgress(null, null);
+          }
+          const durationMs = performance.now() - t0;
+
+          const winFuels = rawHits
+            .map(function (r) {
+              return r.fuel;
+            })
+            .sort(function (a, b) {
+              return a - b;
+            });
+
+          const goldHits = rawHits.filter(function (r) {
+            return r.fuel <= mission.thresholds.goldFuel;
+          });
+          const silverHits = rawHits.filter(function (r) {
+            return r.fuel <= mission.thresholds.silverFuel;
+          });
+          const bronzeHits = rawHits.filter(function (r) {
+            return r.fuel > mission.thresholds.silverFuel;
+          });
+
+          // Sensitivity: perturb bestHit on each axis by ±5/10 %; clamped to
+          // reachable input ranges. Mutates state, so we restore again at the
+          // end.
+          let sensitivity = null;
+          if (bestHit) {
+            const perturbations = {};
+            const axes = ["angle", "alt", "speed"];
+            const baseVals = {
+              angle: bestHit.angle,
+              alt: bestHit.alt,
+              speed: bestHit.speed,
+            };
+            const clamps = {
+              angle: { min: -Infinity, max: Infinity },
+              alt: { min: ANALYZER_ALT_MIN, max: ANALYZER_ALT_MAX },
+              speed: { min: ANALYZER_SPEED_MIN, max: ANALYZER_SPEED_MAX },
+            };
+            const pcts = [-0.1, -0.05, 0.05, 0.1];
+            for (let axI = 0; axI < axes.length; axI++) {
+              const ax = axes[axI];
+              for (let pI = 0; pI < pcts.length; pI++) {
+                const p = pcts[pI];
+                const newVal = Math.max(
+                  clamps[ax].min,
+                  Math.min(clamps[ax].max, baseVals[ax] * (1 + p)),
+                );
+                let a = bestHit.angle;
+                let l = bestHit.alt;
+                let s = bestHit.speed;
+                if (ax === "angle") a = newVal;
+                else if (ax === "alt") l = newVal;
+                else if (ax === "speed") s = newVal;
+                const sign = p > 0 ? "Plus" : "Minus";
+                const label = Math.abs(Math.round(p * 100));
+                const key = ax + sign + label + "pct";
+                perturbations[key] = simOneAndClassify(
+                  a,
+                  l,
+                  s,
+                  mission.target,
+                  hitRSq,
+                );
+              }
+            }
+            sensitivity = {
+              best: {
+                angle: bestHit.angle,
+                alt: bestHit.alt,
+                speed: bestHit.speed,
+                fuel: bestHit.fuel,
+              },
+              perturbations: perturbations,
+            };
+          }
+
+          const def = mission.defaults;
+          const defaultOutcome = simOneAndClassify(
+            def.approachAngle,
+            def.periapsisAlt,
+            def.approachSpeed,
+            mission.target,
+            hitRSq,
+          );
+
+          // Restore one last time (sensitivity + defaultLaunch sims mutated).
+          state.approachAngle = saved.approachAngle;
+          state.periapsisAlt = saved.periapsisAlt;
+          state.approachSpeed = saved.approachSpeed;
+          state.currentIndex = saved.currentIndex;
+          initVecPosition();
+          computeTrajectory();
+
+          return {
+            mission: {
+              planetKey: mission.planetKey,
+              planetSpeed: mission.planetSpeed,
+              altitude: mission.altitude,
+              target: { x: mission.target.x, y: mission.target.y },
+              hitRadiusWorld: mission.hitRadiusWorld,
+              thresholds: {
+                goldFuel: mission.thresholds.goldFuel,
+                silverFuel: mission.thresholds.silverFuel,
+              },
+              witness: {
+                angle: mission.witness.angle,
+                periapsisAlt: mission.witness.periapsisAlt,
+                approachSpeed: mission.witness.approachSpeed,
+                deltaV: mission.witness.deltaV,
+                deflection: mission.witness.deflection,
+                vIn: mission.witness.vIn,
+                vOut: mission.witness.vOut,
+              },
+            },
+            sweep: {
+              angleSamples: angleSamples,
+              altSamples: altSamples,
+              speedSamples: speedSamples,
+              total: totalSims,
+              hits: counts.hits,
+              crashes: counts.crashes,
+              misses: counts.misses,
+              degenerate: counts.degenerate,
+              durationMs: durationMs,
+            },
+            rates: {
+              winRate: counts.hits / totalSims,
+              crashRate: counts.crashes / totalSims,
+              missRate: counts.misses / totalSims,
+            },
+            fuel: {
+              distribution: winFuels,
+              minWin: winFuels.length ? winFuels[0] : null,
+              p25: percentile(winFuels, 0.25),
+              median: percentile(winFuels, 0.5),
+              p75: percentile(winFuels, 0.75),
+              maxWin: winFuels.length ? winFuels[winFuels.length - 1] : null,
+            },
+            thresholds: {
+              storedGold: mission.thresholds.goldFuel,
+              storedSilver: mission.thresholds.silverFuel,
+              goldHits: goldHits.length,
+              silverHits: silverHits.length,
+              bronzeHits: bronzeHits.length,
+              goldRate: goldHits.length / totalSims,
+              silverRate: silverHits.length / totalSims,
+              goldAchievable: goldHits.length > 0,
+              silverAchievable: silverHits.length > 0,
+            },
+            winCorridor: {
+              angle: rangeOf(rawHits, "angle"),
+              alt: rangeOf(rawHits, "alt"),
+              speed: rangeOf(rawHits, "speed"),
+              gold: {
+                angle: rangeOf(goldHits, "angle"),
+                alt: rangeOf(goldHits, "alt"),
+                speed: rangeOf(goldHits, "speed"),
+              },
+            },
+            sensitivity: sensitivity,
+            defaultLaunch: {
+              angle: def.approachAngle,
+              alt: def.periapsisAlt,
+              speed: def.approachSpeed,
+              fuel: Math.round(def.approachSpeed),
+              outcome: defaultOutcome,
+            },
+            rawHits: rawHits,
+            grid: grid,
+          };
+        }
+
+        async function rollMissionsAndAnalyze(planetKey, n, opts) {
+          n = n || 5;
+          if (state.mode !== "game") setMode("game");
+          if (planetKey && planetKey !== state.selectedPlanet) {
+            selectPlanet(planetKey, false);
+          }
+          const perMission = [];
+          let nullCount = 0;
+          for (let i = 0; i < n; i++) {
+            generateMission(planetKey || state.selectedPlanet);
+            if (!state.game.mission) {
+              nullCount++;
+              perMission.push({ noMission: true });
+              continue;
+            }
+            const r = await analyzeCurrentMission(opts);
+            perMission.push(r);
+          }
+          const analyzed = perMission.filter(function (r) {
+            return !r.noMission;
+          });
+          const winRates = analyzed.map(function (r) {
+            return r.rates.winRate;
+          });
+          const goldRates = analyzed.map(function (r) {
+            return r.thresholds.goldRate;
+          });
+          const silverRates = analyzed.map(function (r) {
+            return r.thresholds.silverRate;
+          });
+          const goldAchAll =
+            analyzed.length > 0 &&
+            analyzed.every(function (r) {
+              return r.thresholds.goldAchievable;
+            });
+          const silverAchAll =
+            analyzed.length > 0 &&
+            analyzed.every(function (r) {
+              return r.thresholds.silverAchievable;
+            });
+          return {
+            planetKey: planetKey || state.selectedPlanet,
+            n: n,
+            perMission: perMission,
+            aggregate: {
+              nullCount: nullCount,
+              winRate: arrStats(winRates),
+              goldRate: arrStats(goldRates),
+              silverRate: arrStats(silverRates),
+              goldAchievableAll: goldAchAll,
+              silverAchievableAll: silverAchAll,
+            },
+          };
+        }
+
+        function fmt(n, digits) {
+          if (n === null || n === undefined) return "—";
+          if (typeof n !== "number") return String(n);
+          return n.toFixed(digits === undefined ? 2 : digits);
+        }
+
+        // Append a single line of summary text to `parent`. `parts` is an
+        // array of strings; entries that start with `*` are rendered bold
+        // (label form), every other entry is plain text. Avoids innerHTML so
+        // the code-review js/dangerous-html-sink rule stays clean.
+        function appendLine(parent, parts, cls) {
+          const d = document.createElement("div");
+          if (cls) d.className = cls;
+          for (let i = 0; i < parts.length; i++) {
+            const piece = parts[i];
+            if (typeof piece === "string" && piece.charAt(0) === "*") {
+              const b = document.createElement("b");
+              b.textContent = piece.slice(1);
+              d.appendChild(b);
+            } else {
+              d.appendChild(document.createTextNode(String(piece)));
+            }
+          }
+          parent.appendChild(d);
+        }
+
+        function buildHeatmap(grid, sweep, xAxis, yAxis) {
+          const dims = {
+            angle: sweep.angleSamples,
+            alt: sweep.altSamples,
+            speed: sweep.speedSamples,
+          };
+          const xSize = dims[xAxis];
+          const ySize = dims[yAxis];
+          const otherAxes = ["angle", "alt", "speed"].filter(function (a) {
+            return a !== xAxis && a !== yAxis;
+          });
+          const collapsedAxis = otherAxes[0];
+          const collapsedSize = dims[collapsedAxis];
+          const cellPx = 8;
+          const padPx = 28;
+          const w = xSize * cellPx + 2 * padPx;
+          const h = ySize * cellPx + 2 * padPx;
+          const svgNS = "http://www.w3.org/2000/svg";
+          const svg = document.createElementNS(svgNS, "svg");
+          svg.setAttribute("width", String(w));
+          svg.setAttribute("height", String(h));
+          svg.setAttribute("class", "heatmap");
+
+          const title = document.createElementNS(svgNS, "text");
+          title.setAttribute("x", String(w / 2));
+          title.setAttribute("y", "14");
+          title.setAttribute("text-anchor", "middle");
+          title.setAttribute("fill", "#c9d1d9");
+          title.setAttribute("font-size", "10");
+          title.setAttribute("font-family", "monospace");
+          title.textContent = yAxis + " × " + xAxis;
+          svg.appendChild(title);
+
+          const xL = document.createElementNS(svgNS, "text");
+          xL.setAttribute("x", String(w / 2));
+          xL.setAttribute("y", String(h - 6));
+          xL.setAttribute("text-anchor", "middle");
+          xL.setAttribute("fill", "#6e7a8a");
+          xL.setAttribute("font-size", "9");
+          xL.setAttribute("font-family", "monospace");
+          xL.textContent = xAxis;
+          svg.appendChild(xL);
+
+          const yL = document.createElementNS(svgNS, "text");
+          yL.setAttribute("x", "6");
+          yL.setAttribute("y", String(h / 2));
+          yL.setAttribute("fill", "#6e7a8a");
+          yL.setAttribute("font-size", "9");
+          yL.setAttribute("font-family", "monospace");
+          yL.setAttribute("transform", "rotate(-90, 6, " + h / 2 + ")");
+          yL.setAttribute("text-anchor", "middle");
+          yL.textContent = yAxis;
+          svg.appendChild(yL);
+
+          for (let yIdx = 0; yIdx < ySize; yIdx++) {
+            for (let xIdx = 0; xIdx < xSize; xIdx++) {
+              let hasHit = false;
+              let allCrash = true;
+              for (let cIdx = 0; cIdx < collapsedSize; cIdx++) {
+                const idxByAxis = {};
+                idxByAxis[xAxis] = xIdx;
+                idxByAxis[yAxis] = yIdx;
+                idxByAxis[collapsedAxis] = cIdx;
+                const o = grid[idxByAxis.angle][idxByAxis.alt][idxByAxis.speed];
+                if (o === "hit") hasHit = true;
+                if (o !== "crash") allCrash = false;
+              }
+              let color = "#6e7a8a";
+              if (hasHit) color = "#3fb950";
+              else if (allCrash) color = "#f97583";
+              const rect = document.createElementNS(svgNS, "rect");
+              rect.setAttribute("x", String(padPx + xIdx * cellPx));
+              rect.setAttribute(
+                "y",
+                String(padPx + (ySize - 1 - yIdx) * cellPx),
+              );
+              rect.setAttribute("width", String(cellPx));
+              rect.setAttribute("height", String(cellPx));
+              rect.setAttribute("fill", color);
+              svg.appendChild(rect);
+            }
+          }
+          return svg;
+        }
+
+        function openAnalysisReport(report) {
+          const existing = document.getElementById("analysisModal");
+          if (existing) existing.remove();
+
+          const modal = document.createElement("div");
+          modal.id = "analysisModal";
+          modal.className = "analysis-modal";
+
+          const closeBtn = document.createElement("button");
+          closeBtn.className = "analysis-close";
+          closeBtn.textContent = "×";
+          closeBtn.title = "Close";
+          closeBtn.addEventListener("click", function () {
+            modal.remove();
+          });
+          modal.appendChild(closeBtn);
+
+          const h2 = document.createElement("h2");
+          h2.textContent = "Mission Difficulty Analysis";
+          modal.appendChild(h2);
+
+          const summary = document.createElement("div");
+          summary.className = "analysis-summary";
+
+          const m = report.mission;
+          appendLine(summary, [
+            "*Planet: ",
+            m.planetKey,
+            " · ",
+            "*Planet speed: ",
+            String(m.planetSpeed),
+          ]);
+          appendLine(summary, [
+            "*Target: ",
+            "(" + fmt(m.target.x, 1) + ", " + fmt(m.target.y, 1) + ")",
+            " · ",
+            "*Hit radius: ",
+            fmt(m.hitRadiusWorld, 2),
+          ]);
+          appendLine(summary, [
+            "*Stored thresholds: ",
+            "gold ≤ " +
+              m.thresholds.goldFuel +
+              ", silver ≤ " +
+              m.thresholds.silverFuel,
+          ]);
+          appendLine(summary, [
+            "*Sweep: ",
+            report.sweep.total +
+              " sims (" +
+              report.sweep.angleSamples +
+              "×" +
+              report.sweep.altSamples +
+              "×" +
+              report.sweep.speedSamples +
+              ") in " +
+              fmt(report.sweep.durationMs / 1000, 1) +
+              "s",
+          ]);
+          appendLine(summary, [
+            "*Hits: ",
+            report.sweep.hits +
+              " (" +
+              fmt(report.rates.winRate * 100, 1) +
+              "%)",
+            " · ",
+            "*Crashes: ",
+            report.sweep.crashes +
+              " (" +
+              fmt(report.rates.crashRate * 100, 1) +
+              "%)",
+            " · ",
+            "*Misses: ",
+            report.sweep.misses +
+              " (" +
+              fmt(report.rates.missRate * 100, 1) +
+              "%)",
+          ]);
+          if (report.sweep.degenerate > 0) {
+            appendLine(summary, [
+              "*Degenerate: ",
+              String(report.sweep.degenerate),
+            ]);
+          }
+          const goldOk = report.thresholds.goldAchievable;
+          const silverOk = report.thresholds.silverAchievable;
+          appendLine(
+            summary,
+            [
+              "*Gold: ",
+              (goldOk ? "OK" : "UNACHIEVABLE") +
+                " (" +
+                report.thresholds.goldHits +
+                " hits, " +
+                fmt(report.thresholds.goldRate * 100, 2) +
+                "%)",
+              " · ",
+              "*Silver: ",
+              (silverOk ? "OK" : "UNACHIEVABLE") +
+                " (" +
+                report.thresholds.silverHits +
+                " hits, " +
+                fmt(report.thresholds.silverRate * 100, 2) +
+                "%)",
+            ],
+            goldOk && silverOk ? "analysis-ok" : "analysis-warn",
+          );
+          if (report.fuel.minWin !== null) {
+            appendLine(summary, [
+              "*Win fuel: ",
+              "min " +
+                report.fuel.minWin +
+                ", p25 " +
+                report.fuel.p25 +
+                ", median " +
+                report.fuel.median +
+                ", p75 " +
+                report.fuel.p75 +
+                ", max " +
+                report.fuel.maxWin,
+            ]);
+          }
+          const wc = report.winCorridor;
+          if (wc.angle.min !== null) {
+            appendLine(summary, [
+              "*Win corridor: ",
+              "angle [" +
+                fmt(wc.angle.min, 3) +
+                ", " +
+                fmt(wc.angle.max, 3) +
+                "] span " +
+                fmt(wc.angle.span, 3) +
+                " rad · alt [" +
+                fmt(wc.alt.min, 0) +
+                ", " +
+                fmt(wc.alt.max, 0) +
+                "] · speed [" +
+                fmt(wc.speed.min, 0) +
+                ", " +
+                fmt(wc.speed.max, 0) +
+                "]",
+            ]);
+          }
+          if (wc.gold.angle.min !== null) {
+            appendLine(summary, [
+              "*Gold corridor: ",
+              "angle span " +
+                fmt(wc.gold.angle.span, 3) +
+                " rad · alt span " +
+                fmt(wc.gold.alt.span, 0) +
+                " · speed span " +
+                fmt(wc.gold.speed.span, 0),
+            ]);
+          }
+          appendLine(summary, [
+            "*Default launch: ",
+            "outcome = " +
+              report.defaultLaunch.outcome +
+              " (angle " +
+              fmt(report.defaultLaunch.angle, 3) +
+              ", alt " +
+              fmt(report.defaultLaunch.alt, 0) +
+              ", speed " +
+              fmt(report.defaultLaunch.speed, 0) +
+              ")",
+          ]);
+          if (report.sensitivity && report.sensitivity.best) {
+            const b = report.sensitivity.best;
+            const survives = Object.keys(
+              report.sensitivity.perturbations,
+            ).filter(function (k) {
+              return report.sensitivity.perturbations[k] === "hit";
+            }).length;
+            appendLine(summary, [
+              "*Best win: ",
+              "angle " +
+                fmt(b.angle, 3) +
+                ", alt " +
+                fmt(b.alt, 0) +
+                ", speed " +
+                fmt(b.speed, 1) +
+                " (fuel " +
+                b.fuel +
+                ")",
+              " · ",
+              "*Sensitivity: ",
+              survives + "/12 perturbations hit",
+            ]);
+          }
+          modal.appendChild(summary);
+
+          if (report.grid) {
+            const heatmaps = document.createElement("div");
+            heatmaps.className = "analysis-heatmaps";
+            heatmaps.appendChild(
+              buildHeatmap(report.grid, report.sweep, "angle", "alt"),
+            );
+            heatmaps.appendChild(
+              buildHeatmap(report.grid, report.sweep, "angle", "speed"),
+            );
+            heatmaps.appendChild(
+              buildHeatmap(report.grid, report.sweep, "alt", "speed"),
+            );
+            modal.appendChild(heatmaps);
+          }
+
+          const pre = document.createElement("pre");
+          pre.className = "analysis-json";
+          const trimmed = Object.assign({}, report);
+          delete trimmed.grid;
+          delete trimmed.rawHits;
+          pre.textContent = JSON.stringify(trimmed, null, 2);
+          modal.appendChild(pre);
+
+          document.body.appendChild(modal);
+
+          // Clipboard write is best-effort: optional catch binding (ES2019)
+          // sidesteps unused-var lint when we genuinely don't need the error.
+          try {
+            if (
+              navigator.clipboard &&
+              typeof navigator.clipboard.writeText === "function"
+            ) {
+              navigator.clipboard.writeText(JSON.stringify(report, null, 2));
+            }
+          } catch {
+            // intentionally ignored
+          }
+          // eslint-disable-next-line no-console
+          console.log("[gravassist analyzer]", report);
+        }
+
+        // Wire button + window exports only when ?debug=1 is set.
+        // In production the button is removed from the DOM and no
+        // window.gravassist* globals are assigned.
+        if (DEBUG_ANALYZER) {
+          document
+            .getElementById("missionAnalyzeBtn")
+            .addEventListener("click", async function () {
+              if (state.mode !== "game" || !state.game.mission) {
+                alert(
+                  "Analyzer needs game mode with a loaded mission. Switch to Game first.",
+                );
+                return;
+              }
+              try {
+                const report = await analyzeCurrentMission();
+                openAnalysisReport(report);
+              } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error("[gravassist analyzer]", err);
+                alert("Analysis failed: " + err.message);
+              }
+            });
+          window.gravassistAnalyze = analyzeCurrentMission;
+          window.gravassistRollMissions = rollMissionsAndAnalyze;
+          window.gravassistOpenReport = openAnalysisReport;
+          // Debug-only helper that synchronously fast-forwards the current
+          // attempt to its end and dispatches evaluateGame. Lets the
+          // MCP/headless harness drive a full attempt without waiting for
+          // throttled requestAnimationFrame on a backgrounded tab.
+          window.gravassistFastFinish = function () {
+            if (state.mode !== "game" || !state.game.mission)
+              return "no mission";
+            state.game.launched = true;
+            state.currentIndex = state.trajectory.length - 1;
+            state.playing = false;
+            evaluateGame();
+            return state.game.result;
+          };
+          // Debug-only helper that exactly replicates the real animation
+          // path: walks state.currentIndex forward in increments, running
+          // the same mid-flight hit detection animate() does, then fires
+          // the end-of-trajectory dispatch. Use this to reproduce real-
+          // flight bugs that gravassistFastFinish skips over.
+          window.gravassistSimulateAnimation = function (stepSize) {
+            if (state.mode !== "game" || !state.game.mission)
+              return "no mission";
+            stepSize = stepSize || 50;
+            state.game.launched = true;
+            state.playing = true;
+            state.currentIndex = 0;
+            hitScanResume = -1;
+            const traj = state.trajectory;
+            const m = state.game.mission;
+            const tgtX = m.target.x;
+            const tgtY = m.target.y;
+            const hitSq = m.hitRadiusWorld * m.hitRadiusWorld;
+            const vp = state.planetVel * V_SCALE;
+            while (state.playing && state.currentIndex < traj.length - 1) {
+              state.currentIndex = Math.min(
+                state.currentIndex + stepSize,
+                traj.length - 1,
+              );
+              if (state.game.hitIndex < 0) {
+                const upperIdx = state.currentIndex;
+                const startScan = Math.max(
+                  hitScanResume + 1,
+                  state.closestIndex + 1,
+                );
+                let hitAt = -1;
+                for (let i = startScan; i <= upperIdx; i++) {
+                  const p = traj[i];
+                  const dx = p.x + vp * i * SIM_DT - tgtX;
+                  const dy = p.y - tgtY;
+                  if (dx * dx + dy * dy < hitSq) {
+                    hitAt = i;
+                    break;
+                  }
+                }
+                hitScanResume = upperIdx;
+                if (hitAt >= 0) {
+                  state.game.hitIndex = hitAt;
+                  state.currentIndex = hitAt;
+                  state.playing = false;
+                  evaluateGame();
+                  return state.game.result + " (mid-flight)";
+                }
+              }
+              if (state.currentIndex >= traj.length - 1) {
+                state.currentIndex = traj.length - 1;
+                state.playing = false;
+                evaluateGame();
+                return state.game.result + " (trajectory-end)";
+              }
+            }
+            return state.game.result;
+          };
+          // Debug-only helper that captures the current auto-zoom framing
+          // metrics: pixel margins from key focus elements to canvas edges,
+          // focus bounding box vs viewport area ratio, and per-element
+          // screen positions. Used to quantify auto-zoom regressions and
+          // measure improvement. Replicates the same camera math drawScene
+          // uses for the "auto" mode (cameraMode default branch).
+          window.gravassistViewMetrics = function () {
+            if (!state.trajectory || state.trajectory.length < 2)
+              return { error: "no trajectory" };
+            const traj = state.trajectory;
+            const len = traj.length;
+            const idx = Math.min(state.currentIndex, len - 1);
+            // Replicate drawScene auto-zoom bounds (matches the new
+            // focus-element-only path for game mode).
+            let minX, maxX, minY, maxY;
+            if (
+              state.mode === "game" &&
+              state.game.mission &&
+              state.game.staticBounds
+            ) {
+              const b = state.game.staticBounds;
+              minX = b.minX;
+              maxX = b.maxX;
+              minY = b.minY;
+              maxY = b.maxY;
+            } else {
+              minX = Infinity;
+              maxX = -Infinity;
+              minY = Infinity;
+              maxY = -Infinity;
+              const sampleStep = Math.max(1, Math.floor(len / 3000));
+              for (let i = 0; i < len; i += sampleStep) {
+                const p = toSunFrame(i);
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.y > maxY) maxY = p.y;
+              }
+              const pL = toSunFrame(len - 1);
+              minX = Math.min(minX, pL.x);
+              maxX = Math.max(maxX, pL.x);
+              minY = Math.min(minY, pL.y);
+              maxY = Math.max(maxY, pL.y);
+              const plS = planetPos(0);
+              const plE = planetPos(len - 1);
+              minX = Math.min(minX, plS.x, plE.x);
+              maxX = Math.max(maxX, plS.x, plE.x);
+              minY = Math.min(minY, plS.y, plE.y, -30);
+              maxY = Math.max(maxY, plS.y, plE.y, 30);
+            }
+            const pad = 100;
+            const spanX = maxX - minX + 2 * pad;
+            const spanY = maxY - minY + 2 * pad;
+            const scale = Math.min(W / spanX, H / spanY);
+            const camX = (minX + maxX) / 2;
+            const camY = (minY + maxY) / 2;
+            // Key focus elements.
+            const ship = toSunFrame(idx);
+            const launch = toSunFrame(0);
+            const planet = planetPos(idx);
+            const focus = [
+              { name: "launch", x: launch.x, y: launch.y },
+              { name: "ship", x: ship.x, y: ship.y },
+              { name: "planet", x: planet.x, y: planet.y },
+            ];
+            if (state.mode === "game" && state.game.mission) {
+              focus.push({
+                name: "target",
+                x: state.game.mission.target.x,
+                y: state.game.mission.target.y,
+              });
+            }
+            const w2s = function (x, y) {
+              return {
+                x: W / 2 + (x - camX) * scale,
+                y: H / 2 - (y - camY) * scale,
+              };
+            };
+            const screen = focus.map(function (f) {
+              const s = w2s(f.x, f.y);
+              return {
+                name: f.name,
+                world: { x: Math.round(f.x), y: Math.round(f.y) },
+                screen: { x: Math.round(s.x), y: Math.round(s.y) },
+                marginPx: Math.round(Math.min(s.x, s.y, W - s.x, H - s.y)),
+              };
+            });
+            const fxs = focus.map(function (f) {
+              return f.x;
+            });
+            const fys = focus.map(function (f) {
+              return f.y;
+            });
+            const focusW =
+              Math.max.apply(null, fxs) - Math.min.apply(null, fxs);
+            const focusH =
+              Math.max.apply(null, fys) - Math.min.apply(null, fys);
+            const focusArea = Math.abs(focusW * focusH);
+            const viewportArea = (W / scale) * (H / scale);
+            return {
+              canvas: { W: W, H: H },
+              scale: +scale.toFixed(5),
+              cam: { camX: Math.round(camX), camY: Math.round(camY) },
+              focus: screen,
+              minMarginPx: Math.min.apply(
+                null,
+                screen.map(function (s) {
+                  return s.marginPx;
+                }),
+              ),
+              focusFillRatio: +(focusArea / viewportArea).toFixed(4),
+              wastedSpaceRatio: +(1 - focusArea / viewportArea).toFixed(4),
+              trajectoryLen: len,
+              currentIdx: idx,
+            };
+          };
+        } else {
+          const debugBtn = document.getElementById("missionAnalyzeBtn");
+          if (debugBtn) debugBtn.remove();
+        }
+
+        // ══════════════════════════════════════════════
         // INIT
         // ══════════════════════════════════════════════
         document.getElementById("langBtn").textContent =
@@ -3046,8 +5654,49 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           .getElementById("precisionBtn")
           .addEventListener("click", togglePrecision);
         document
-          .getElementById("newTargetBtn")
-          .addEventListener("click", newTarget);
+          .getElementById("retryMissionBtn")
+          .addEventListener("click", retryMission);
+        document
+          .getElementById("newMissionBtn")
+          .addEventListener("click", newMission);
+        document
+          .getElementById("launchBtn")
+          .addEventListener("click", function () {
+            if (state.game.result) {
+              retryMission();
+            } else if (!state.game.launched) {
+              launchMission();
+            }
+          });
+        document
+          .getElementById("warpGame1xBtn")
+          .addEventListener("click", () => selectGameWarp("normal"));
+        document
+          .getElementById("warpGame3xBtn")
+          .addEventListener("click", () => selectGameWarp("fast"));
+        document
+          .getElementById("warpGame10xBtn")
+          .addEventListener("click", () => selectGameWarp("fastest"));
+        document
+          .getElementById("altSlider")
+          .addEventListener("input", function (e) {
+            state.periapsisAlt = +e.target.value;
+            document.getElementById("altVal").textContent = e.target.value;
+            initVecPosition();
+            recompute();
+            // Refresh game HUD here (not on the draw loop) — altitude
+            // changes shift the trajectory and therefore the player's
+            // working aim. recompute() already cleared launched state.
+            if (state.mode === "game" && state.game.mission) {
+              updateFuelHud();
+            }
+          });
+        document
+          .getElementById("altDecBtn")
+          .addEventListener("click", () => stepSlider("altSlider", -5));
+        document
+          .getElementById("altIncBtn")
+          .addEventListener("click", () => stepSlider("altSlider", 5));
         applyTranslations();
         resize();
         populatePlanetSelect();

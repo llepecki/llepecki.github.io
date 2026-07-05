@@ -515,6 +515,27 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: #37474f;
         border-color: #37474f;
       }
+      .intro-action-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        background: #f5f3ee;
+      }
+      .intro-action-btn:disabled:hover {
+        background: #f5f3ee;
+        border-color: var(--panel-border);
+        color: var(--text);
+      }
+      .intro-place-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .intro-place-row .intro-action-btn {
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 80px;
+      }
       .readout-section {
         display: flex;
         flex-direction: column;
@@ -1070,9 +1091,20 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             introStep6Title: "Angled Forces Add Head-To-Tail",
             introStep6Body:
               "For angled pushes, slide one arrow so its tail meets the other arrow’s head.\n\nThe green arrow from the first tail to the last head is the resultant.",
-            introStep7Title: "Order Does Not Matter",
+            introStep7Title: "Build the net force",
             introStep7Body:
-              "You can add the same forces in a different order and still get the same net force.\n\nThe chain changes shape, but the green answer stays the same.",
+              "Now build the sum yourself. These draggable arrows are copies of the same forces, so you may slide them without turning them or changing their length.\n\nPlace each tail on the glowing head. When the chain is complete, the green arrow from start to finish is the net force. Reset and try another order: the green answer stays the same.",
+            introBuilderScenario2: "2 vectors",
+            introBuilderScenario3: "3 vectors",
+            introBuilderScenario4: "4 vectors",
+            introBuilderScenario5: "5 vectors",
+            introBuilderReset: "Reset chain",
+            introBuilderPlaceF1: "Place F1",
+            introBuilderPlaceF2: "Place F2",
+            introBuilderPlaceF3: "Place F3",
+            introBuilderStart: "Start",
+            introBuilderNetLabel: "net force",
+            introBuilderCompleteAria: "Net force built.",
             introStep8Title: "From Net Force To Motion",
             introStep8Body:
               "The green arrow is the net force, so it sets the puck’s acceleration.\n\nBecause this puck starts from rest and the pushes stay on, it first moves along the green arrow.",
@@ -1170,9 +1202,20 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             introStep6Title: "Siły pod kątem dodajemy metodą „głowa do ogona”",
             introStep6Body:
               "Przy pchnięciach pod kątem przesuń jedną strzałkę tak, aby jej ogon spotkał się z głową drugiej.\n\nZielona strzałka od pierwszego ogona do ostatniej głowy to wypadkowa.",
-            introStep7Title: "Kolejność nie ma znaczenia",
+            introStep7Title: "Zbuduj siłę wypadkową",
             introStep7Body:
-              "Te same siły możesz dodać w innej kolejności i nadal otrzymasz tę samą siłę wypadkową.\n\nŁańcuch zmienia kształt, ale zielona odpowiedź pozostaje taka sama.",
+              "Teraz zbuduj sumę samodzielnie. Te przeciągane strzałki są kopiami tych samych sił, więc możesz je przesuwać bez obracania i bez zmiany ich długości.\n\nPołóż każdy ogon na świecącej głowie. Gdy łańcuch będzie gotowy, zielona strzałka od początku do końca pokaże siłę wypadkową. Ułóż wektory jeszcze raz w innej kolejności: zielona odpowiedź pozostanie taka sama.",
+            introBuilderScenario2: "2 siły",
+            introBuilderScenario3: "3 siły",
+            introBuilderScenario4: "4 siły",
+            introBuilderScenario5: "5 sił",
+            introBuilderReset: "Ułóż od nowa",
+            introBuilderPlaceF1: "Połóż F1",
+            introBuilderPlaceF2: "Połóż F2",
+            introBuilderPlaceF3: "Połóż F3",
+            introBuilderStart: "Początek",
+            introBuilderNetLabel: "siła wypadkowa",
+            introBuilderCompleteAria: "Zbudowano siłę wypadkową.",
             introStep8Title: "Od siły wypadkowej do ruchu",
             introStep8Body:
               "Zielona strzałka to siła wypadkowa, więc wyznacza przyspieszenie krążka.\n\nPonieważ ten krążek startuje ze spoczynku, a pchnięcia cały czas działają, najpierw porusza się wzdłuż zielonej strzałki.",
@@ -2184,7 +2227,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         let dragging = false;
 
         canvas.addEventListener("pointerdown", (e) => {
-          if (state.introActive) return;
+          if (state.introActive) {
+            if (introBuilderActive()) {
+              startIntroBuilderDrag(e);
+              e.preventDefault();
+            }
+            return;
+          }
           if (state.phase !== "aim") return;
           canvas.setPointerCapture(e.pointerId);
           canvas.focus();
@@ -2196,7 +2245,27 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         });
 
         canvas.addEventListener("pointermove", (e) => {
-          if (state.introActive) return;
+          if (state.introActive) {
+            if (introBuilderActive()) {
+              if (state.introSceneState.builderDrag) {
+                moveIntroBuilderDrag(e);
+              } else {
+                /* Idle-over-dock cursor feedback: grab hand when hovering a
+                   draggable vector body, default otherwise. */
+                const layout = computeIntroVectorBuilderLayout();
+                const { x, y } = pointerToCanvas(e);
+                const idx = hitTestIntroBuilderDockVector(layout, x, y);
+                if (idx >= 0) {
+                  canvas.classList.add("hover-marker");
+                } else {
+                  canvas.classList.remove("hover-marker");
+                }
+              }
+            } else {
+              canvas.classList.remove("hover-marker", "dragging");
+            }
+            return;
+          }
           if (state.phase !== "aim") return;
           if (dragging) {
             const a = pointerToBoardAngle(e);
@@ -2213,6 +2282,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         });
 
         canvas.addEventListener("pointerup", (e) => {
+          if (state.introActive) {
+            if (introBuilderActive()) {
+              endIntroBuilderDrag(e);
+            }
+            canvas.classList.remove("dragging");
+            return;
+          }
           dragging = false;
           canvas.classList.remove("dragging");
           if (canvas.hasPointerCapture(e.pointerId)) {
@@ -2220,13 +2296,23 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
         });
 
-        canvas.addEventListener("pointercancel", () => {
+        canvas.addEventListener("pointercancel", (e) => {
+          if (state.introActive) {
+            if (introBuilderActive()) {
+              endIntroBuilderDrag(e);
+            }
+            canvas.classList.remove("dragging");
+            return;
+          }
           dragging = false;
           canvas.classList.remove("dragging");
         });
 
         canvas.addEventListener("pointerleave", () => {
           canvas.classList.remove("hover-marker");
+          if (state.introActive && introBuilderActive()) {
+            canvas.classList.remove("dragging");
+          }
         });
 
         canvas.addEventListener("keydown", (e) => {
@@ -2886,12 +2972,67 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           INTRO_REPLAY_REACH_MS + INTRO_REPLAY_EXTEND_MS;
         const INTRO_REPLAY_TOTAL_MS =
           INTRO_REPLAY_GROW_MS + INTRO_REPLAY_MOTION_MS + INTRO_REPLAY_HOLD_MS;
-        /* Three fixed permutations for step 7 (Order Does Not Matter). */
-        const INTRO_STEP7_ORDERS = [
-          [0, 1, 2],
-          [1, 2, 0],
-          [2, 0, 1],
+        /* Step 7 — interactive head-to-tail builder. The child drags vector
+           copies from a dock onto a chain anchor. Two authored scenarios:
+           2-vector and 3-vector. Drag is translation-only — angle, mag,
+           label, colour are fixed; only position is the child's choice. */
+        const INTRO_VECTOR_BUILDER_SCENARIOS = {
+          "builder-two-angle": {
+            id: "builder-two-angle",
+            labelKey: "introBuilderScenario2",
+            forces: [
+              { mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
+              { mag: 4, angleDeg: 90, colorIdx: 1, labelIdx: 1 },
+            ],
+            resultantAngleDeg: 45,
+            resultantMag: Math.hypot(4, 4),
+          },
+          "builder-three-order": {
+            id: "builder-three-order",
+            labelKey: "introBuilderScenario3",
+            forces: [
+              { mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
+              { mag: 4, angleDeg: 90, colorIdx: 1, labelIdx: 1 },
+              { mag: 4, angleDeg: 180, colorIdx: 2, labelIdx: 2 },
+            ],
+            resultantAngleDeg: 90,
+            resultantMag: 4,
+          },
+          "builder-four-mixed": {
+            id: "builder-four-mixed",
+            labelKey: "introBuilderScenario4",
+            forces: [
+              { mag: 3, angleDeg: 30, colorIdx: 0, labelIdx: 0 },
+              { mag: 4, angleDeg: 90, colorIdx: 1, labelIdx: 1 },
+              { mag: 3, angleDeg: 150, colorIdx: 2, labelIdx: 2 },
+              { mag: 2, angleDeg: 270, colorIdx: 3, labelIdx: 3 },
+            ],
+            resultantAngleDeg: 90,
+            resultantMag: 5,
+          },
+          "builder-five-mixed": {
+            id: "builder-five-mixed",
+            labelKey: "introBuilderScenario5",
+            forces: [
+              { mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
+              { mag: 3, angleDeg: 60, colorIdx: 1, labelIdx: 1 },
+              { mag: 3, angleDeg: 120, colorIdx: 2, labelIdx: 2 },
+              { mag: 4, angleDeg: 180, colorIdx: 3, labelIdx: 3 },
+              { mag: 3, angleDeg: 240, colorIdx: 4, labelIdx: 4 },
+            ],
+            resultantAngleDeg: 120,
+            resultantMag: 3,
+          },
+        };
+        const INTRO_BUILDER_SCENARIO_IDS = [
+          "builder-two-angle",
+          "builder-three-order",
+          "builder-four-mixed",
+          "builder-five-mixed",
         ];
+        const INTRO_BUILDER_SNAP_PX_WIDE = 18;
+        const INTRO_BUILDER_SNAP_PX_NARROW = 24;
+        const INTRO_BUILDER_RETURN_MS = 200;
 
         const INTRO_STEPS = [
           {
@@ -3007,26 +3148,25 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             callouts: [],
           },
           {
-            id: "order-does-not-matter",
+            id: "build-resultant",
             titleKey: "introStep7Title",
             bodyKey: "introStep7Body",
-            controlType: "shuffleOrder",
+            controlType: "vectorBuilder",
             ringVisible: false,
-            forces: [
-              { mag: 4, angleDeg: 0, colorIdx: 0, labelIdx: 0 },
-              { mag: 4, angleDeg: 90, colorIdx: 1, labelIdx: 1 },
-              { mag: 4, angleDeg: 180, colorIdx: 2, labelIdx: 2 },
-            ],
-            resultantAngleDeg: 90,
-            resultantMag: 4,
-            hasInset: true,
-            insetSize: "large",
+            hasBuilder: true,
+            hasInset: false,
             hasMotion: false,
             hasAutoplay: false,
             hasGuessMarker: false,
             lineOfActionForceIdx: -1,
             callouts: [],
-            initialSceneState: { orderIdx: 0 },
+            initialSceneState: {
+              builderScenarioId: "builder-two-angle",
+              builderOrder: [],
+              builderPlaced: {},
+              builderComplete: false,
+              builderDrag: null,
+            },
           },
           {
             id: "net-to-motion",
@@ -3088,6 +3228,15 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           } else {
             state.introSceneState = {};
           }
+          /* Builder fields are arrays / objects — Object.assign shallow-copies
+             refs from the step config, so reassign fresh empties to avoid
+             aliasing across re-entries. */
+          if (cfg.hasBuilder) {
+            state.introSceneState.builderOrder = [];
+            state.introSceneState.builderPlaced = {};
+            state.introSceneState.builderComplete = false;
+            state.introSceneState.builderDrag = null;
+          }
           /* Initialize animation timestamps before the first draw so the
              renderer never sees a missing-start frame (which would fall
              through to "final state" and flash the solved scene). */
@@ -3106,10 +3255,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         function startIntroAnimationIfNeeded() {
           cancelIntroAnimation();
           const cfg = introStepConfig();
-          if (state.reducedMotion) return;
-          if (cfg.hasAutoplay) {
+          if (cfg.hasAutoplay && !state.reducedMotion) {
             introRafId = requestAnimationFrame(introAnimationLoop);
-          } else if (cfg.hasMotion && state.introSceneState.replayStart) {
+          } else if (
+            cfg.hasMotion &&
+            !state.reducedMotion &&
+            state.introSceneState.replayStart
+          ) {
+            introRafId = requestAnimationFrame(introAnimationLoop);
+          } else if (cfg.hasBuilder && !state.reducedMotion) {
+            /* Builder needs RAF for the active-anchor pulse and for the
+               drag-return interpolation. */
             introRafId = requestAnimationFrame(introAnimationLoop);
           }
         }
@@ -3134,6 +3290,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               performance.now() - state.introSceneState.replayStart;
             if (elapsed >= INTRO_REPLAY_TOTAL_MS) {
               /* Hold the final frame; stop ticking. */
+              introRafId = 0;
+              return;
+            }
+            introRafId = requestAnimationFrame(introAnimationLoop);
+          } else if (cfg.hasBuilder) {
+            /* Keep RAF alive while the builder is active and not complete
+               (pulse) or while a returning drag is mid-interpolation. */
+            const done = state.introSceneState.builderComplete === true;
+            const dragReturning =
+              state.introSceneState.builderDrag &&
+              state.introSceneState.builderDrag.returning;
+            if (done && !dragReturning) {
               introRafId = 0;
               return;
             }
@@ -3315,19 +3483,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               row.appendChild(btn);
             }
             host.appendChild(row);
-          } else if (cfg.controlType === "shuffleOrder") {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "intro-action-btn";
-            btn.textContent = T("introShuffleOrder");
-            btn.addEventListener("click", () => {
-              const next =
-                ((state.introSceneState.orderIdx || 0) + 1) %
-                INTRO_STEP7_ORDERS.length;
-              state.introSceneState.orderIdx = next;
-              drawAll();
-            });
-            host.appendChild(btn);
+          } else if (cfg.controlType === "vectorBuilder") {
+            renderIntroVectorBuilderControls(host);
           } else if (cfg.controlType === "replayMotion") {
             const btn = document.createElement("button");
             btn.type = "button";
@@ -3353,6 +3510,743 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             btn.addEventListener("click", exitIntro);
             host.appendChild(btn);
           }
+        }
+
+        /* ───────── INTRO VECTOR BUILDER (STEP 7) ───────── */
+
+        function introBuilderActive() {
+          return state.introActive && introStepConfig().hasBuilder === true;
+        }
+
+        function getIntroBuilderScenario() {
+          const id =
+            (state.introSceneState &&
+              state.introSceneState.builderScenarioId) ||
+            "builder-two-angle";
+          return (
+            INTRO_VECTOR_BUILDER_SCENARIOS[id] ||
+            INTRO_VECTOR_BUILDER_SCENARIOS["builder-two-angle"]
+          );
+        }
+
+        function resetIntroVectorBuilder() {
+          if (!introBuilderActive()) return;
+          state.introSceneState.builderOrder = [];
+          state.introSceneState.builderPlaced = {};
+          state.introSceneState.builderComplete = false;
+          state.introSceneState.builderDrag = null;
+          renderIntroPanel();
+          drawAll();
+        }
+
+        function setIntroVectorBuilderScenario(id) {
+          if (!introBuilderActive()) return;
+          if (!INTRO_VECTOR_BUILDER_SCENARIOS[id]) return;
+          state.introSceneState.builderScenarioId = id;
+          resetIntroVectorBuilder();
+        }
+
+        function computeIntroChainBboxCenter(scenario, unitPx) {
+          /* Trace the chain in canonical (scenario-authored) order and return
+             the centre of its bounding box, relative to Start. This is what
+             we offset Start by so the canonical chain visualises centred. */
+          let curX = 0;
+          let curY = 0;
+          let minX = 0;
+          let maxX = 0;
+          let minY = 0;
+          let maxY = 0;
+          for (const f of scenario.forces) {
+            const rad = deg2rad(f.angleDeg);
+            curX += Math.cos(rad) * f.mag * unitPx;
+            curY -= Math.sin(rad) * f.mag * unitPx;
+            if (curX < minX) minX = curX;
+            if (curX > maxX) maxX = curX;
+            if (curY < minY) minY = curY;
+            if (curY > maxY) maxY = curY;
+          }
+          return { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
+        }
+
+        function computeIntroVectorBuilderLayout() {
+          const scenario = getIntroBuilderScenario();
+          let maxMag = scenario.resultantMag;
+          for (const f of scenario.forces) {
+            if (f.mag > maxMag) maxMag = f.mag;
+          }
+          if (maxMag <= 0) maxMag = 4;
+          if (W >= 760) {
+            const refW = W * 0.34;
+            const refCx = refW / 2;
+            const refCy = H / 2;
+            const refPuckR = clamp(refW / 8.5, 18, 26);
+            const refUnitPx = (refW * 0.34) / maxMag;
+            const conX0 = refW + 22;
+            const conX1 = W - 22;
+            const conY0 = 22;
+            const conY1 = H - 22;
+            const dockH = 96;
+            const cardW = conX1 - conX0;
+            const cardH = conY1 - conY0 - dockH;
+            const conUnitPx = (cardW * 0.42) / maxMag;
+            /* Centre the diagram on the card: place Start so the canonical
+               chain's bounding-box centre sits at the card centre. Chain
+               order is the child's choice, but for the first render this
+               gives a balanced layout that uses the whole workspace. */
+            const cardCx = conX0 + cardW / 2;
+            const cardCy = conY0 + cardH / 2;
+            const bbox = computeIntroChainBboxCenter(scenario, conUnitPx);
+            const startX = cardCx - bbox.cx;
+            const startY = cardCy - bbox.cy;
+            const dockY = conY0 + cardH + dockH / 2;
+            const dockSlotW = cardW / Math.max(scenario.forces.length, 1);
+            const slots = [];
+            for (let i = 0; i < scenario.forces.length; i += 1) {
+              slots.push({ x: conX0 + dockSlotW * (i + 0.5), y: dockY });
+            }
+            return {
+              isWide: true,
+              reference: {
+                cx: refCx,
+                cy: refCy,
+                puckR: refPuckR,
+                unitPx: refUnitPx,
+              },
+              construction: {
+                cardX: conX0,
+                cardY: conY0,
+                cardW,
+                cardH,
+                startX,
+                startY,
+                unitPx: conUnitPx,
+              },
+              dock: { y: dockY, slotW: dockSlotW, slots, hitR: 30 },
+            };
+          }
+          /* Narrow layout: vertical stack. */
+          const refBandH = H * 0.3;
+          const conBandH = H * 0.48;
+          const dockBandH = H - refBandH - conBandH;
+          const refCx = W / 2;
+          const refCy = refBandH / 2;
+          const refPuckR = clamp(refBandH / 4, 16, 22);
+          const refUnitPx = (refBandH * 0.36) / maxMag;
+          const conX0 = 16;
+          const conX1 = W - 16;
+          const conY0 = refBandH + 8;
+          const cardW = conX1 - conX0;
+          const cardH = conBandH - 16;
+          const conUnitPx = (cardW * 0.4) / maxMag;
+          const cardCxN = conX0 + cardW / 2;
+          const cardCyN = conY0 + cardH / 2;
+          const bboxN = computeIntroChainBboxCenter(scenario, conUnitPx);
+          const startX = cardCxN - bboxN.cx;
+          const startY = cardCyN - bboxN.cy;
+          const dockY = refBandH + conBandH + dockBandH / 2;
+          const dockSlotW = W / Math.max(scenario.forces.length, 1);
+          const slots = [];
+          for (let i = 0; i < scenario.forces.length; i += 1) {
+            slots.push({ x: dockSlotW * (i + 0.5), y: dockY });
+          }
+          return {
+            isWide: false,
+            reference: {
+              cx: refCx,
+              cy: refCy,
+              puckR: refPuckR,
+              unitPx: refUnitPx,
+            },
+            construction: {
+              cardX: conX0,
+              cardY: conY0,
+              cardW,
+              cardH,
+              startX,
+              startY,
+              unitPx: conUnitPx,
+            },
+            dock: { y: dockY, slotW: dockSlotW, slots, hitR: 36 },
+          };
+        }
+
+        function getIntroBuilderActiveAnchor(layout) {
+          const order = state.introSceneState.builderOrder || [];
+          if (order.length === 0) {
+            return {
+              x: layout.construction.startX,
+              y: layout.construction.startY,
+            };
+          }
+          const lastIdx = order[order.length - 1];
+          const placed = state.introSceneState.builderPlaced[lastIdx];
+          if (placed) return { x: placed.headX, y: placed.headY };
+          return {
+            x: layout.construction.startX,
+            y: layout.construction.startY,
+          };
+        }
+
+        function pointToSegmentDist(px, py, ax, ay, bx, by) {
+          const dx = bx - ax;
+          const dy = by - ay;
+          const lenSq = dx * dx + dy * dy;
+          if (lenSq === 0) return Math.hypot(px - ax, py - ay);
+          let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+          t = Math.max(0, Math.min(1, t));
+          return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+        }
+
+        function getIntroBuilderDockArrowEnds(force, slot, unitPx) {
+          const rad = deg2rad(force.angleDeg);
+          const visibleLen = force.mag * unitPx;
+          return {
+            tailX: slot.x - (Math.cos(rad) * visibleLen) / 2,
+            tailY: slot.y + (Math.sin(rad) * visibleLen) / 2,
+            headX: slot.x + (Math.cos(rad) * visibleLen) / 2,
+            headY: slot.y - (Math.sin(rad) * visibleLen) / 2,
+          };
+        }
+
+        function hitTestIntroBuilderDockVector(layout, x, y) {
+          const scenario = getIntroBuilderScenario();
+          const placed = state.introSceneState.builderPlaced || {};
+          /* Capsule hit-test along the arrow's shaft: any point within
+             ~14 px of the body is a grab. Far more forgiving than the
+             old disc-around-slot test. */
+          const haloPx = 14;
+          for (let i = 0; i < scenario.forces.length; i += 1) {
+            if (placed[i]) continue;
+            const slot = layout.dock.slots[i];
+            if (!slot) continue;
+            const ends = getIntroBuilderDockArrowEnds(
+              scenario.forces[i],
+              slot,
+              layout.construction.unitPx,
+            );
+            const d = pointToSegmentDist(
+              x,
+              y,
+              ends.tailX,
+              ends.tailY,
+              ends.headX,
+              ends.headY,
+            );
+            if (d <= haloPx) return i;
+          }
+          return -1;
+        }
+
+        function pointerToCanvas(e) {
+          const rect = canvas.getBoundingClientRect();
+          return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function placeIntroBuilderVector(vectorIdx) {
+          if (!introBuilderActive()) return;
+          if (state.introSceneState.builderComplete) return;
+          const placed = state.introSceneState.builderPlaced;
+          if (placed[vectorIdx]) return;
+          const scenario = getIntroBuilderScenario();
+          const force = scenario.forces[vectorIdx];
+          if (!force) return;
+          const layout = computeIntroVectorBuilderLayout();
+          const anchor = getIntroBuilderActiveAnchor(layout);
+          const rad = deg2rad(force.angleDeg);
+          const len = force.mag * layout.construction.unitPx;
+          const head = {
+            x: anchor.x + Math.cos(rad) * len,
+            y: anchor.y - Math.sin(rad) * len,
+          };
+          state.introSceneState.builderOrder.push(vectorIdx);
+          placed[vectorIdx] = {
+            tailX: anchor.x,
+            tailY: anchor.y,
+            headX: head.x,
+            headY: head.y,
+            orderSlot: state.introSceneState.builderOrder.length - 1,
+          };
+          state.introSceneState.builderDrag = null;
+          if (
+            state.introSceneState.builderOrder.length === scenario.forces.length
+          ) {
+            state.introSceneState.builderComplete = true;
+            const live = document.getElementById("ariaLive");
+            if (live) live.textContent = T("introBuilderCompleteAria");
+          }
+          renderIntroPanel();
+          drawAll();
+        }
+
+        function startIntroBuilderDrag(e) {
+          if (!introBuilderActive()) return;
+          if (state.introSceneState.builderComplete) return;
+          const layout = computeIntroVectorBuilderLayout();
+          const { x, y } = pointerToCanvas(e);
+          const idx = hitTestIntroBuilderDockVector(layout, x, y);
+          if (idx < 0) return;
+          const slot = layout.dock.slots[idx];
+          canvas.classList.remove("hover-marker");
+          canvas.classList.add("dragging");
+          state.introSceneState.builderDrag = {
+            vectorIdx: idx,
+            pointerX: x,
+            pointerY: y,
+            offsetX: x - slot.x,
+            offsetY: y - slot.y,
+            returning: false,
+            returnStart: 0,
+          };
+          if (canvas.setPointerCapture) {
+            canvas.setPointerCapture(e.pointerId);
+          }
+          drawAll();
+          startIntroAnimationIfNeeded();
+        }
+
+        function moveIntroBuilderDrag(e) {
+          const drag = state.introSceneState.builderDrag;
+          if (!drag || drag.returning) return;
+          const { x, y } = pointerToCanvas(e);
+          drag.pointerX = x;
+          drag.pointerY = y;
+          drawAll();
+        }
+
+        function endIntroBuilderDrag(e) {
+          const drag = state.introSceneState.builderDrag;
+          if (!drag) return;
+          if (
+            canvas.hasPointerCapture &&
+            canvas.hasPointerCapture(e.pointerId)
+          ) {
+            canvas.releasePointerCapture(e.pointerId);
+          }
+          if (drag.returning) return;
+          const layout = computeIntroVectorBuilderLayout();
+          const anchor = getIntroBuilderActiveAnchor(layout);
+          const scenario = getIntroBuilderScenario();
+          const force = scenario.forces[drag.vectorIdx];
+          const rad = deg2rad(force.angleDeg);
+          const len = force.mag * layout.construction.unitPx;
+          /* The cursor sits at the geometric centre of the dragged arrow;
+             derive the tail so the snap test compares tail to active anchor. */
+          const centreX = drag.pointerX - drag.offsetX;
+          const centreY = drag.pointerY - drag.offsetY;
+          const tailX = centreX - (Math.cos(rad) * len) / 2;
+          const tailY = centreY + (Math.sin(rad) * len) / 2;
+          const snapPx = layout.isWide
+            ? INTRO_BUILDER_SNAP_PX_WIDE
+            : INTRO_BUILDER_SNAP_PX_NARROW;
+          if (Math.hypot(tailX - anchor.x, tailY - anchor.y) <= snapPx) {
+            placeIntroBuilderVector(drag.vectorIdx);
+            return;
+          }
+          if (state.reducedMotion) {
+            state.introSceneState.builderDrag = null;
+            drawAll();
+            return;
+          }
+          drag.returning = true;
+          drag.returnStart = performance.now();
+          startIntroAnimationIfNeeded();
+        }
+
+        function renderIntroVectorBuilderControls(host) {
+          const scenario = getIntroBuilderScenario();
+          const row = document.createElement("div");
+          row.className = "intro-seg";
+          for (const id of INTRO_BUILDER_SCENARIO_IDS) {
+            const cfgScen = INTRO_VECTOR_BUILDER_SCENARIOS[id];
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "intro-seg-btn";
+            if (id === scenario.id) btn.classList.add("active");
+            btn.textContent = T(cfgScen.labelKey);
+            btn.addEventListener("click", () =>
+              setIntroVectorBuilderScenario(id),
+            );
+            row.appendChild(btn);
+          }
+          host.appendChild(row);
+          const resetBtn = document.createElement("button");
+          resetBtn.type = "button";
+          resetBtn.className = "intro-action-btn";
+          resetBtn.style.marginTop = "10px";
+          resetBtn.textContent = T("introBuilderReset");
+          resetBtn.addEventListener("click", resetIntroVectorBuilder);
+          host.appendChild(resetBtn);
+        }
+
+        /* ───────── INTRO VECTOR BUILDER RENDER ───────── */
+
+        function drawIntroBuilderRefPuck(layout) {
+          const r = layout.reference.puckR;
+          ctx.save();
+          ctx.fillStyle = "rgba(0, 0, 0, 0.10)";
+          ctx.beginPath();
+          ctx.arc(
+            layout.reference.cx + 2,
+            layout.reference.cy + 3,
+            r,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+          ctx.fillStyle = "#cfd8dc";
+          ctx.strokeStyle = "#90a4ae";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(layout.reference.cx, layout.reference.cy, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#37474f";
+          ctx.beginPath();
+          ctx.arc(layout.reference.cx, layout.reference.cy, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        function drawIntroBuilderRefForce(force, layout) {
+          const rad = deg2rad(force.angleDeg);
+          const visibleLen = force.mag * layout.reference.unitPx;
+          const sx = layout.reference.cx;
+          const sy = layout.reference.cy;
+          const ex = sx + Math.cos(rad) * (layout.reference.puckR + visibleLen);
+          const ey = sy - Math.sin(rad) * (layout.reference.puckR + visibleLen);
+          const color = FORCE_COLORS[force.colorIdx];
+          ctx.save();
+          ctx.globalAlpha = 0.62;
+          drawArrowSegment(sx, sy, ex, ey, color, 3.5, 16);
+          const perpX = -Math.sin(rad);
+          const perpY = -Math.cos(rad);
+          const lx = ex + perpX * 14 + Math.cos(rad) * 6;
+          const ly = ey + perpY * 14 - Math.sin(rad) * 6;
+          ctx.globalAlpha = 0.85;
+          ctx.fillStyle = color;
+          ctx.font = "700 13px 'Share Tech Mono', monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(FORCE_LABELS[force.labelIdx], lx, ly);
+          ctx.restore();
+        }
+
+        function drawIntroBuilderCard(layout) {
+          const c = layout.construction;
+          ctx.save();
+          ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.30)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(c.cardX, c.cardY, c.cardW, c.cardH, 12);
+          } else {
+            ctx.rect(c.cardX, c.cardY, c.cardW, c.cardH);
+          }
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawIntroBuilderStartAnchor(layout) {
+          const c = layout.construction;
+          ctx.save();
+          ctx.fillStyle = "#fff";
+          ctx.strokeStyle = "rgba(69, 90, 100, 0.55)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(c.startX, c.startY, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#37474f";
+          ctx.font = "600 12px 'Outfit', sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(T("introBuilderStart"), c.startX, c.startY + 10);
+          ctx.restore();
+        }
+
+        function drawIntroBuilderActiveAnchor(layout) {
+          if (state.introSceneState.builderComplete) return;
+          const anchor = getIntroBuilderActiveAnchor(layout);
+          const dragging =
+            state.introSceneState.builderDrag &&
+            !state.introSceneState.builderDrag.returning;
+          ctx.save();
+          /* Snap-zone halo: only while a drag is in progress, show the
+             actual snap radius as a dashed green disc so the kid sees
+             exactly where to drop. */
+          if (dragging) {
+            const snapPx = layout.isWide
+              ? INTRO_BUILDER_SNAP_PX_WIDE
+              : INTRO_BUILDER_SNAP_PX_NARROW;
+            ctx.fillStyle = "rgba(0, 200, 83, 0.14)";
+            ctx.beginPath();
+            ctx.arc(anchor.x, anchor.y, snapPx, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0, 200, 83, 0.55)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.arc(anchor.x, anchor.y, snapPx, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+          /* Pulsing inner ring (idle attention) — skipped during drag so it
+             doesn't fight the snap halo for the kid's eye. */
+          if (!dragging) {
+            const t = state.reducedMotion
+              ? 0.5
+              : (Math.sin(performance.now() / 320) + 1) / 2;
+            const pulseR = state.reducedMotion ? 11 : 9 + t * 4;
+            ctx.strokeStyle = "rgba(0, 200, 83, " + (0.35 + t * 0.35) + ")";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(anchor.x, anchor.y, pulseR, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.fillStyle = "#fff";
+          ctx.strokeStyle = NET_COLOR;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(anchor.x, anchor.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawIntroBuilderSnapPreview(layout) {
+          const drag = state.introSceneState.builderDrag;
+          if (!drag || drag.returning) return;
+          if (state.introSceneState.builderComplete) return;
+          const scenario = getIntroBuilderScenario();
+          const force = scenario.forces[drag.vectorIdx];
+          if (!force) return;
+          const rad = deg2rad(force.angleDeg);
+          const len = force.mag * layout.construction.unitPx;
+          /* Reconstruct the dragged arrow's tail from the cursor + grab offset
+             (matches the math in endIntroBuilderDrag). */
+          const centreX = drag.pointerX - drag.offsetX;
+          const centreY = drag.pointerY - drag.offsetY;
+          const tailX = centreX - (Math.cos(rad) * len) / 2;
+          const tailY = centreY + (Math.sin(rad) * len) / 2;
+          const anchor = getIntroBuilderActiveAnchor(layout);
+          const snapPx = layout.isWide
+            ? INTRO_BUILDER_SNAP_PX_WIDE
+            : INTRO_BUILDER_SNAP_PX_NARROW;
+          if (Math.hypot(tailX - anchor.x, tailY - anchor.y) > snapPx) return;
+          /* In-range: draw a translucent preview where the arrow will snap. */
+          const ghostHeadX = anchor.x + Math.cos(rad) * len;
+          const ghostHeadY = anchor.y - Math.sin(rad) * len;
+          ctx.save();
+          ctx.globalAlpha = 0.35;
+          drawArrowSegment(
+            anchor.x,
+            anchor.y,
+            ghostHeadX,
+            ghostHeadY,
+            FORCE_COLORS[force.colorIdx],
+            4.5,
+            20,
+          );
+          ctx.restore();
+        }
+
+        function drawIntroBuilderChain(layout) {
+          void layout;
+          const placed = state.introSceneState.builderPlaced || {};
+          const order = state.introSceneState.builderOrder || [];
+          const scenario = getIntroBuilderScenario();
+          for (const idx of order) {
+            const p = placed[idx];
+            if (!p) continue;
+            const force = scenario.forces[idx];
+            const color = FORCE_COLORS[force.colorIdx];
+            drawArrowSegment(
+              p.tailX,
+              p.tailY,
+              p.headX,
+              p.headY,
+              color,
+              4.5,
+              20,
+            );
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(p.tailX, p.tailY, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            const mx = (p.tailX + p.headX) / 2;
+            const my = (p.tailY + p.headY) / 2;
+            const dx = p.headX - p.tailX;
+            const dy = p.headY - p.tailY;
+            const len = Math.hypot(dx, dy) || 1;
+            const perpX = -dy / len;
+            const perpY = dx / len;
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.font = "700 13px 'Share Tech Mono', monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(
+              FORCE_LABELS[force.labelIdx],
+              mx + perpX * 14,
+              my + perpY * 14,
+            );
+            ctx.restore();
+          }
+        }
+
+        function drawIntroBuilderDockArrow(force, centerX, centerY, unitPx) {
+          const rad = deg2rad(force.angleDeg);
+          const visibleLen = force.mag * unitPx;
+          const tailX = centerX - (Math.cos(rad) * visibleLen) / 2;
+          const tailY = centerY + (Math.sin(rad) * visibleLen) / 2;
+          const headX = centerX + (Math.cos(rad) * visibleLen) / 2;
+          const headY = centerY - (Math.sin(rad) * visibleLen) / 2;
+          const color = FORCE_COLORS[force.colorIdx];
+          drawArrowSegment(tailX, tailY, headX, headY, color, 4.5, 20);
+          const perpX = -Math.sin(rad);
+          const perpY = -Math.cos(rad);
+          ctx.save();
+          ctx.fillStyle = color;
+          ctx.font = "700 14px 'Share Tech Mono', monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(
+            FORCE_LABELS[force.labelIdx],
+            centerX + perpX * 22,
+            centerY + perpY * 22,
+          );
+          ctx.restore();
+        }
+
+        function drawIntroBuilderDock(layout) {
+          const scenario = getIntroBuilderScenario();
+          const placed = state.introSceneState.builderPlaced || {};
+          const drag = state.introSceneState.builderDrag;
+          for (let i = 0; i < scenario.forces.length; i += 1) {
+            if (placed[i]) continue;
+            if (drag && drag.vectorIdx === i && !drag.returning) continue;
+            const slot = layout.dock.slots[i];
+            if (!slot) continue;
+            drawIntroBuilderDockArrow(
+              scenario.forces[i],
+              slot.x,
+              slot.y,
+              layout.construction.unitPx,
+            );
+          }
+        }
+
+        function drawIntroBuilderDrag(layout) {
+          const drag = state.introSceneState.builderDrag;
+          if (!drag) return;
+          const scenario = getIntroBuilderScenario();
+          const force = scenario.forces[drag.vectorIdx];
+          let centerX = drag.pointerX - drag.offsetX;
+          let centerY = drag.pointerY - drag.offsetY;
+          if (drag.returning) {
+            const slot = layout.dock.slots[drag.vectorIdx];
+            const t = state.reducedMotion
+              ? 1
+              : clamp(
+                  (performance.now() - drag.returnStart) /
+                    INTRO_BUILDER_RETURN_MS,
+                  0,
+                  1,
+                );
+            centerX = centerX + (slot.x - centerX) * t;
+            centerY = centerY + (slot.y - centerY) * t;
+            if (t >= 1) {
+              state.introSceneState.builderDrag = null;
+              return;
+            }
+          }
+          drawIntroBuilderDockArrow(
+            force,
+            centerX,
+            centerY,
+            layout.construction.unitPx,
+          );
+        }
+
+        function drawIntroBuilderResultant(layout) {
+          if (!state.introSceneState.builderComplete) return;
+          const order = state.introSceneState.builderOrder;
+          const placed = state.introSceneState.builderPlaced;
+          if (!order || order.length === 0) return;
+          const startX = layout.construction.startX;
+          const startY = layout.construction.startY;
+          const lastIdx = order[order.length - 1];
+          const last = placed[lastIdx];
+          if (!last) return;
+          drawArrowSegment(
+            startX,
+            startY,
+            last.headX,
+            last.headY,
+            NET_COLOR,
+            6.5,
+            20,
+          );
+          /* Place the label at the resultant's midpoint, perpendicular to
+             it, on the side opposite the chain. Compute the chain centroid
+             and pick the perpendicular direction pointing away from it so
+             the label always lands in the empty half-plane. */
+          const dx = last.headX - startX;
+          const dy = last.headY - startY;
+          const len = Math.hypot(dx, dy) || 1;
+          const mx = (startX + last.headX) / 2;
+          const my = (startY + last.headY) / 2;
+          const perpX = -dy / len;
+          const perpY = dx / len;
+          let centroidX = 0;
+          let centroidY = 0;
+          for (const idx of order) {
+            const p = placed[idx];
+            if (!p) continue;
+            centroidX += (p.tailX + p.headX) / 2;
+            centroidY += (p.tailY + p.headY) / 2;
+          }
+          centroidX /= order.length;
+          centroidY /= order.length;
+          const dot = perpX * (centroidX - mx) + perpY * (centroidY - my);
+          const sign = dot > 0 ? -1 : 1;
+          const offset = 24;
+          drawIntroBoardLabel(
+            T("introBuilderNetLabel"),
+            mx + perpX * offset * sign,
+            my + perpY * offset * sign,
+          );
+        }
+
+        function drawIntroVectorBuilderScene() {
+          const layout = computeIntroVectorBuilderLayout();
+          const scenario = getIntroBuilderScenario();
+          /* 1. Reference zone — dimmer arrows behind a muted puck. */
+          for (const f of scenario.forces) {
+            drawIntroBuilderRefForce(f, layout);
+          }
+          drawIntroBuilderRefPuck(layout);
+          /* 2. Construction frame. */
+          drawIntroBuilderCard(layout);
+          /* 3. Start anchor. */
+          drawIntroBuilderStartAnchor(layout);
+          /* 4. Placed chain. */
+          drawIntroBuilderChain(layout);
+          /* 5. Active anchor (only when incomplete) — and snap-zone halo
+             when dragging. */
+          drawIntroBuilderActiveAnchor(layout);
+          /* 6. Snap-position ghost preview (only when dragging in range). */
+          drawIntroBuilderSnapPreview(layout);
+          /* 7. Dock vectors. */
+          drawIntroBuilderDock(layout);
+          /* 8. Drag vector on top. */
+          drawIntroBuilderDrag(layout);
+          /* 9. Resultant only on completion. */
+          drawIntroBuilderResultant(layout);
         }
 
         /* ───────── INTRO BOARD PRIMITIVES ───────── */
@@ -3664,6 +4558,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           drawBackground();
           drawTicks();
           const cfg = introStepConfig();
+          if (cfg.hasBuilder) {
+            /* Step 7 — interactive builder takes over the board entirely. */
+            drawIntroVectorBuilderScene();
+            return;
+          }
           if (cfg.ringVisible) {
             drawIntroRing();
           }
@@ -3923,15 +4822,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             drawPuck();
             drawCenterDot();
           }
-          /* Head-to-tail inset (steps 4, 6, 7). */
+          /* Head-to-tail inset (steps 4, 5, 6). */
           if (cfg.hasInset) {
-            let orderIndices;
-            if (cfg.id === "order-does-not-matter") {
-              orderIndices =
-                INTRO_STEP7_ORDERS[state.introSceneState.orderIdx || 0];
-            } else {
-              orderIndices = forces.map((_, i) => i);
-            }
+            const orderIndices = forces.map((_, i) => i);
             drawHeadToTailInset(forces, orderIndices, cfg.insetSize);
           }
           /* Callouts for steps 2 and 3 only. */

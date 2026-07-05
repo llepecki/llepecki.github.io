@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "code-review": "node tools/code-review.mjs"
+    "code-review": "node tools/code-review.mjs",
+    "word-quality": "node tools/word-quality.mjs"
   },
   "dependencies": {
     "eslint": "10.2.0",
