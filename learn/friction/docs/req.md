@@ -8,7 +8,7 @@ Project implementation baseline:
 
 - follow the same coding, UI, layout, animation, localization, and single-file architecture conventions used by the other `learn/` apps in this folder,
 - use the compact header + top control strip + one large interactive simulation area + concise status bar pattern already visible in `logigate/index.html`,
-- use the **light-theme** family from `docs/style.md`, because textured materials, force arrows, and force-vs-angle plots read more clearly on a light background,
+- use the **light-theme** family from `CLAUDE.md`, because textured materials, force arrows, and force-vs-angle plots read more clearly on a light background,
 - if this document leaves a low-level implementation detail unspecified, inherit established project convention rather than inventing a new interaction language.
 
 ## 0. Questions & Working Assumptions

@@ -11,7 +11,7 @@ Project implementation baseline:
 - follow the same coding, UI, layout, animation, localization, and single-file architecture conventions used by the other `learn/` apps in this folder,
 - use the compact header + control strip + one large interactive surface + concise status bar pattern already visible in `logigate/index.html`,
 - reuse the **guided custom-drawing interaction family** from `gamgen/index.html` for route construction: visible snap grid, highlighted legal next targets, one-step-at-a-time path building, and undo/clear affordances,
-- use the **light-theme** family from `docs/style.md`, because terrain, contour lines, and route sketches read more clearly on a light background,
+- use the **light-theme** family from `CLAUDE.md`, because terrain, contour lines, and route sketches read more clearly on a light background,
 - if this document leaves a low-level implementation detail unspecified, inherit established project convention rather than inventing a new interaction language.
 
 ## 1. Purpose & Educational Goal

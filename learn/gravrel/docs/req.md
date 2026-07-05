@@ -33,7 +33,7 @@ Children aged 10-16 and curious adults. The app assumes no prior background in g
 
 ## 3. Scope
 
-A single self-contained HTML file (`gravrel/index.html`) in the `learn/` directory. Dark theme per `docs/style.md`. Bilingual (English / Polish). No external dependencies beyond Google Fonts.
+A single self-contained HTML file (`gravrel/index.html`) in the `learn/` directory. Dark theme per `CLAUDE.md`. Bilingual (English / Polish). No external dependencies beyond Google Fonts.
 
 In scope:
 

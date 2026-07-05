@@ -304,7 +304,7 @@ exclude:
   - FAVICON.md
   - SUPPORT.md
   - docs/
-  - learn/README.md
+  - learn/CLAUDE.md
   - learn/docs/
   - learn/*/docs
   - learn/node_modules

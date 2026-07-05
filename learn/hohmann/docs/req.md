@@ -44,7 +44,7 @@ Children aged 10-16 and curious adults. The app assumes no prior knowledge of or
 
 ## 3. Scope
 
-A single self-contained HTML file (`hohmann/index.html`) in the `learn/` directory. Dark theme per `docs/style.md`. Bilingual (English / Polish). No external dependencies beyond Google Fonts.
+A single self-contained HTML file (`hohmann/index.html`) in the `learn/` directory. Dark theme per `CLAUDE.md`. Bilingual (English / Polish). No external dependencies beyond Google Fonts.
 
 In scope:
 

@@ -1,8 +1,75 @@
-# Learn Apps Style Reference
+# CLAUDE.md — Learn apps
+
+This file is the single source for working in `learn/`: a collection of standalone, single-file educational apps for teaching kids STEM concepts, served at `https://lepecki.com/learn/`. The hub page is `index.md` (permalink `/learn/`); every app must be linked from it.
+
+## Commands
+
+```bash
+# Serve the whole site locally (run from the repo root; apps are copied verbatim, no build step)
+bundle exec jekyll serve
+
+# Quality gates (run from learn/)
+npm run code-review -- --all             # review every app
+npm run code-review -- <app>/index.html  # review one app
+npm run word-quality                     # check bilingual word lists
+node tools/hohmann-transfer-matrix.mjs   # hohmann physics cross-check
+```
+
+The code-review tool discovers apps as `<dir>/index.html` one level below `learn/` (skipping `docs/`, `tools/`, `node_modules/`) and enforces the single-file-app policy.
+
+## Structure
+
+```
+learn/
+├── index.md                  # hub page → /learn/
+├── CLAUDE.md                 # this file (excluded from the deployed site)
+├── <app>/
+│   ├── index.html            # the app → /learn/<app>/
+│   └── docs/                 # per-app working docs (excluded from the site)
+│       ├── req.md
+│       ├── design.md
+│       ├── spec-<feature>-<date>.md
+│       └── scientific-review[-<scope>][-<date>].md
+├── docs/                     # cross-app content docs (excluded from the site)
+│   ├── space-objects.md      # shared astronomy reference data
+│   └── scientific-review-momentum-apps.md
+├── tools/                    # quality-gate tooling (code review, word lists)
+└── package.json              # npm scripts for the tooling
+```
+
+## App conventions
+
+- **Single file.** Each app is one self-contained `index.html` with inline CSS and JS. No sidecar `.css`/`.js` files (enforced by the code-review tool), no build step, no Jekyll front matter — Jekyll copies apps verbatim.
+- **URLs.** Apps are served at `/learn/<app>/`. The `<link rel="canonical">` and `og:url` tags must use `https://lepecki.com/learn/<app>/`.
+- **Style.** Follow the Style reference section below — Outfit + Share Tech Mono fonts, shared CSS variable palette, light/dark theme conventions.
+- **Bilingual.** Apps provide English and Polish via an inline `I18N` object and a language toggle.
+- **Redirects.** Legacy `/learn/<app>.html` URLs 301-redirect to `/learn/<app>/` via the repo-root `_redirects` file. If an app URL ever changes, add a rule there.
+
+## Doc conventions
+
+- Per-app docs go in `<app>/docs/`; content docs spanning multiple apps go in `docs/`. Generic working instructions (conventions, style, commands) belong in this file, not in separate docs.
+- Filenames are lowercase-hyphenated, type-first, without the app name (the folder provides it), with an ISO date suffix where versioning matters:
+  - `req.md` — requirements / product spec
+  - `design.md` — living design reference
+  - `spec-<feature>-<date>.md` — feature spec (kept while it describes shipped behavior)
+  - `scientific-review[-<scope>][-<date>].md` — scientific accuracy review (keep only the latest per scope)
+- One-time process artifacts (master handoffs, implementing-agent prompts, superseded reviews, completed plans/proposals) are **deleted** once the work ships — git history preserves them.
+- Reference apps and docs by learn-relative path (e.g. `starlab/index.html`, `docs/space-objects.md`, `CLAUDE.md`) or doc-relative links (e.g. `../index.html`). Never use absolute filesystem paths.
+- All docs directories and this file are excluded from the deployed site in `_config.yml`.
+
+## Adding a new app
+
+1. Create `learn/<app>/index.html` following the Style reference below and an existing app as baseline.
+2. Set canonical/`og:url` to `https://lepecki.com/learn/<app>/`.
+3. Add the app to `index.md`.
+4. Put its spec in `learn/<app>/docs/req.md`.
+5. Run `npm run code-review -- <app>/index.html`.
+
+## Style reference
 
 All apps share the same font stack and general structure. Choose light or dark based on the simulation's visual needs (dark suits space/circuit themes, light suits physics diagrams).
 
-## Fonts
+### Fonts
 
 ```html
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -11,11 +78,11 @@ All apps share the same font stack and general structure. Choose light or dark b
 - **Body/UI**: `'Outfit', sans-serif`
 - **Labels, values, monospace**: `'Share Tech Mono', monospace`
 
-## Light Theme
+### Light Theme
 
 Used by: doubleslit, mzinterferometer, waveinterference
 
-### CSS Variables
+#### CSS Variables
 
 ```css
 :root {
@@ -32,7 +99,7 @@ Used by: doubleslit, mzinterferometer, waveinterference
 }
 ```
 
-### Body
+#### Body
 
 ```css
 body {
@@ -43,7 +110,7 @@ body {
 }
 ```
 
-### Header
+#### Header
 
 ```css
 header {
@@ -60,7 +127,7 @@ header h1 a:hover { opacity: .7; }
 header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
 ```
 
-### Language Button
+#### Language Button
 
 ```css
 .lang-btn {
@@ -75,7 +142,7 @@ header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
 .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
 ```
 
-### Type Toggle Buttons
+#### Type Toggle Buttons
 
 ```css
 .type-toggle { display: flex; gap: 6px; }
@@ -93,7 +160,7 @@ header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
 .type-btn:hover { background: #F0EDE6; }
 ```
 
-### Fire Button (primary action)
+#### Fire Button (primary action)
 
 ```css
 .fire-btn {
@@ -104,7 +171,7 @@ header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
 .fire-btn:active { transform: scale(0.97); }
 ```
 
-### Sliders
+#### Sliders
 
 ```css
 .slider-row { display: flex; align-items: center; gap: 8px; }
@@ -130,7 +197,7 @@ header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
 }
 ```
 
-### Control Labels
+#### Control Labels
 
 ```css
 .ctrl-label {
@@ -140,19 +207,19 @@ header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
 }
 ```
 
-### Info Text
+#### Info Text
 
 ```css
 .info-text { font-size: 13px; color: #546E7A; line-height: 1.6; }
 .info-text a { color: var(--accent); }
 ```
 
-### Canvas
+#### Canvas
 
 - CSS background: `var(--canvas-bg)` (`#f5f3ee`)
 - JS fill: `ctx.fillStyle = '#f5f3ee'`
 
-### Auto-fire Pulse Animation
+#### Auto-fire Pulse Animation
 
 ```css
 @keyframes pulse-border {
@@ -162,13 +229,11 @@ header p { margin-top: 1px; font-size: 12px; color: var(--text-dim); }
 .auto-active { animation: pulse-border 1.2s ease infinite; }
 ```
 
----
-
-## Dark Theme
+### Dark Theme
 
 Used by: gravassist, gravlens, logigate
 
-### CSS Variables
+#### CSS Variables
 
 ```css
 :root {
@@ -181,7 +246,7 @@ Used by: gravassist, gravlens, logigate
 }
 ```
 
-### Body
+#### Body
 
 ```css
 body {
@@ -192,7 +257,7 @@ body {
 }
 ```
 
-### Header
+#### Header
 
 ```css
 header {
@@ -206,7 +271,7 @@ header h1 a:hover { opacity: .7; }
 header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 ```
 
-### Language Button
+#### Language Button
 
 ```css
 .lang-btn {
@@ -221,7 +286,7 @@ header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
 ```
 
-### Type Toggle Buttons
+#### Type Toggle Buttons
 
 ```css
 .type-toggle { display: flex; gap: 6px; }
@@ -237,7 +302,7 @@ header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 .type-btn.active { border-color: var(--accent); color: var(--accent); }
 ```
 
-### Step Buttons (+/-)
+#### Step Buttons (+/-)
 
 ```css
 .step-btn {
@@ -253,7 +318,7 @@ header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 .step-btn:active { background: var(--accent); color: var(--bg); }
 ```
 
-### Sliders
+#### Sliders
 
 ```css
 .slider-row input[type=range] {
@@ -274,7 +339,7 @@ header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 }
 ```
 
-### Control Labels
+#### Control Labels
 
 ```css
 .ctrl-label {
@@ -284,20 +349,18 @@ header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 }
 ```
 
-### Info Text
+#### Info Text
 
 ```css
 .info-text { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
 ```
 
-### Canvas
+#### Canvas
 
 - CSS background: `#080c14`
 - JS fill: `ctx.fillStyle = '#080c14'`
 
----
-
-## Shared Conventions
+### Shared Conventions
 
 - Reset: `*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }`
 - Controls panel width: `300px`, flex-shrink: 0

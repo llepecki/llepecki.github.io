@@ -604,7 +604,7 @@ Touch targets should be at least `44 x 44 px`.
 
 ### 8.1 Theme
 
-Use the light-theme structure from `docs/style.md` for the UI, but let the canvas art change per world.
+Use the light-theme structure from `CLAUDE.md` for the UI, but let the canvas art change per world.
 
 Recommended base UI palette:
 

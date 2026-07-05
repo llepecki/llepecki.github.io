@@ -7,7 +7,7 @@ Target file: `fractions/index.html`
 Project implementation baseline:
 
 - follow the same single-file HTML, inline CSS, inline JavaScript, localization, and responsive-layout conventions already used by the other `learn/` apps in this folder,
-- use the light-theme family from `docs/style.md`,
+- use the light-theme family from `CLAUDE.md`,
 - use the same compact header, large left play area, fixed right panel, and mobile stacking behavior visible in `friction/index.html` and `momentum/index.html`,
 - keep the app tactile and visual first; long explanatory text is secondary,
 - if a low-level detail is unspecified here, inherit the established project convention rather than inventing a new UI language.

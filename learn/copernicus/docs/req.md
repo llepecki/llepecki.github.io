@@ -23,7 +23,7 @@ Children aged 10–16 with an interest in astronomy, history of science, or visu
 
 ## 3. Scope
 
-A single self-contained HTML file (`copernicus/index.html`) in the `learn/` directory. Dark theme per `docs/style.md`. Bilingual (English / Polish). No external dependencies beyond Google Fonts.
+A single self-contained HTML file (`copernicus/index.html`) in the `learn/` directory. Dark theme per `CLAUDE.md`. Bilingual (English / Polish). No external dependencies beyond Google Fonts.
 
 In scope:
 
@@ -222,7 +222,7 @@ Available options:
 - Earth (Ziemia)
 - Mars (Mars)
 
-**UI**: A row of toggle buttons (one per body), consistent with the type-toggle pattern in `docs/style.md`. The active body is highlighted with `--accent`. Each button may use a small color dot or icon matching the body's render color for easy identification.
+**UI**: A row of toggle buttons (one per body), consistent with the type-toggle pattern in `CLAUDE.md`. The active body is highlighted with `--accent`. Each button may use a small color dot or icon matching the body's render color for easy identification.
 
 **Behavior when switching**:
 
@@ -349,7 +349,7 @@ This narrative should be written into the info text in a child-friendly tone.
 
 ### 7.3 Step Buttons
 
-Every slider must have `−` and `+` buttons consistent with the dark-theme step button pattern in `docs/style.md`.
+Every slider must have `−` and `+` buttons consistent with the dark-theme step button pattern in `CLAUDE.md`.
 
 ### 7.4 Mobile Compatibility
 
@@ -366,7 +366,7 @@ Responsive layout. On narrow screens, the control panel stacks below the canvas,
 
 ### 8.1 Theme
 
-Dark theme per `docs/style.md`:
+Dark theme per `CLAUDE.md`:
 
 ```css
 :root {
@@ -512,7 +512,7 @@ The app is complete when:
 - Animation can be paused and resumed
 - Long runs and frame-switching do not produce `NaN`, frozen planets, or broken trails
 - All text is available in English and Polish
-- Dark theme matches `docs/style.md`
+- Dark theme matches `CLAUDE.md`
 - Mobile layout is responsive and usable
 
 ## 13. Suggested Implementation Order

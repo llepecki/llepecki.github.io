@@ -45,12 +45,7 @@ All site-wide settings live in `_config.yml`: navbar links, social network links
 
 ### Learn apps (`learn/`)
 
-Each app is a fully self-contained `learn/<app>/index.html` (inline CSS + JS, no build step, no Jekyll front matter) served at `https://lepecki.com/learn/<app>/`. Canonical and `og:url` tags must use that folder URL. `learn/index.md` (permalink `/learn/`) is the hand-maintained hub page — add a link there when adding an app.
-
-- **Docs** — per-app working docs live in `learn/<app>/docs/`, cross-app docs in `learn/docs/` (e.g. `style.md`, the design system). Docs are excluded from the deployed site via `_config.yml`. Naming: lowercase-hyphenated, type-first, no app prefix: `req.md`, `design.md`, `spec-<feature>-<date>.md`, `scientific-review[-<scope>][-<date>].md`. Delete one-time artifacts (handoffs, agent prompts, superseded reviews) once the work ships — git history preserves them.
-- **Redirects** — old `/learn/<app>.html` URLs 301-redirect via the repo-root `_redirects` file (copied to `_site/` through the `include` list in `_config.yml`). Add a rule if an app URL ever changes.
-- **Quality gates** — `cd learn && npm run code-review -- --all` (or `-- <app>/index.html`). The tool discovers apps as `<dir>/index.html` one level below `learn/` and enforces the single-file-app policy. `npm run word-quality` checks bilingual word lists in `learn/tools/`.
-- Full conventions: `learn/README.md`.
+Each app is a fully self-contained `learn/<app>/index.html` (inline CSS + JS, no build step, no Jekyll front matter) served at `https://lepecki.com/learn/<app>/`. `learn/index.md` (permalink `/learn/`) is the hand-maintained hub page. Quality gates: `cd learn && npm run code-review -- --all`. Full conventions, doc rules, and the style reference: `learn/CLAUDE.md`.
 
 ### Customization
 

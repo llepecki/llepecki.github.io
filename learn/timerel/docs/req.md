@@ -23,7 +23,7 @@ Children aged 10–16 with curiosity about space and physics. The app assumes no
 
 ## 3. Scope
 
-A single self-contained HTML file (`timerel/index.html`) in the `learn/` directory. Dark theme per `docs/style.md`. Bilingual (English / Polish). No external dependencies beyond Google Fonts.
+A single self-contained HTML file (`timerel/index.html`) in the `learn/` directory. Dark theme per `CLAUDE.md`. Bilingual (English / Polish). No external dependencies beyond Google Fonts.
 
 In scope:
 
@@ -317,7 +317,7 @@ The overlay must be dismissible (close button or click-away).
 
 ### 7.2 Step Buttons
 
-Every slider must have `−` and `+` buttons for fine stepping, consistent with the dark-theme step button pattern in `docs/style.md`.
+Every slider must have `−` and `+` buttons for fine stepping, consistent with the dark-theme step button pattern in `CLAUDE.md`.
 
 ### 7.3 Mobile Compatibility
 
@@ -333,7 +333,7 @@ The layout must be responsive. On narrow screens, the control panel stacks below
 
 ### 8.1 Theme
 
-Dark theme per `docs/style.md`:
+Dark theme per `CLAUDE.md`:
 
 ```css
 :root {
@@ -454,7 +454,7 @@ The app is complete when:
 - Animation can be paused, resumed, and reset
 - Animation speed control works independently of the physics
 - All text is available in English and Polish
-- Dark theme matches `docs/style.md`
+- Dark theme matches `CLAUDE.md`
 - Mobile layout is responsive and usable
 
 ## 13. Suggested Implementation Order
