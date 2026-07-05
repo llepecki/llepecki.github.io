@@ -295,16 +295,22 @@ defaults:
 # Exclude these files from production site
 exclude:
   - CHANGELOG.md
+  - CLAUDE.md
   - CNAME
   - Gemfile
   - Gemfile.lock
   - LICENSE
   - README.md
   - FAVICON.md
+  - SUPPORT.md
   - docs/
   - learn/README.md
   - learn/docs/
   - learn/*/docs
+  - learn/node_modules
+  - learn/package.json
+  - learn/package-lock.json
+  - learn/tools
 
 plugins:
   - jekyll-paginate
