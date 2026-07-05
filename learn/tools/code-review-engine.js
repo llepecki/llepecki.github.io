@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
+import js from "@eslint/js";
 import { Linter } from "eslint";
 import * as espree from "espree";
 import globals from "globals";
@@ -10,6 +11,7 @@ import postcss from "postcss";
 import * as prettier from "prettier";
 
 const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 };
+const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 const LETTER_OR_DIGIT_RE = /[\p{Letter}\p{Number}]/u;
 const INLINE_HANDLER_RE = /^on[a-z]+$/;
 const INLINE_HANDLER_IN_STRING_RE = /\bon[a-z]+\s*=/i;
@@ -24,22 +26,50 @@ const CLICK_LIKE_HANDLER_NAMES = new Set([
   "ontouchend"
 ]);
 const SINGLE_FILE_SIDECAR_EXTENSIONS = [".css", ".js", ".mjs", ".cjs"];
+// WHATWG MIME Sniffing "JavaScript MIME type" essence values; a <script type>
+// outside this list (and not "module") is a data block, not executable code.
+const JS_SCRIPT_MIME_TYPES = new Set([
+  "application/ecmascript",
+  "application/javascript",
+  "application/x-ecmascript",
+  "application/x-javascript",
+  "text/ecmascript",
+  "text/javascript",
+  "text/javascript1.0",
+  "text/javascript1.1",
+  "text/javascript1.2",
+  "text/javascript1.3",
+  "text/javascript1.4",
+  "text/javascript1.5",
+  "text/jscript",
+  "text/livescript",
+  "text/x-ecmascript",
+  "text/x-javascript"
+]);
+// CSS properties whose transitions move content (vestibular triggers); color
+// and opacity fades are deliberately excluded so the house-style 0.15s fades
+// do not require a prefers-reduced-motion guard.
+const MOVEMENT_TRANSITION_PROPERTIES = new Set([
+  "transform",
+  "translate",
+  "scale",
+  "rotate",
+  "left",
+  "top",
+  "right",
+  "bottom",
+  "inset",
+  "width",
+  "height"
+]);
 const JS_LINTER = new Linter({ configType: "flat" });
 const JS_LINT_RULES = {
-  "no-undef": "error",
+  ...js.configs.recommended.rules,
   "no-unused-vars": ["warn", { args: "none", varsIgnorePattern: "^_" }],
-  "no-redeclare": "error",
-  "no-shadow-restricted-names": "error",
-  "no-dupe-keys": "error",
-  "no-duplicate-case": "error",
-  "no-unreachable": "error",
   "no-constant-condition": "warn",
-  "no-self-assign": "error",
   "no-self-compare": "error",
+  "no-console": ["warn", { allow: ["warn", "error"] }],
   eqeqeq: ["warn", "smart"],
-  "use-isnan": "error",
-  "valid-typeof": "error",
-  "no-sparse-arrays": "error",
   "no-template-curly-in-string": "warn",
   "no-var": "warn",
   "prefer-const": ["warn", { destructuring: "all" }]
@@ -55,8 +85,9 @@ export async function runCli(argv) {
   if (options.help) {
     console.log([
       "Usage:",
-      "  npm run cr -- <app>/index.html [--json]",
-      "  npm run cr -- --all [--json]",
+      "  npm run code-review -- <app> [--json]",
+      "  npm run code-review -- <app>/index.html [--json]",
+      "  npm run code-review -- --all [--json]",
       "",
       "Reports structural, formatting, JS/CSS, duplication, and single-file-app policy issues for the apps in this folder."
     ].join("\n"));
@@ -67,7 +98,7 @@ export async function runCli(argv) {
   const repoFiles = await listHtmlFiles(cwd);
   const targets = options.all
     ? repoFiles
-    : [path.resolve(cwd, options.target)];
+    : [await resolveTarget(cwd, options.target)];
 
   if (!options.all) {
     const exists = await fileExists(targets[0]);
@@ -75,12 +106,12 @@ export async function runCli(argv) {
       throw new Error(`file not found: ${options.target}`);
     }
     if (path.extname(targets[0]).toLowerCase() !== ".html") {
-      throw new Error("target must be an .html file");
+      throw new Error("target must be an .html file or an app folder containing index.html");
     }
   }
 
   const indexedFiles = uniqueSortedPaths([...repoFiles, ...targets]);
-  const repoIndex = await buildRepoIndex(indexedFiles);
+  const repoIndex = await buildRepoIndex(indexedFiles, cwd);
   const reports = [];
 
   for (const file of targets) {
@@ -131,7 +162,7 @@ function parseArgs(argv) {
   }
 
   if (!options.help && !options.all && !options.target) {
-    throw new Error("usage: npm run cr -- <app.html> [--json] or npm run cr -- --all [--json]");
+    throw new Error("usage: npm run code-review -- <app> [--json] or npm run code-review -- --all [--json]");
   }
 
   if (options.all && options.target) {
@@ -168,11 +199,20 @@ async function fileExists(file) {
   }
 }
 
+async function resolveTarget(cwd, target) {
+  const resolved = path.resolve(cwd, target);
+  const stats = await fs.stat(resolved).catch(() => null);
+  if (stats?.isDirectory()) {
+    return path.join(resolved, "index.html");
+  }
+  return resolved;
+}
+
 function uniqueSortedPaths(files) {
   return [...new Set(files)].sort((left, right) => left.localeCompare(right));
 }
 
-async function buildRepoIndex(files) {
+async function buildRepoIndex(files, cwd) {
   const titleIndex = new Map();
 
   await Promise.all(files.map(async (file) => {
@@ -185,7 +225,9 @@ async function buildRepoIndex(files) {
     }
   }));
 
-  return { titleIndex };
+  const hubContent = await fs.readFile(path.join(cwd, "index.md"), "utf8").catch(() => null);
+
+  return { titleIndex, hubContent };
 }
 
 async function reviewFile(file, cwd, repoIndex) {
@@ -206,22 +248,24 @@ async function reviewFile(file, cwd, repoIndex) {
     }));
   }
 
-  const htmlState = analyzeHtml(relativeFile, parsed.document, findings);
+  const appName = getAppName(cwd, file);
+  const htmlState = analyzeHtml(relativeFile, parsed.document, content, findings);
   const styleBlocks = collectBlocks(parsed.document, content, lineStarts, "style");
-  const scriptBlocks = collectBlocks(parsed.document, content, lineStarts, "script", { inlineOnly: true });
-  const cssSignatures = [];
+  const scriptBlocks = collectBlocks(parsed.document, content, lineStarts, "script", { inlineOnly: true, executableOnly: true });
+  const scriptState = { referencesI18n: false };
 
   for (const block of styleBlocks) {
-    analyzeCss(relativeFile, block, findings, cssSignatures);
+    analyzeCss(relativeFile, block, findings);
   }
 
   for (const block of scriptBlocks) {
-    analyzeScript(relativeFile, block, findings);
+    analyzeScript(relativeFile, block, findings, scriptState);
   }
 
   await analyzeFormatting(relativeFile, content, findings);
   analyzeDuplication(relativeFile, file, htmlState, repoIndex, findings);
-  await analyzeSingleFilePolicy(relativeFile, file, findings);
+  analyzeConventions(relativeFile, appName, content, htmlState, scriptState, repoIndex, findings);
+  await analyzeSingleFilePolicy(relativeFile, file, appName !== null, findings);
 
   findings.sort(compareFindings);
 
@@ -241,6 +285,15 @@ async function reviewFile(file, cwd, repoIndex) {
   };
 }
 
+function getAppName(cwd, absoluteFile) {
+  const relative = path.relative(cwd, absoluteFile);
+  const parts = relative.split(path.sep);
+  if (parts.length === 2 && parts[1].toLowerCase() === "index.html" && !parts[0].startsWith(".")) {
+    return parts[0];
+  }
+  return null;
+}
+
 function parseDocument(content) {
   const errors = [];
   const document = parse5.parse(content, {
@@ -253,16 +306,17 @@ function parseDocument(content) {
   return { document, errors };
 }
 
-function analyzeHtml(file, document, findings) {
+function analyzeHtml(file, document, content, findings) {
   const doctypeNode = (document.childNodes || []).find((node) => node.nodeName === "#documentType") || null;
   const ids = new Map();
   const labelsByFor = new Map();
   const labelNodes = [];
   const formControls = [];
+  const headings = [];
   let hasMain = false;
   let hasRoleMain = false;
   let hasCharset = false;
-  let charsetOffset = null;
+  let charsetEndOffset = null;
   let viewportContent = null;
   let viewportNode = null;
   let htmlNode = null;
@@ -270,6 +324,12 @@ function analyzeHtml(file, document, findings) {
   let titleText = "";
   let descriptionNode = null;
   let descriptionContent = "";
+  let canonicalHref = null;
+  let ogUrl = null;
+  let hasLangToggle = false;
+  let hasGoogleFontsLink = false;
+  let fontsLinkNode = null;
+  let hasGstaticPreconnect = false;
   const documentOrigin = collectDocumentOrigin(document);
 
   walkHtml(document, (node) => {
@@ -296,7 +356,9 @@ function analyzeHtml(file, document, findings) {
       htmlNode = node;
     }
 
-    if (node.tagName === "title") {
+    // Only the HTML-namespace <title> names the document; inline SVG <title>
+    // elements are icon descriptions and must not shadow it.
+    if (node.tagName === "title" && node.namespaceURI === HTML_NAMESPACE && !titleNode) {
       titleNode = node;
       titleText = normalizeWhitespace(textContent(node));
     }
@@ -309,9 +371,17 @@ function analyzeHtml(file, document, findings) {
       hasRoleMain = true;
     }
 
+    if (/^h[1-6]$/.test(node.tagName) && node.namespaceURI === HTML_NAMESPACE) {
+      headings.push({
+        level: Number(node.tagName[1]),
+        line: node.sourceCodeLocation?.startLine ?? null,
+        column: node.sourceCodeLocation?.startCol ?? null
+      });
+    }
+
     if (node.tagName === "meta" && attributeValue(node, "charset")) {
       hasCharset = true;
-      charsetOffset = node.sourceCodeLocation?.startOffset ?? null;
+      charsetEndOffset = node.sourceCodeLocation?.endOffset ?? null;
     }
 
     if (node.tagName === "meta" && (attributeValue(node, "http-equiv") || "").toLowerCase() === "content-type") {
@@ -335,9 +405,42 @@ function analyzeHtml(file, document, findings) {
       descriptionContent = normalizeWhitespace(attributeValue(node, "content") || "");
     }
 
+    if (node.tagName === "meta" && (attributeValue(node, "property") || "").toLowerCase() === "og:url" && ogUrl === null) {
+      ogUrl = (attributeValue(node, "content") || "").trim();
+    }
+
+    if ((attributeValue(node, "class") || "").split(/\s+/).includes("lang-btn")) {
+      hasLangToggle = true;
+    }
+
+    const tabindexValue = attributeValue(node, "tabindex");
+    if (tabindexValue !== null && Number.parseInt(tabindexValue, 10) > 0) {
+      findings.push(makeFinding(file, {
+        severity: "medium",
+        category: "html",
+        ruleId: "html/positive-tabindex",
+        line: node.sourceCodeLocation?.startLine ?? null,
+        column: node.sourceCodeLocation?.startCol ?? null,
+        message: `${formatElement(node)} uses \`tabindex="${tabindexValue}"\`. Positive tabindex overrides the natural focus order; use 0 or restructure the DOM.`
+      }));
+    }
+
     if (node.tagName === "link") {
       const href = attributeValue(node, "href");
-      if (href && EXTERNAL_FONT_RE.test(href) && !/[?&]display=swap\b/.test(href)) {
+      if (href && hasRelToken(node, "canonical") && canonicalHref === null) {
+        canonicalHref = href.trim();
+      }
+
+      if (href && hasRelToken(node, "preconnect") && /fonts\.gstatic\.com/i.test(href)) {
+        hasGstaticPreconnect = true;
+      }
+
+      if (href && hasRelToken(node, "stylesheet") && EXTERNAL_FONT_RE.test(href)) {
+        hasGoogleFontsLink = true;
+        fontsLinkNode = fontsLinkNode ?? node;
+      }
+
+      if (href && hasRelToken(node, "stylesheet") && EXTERNAL_FONT_RE.test(href) && !/[?&]display=swap\b/.test(href)) {
         findings.push(makeFinding(file, {
           severity: "medium",
           category: "html",
@@ -461,7 +564,9 @@ function analyzeHtml(file, document, findings) {
 
     if (node.tagName === "script" && attributeValue(node, "src") && isInsideHead(node)) {
       const type = (attributeValue(node, "type") || "").toLowerCase();
-      if (type !== "module" && !attributeValue(node, "defer") && !attributeValue(node, "async")) {
+      // defer/async are boolean attributes: a bare `defer` has value "", so
+      // presence must be tested, never value truthiness (WHATWG HTML 2.3.2).
+      if (type !== "module" && !hasAttribute(node, "defer") && !hasAttribute(node, "async")) {
         findings.push(makeFinding(file, {
           severity: "medium",
           category: "html",
@@ -495,7 +600,7 @@ function analyzeHtml(file, document, findings) {
           column: node.sourceCodeLocation?.startCol ?? null,
           message: `External script ${attributeValue(node, "src")} is missing Subresource Integrity metadata.`
         }));
-      } else if (!/^sha(256|384|512)-[A-Za-z0-9+/]{43,}=*$/.test(sriValue)) {
+      } else if (!isValidIntegrityValue(sriValue)) {
         findings.push(makeFinding(file, {
           severity: "high",
           category: "html",
@@ -504,7 +609,7 @@ function analyzeHtml(file, document, findings) {
           column: node.sourceCodeLocation?.startCol ?? null,
           message: `External script ${attributeValue(node, "src")} has an invalid SRI hash: \`${sriValue}\`.`
         }));
-      } else if (!attributeValue(node, "crossorigin")) {
+      } else if (!hasAttribute(node, "crossorigin")) {
         findings.push(makeFinding(file, {
           severity: "medium",
           category: "html",
@@ -570,14 +675,17 @@ function analyzeHtml(file, document, findings) {
     }));
   }
 
-  if (hasCharset && charsetOffset !== null && charsetOffset >= 1024) {
+  // WHATWG 4.2.5.4: the element must be "serialized completely within the
+  // first 1024 bytes" — measure the element's end, in bytes, not code units.
+  if (hasCharset && charsetEndOffset !== null &&
+      Buffer.byteLength(content.slice(0, charsetEndOffset), "utf8") > 1024) {
     findings.push(makeFinding(file, {
       severity: "medium",
       category: "html",
       ruleId: "html/charset-not-early",
       line: 1,
       column: 1,
-      message: "`<meta charset>` should appear entirely within the first 1024 bytes of the document."
+      message: "`<meta charset>` must be serialized entirely within the first 1024 bytes of the document."
     }));
   }
 
@@ -625,15 +733,26 @@ function analyzeHtml(file, document, findings) {
     }));
   }
 
+  // Thresholds follow axe-core: maximum-scale < 2 violates the WCAG-mapped
+  // meta-viewport rule; < 5 violates the meta-viewport-large best practice.
   const maximumScale = parseViewportNumber(viewportContent, "maximum-scale");
-  if (maximumScale !== null && maximumScale < 3) {
+  if (maximumScale !== null && maximumScale < 2) {
     findings.push(makeFinding(file, {
       severity: "medium",
       category: "html",
       ruleId: "html/viewport-maximum-scale-too-low",
       line: viewportNode?.sourceCodeLocation?.startLine ?? 1,
       column: viewportNode?.sourceCodeLocation?.startCol ?? 1,
-      message: `Viewport sets \`maximum-scale=${maximumScale}\`, which restricts zoom too aggressively.`
+      message: `Viewport sets \`maximum-scale=${maximumScale}\`, blocking users from zooming to 200% (WCAG 1.4.4).`
+    }));
+  } else if (maximumScale !== null && maximumScale < 5) {
+    findings.push(makeFinding(file, {
+      severity: "low",
+      category: "html",
+      ruleId: "html/viewport-maximum-scale-limits-zoom",
+      line: viewportNode?.sourceCodeLocation?.startLine ?? 1,
+      column: viewportNode?.sourceCodeLocation?.startCol ?? 1,
+      message: `Viewport sets \`maximum-scale=${maximumScale}\`; values below 5 restrict zoom more than best practice allows.`
     }));
   }
 
@@ -645,6 +764,43 @@ function analyzeHtml(file, document, findings) {
       line: 1,
       column: 1,
       message: "Page has no `<main>` landmark."
+    }));
+  }
+
+  if (headings.length > 0 && !headings.some((heading) => heading.level === 1)) {
+    findings.push(makeFinding(file, {
+      severity: "low",
+      category: "html",
+      ruleId: "html/missing-h1",
+      line: headings[0].line ?? 1,
+      column: headings[0].column ?? 1,
+      message: "Page has headings but no `<h1>` (axe: page-has-heading-one)."
+    }));
+  }
+
+  for (let index = 1; index < headings.length; index += 1) {
+    const previous = headings[index - 1];
+    const current = headings[index];
+    if (current.level > previous.level + 1) {
+      findings.push(makeFinding(file, {
+        severity: "low",
+        category: "html",
+        ruleId: "html/heading-order-skip",
+        line: current.line,
+        column: current.column,
+        message: `Heading level jumps from h${previous.level} to h${current.level}; levels should only increase by one (axe: heading-order).`
+      }));
+    }
+  }
+
+  if (hasGoogleFontsLink && !hasGstaticPreconnect) {
+    findings.push(makeFinding(file, {
+      severity: "low",
+      category: "html",
+      ruleId: "html/fonts-missing-preconnect",
+      line: fontsLinkNode?.sourceCodeLocation?.startLine ?? 1,
+      column: fontsLinkNode?.sourceCodeLocation?.startCol ?? 1,
+      message: "Google Fonts stylesheet without `<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>` delays font fetches by a connection setup."
     }));
   }
 
@@ -715,16 +871,17 @@ function analyzeHtml(file, document, findings) {
     }));
   }
 
-  return { titleText };
+  return { titleText, canonicalHref, ogUrl, hasLangToggle };
 }
 
-function analyzeCss(file, block, findings, cssSignatures) {
+function analyzeCss(file, block, findings) {
   const root = parseCssRoot(block.text, block, findings, file);
   if (!root) {
     return;
   }
 
   const importantLines = [];
+  const movementTransitionLines = [];
   const duplicateSelectors = new Map();
   let hasHoverState = false;
   let hasFocusState = false;
@@ -732,7 +889,6 @@ function analyzeCss(file, block, findings, cssSignatures) {
   let hasReducedMotionHandling = false;
 
   for (const signature of collectCssRuleSignatures(root, block)) {
-    cssSignatures.push(signature);
     pushIndexed(duplicateSelectors, signature.selectorContext, signature.line);
     if (signature.selector.includes(":hover")) {
       hasHoverState = true;
@@ -810,6 +966,9 @@ function analyzeCss(file, block, findings, cssSignatures) {
     if ((prop === "animation" || prop === "animation-name") && !/\bnone\b/i.test(decl.value)) {
       hasMotion = true;
     }
+    if (declTransitionsMovement(prop, decl.value)) {
+      movementTransitionLines.push(toBlockLine(block, decl.source?.start?.line));
+    }
   });
 
   if (importantLines.length > 0) {
@@ -861,9 +1020,36 @@ function analyzeCss(file, block, findings, cssSignatures) {
       message: "CSS uses animations but does not provide a `prefers-reduced-motion` fallback."
     }));
   }
+
+  if (movementTransitionLines.length > 0 && !hasReducedMotionHandling) {
+    findings.push(makeFinding(file, {
+      severity: "medium",
+      category: "css",
+      ruleId: "css/movement-transition-no-reduced-motion",
+      line: movementTransitionLines[0] ?? block.startLine,
+      column: null,
+      message: `CSS transitions movement properties (transform/position/size) without a \`prefers-reduced-motion\` guard in ${movementTransitionLines.length} declaration(s).`,
+      detail: `Lines ${formatLineList(movementTransitionLines)}.`
+    }));
+  }
 }
 
-function analyzeScript(file, block, findings) {
+function declTransitionsMovement(prop, value) {
+  if (prop === "scroll-behavior") {
+    return /\bsmooth\b/i.test(value);
+  }
+
+  if (prop !== "transition" && prop !== "transition-property") {
+    return false;
+  }
+
+  // Timing keywords/functions and durations never collide with the movement
+  // property names, so any ident token in the set means movement transitions.
+  return (value.match(/[a-z-]+/gi) || [])
+    .some((ident) => MOVEMENT_TRANSITION_PROPERTIES.has(ident.toLowerCase()));
+}
+
+function analyzeScript(file, block, findings, scriptState) {
   const trimmed = block.text.trim();
   if (!trimmed) {
     return;
@@ -909,7 +1095,7 @@ function analyzeScript(file, block, findings) {
   const stringTimerLines = [];
   const withLines = [];
   let topLevelDeclarations = 0;
-  let hasAnimationLoop = false;
+  let hasIntervalLoop = false;
   let hasVisibilityHandling = false;
 
   for (const statement of ast.body) {
@@ -949,13 +1135,19 @@ function analyzeScript(file, block, findings) {
       stringTimerLines.push(toBlockLine(block, node.loc?.start?.line));
     }
 
+    // Only setInterval keeps firing in hidden tabs; browsers pause
+    // requestAnimationFrame callbacks when the page is not visible.
     if (node.type === "CallExpression" && node.callee.type === "Identifier" &&
-        (node.callee.name === "requestAnimationFrame" || node.callee.name === "setInterval")) {
-      hasAnimationLoop = true;
+        node.callee.name === "setInterval") {
+      hasIntervalLoop = true;
     }
 
     if (node.type === "Literal" && node.value === "visibilitychange") {
       hasVisibilityHandling = true;
+    }
+
+    if (node.type === "Identifier" && node.name === "I18N" && scriptState) {
+      scriptState.referencesI18n = true;
     }
 
     if (isLocalModuleReferenceNode(node)) {
@@ -964,20 +1156,20 @@ function analyzeScript(file, block, findings) {
         category: "architecture",
         ruleId: "architecture/local-module-import",
         line: toBlockLine(block, node.loc?.start?.line),
-        column: toBlockColumn(block, node.loc?.start?.line, node.loc?.start?.column ? node.loc.start.column + 1 : null),
+        column: toBlockColumn(block, node.loc?.start?.line, node.loc?.start?.column != null ? node.loc.start.column + 1 : null),
         message: `Single-file app policy violation: script imports local module \`${localModuleReferenceValue(node)}\`. Merge that module back into this HTML file.`
       }));
     }
   });
 
-  if (hasAnimationLoop && !hasVisibilityHandling) {
+  if (hasIntervalLoop && !hasVisibilityHandling) {
     findings.push(makeFinding(file, {
       severity: "medium",
       category: "js",
-      ruleId: "js/animation-loop-no-visibility-handling",
+      ruleId: "js/interval-no-visibility-handling",
       line: block.startLine,
       column: block.startColumn,
-      message: "Script uses `requestAnimationFrame` or `setInterval` but never listens for `visibilitychange` — wastes CPU when the tab is hidden."
+      message: "Script uses `setInterval` but never listens for `visibilitychange` — intervals keep firing (throttled) while the tab is hidden."
     }));
   }
 
@@ -1045,7 +1237,7 @@ function analyzeScript(file, block, findings) {
 function analyzeScopeAwareScriptLint(file, block, findings, sourceType) {
   const messages = JS_LINTER.verify(block.text, {
     languageOptions: {
-      ecmaVersion: 2022,
+      ecmaVersion: "latest",
       sourceType,
       globals: JS_LINT_GLOBALS
     },
@@ -1053,14 +1245,16 @@ function analyzeScopeAwareScriptLint(file, block, findings, sourceType) {
   });
 
   for (const message of messages) {
-    if (!message.ruleId) {
+    // A fatal message (ruleId null) means ESLint could not parse the block at
+    // all — surfacing it beats silently skipping the whole lint pass.
+    if (!message.ruleId && !message.fatal) {
       continue;
     }
 
     findings.push(makeFinding(file, {
       severity: message.severity >= 2 ? "high" : "medium",
       category: "js",
-      ruleId: `js/${message.ruleId}`,
+      ruleId: message.ruleId ? `js/${message.ruleId}` : "js/eslint-parse-error",
       line: toBlockLine(block, message.line),
       column: toBlockColumn(block, message.line, message.column),
       message: message.message
@@ -1112,25 +1306,139 @@ function analyzeDuplication(file, absoluteFile, htmlState, repoIndex, findings) 
   }
 }
 
-async function analyzeSingleFilePolicy(file, absoluteFile, findings) {
-  const dir = path.dirname(absoluteFile);
-  const baseName = path.basename(absoluteFile, path.extname(absoluteFile));
+function analyzeConventions(file, appName, content, htmlState, scriptState, repoIndex, findings) {
+  if (/^---\s*\n/.test(content)) {
+    findings.push(makeFinding(file, {
+      severity: "high",
+      category: "architecture",
+      ruleId: "architecture/jekyll-front-matter",
+      line: 1,
+      column: 1,
+      message: "File starts with a `---` front-matter fence. Apps are copied verbatim by Jekyll and must not carry front matter."
+    }));
+  }
 
-  for (const extension of SINGLE_FILE_SIDECAR_EXTENSIONS) {
-    const sidecarPath = path.join(dir, `${baseName}${extension}`);
-    if (!(await fileExists(sidecarPath))) {
-      continue;
+  if (!appName) {
+    return;
+  }
+
+  const expectedUrl = `https://lepecki.com/learn/${appName}/`;
+
+  if (!htmlState.canonicalHref) {
+    findings.push(makeFinding(file, {
+      severity: "high",
+      category: "architecture",
+      ruleId: "architecture/missing-canonical-url",
+      line: 1,
+      column: 1,
+      message: `Document is missing \`<link rel="canonical" href="${expectedUrl}">\`.`
+    }));
+  } else if (htmlState.canonicalHref !== expectedUrl) {
+    findings.push(makeFinding(file, {
+      severity: "high",
+      category: "architecture",
+      ruleId: "architecture/wrong-canonical-url",
+      line: 1,
+      column: 1,
+      message: `Canonical URL is \`${htmlState.canonicalHref}\` but must be \`${expectedUrl}\`.`
+    }));
+  }
+
+  if (!htmlState.ogUrl) {
+    findings.push(makeFinding(file, {
+      severity: "high",
+      category: "architecture",
+      ruleId: "architecture/missing-og-url",
+      line: 1,
+      column: 1,
+      message: `Document is missing \`<meta property="og:url" content="${expectedUrl}">\`.`
+    }));
+  } else if (htmlState.ogUrl !== expectedUrl) {
+    findings.push(makeFinding(file, {
+      severity: "high",
+      category: "architecture",
+      ruleId: "architecture/wrong-og-url",
+      line: 1,
+      column: 1,
+      message: `og:url is \`${htmlState.ogUrl}\` but must be \`${expectedUrl}\`.`
+    }));
+  }
+
+  if (!htmlState.hasLangToggle || !scriptState.referencesI18n) {
+    const missing = [
+      !scriptState.referencesI18n ? "an inline `I18N` object" : null,
+      !htmlState.hasLangToggle ? "a `.lang-btn` language toggle" : null
+    ].filter(Boolean).join(" and ");
+
+    findings.push(makeFinding(file, {
+      severity: "medium",
+      category: "architecture",
+      ruleId: "architecture/missing-i18n",
+      line: 1,
+      column: 1,
+      message: `Bilingual convention violation: app is missing ${missing}.`
+    }));
+  }
+
+  if (repoIndex.hubContent !== null) {
+    const linkPattern = new RegExp(`\\]\\((?:/learn/)?${escapeRegExp(appName)}/(?:index\\.html)?\\)`);
+    if (!linkPattern.test(repoIndex.hubContent)) {
+      findings.push(makeFinding(file, {
+        severity: "medium",
+        category: "architecture",
+        ruleId: "architecture/not-linked-from-hub",
+        line: 1,
+        column: 1,
+        message: `App is not linked from the hub page \`index.md\` — every app must appear there.`
+      }));
     }
+  }
+}
 
+async function analyzeSingleFilePolicy(file, absoluteFile, isAppFile, findings) {
+  const dir = path.dirname(absoluteFile);
+  const sidecars = isAppFile
+    ? await listSidecarFiles(dir)
+    : await listSameBasenameSidecars(dir, path.basename(absoluteFile, path.extname(absoluteFile)));
+
+  for (const sidecar of sidecars) {
     findings.push(makeFinding(file, {
       severity: "high",
       category: "architecture",
       ruleId: "architecture/sidecar-app-file",
       line: 1,
       column: 1,
-      message: `Single-file app policy violation: sidecar file \`${path.basename(sidecarPath)}\` exists next to \`${path.basename(absoluteFile)}\`. Merge it back into the HTML file and remove the sidecar.`
+      message: `Single-file app policy violation: \`${sidecar}\` exists in the app folder. Merge it back into the HTML file and remove the sidecar.`
     }));
   }
+}
+
+async function listSameBasenameSidecars(dir, baseName) {
+  const found = [];
+  for (const extension of SINGLE_FILE_SIDECAR_EXTENSIONS) {
+    if (await fileExists(path.join(dir, `${baseName}${extension}`))) {
+      found.push(`${baseName}${extension}`);
+    }
+  }
+  return found;
+}
+
+async function listSidecarFiles(dir, prefix = "") {
+  const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
+  const found = [];
+
+  for (const entry of entries) {
+    if (entry.name.startsWith(".") || entry.name === "docs" || entry.name === "node_modules") {
+      continue;
+    }
+    if (entry.isDirectory()) {
+      found.push(...await listSidecarFiles(path.join(dir, entry.name), `${prefix}${entry.name}/`));
+    } else if (entry.isFile() && SINGLE_FILE_SIDECAR_EXTENSIONS.includes(path.extname(entry.name).toLowerCase())) {
+      found.push(`${prefix}${entry.name}`);
+    }
+  }
+
+  return found.sort((left, right) => left.localeCompare(right));
 }
 
 function collectBlocks(document, content, lineStarts, tagName, options = {}) {
@@ -1142,6 +1450,12 @@ function collectBlocks(document, content, lineStarts, tagName, options = {}) {
     }
 
     if (options.inlineOnly && attributeValue(node, "src")) {
+      return;
+    }
+
+    // Data blocks (importmap, application/ld+json, …) are not executable
+    // JavaScript and must not be parsed or linted as such.
+    if (options.executableOnly && !isExecutableScriptType(attributeValue(node, "type"))) {
       return;
     }
 
@@ -1166,11 +1480,16 @@ function collectBlocks(document, content, lineStarts, tagName, options = {}) {
   return blocks;
 }
 
+function isExecutableScriptType(type) {
+  const normalized = (type || "").trim().toLowerCase();
+  return normalized === "" || normalized === "module" || JS_SCRIPT_MIME_TYPES.has(normalized);
+}
+
 function collectDocumentTitle(document) {
   let titleText = "";
 
   walkHtml(document, (node) => {
-    if (!titleText && isElementNode(node) && node.tagName === "title") {
+    if (!titleText && isElementNode(node) && node.tagName === "title" && node.namespaceURI === HTML_NAMESPACE) {
       titleText = normalizeWhitespace(textContent(node));
     }
   });
@@ -1214,14 +1533,9 @@ function collectCssRuleSignatures(root, block) {
 
     const selector = normalizeWhitespace(rule.selector);
     const context = cssContext(rule);
-    const serialized = `${context}|${selector}|${declarations.join(";")}`;
     signatures.push({
-      key: serialized,
-      serialized,
-      declarationCount: declarations.length,
       line: toBlockLine(block, rule.source?.start?.line),
       selector,
-      selectorLabel: context ? `${context} ${selector}` : selector,
       selectorContext: context ? `${context} ${selector}` : selector
     });
   });
@@ -1526,6 +1840,21 @@ function urlOrigin(url) {
   }
 }
 
+// W3C SRI: whitespace-separated `alg-base64` tokens. Exact base64 digest
+// lengths: sha256 → 44 chars (one `=` pad), sha384 → 64 (no pad),
+// sha512 → 88 (two `=` pads).
+const SRI_HASH_PATTERNS = [
+  /^sha256-[A-Za-z0-9+/]{43}=$/,
+  /^sha384-[A-Za-z0-9+/]{64}$/,
+  /^sha512-[A-Za-z0-9+/]{86}==$/
+];
+
+function isValidIntegrityValue(value) {
+  const tokens = normalizeWhitespace(value).split(" ").filter(Boolean);
+  return tokens.length > 0 &&
+    tokens.every((token) => SRI_HASH_PATTERNS.some((pattern) => pattern.test(token)));
+}
+
 function isCrossOriginUrl(url, documentOrigin) {
   const origin = urlOrigin(url);
   if (!origin) {
@@ -1571,6 +1900,14 @@ function parseViewportNumber(content, name) {
 function attributeValue(node, name) {
   const attribute = (node.attrs || []).find((entry) => entry.name === name);
   return attribute ? attribute.value : null;
+}
+
+function hasAttribute(node, name) {
+  return (node.attrs || []).some((entry) => entry.name === name);
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function textContent(node) {

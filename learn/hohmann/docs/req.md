@@ -1057,3 +1057,7 @@ The key condition is honesty about the model:
 - heliocentric Hohmann reference for the main game,
 - symbolic local parking-orbit presentation for readability,
 - no claim of high-fidelity real mission design.
+
+## Tooling
+
+`node tools/hohmann-transfer-matrix.mjs` (run from `learn/`) cross-checks this app's transfer physics against an independently computed matrix.
