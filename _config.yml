@@ -127,10 +127,9 @@ navbar-var-length: false
 # The keywords to associate with your website, for SEO purposes
 #keywords: "my,list,of,keywords"
 
-# Include files that start with underscore (for Cloudflare Pages deployment)
+# Include files that start with underscore
 include:
   - _headers
-  - _redirects
 
 ######################################
 # --- Colours / background image --- #

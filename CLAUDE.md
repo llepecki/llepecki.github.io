@@ -20,7 +20,7 @@ bundle exec jekyll serve --future
 
 ## Architecture
 
-This is a personal website for Łukasz Łepecki (lepecki.com), built on the **Beautiful Jekyll** theme (v6.0.1) and deployed to **Cloudflare Pages** via `.cloudflare-pages-build.sh`.
+This is a personal website for Łukasz Łepecki (lepecki.com), built on the **Beautiful Jekyll** theme (v6.0.1) and deployed to **GitHub Pages** by the `.github/workflows/ci.yml` GitHub Actions workflow. Note: GitHub Pages serves static files only — platform config files like `_headers` are copied verbatim but NOT enforced (no custom response headers, no server-side redirects).
 
 ### Configuration
 

@@ -43,7 +43,7 @@ learn/
 - **URLs.** Apps are served at `/learn/<app>/`. The `<link rel="canonical">` and `og:url` tags must use `https://lepecki.com/learn/<app>/`.
 - **Style.** Follow the Style reference section below — Outfit + Share Tech Mono fonts, shared CSS variable palettes, one of two theme-paired chassis.
 - **Bilingual.** Apps provide English and Polish via an inline `I18N` object and a language toggle.
-- **Redirects.** Legacy `/learn/<app>.html` URLs 301-redirect to `/learn/<app>/` via the repo-root `_redirects` file. If an app URL ever changes, add a rule there.
+- **URL stability.** App URLs are permanent — renaming or moving an app breaks inbound links with no server-side redirect available (GitHub Pages hosting). Legacy pre-folder `/learn/<app>.html` URLs intentionally 404.
 
 ## Doc conventions
 
