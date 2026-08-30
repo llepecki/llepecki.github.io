@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- waveinterference.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- waveinterference/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -13,10 +13,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive wave interference simulator. Visualize constructive and destructive interference with adjustable amplitude, wavelength, and phase."
     />
     <meta name="author" content="Łukasz Łepecki" />
-    <link
-      rel="canonical"
-      href="https://lepecki.com/learn/waveinterference/"
-    />
+    <link rel="canonical" href="https://lepecki.com/learn/waveinterference/" />
     <meta property="og:title" content="Wave Interference" />
     <meta
       property="og:description"
@@ -39,8 +36,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive wave interference simulator. Visualize constructive and destructive interference with adjustable amplitude, wavelength, and phase."
     />
     <title>Wave Interference</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -120,7 +119,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -175,7 +174,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
@@ -267,7 +266,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .slider-val {
         min-width: 36px;
         text-align: right;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -490,6 +489,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         // ══════════════════════════════════════════════
         const I18N = {
           en: {
+            ariaCanvas: "Wave interference visualization",
+            ariaAmpASlider: "Wave A amplitude",
+            ariaWavelengthSlider: "Wavelength",
+            ariaFrequencySlider: "Frequency",
+            ariaAmpBSlider: "Wave B amplitude",
+            ariaPhaseSlider: "Phase offset",
             title: "Wave Interference",
             subtitle:
               "Discover how waves add up, cancel out, and create interference.",
@@ -535,6 +540,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               'Ready for more? Try the <a href="/learn/mzinterferometer/">Mach-Zehnder Interferometer</a> or the <a href="/learn/doubleslit/">Double-Slit Experiment</a> to see interference with real light!',
           },
           pl: {
+            ariaCanvas: "Wizualizacja interferencji fal",
+            ariaAmpASlider: "Amplituda fali A",
+            ariaWavelengthSlider: "D\u0142ugo\u015B\u0107 fali",
+            ariaFrequencySlider: "Cz\u0119stotliwo\u015B\u0107",
+            ariaAmpBSlider: "Amplituda fali B",
+            ariaPhaseSlider: "Przesuni\u0119cie fazowe",
             title: "Interferencja fal",
             subtitle:
               "Odkryj, jak fale sumuj\u0105 si\u0119, znosz\u0105 i tworz\u0105 interferencj\u0119.",
@@ -582,10 +593,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         };
 
         function T(key) {
-          return I18N[state.lang][key];
+          return I18N[state.lang][key] || key;
         }
 
         function applyTranslations() {
+          // Aria labels must follow the language toggle, not stay in the
+          // markup language. See house/aria-label-not-localized.
+          const ariaLabels = [
+            ["canvas", "ariaCanvas"],
+            ["ampASlider", "ariaAmpASlider"],
+            ["wavelengthSlider", "ariaWavelengthSlider"],
+            ["frequencySlider", "ariaFrequencySlider"],
+            ["ampBSlider", "ariaAmpBSlider"],
+            ["phaseSlider", "ariaPhaseSlider"],
+          ];
+          ariaLabels.forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (el) el.setAttribute("aria-label", T(entry[1]));
+          });
           const l = I18N[state.lang];
           document.title = l.title;
           document.documentElement.lang = state.lang;
@@ -969,7 +994,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           // Degree label
-          c.font = `700 ${ts(11)}px "Share Tech Mono", monospace`;
+          c.font = `700 ${ts(11)}px "JetBrains Mono", monospace`;
           c.fillStyle = "rgba(69,90,100,0.6)";
           c.textAlign = "center";
           c.textBaseline = "top";
@@ -991,7 +1016,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
             // Amplitude indicators on each wave
             const col = ROW_SUM.col;
-            ctx.font = `700 ${ts(14)}px "Share Tech Mono", monospace`;
+            ctx.font = `700 ${ts(14)}px "JetBrains Mono", monospace`;
             ctx.textAlign = "right";
             ctx.textBaseline = "middle";
 
@@ -1277,7 +1302,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               (Number.isInteger(valRounded)
                 ? valRounded.toFixed(0)
                 : valRounded.toFixed(1));
-            c.font = `700 ${ts(12)}px "Share Tech Mono", monospace`;
+            c.font = `700 ${ts(12)}px "JetBrains Mono", monospace`;
             c.fillStyle = `rgba(${col.r},${col.g},${col.b},0.9)`;
             c.textAlign = "left";
             c.textBaseline = "bottom";
@@ -1308,7 +1333,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
           const hAmpVal = -((cy - nearestRow) / ROW_AMP) * ampScale;
           const hLabel = (Math.round(hAmpVal * 10) / 10).toFixed(1);
-          c.font = `700 ${ts(11)}px "Share Tech Mono", monospace`;
+          c.font = `700 ${ts(11)}px "JetBrains Mono", monospace`;
           const hlx = tx(WAVE_X_START) - ts(6);
           c.textAlign = "right";
           c.textBaseline = "middle";

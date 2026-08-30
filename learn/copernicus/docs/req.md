@@ -449,7 +449,7 @@ Same as all learn apps:
 - Single HTML file, inline CSS and JavaScript
 - Vanilla JavaScript, no frameworks or external libraries
 - HTML5 Canvas for all rendering
-- Google Fonts: Outfit + Share Tech Mono
+- Google Fonts: Outfit + JetBrains Mono
 - DPR-aware rendering for retina displays
 - `requestAnimationFrame` animation loop
 - Responsive layout: canvas `flex: 1` + `300px` control panel

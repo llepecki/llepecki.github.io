@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- mzinterferometer.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- mzinterferometer/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -13,10 +13,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive Mach-Zehnder interferometer simulator. Fire photons, adjust phase shifts, and block paths to explore quantum interference."
     />
     <meta name="author" content="Łukasz Łepecki" />
-    <link
-      rel="canonical"
-      href="https://lepecki.com/learn/mzinterferometer/"
-    />
+    <link rel="canonical" href="https://lepecki.com/learn/mzinterferometer/" />
     <meta property="og:title" content="Mach-Zehnder Interferometer" />
     <meta
       property="og:description"
@@ -39,8 +36,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive Mach-Zehnder interferometer simulator. Fire photons, adjust phase shifts, and block paths to explore quantum interference."
     />
     <title>Mach-Zehnder Interferometer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -116,7 +115,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -170,7 +169,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
@@ -276,7 +275,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .slider-val {
         min-width: 36px;
         text-align: right;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -296,7 +295,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 8px;
       }
       .stat-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         min-width: 24px;
@@ -320,14 +319,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: var(--d2-color);
       }
       .stat-count {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         min-width: 30px;
         text-align: right;
         color: var(--text);
       }
       .stat-pct {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         min-width: 40px;
         text-align: right;
@@ -346,7 +345,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-label);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         font-weight: 700;
         cursor: pointer;
@@ -385,7 +384,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .stat-expected {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 10px;
         color: var(--text-dim);
         padding: 4px 20px 0;
@@ -654,6 +653,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         // ══════════════════════════════════════════════
         const I18N = {
           en: {
+            ariaCanvas: "Mach-Zehnder interferometer simulation",
+            ariaPhaseSlider: "Phase shift",
+            ariaSpeedSlider: "Animation speed",
             title: "Mach-Zehnder Interferometer",
             subtitle:
               "Explore how light splits, travels two paths, and recombines through interference.",
@@ -706,6 +708,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "Both paths blocked \u2014 no light reaches the detectors.",
           },
           pl: {
+            ariaCanvas: "Symulacja interferometru Macha-Zehndera",
+            ariaPhaseSlider: "Przesuni\u0119cie fazy",
+            ariaSpeedSlider: "Pr\u0119dko\u015B\u0107 animacji",
             title: "Interferometr Macha-Zehndera",
             subtitle:
               "Odkryj, jak \u015Bwiat\u0142o rozdziela si\u0119, pod\u0105\u017Ca dwiema drogami i \u0142\u0105czy si\u0119 przez interferencj\u0119.",
@@ -761,10 +766,21 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         };
 
         function T(key) {
-          return I18N[state.lang][key];
+          return I18N[state.lang][key] || key;
         }
 
         function applyTranslations() {
+          // Aria labels must follow the language toggle, not stay in the
+          // markup language. See house/aria-label-not-localized.
+          const ariaLabels = [
+            ["canvas", "ariaCanvas"],
+            ["phaseSlider", "ariaPhaseSlider"],
+            ["speedSlider", "ariaSpeedSlider"],
+          ];
+          ariaLabels.forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (el) el.setAttribute("aria-label", T(entry[1]));
+          });
           const l = I18N[state.lang];
           document.title = l.title;
           document.documentElement.lang = state.lang;
@@ -1063,7 +1079,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           c.strokeRect(-s / 2, -s / 6, s, s / 3);
           c.restore();
 
-          c.font = `600 ${ts(20)}px "Share Tech Mono", monospace`;
+          c.font = `600 ${ts(20)}px "JetBrains Mono", monospace`;
           c.fillStyle = "#90A4AE";
           c.textAlign = "center";
           c.textBaseline = "top";
@@ -1083,7 +1099,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           c.strokeRect(-s / 2, -ts(5), s, ts(10));
           c.restore();
 
-          c.font = `600 ${ts(20)}px "Share Tech Mono", monospace`;
+          c.font = `600 ${ts(20)}px "JetBrains Mono", monospace`;
           c.fillStyle = "#90A4AE";
           c.textAlign = "center";
           c.textBaseline = "top";
@@ -1102,7 +1118,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           c.fillRect(tx(x) - w / 2, ty(y) - h / 2, w, h);
           c.strokeRect(tx(x) - w / 2, ty(y) - h / 2, w, h);
 
-          c.font = `600 ${ts(18)}px "Share Tech Mono", monospace`;
+          c.font = `600 ${ts(18)}px "JetBrains Mono", monospace`;
           c.fillStyle = "#78909C";
           c.textAlign = "center";
           c.textBaseline = "top";
@@ -1112,7 +1128,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ty(y) + ts(28),
           );
 
-          c.font = `600 ${ts(20)}px "Share Tech Mono", monospace`;
+          c.font = `600 ${ts(20)}px "JetBrains Mono", monospace`;
           c.fillStyle = "#90A4AE";
           c.fillText(T("phaseShifterLabel"), tx(x), ty(y) + ts(50));
         }
@@ -1171,7 +1187,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           c.lineTo(cx + ts(4), baseY);
           c.stroke();
           // Label
-          c.font = `600 ${ts(20)}px "Share Tech Mono", monospace`;
+          c.font = `600 ${ts(20)}px "JetBrains Mono", monospace`;
           c.fillStyle = "#90A4AE";
           c.textAlign = "center";
           c.textBaseline = "top";
@@ -1203,7 +1219,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           c.fill();
           c.stroke();
 
-          c.font = `700 ${ts(26)}px "Share Tech Mono", monospace`;
+          c.font = `700 ${ts(26)}px "JetBrains Mono", monospace`;
           c.fillStyle = color;
           c.textAlign = "center";
           c.textBaseline = "middle";

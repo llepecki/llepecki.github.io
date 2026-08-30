@@ -265,21 +265,36 @@ async function reviewFile(file, cwd, repoIndex) {
   await analyzeFormatting(relativeFile, content, findings);
   analyzeDuplication(relativeFile, file, htmlState, repoIndex, findings);
   analyzeConventions(relativeFile, appName, content, htmlState, scriptState, repoIndex, findings);
+  analyzeHouseStyle(relativeFile, appName, content, lineStarts, styleBlocks, scriptState, findings);
   await analyzeSingleFilePolicy(relativeFile, file, appName !== null, findings);
 
-  findings.sort(compareFindings);
+  // House-style rules the app's docs/style-drift.md records are known drift:
+  // reported as a count so they stay visible, but they do not fail the gate.
+  const suppressions = await readDriftSuppressions(file, appName);
+  const kept = [];
+  const suppressedRuleIds = new Set();
+  for (const finding of findings) {
+    if (finding.ruleId.startsWith("house/") && suppressions.has(finding.ruleId)) {
+      suppressedRuleIds.add(finding.ruleId);
+      continue;
+    }
+    kept.push(finding);
+  }
+
+  kept.sort(compareFindings);
 
   const counts = {
-    high: findings.filter((finding) => finding.severity === "high").length,
-    medium: findings.filter((finding) => finding.severity === "medium").length,
-    low: findings.filter((finding) => finding.severity === "low").length
+    high: kept.filter((finding) => finding.severity === "high").length,
+    medium: kept.filter((finding) => finding.severity === "medium").length,
+    low: kept.filter((finding) => finding.severity === "low").length
   };
 
   return {
     file: relativeFile,
-    findings,
+    findings: kept,
+    suppressed: [...suppressedRuleIds].sort(),
     summary: {
-      total: findings.length,
+      total: kept.length,
       ...counts
     }
   };
@@ -959,7 +974,9 @@ function analyzeCss(file, block, findings) {
   }
 
   root.walkDecls((decl) => {
-    if (decl.important) {
+    // `!important` inside a prefers-reduced-motion override is the canonical
+    // web.dev pattern (it must beat every specific transition/animation rule).
+    if (decl.important && !isInsideReducedMotionRule(decl)) {
       importantLines.push(toBlockLine(block, decl.source?.start?.line));
     }
     const prop = decl.prop.toLowerCase();
@@ -1032,6 +1049,18 @@ function analyzeCss(file, block, findings) {
       detail: `Lines ${formatLineList(movementTransitionLines)}.`
     }));
   }
+}
+
+function isInsideReducedMotionRule(node) {
+  let current = node.parent;
+  while (current && current.type !== "root") {
+    if (current.type === "atrule" && current.name === "media" &&
+        /prefers-reduced-motion/i.test(current.params)) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
 }
 
 function declTransitionsMovement(prop, value) {
@@ -1393,6 +1422,243 @@ function analyzeConventions(file, appName, content, htmlState, scriptState, repo
       }));
     }
   }
+}
+
+// ══════════════════════════════════════════════
+// HOUSE STYLE (learn/CLAUDE.md)
+// ══════════════════════════════════════════════
+// Rules the Style reference states but nothing enforced. Every rule has a
+// stable `house/<id>` ruleId; an app suppresses one by citing that id in its
+// `docs/style-drift.md`, which is the convention CLAUDE.md already defines for
+// recording known deviations. That keeps legacy drift green and documented
+// while any NEW violation fails the gate.
+
+// U+1F3FB-U+1F3FF in all three encodings these apps use: literal characters,
+// surrogate-pair escapes inside JS string literals (🏻-🏿),
+// and HTML entities in markup (&#x1F3FB; / &#127995;). Matching only literals
+// misses every app that writes its emoji escaped or as an entity.
+const SKIN_TONE_RE =
+  /[\u{1F3FB}-\u{1F3FF}]|\\uD83C\\uDFF[B-F]|&#x0*1F3F[B-F];|&#0*12799[5-9];/giu;
+// The sanctioned dark overlay backdrop. White text on it is correct; the
+// contrast rule below applies to the light tier washes only.
+const OVERLAY_DARK_BACKDROP_RE =
+  /\.[A-Za-z-]*overlay[^{]*\{[^}]*background:\s*rgba\(\s*11,\s*15,\s*24/i;
+const INLINE_DISPLAY_RE = /\.style\.display\s*=/g;
+const HARDCODED_LOCALE_RE =
+  /(?:toLocaleString|toLocaleDateString|toLocaleTimeString|new\s+Intl\.[A-Za-z]+)\(\s*["'][a-z]{2}-[A-Z]{2}["']/g;
+const ARIA_LABEL_MARKUP_RE = /\saria-label\s*=\s*"/;
+const ARIA_LABEL_SETTER_RE = /setAttribute\(\s*["']aria-label["']/;
+const POINTER_LISTENER_RE =
+  /addEventListener\(\s*["'](?:mousedown|pointerdown|touchstart)["']/;
+// Captures the parameter name so the fallback check works whatever the app
+// calls it (`key`, `k`, ...) — matching a literal `|| key` reports apps that
+// are already conformant.
+const T_FUNCTION_RE = /function\s+T\s*\(\s*([A-Za-z_$][\w$]*)[^)]*\)\s*\{[\s\S]{0,400}/;
+const OVERLAY_WHITE_RE =
+  /\.[A-Za-z-]*overlay[^{]*\{[^}]*color:\s*(?:#fff\b|#ffffff\b|white)\s*[;}]/gi;
+
+function analyzeHouseStyle(file, appName, content, lineStarts, styleBlocks, scriptState, findings) {
+  const cssText = styleBlocks.map((block) => block.text).join("\n");
+
+  const push = (offset, severity, ruleId, message) => {
+    const position = offset === null
+      ? { line: 1, column: 1 }
+      : offsetToLineCol(lineStarts, offset);
+    findings.push(makeFinding(file, {
+      severity,
+      category: "house-style",
+      ruleId,
+      line: position.line,
+      column: position.column,
+      message
+    }));
+  };
+
+  const eachMatch = (regex, handler) => {
+    regex.lastIndex = 0;
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      handler(match);
+      if (match[0].length === 0) {
+        regex.lastIndex += 1;
+      }
+    }
+  };
+
+  // Occurrence rules — one finding per site, pointing at the real line.
+  eachMatch(INLINE_DISPLAY_RE, (match) => {
+    push(match.index, "medium", "house/inline-style-display",
+      "Visibility toggled via inline `style.display`. Use the native `hidden` attribute (`el.hidden = true/false`) with a `[hidden] { display: none }` guard for flex elements.");
+  });
+
+  eachMatch(SKIN_TONE_RE, (match) => {
+    push(match.index, "medium", "house/skin-tone-emoji",
+      "Emoji carries a skin-tone modifier. The Style reference forbids skin-tone modifiers.");
+  });
+
+  eachMatch(HARDCODED_LOCALE_RE, (match) => {
+    push(match.index, "medium", "house/hardcoded-locale",
+      "Locale is hard-coded in a formatting call. Derive it from the language toggle so Polish uses Polish number/date separators.");
+  });
+
+  if (!OVERLAY_DARK_BACKDROP_RE.test(cssText)) {
+    eachMatch(OVERLAY_WHITE_RE, (match) => {
+      push(match.index, "high", "house/overlay-white-text",
+        "Result-overlay text is white. White fails WCAG AA on the light tier washes; the Style reference mandates dark ink `#0b171b` at full opacity.");
+    });
+  }
+
+  // Presence rules — reported once, at the top of the file.
+  if (scriptState.referencesI18n
+    && ARIA_LABEL_MARKUP_RE.test(content)
+    && !ARIA_LABEL_SETTER_RE.test(content)) {
+    push(null, "medium", "house/aria-label-not-localized",
+      "Markup defines `aria-label` attributes but nothing re-applies them per language. `applyTranslations()` must rewrite aria-labels, otherwise the accessibility layer stays English after the language toggle.");
+  }
+
+  if (scriptState.referencesI18n) {
+    const missing = [
+      !/documentElement\.lang\s*=/.test(content) ? "`document.documentElement.lang`" : null,
+      !/document\.title\s*=/.test(content) ? "`document.title`" : null
+    ].filter(Boolean);
+    if (missing.length > 0) {
+      push(null, "medium", "house/i18n-incomplete-apply",
+        `\`applyTranslations()\` never rewrites ${missing.join(" or ")}. The Style reference requires both, otherwise the page keeps advertising the wrong language to assistive tech and the browser.`);
+    }
+  }
+
+  if (/<canvas/i.test(content)
+    && POINTER_LISTENER_RE.test(content)
+    && !/touch-action:\s*none/i.test(cssText)) {
+    push(null, "medium", "house/canvas-missing-touch-action",
+      "App drives a pointer interaction but no CSS rule sets `touch-action: none`. Without it the browser may claim the gesture for scrolling or pinch-zoom before the drag resolves.");
+  }
+
+  if (cssText && !/-webkit-tap-highlight-color/i.test(cssText)) {
+    push(null, "low", "house/missing-tap-highlight",
+      "`body` does not set `-webkit-tap-highlight-color: transparent`, so taps flash the platform highlight box.");
+  }
+
+  if (cssText && !/:focus-visible/i.test(cssText)) {
+    push(null, "medium", "house/missing-focus-visible",
+      "No `:focus-visible` styling anywhere. Keyboard users get no visible focus indicator on buttons.");
+  }
+
+  analyzeHouseStyleExtras(file, appName, content, lineStarts, styleBlocks, scriptState, push, eachMatch);
+
+  const tFunction = content.match(T_FUNCTION_RE);
+  const tFallback = tFunction
+    && new RegExp(`\\|\\|\\s*${tFunction[1]}\\b|\\?\\?\\s*${tFunction[1]}\\b|===\\s*undefined`)
+      .test(tFunction[0]);
+  if (tFunction && !tFallback) {
+    push(tFunction.index, "low", "house/i18n-missing-fallback",
+      "`T()` has no missing-key fallback. A key absent from one locale renders as `undefined` instead of the key name.");
+  }
+}
+
+// Overlay TEXT children only. `.overlay-emoji` legitimately animates opacity.
+const OVERLAY_TEXT_OPACITY_RE =
+  /\.overlay-(?:msg|sub|subtitle|hint|title|detail|conclusion)[^{]*\{[^}]*opacity:\s*0?\.\d+/gi;
+const PASSIVE_TOUCHMOVE_RE = /["']touchmove["'][\s\S]{0,300}?passive:\s*true/g;
+const SCROLLBAR_STYLING_RE = /::-webkit-scrollbar|scrollbar-width\s*:|scrollbar-color\s*:/gi;
+const FORBIDDEN_HEAD_RE =
+  /<meta[^>]+name=["']theme-color["']|<link[^>]+rel=["'](?:shortcut\s+)?icon["']/gi;
+const LEGACY_MONO_RE = /Share\s*Tech\s*Mono/gi;
+const EMPTY_DASHES_RE = />\s*--\s*<|=\s*["']--["']/g;
+const DISABLED_ASSIGN_RE = /\.disabled\s*=\s*(?:true|!)/;
+// A T() call whose argument is not a string literal, e.g. `T(state.mode)`.
+// The negative lookbehind skips the `function T(key)` declaration, which
+// otherwise makes every app look like it uses dynamic keys.
+const DYNAMIC_T_CALL_RE = /(?<!function\s)\bT\(\s*[^"')\s]/;
+
+function analyzeHouseStyleExtras(file, appName, content, lineStarts, styleBlocks, scriptState, push, eachMatch) {
+  const cssText = styleBlocks.map((block) => block.text).join("\n");
+
+  eachMatch(OVERLAY_TEXT_OPACITY_RE, (match) => {
+    push(match.index, "medium", "house/overlay-text-opacity",
+      "Result-overlay text is dimmed with `opacity`. The Style reference requires the overlay ink at full opacity — the tier washes leave no contrast headroom to spend.");
+  });
+
+  eachMatch(PASSIVE_TOUCHMOVE_RE, (match) => {
+    push(match.index, "medium", "house/passive-touchmove",
+      "`touchmove` is registered with `{ passive: true }`, so the handler cannot `preventDefault()`. A drag registered this way lets the browser scroll or pinch-zoom the page instead.");
+  });
+
+  eachMatch(SCROLLBAR_STYLING_RE, (match) => {
+    push(match.index, "medium", "house/styled-scrollbar",
+      "Scrollbar styling is present. The Style reference states scrollbars are never styled — the panel scrolls natively.");
+  });
+
+  eachMatch(FORBIDDEN_HEAD_RE, (match) => {
+    push(match.index, "low", "house/forbidden-head-tag",
+      "`<head>` carries a `theme-color` meta or a favicon link. The Style reference forbids both.");
+  });
+
+  eachMatch(LEGACY_MONO_RE, (match) => {
+    push(match.index, "high", "house/legacy-mono-font",
+      "Share Tech Mono is referenced. It ships none of `ą ć ę ł ń ś ź ż`, so every Polish readout silently falls back to a mismatched system face. JetBrains Mono is the mandated replacement.");
+  });
+
+  eachMatch(EMPTY_DASHES_RE, (match) => {
+    push(match.index, "low", "house/empty-readout-dashes",
+      "Empty readout rendered as `--`. The Style reference uses an em dash (`&mdash;`).");
+  });
+
+  if (DISABLED_ASSIGN_RE.test(content) && cssText && !/:disabled/.test(cssText)) {
+    push(null, "medium", "house/missing-disabled-style",
+      "JS disables controls but no CSS `:disabled` rule exists, so a disabled button looks identical to an enabled one. The Style reference specifies `opacity: 0.4; pointer-events: none`.");
+  }
+
+  if (appName) {
+    const head = content.slice(0, 1200);
+    // Stop at the closing backtick/quote the comment wraps the path in.
+    const gate = head.match(/code-review\s+--\s+([\w./-]+)/);
+    if (!gate) {
+      push(null, "low", "house/missing-review-gate-comment",
+        `Top-of-file comment documenting the review gate is missing. It must cite \`npm run code-review -- ${appName}/index.html\`.`);
+    } else if (gate[1] !== `${appName}/index.html`) {
+      push(null, "low", "house/stale-review-gate-comment",
+        `Review-gate comment cites \`${gate[1]}\`, but the app lives at \`${appName}/index.html\`.`);
+    }
+  }
+
+  // Dead i18n keys. Skipped entirely when the app looks up keys dynamically —
+  // `T(state.mode)` would make every such key look unreferenced.
+  if (scriptState.referencesI18n && !DYNAMIC_T_CALL_RE.test(content)) {
+    const region = content.match(/I18N\s*=\s*\{[\s\S]*?\n\s{0,10}\};/);
+    if (region) {
+      const seen = new Set();
+      const keyRe = /^\s+([A-Za-z_$][\w$]*):\s*["']/gm;
+      let keyMatch;
+      while ((keyMatch = keyRe.exec(region[0])) !== null) {
+        seen.add(keyMatch[1]);
+      }
+      for (const key of seen) {
+        const uses = content.match(new RegExp(`\\b${key}\\b`, "g")) || [];
+        // Exactly two occurrences means the `en` and `pl` definitions and
+        // nothing else — no reader anywhere in the file.
+        if (uses.length === 2) {
+          const at = content.search(new RegExp(`^\\s+${key}:\\s*["']`, "m"));
+          push(at < 0 ? null : at, "low", "house/dead-i18n-key",
+            `I18N key \`${key}\` is defined in both locales but never read. Dead keys still have to be kept in sync on every translation pass.`);
+        }
+      }
+    }
+  }
+}
+
+const DRIFT_RULE_ID_RE = /house\/[a-z0-9-]+/g;
+
+async function readDriftSuppressions(absoluteFile, appName) {
+  if (!appName) {
+    return new Set();
+  }
+  const driftPath = path.join(path.dirname(absoluteFile), "docs", "style-drift.md");
+  const text = await fs.readFile(driftPath, "utf8").catch(() => null);
+  if (text === null) {
+    return new Set();
+  }
+  return new Set(text.match(DRIFT_RULE_ID_RE) || []);
 }
 
 async function analyzeSingleFilePolicy(file, absoluteFile, isAppFile, findings) {
@@ -2007,6 +2273,11 @@ function renderReport(report) {
 
   lines.push(file);
   lines.push(`${summary.total} finding(s): ${summary.high} high, ${summary.medium} medium, ${summary.low} low`);
+
+  const suppressed = report.suppressed || [];
+  if (suppressed.length > 0) {
+    lines.push(`${suppressed.length} known drift suppressed by docs/style-drift.md: ${suppressed.join(", ")}`);
+  }
 
   if (findings.length === 0) {
     lines.push("No problems found.");

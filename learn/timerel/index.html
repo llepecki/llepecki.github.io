@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- timerel.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- timerel/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -33,8 +33,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive time dilation simulator. Watch relativistic aging unfold as a rocket travels to real stars near the speed of light."
     />
     <title>Time Dilation Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -65,6 +67,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: var(--bg);
         font-family: "Outfit", sans-serif;
         color: var(--text);
+        -webkit-tap-highlight-color: transparent;
       }
 
       header {
@@ -103,13 +106,21 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
         transition:
           border-color 0.15s,
           color 0.15s;
+      }
+      /* Keyboard focus indicator — required by the Style reference. */
+      .type-btn:focus-visible,
+      .lang-btn:focus-visible,
+      .speed-bar-btn:focus-visible,
+      .step-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
       }
       .lang-btn:hover {
         border-color: var(--accent);
@@ -157,7 +168,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -183,7 +194,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: none;
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 18px;
         cursor: pointer;
         display: flex;
@@ -234,7 +245,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         display: flex;
         align-items: center;
         justify-content: center;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         color: #fff;
         pointer-events: none;
@@ -265,7 +276,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         cursor: pointer;
         outline: none;
@@ -292,7 +303,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         cursor: pointer;
         transition: all 0.2s;
@@ -321,7 +332,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         padding: 2px 0;
       }
@@ -362,7 +373,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         margin-bottom: 20px;
       }
       .overlay-detail {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 18px;
         color: var(--text);
         line-height: 2.2;
@@ -387,7 +398,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         word-break: break-all;
       }
       .overlay-hint {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         margin-top: 16px;
         color: rgba(255, 255, 255, 0.4);
@@ -410,7 +421,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         padding: 14px 16px;
         max-width: 340px;
         pointer-events: none;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 15px;
         color: var(--text);
         line-height: 1.5;
@@ -487,7 +498,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1px solid var(--panel-border);
         background: rgba(11, 15, 24, 0.7);
         color: var(--text);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         outline: none;
       }
@@ -505,7 +516,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1px solid var(--panel-border);
         background: rgba(11, 15, 24, 0.7);
         color: var(--text);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         outline: none;
         -moz-appearance: textfield;
@@ -529,7 +540,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 16px;
       }
       .game-goal {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         text-align: center;
         color: var(--text);
@@ -540,7 +551,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .captain-a-readout {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         text-align: center;
         color: var(--text-dim);
@@ -583,7 +594,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: rgba(11, 15, 24, 0.5);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         cursor: pointer;
         transition: all 0.15s;
@@ -621,7 +632,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .game-overlay-detail {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         color: var(--text);
         line-height: 2;
@@ -1353,10 +1364,31 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         const I18N = {
           en: {
+            ariaCanvas: "Time dilation simulation canvas",
+            ariaEarthTwinName: "Earth twin name",
+            ariaEarthShipName: "Earth ship name",
+            ariaEarthTwinAge: "Earth twin age",
+            ariaRocketTwinName: "Rocket twin name",
+            ariaRocketShipName: "Rocket ship name",
+            ariaRocketTwinAge: "Rocket twin age",
+            ariaGameNameA: "Captain A name",
+            ariaGameShipA: "Captain A ship name",
+            ariaGameAgeA: "Captain A age",
+            ariaGameNameB: "Captain B name",
+            ariaGameShipB: "Captain B ship name",
+            ariaGameAgeB: "Captain B age",
+            ariaSpeedMinus: "Decrease speed",
+            ariaSpeedPlus: "Increase speed",
+            ariaDiffEasyBtn: "Easy",
+            ariaDiffMediumBtn: "Medium",
+            ariaDiffHardBtn: "Hard",
+            ariaWarpNormalBtn: "Normal speed",
+            ariaWarpFastBtn: "Fast speed",
+            ariaWarpFastestBtn: "Fastest speed",
+            ariaResetBtn: "Reset",
             title: "Time Dilation Simulator",
             subtitle:
               "A person on Earth, a person in a rocket \u2014 who ages less on a round trip near the speed of light?",
-            lblStar: "Destination Star",
             lblSpeed: "Travel Speed",
             lblAnimSpeed: "Playback Speed",
             launch: "Launch",
@@ -1378,18 +1410,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             yr: "yr",
             ly: "ly",
             earthLabel: "Earth",
-            rocketLabel: "Rocket",
-            earthClock: "Earth Clock",
-            spacecraftClock: "Spacecraft Clock",
-            earthPerson: "Earth person",
-            rocketPerson: "Rocket person",
-            phEarthTwin: "Earth person name",
-            phRocketTwin: "Rocket person name",
             phEarthShip: "Home",
             phRocketShip: "Rocket",
-            customStar: "My Star",
-            lblCustomName: "Star Name",
-            lblCustomDist: "Distance (ly)",
             sfDist: "Distance",
             sfMass: "Mass",
             sfSize: "Radius",
@@ -1421,7 +1443,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             newChallenge: "New Challenge",
             lblDifficulty: "Difficulty",
             lblCaptainBSpeed: "Your cruise speed",
-            gameCaptainACruisePre: "",
             gameCaptainACruiseName: "{name}",
             gameCaptainACruiseMid: " flies at ",
             gameCaptainACruiseBeta: "{beta}c",
@@ -1441,10 +1462,31 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             gameTooOld: "{name} exceeded 100 years!",
           },
           pl: {
+            ariaCanvas: "Symulacja dylatacji czasu",
+            ariaEarthTwinName: "Imi\u0119 bli\u017Aniaka na Ziemi",
+            ariaEarthShipName: "Nazwa statku ziemskiego",
+            ariaEarthTwinAge: "Wiek bli\u017Aniaka na Ziemi",
+            ariaRocketTwinName: "Imi\u0119 bli\u017Aniaka w rakiecie",
+            ariaRocketShipName: "Nazwa rakiety",
+            ariaRocketTwinAge: "Wiek bli\u017Aniaka w rakiecie",
+            ariaGameNameA: "Imi\u0119 kapitana A",
+            ariaGameShipA: "Nazwa statku kapitana A",
+            ariaGameAgeA: "Wiek kapitana A",
+            ariaGameNameB: "Imi\u0119 kapitana B",
+            ariaGameShipB: "Nazwa statku kapitana B",
+            ariaGameAgeB: "Wiek kapitana B",
+            ariaSpeedMinus: "Zmniejsz pr\u0119dko\u015B\u0107",
+            ariaSpeedPlus: "Zwi\u0119ksz pr\u0119dko\u015B\u0107",
+            ariaDiffEasyBtn: "\u0141atwy",
+            ariaDiffMediumBtn: "\u015Aredni",
+            ariaDiffHardBtn: "Trudny",
+            ariaWarpNormalBtn: "Normalna pr\u0119dko\u015B\u0107",
+            ariaWarpFastBtn: "Szybka pr\u0119dko\u015B\u0107",
+            ariaWarpFastestBtn: "Najszybsza pr\u0119dko\u015B\u0107",
+            ariaResetBtn: "Resetuj",
             title: "Symulator Dylatacji Czasu",
             subtitle:
               "Osoba na Ziemi, osoba w rakiecie \u2014 kto zestarzeje si\u0119 mniej po podr\u00F3\u017Cy blisko pr\u0119dko\u015Bci \u015Bwiat\u0142a?",
-            lblStar: "Gwiazda docelowa",
             lblSpeed: "Pr\u0119dko\u015B\u0107 podr\u00F3\u017Cy",
             lblAnimSpeed: "Pr\u0119dko\u015B\u0107 odtwarzania",
             launch: "Start",
@@ -1466,18 +1508,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             yr: "lat",
             ly: "ly",
             earthLabel: "Ziemia",
-            rocketLabel: "Rakieta",
-            earthClock: "Zegar Ziemi",
-            spacecraftClock: "Zegar statku",
-            earthPerson: "Osoba na Ziemi",
-            rocketPerson: "Osoba w rakiecie",
-            phEarthTwin: "Imi\u0119 osoby na Ziemi",
-            phRocketTwin: "Imi\u0119 osoby w rakiecie",
             phEarthShip: "Dom",
             phRocketShip: "Rakieta",
-            customStar: "Moja Gwiazda",
-            lblCustomName: "Nazwa gwiazdy",
-            lblCustomDist: "Odleg\u0142o\u015B\u0107 (ly)",
             sfDist: "Odleg\u0142o\u015B\u0107",
             sfMass: "Masa",
             sfSize: "Promie\u0144",
@@ -1509,7 +1541,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             newChallenge: "Nowe wyzwanie",
             lblDifficulty: "Poziom",
             lblCaptainBSpeed: "Twoja pr\u0119dko\u015B\u0107",
-            gameCaptainACruisePre: "",
             gameCaptainACruiseName: "{name}",
             gameCaptainACruiseMid: " leci z ",
             gameCaptainACruiseBeta: "{beta}c",
@@ -2622,7 +2653,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.stroke();
 
           // Label — left side of Earth
-          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.font = '15px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(77,184,255,0.7)";
           ctx.textAlign = "right";
           ctx.fillText(T("earthLabel"), cx - r - 8, cy + r + 6);
@@ -2655,11 +2686,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           if (!hideLabel) {
             const name = state.lang === "en" ? star.nameEn : star.namePl;
             const labelX = cx + starFlybyRingR(star) + 10;
-            ctx.font = '15px "Share Tech Mono", monospace';
+            ctx.font = '15px "JetBrains Mono", monospace';
             ctx.fillStyle = "rgba(255,248,225,0.7)";
             ctx.textAlign = "left";
             ctx.fillText(name, labelX, cy - r - 26);
-            ctx.font = '13px "Share Tech Mono", monospace';
+            ctx.font = '13px "JetBrains Mono", monospace';
             ctx.fillStyle = "rgba(255,248,225,0.4)";
             ctx.fillText(
               (star.approx ? "~" : "") + star.dist + " " + T("ly"),
@@ -2821,13 +2852,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.fill();
 
           // Label above
-          ctx.font = '13px "Share Tech Mono", monospace';
+          ctx.font = '13px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(201,209,217,0.6)";
           ctx.textAlign = "center";
           ctx.fillText(label, cx, cy - radius - 10);
 
           // Digital readout below
-          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.font = '15px "JetBrains Mono", monospace';
           ctx.fillStyle = color;
           ctx.textAlign = "center";
           ctx.fillText(digitalText, cx, cy + radius + 18);
@@ -3296,7 +3327,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
             // Label — alternating above/below to avoid overlap
             const name = state.lang === "en" ? star.nameEn : star.namePl;
-            ctx.font = '15px "Share Tech Mono", monospace';
+            ctx.font = '15px "JetBrains Mono", monospace';
             ctx.fillStyle =
               "rgba(255,248,225," +
               (isNearest ? 0.9 : isCurrent ? 0.5 : 0.35) +
@@ -3694,6 +3725,36 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         // ====================== I18N ======================
 
         function applyTranslations() {
+          // Aria labels must follow the language toggle, not stay in the
+          // markup language. See house/aria-label-not-localized.
+          const ariaLabels = [
+            ["canvas", "ariaCanvas"],
+            ["earthTwinName", "ariaEarthTwinName"],
+            ["earthShipName", "ariaEarthShipName"],
+            ["earthTwinAge", "ariaEarthTwinAge"],
+            ["rocketTwinName", "ariaRocketTwinName"],
+            ["rocketShipName", "ariaRocketShipName"],
+            ["rocketTwinAge", "ariaRocketTwinAge"],
+            ["gameNameA", "ariaGameNameA"],
+            ["gameShipA", "ariaGameShipA"],
+            ["gameAgeA", "ariaGameAgeA"],
+            ["gameNameB", "ariaGameNameB"],
+            ["gameShipB", "ariaGameShipB"],
+            ["gameAgeB", "ariaGameAgeB"],
+            ["speedMinus", "ariaSpeedMinus"],
+            ["speedPlus", "ariaSpeedPlus"],
+            ["diffEasyBtn", "ariaDiffEasyBtn"],
+            ["diffMediumBtn", "ariaDiffMediumBtn"],
+            ["diffHardBtn", "ariaDiffHardBtn"],
+            ["warpNormalBtn", "ariaWarpNormalBtn"],
+            ["warpFastBtn", "ariaWarpFastBtn"],
+            ["warpFastestBtn", "ariaWarpFastestBtn"],
+            ["resetBtn", "ariaResetBtn"],
+          ];
+          ariaLabels.forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (el) el.setAttribute("aria-label", T(entry[1]));
+          });
           document.title = T("title");
           document.documentElement.lang = state.lang;
           document.getElementById("titleText").textContent = T("title");
@@ -4440,10 +4501,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             emoji = "\uD83C\uDF89";
             msg = T("gamePerfect");
           } else if (result === "close") {
-            emoji = "\uD83D\uDC4D\uD83C\uDFFB";
+            emoji = "\uD83D\uDC4D";
             msg = T("gameClose").replace("{diff}", formatYears(ages.diff));
           } else if (result === "miss") {
-            emoji = "\uD83D\uDC4E\uD83C\uDFFB";
+            emoji = "\uD83D\uDC4E";
             msg = T("gameMiss").replace("{diff}", formatYears(ages.diff));
           } else {
             emoji = "\uD83D\uDC80";
@@ -4686,11 +4747,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // Label — clear the flyby ring so it doesn't overlap the arc
           const name = state.lang === "en" ? star.nameEn : star.namePl;
           const labelX = cx + starFlybyRingR(star) + 10;
-          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.font = '15px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(255,248,225,0.7)";
           ctx.textAlign = "left";
           ctx.fillText(name, labelX, cy - r - 26);
-          ctx.font = '13px "Share Tech Mono", monospace';
+          ctx.font = '13px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(255,248,225,0.4)";
           ctx.fillText(
             (star.approx ? "~" : "") + star.dist + " ly",

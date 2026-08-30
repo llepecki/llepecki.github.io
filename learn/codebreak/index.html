@@ -1,0 +1,3919 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- codebreak/index.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+The puzzle engine is additionally verified by `node tools/codebreak-puzzle-check.mjs` (run from learn/).
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code Breaker</title>
+    <meta
+      name="description"
+      content="Code Breaker — crack hidden three-symbol codes from exact clues. A kid-friendly deduction game with numbers, letters, cards, and shapes."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/codebreak/" />
+    <meta property="og:title" content="Code Breaker" />
+    <meta
+      property="og:description"
+      content="Code Breaker — crack hidden three-symbol codes from exact clues. A kid-friendly deduction game with numbers, letters, cards, and shapes."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/codebreak/" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Code Breaker" />
+    <meta
+      name="twitter:description"
+      content="Code Breaker — crack hidden three-symbol codes from exact clues. A kid-friendly deduction game with numbers, letters, cards, and shapes."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --perfect: #00c853;
+        --close: #1976d2;
+        --far: #f9a825;
+        --miss: #d32f2f;
+        --paper: #fdf6e3;
+        --paper-border: #e8dcc0;
+        --teal: #00897b;
+        --amber: #f9a825;
+        --coral: #e53935;
+        --ink: #607d8b;
+        --card-red: #d32f2f;
+      }
+      body {
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .panel-section[hidden],
+      .settings-body[hidden],
+      .task-chip[hidden],
+      .game-board[hidden],
+      .board-idle[hidden],
+      .board-pad[hidden],
+      .pad-grid[hidden],
+      .slot-row[hidden],
+      .symbol-tray[hidden],
+      .btn-row[hidden],
+      .feedback-card[hidden],
+      .glossary-list[hidden],
+      .board-clue[hidden],
+      .clue-detail[hidden],
+      .clue-badge[hidden],
+      .solved-stamp[hidden],
+      .readout-row[hidden],
+      .help-body[hidden],
+      .stage-prompt[hidden],
+      .action-btn[hidden] {
+        display: none;
+      }
+
+      /* ===== Header ===== */
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* ===== Layout ===== */
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+      .stage-wrap {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+      }
+      .stage-prompt {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-dim);
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid var(--panel-border);
+        pointer-events: none;
+        white-space: nowrap;
+        z-index: 5;
+        max-width: calc(100% - 40px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition:
+          color 0.3s,
+          border-color 0.3s,
+          background 0.3s;
+      }
+      .stage-prompt.highlight {
+        color: var(--perfect);
+        border-color: var(--perfect);
+      }
+      .board-idle {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        color: var(--text-label);
+        pointer-events: none;
+      }
+      .board-idle-emoji {
+        font-size: 56px;
+      }
+      .board-idle p {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .game-board {
+        height: 100%;
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+        gap: 24px;
+        padding: 72px 24px 24px;
+      }
+      /* Short windows: tighten the board rhythm so the densest case (six
+         card clues) stays clear of the clue board's internal scroll. */
+      @media (max-height: 760px) {
+        .game-board {
+          gap: 18px;
+          padding: 64px 24px 20px;
+        }
+      }
+      .board-answer {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        position: relative;
+      }
+      .clue-board {
+        min-height: 0;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        align-content: start;
+      }
+      .board-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+      }
+      .board-actions .btn-row {
+        justify-content: center;
+      }
+      .board-actions .action-btn {
+        flex: 0 0 auto;
+        min-width: 88px;
+      }
+      .board-actions .feedback-card {
+        max-width: 560px;
+        width: 100%;
+      }
+      .solved-stamp {
+        position: absolute;
+        right: 8%;
+        top: -8px;
+        transform: rotate(-8deg);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 26px;
+        letter-spacing: 2px;
+        color: var(--teal);
+        border: 3px solid var(--teal);
+        border-radius: 8px;
+        padding: 4px 14px;
+        background: rgba(255, 255, 255, 0.7);
+        animation: overlayPop 0.4s ease;
+        pointer-events: none;
+        z-index: 4;
+      }
+      .panel {
+        width: 320px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .panel-section {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .panel-section.grow {
+        flex: 1;
+      }
+      .section-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+
+      /* ===== Launcher ===== */
+      .launcher-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .launcher-text {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.5;
+      }
+
+      /* ===== Puzzle summary ===== */
+      .task-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .task-chip {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-dim);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        padding: 2px 8px;
+      }
+
+      /* ===== Settings ===== */
+      .settings-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .settings-progress {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      /* ===== Answer slots & tray ===== */
+      .slot-row {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+      /* One tile chassis wherever a symbol sits: answer slots, symbol tray,
+         and the scratchpad. Same size, border, and rendering everywhere so a
+         tile never changes shape as it moves between rows. */
+      .code-slot,
+      .symbol-btn,
+      .pad-btn.pad-out {
+        position: relative;
+        min-width: 58px;
+        height: 58px;
+        padding: 0 6px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text-head);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .code-slot.hosts-card,
+      .symbol-btn.hosts-card,
+      .pad-btn.pad-out.hosts-card,
+      .drag-ghost.hosts-card {
+        height: 76px;
+        padding: 4px;
+      }
+      .code-slot {
+        width: 58px;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .code-slot.drop-hover {
+        border-color: var(--accent);
+        border-style: dashed;
+        background: var(--accent-light);
+      }
+      .code-slot:hover {
+        border-color: var(--accent);
+      }
+      .code-slot.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+      }
+      .code-slot .slot-hint {
+        font-size: 16px;
+        color: var(--text-label);
+      }
+      .code-slot:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .symbol-tray {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .symbol-btn {
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      /* Absent symbols: a red ring and light red wash, no overlay glyph. */
+      .symbol-btn.crossed {
+        border-color: var(--coral);
+        background: #fdf2f1;
+      }
+      .symbol-btn.clue-highlight {
+        border-color: var(--teal);
+        background: #eef7f6;
+      }
+      .drag-source {
+        opacity: 0.4;
+      }
+      .drag-ghost {
+        position: fixed;
+        z-index: 10000;
+        pointer-events: none;
+        opacity: 0.9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 58px;
+        height: 58px;
+        padding: 0 6px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text-head);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        box-shadow: 0 4px 10px rgba(38, 50, 56, 0.18);
+      }
+
+      /* ===== Mini playing cards ===== */
+      .pc {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        border: 1px solid #b0bec5;
+        border-radius: 5px;
+        flex-shrink: 0;
+      }
+      .pc-rank {
+        position: absolute;
+        top: 3px;
+        left: 5px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        line-height: 1;
+      }
+      .pc-pip {
+        font-size: 24px;
+        line-height: 1;
+        margin-top: 8px;
+      }
+      .pc-lg {
+        width: 45px;
+        height: 61px;
+      }
+      .pc-sm {
+        width: 29px;
+        height: 40px;
+      }
+      .pc-sm .pc-rank {
+        top: 2px;
+        left: 3px;
+        font-size: 12px;
+      }
+      .pc-sm .pc-pip {
+        font-size: 15px;
+        margin-top: 7px;
+      }
+      .mini-symbol.card {
+        background: none;
+        border: none;
+        padding: 0;
+        min-width: 0;
+        height: auto;
+      }
+      .symbol-btn:hover:not(:disabled) {
+        background: #f0ede6;
+        border-color: var(--accent);
+      }
+      .symbol-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .symbol-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ===== Action buttons ===== */
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .action-btn {
+        flex: 1;
+        padding: 10px 8px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .action-btn:hover:not(:disabled) {
+        background: #f0ede6;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .action-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      /* Panel buttons sit in column flex parents: keep natural height. */
+      .panel-section > .action-btn,
+      .settings-body > .action-btn {
+        flex: none;
+      }
+      .action-btn.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .action-btn.primary:hover:not(:disabled) {
+        background: #37474f;
+        border-color: #37474f;
+        color: #fff;
+      }
+
+      /* ===== Feedback card ===== */
+      .feedback-card {
+        border: 1px solid var(--panel-border);
+        border-left: 4px solid var(--text-dim);
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.5;
+        background: #fafaf7;
+      }
+      .feedback-card.perfect {
+        border-left-color: var(--perfect);
+      }
+      .feedback-card.close {
+        border-left-color: var(--close);
+      }
+      .feedback-card.far {
+        border-left-color: var(--far);
+      }
+      .feedback-card.miss {
+        border-left-color: var(--miss);
+      }
+      .feedback-card.hint {
+        border-left-color: var(--teal);
+      }
+
+      /* ===== Clue cards ===== */
+      .board-clue {
+        background: var(--paper);
+        border: 1px solid var(--paper-border);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-self: start;
+      }
+      .board-clue.reveal {
+        animation: cluePop 0.3s ease both;
+      }
+      .board-clue.selected {
+        border-color: var(--accent);
+      }
+      .board-clue.step-active {
+        border-color: var(--teal);
+      }
+      .board-clue.violated {
+        border-color: var(--miss);
+      }
+      .board-clue.collapsed .mini-row,
+      .board-clue.collapsed .clue-short {
+        display: none;
+      }
+      .clue-head {
+        background: none;
+        border: none;
+        padding: 8px 10px;
+        cursor: pointer;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 8px;
+        text-align: left;
+        width: 100%;
+        font-family: "Outfit", sans-serif;
+        border-radius: 8px;
+        touch-action: manipulation;
+      }
+      .clue-head:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .clue-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+      .clue-short {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-head);
+      }
+      .clue-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--coral);
+        border: 1px solid currentColor;
+        border-radius: 8px;
+        padding: 1px 6px;
+        margin-left: auto;
+      }
+      .clue-detail {
+        padding: 0 10px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .clue-sentence {
+        font-size: 12px;
+        color: #546e7a;
+        line-height: 1.4;
+      }
+      .clue-mark-btn {
+        flex: none;
+        min-height: 36px;
+        padding: 6px 10px;
+        align-self: flex-start;
+      }
+      .mini-row {
+        display: flex;
+        gap: 6px;
+      }
+      .mini-symbol {
+        min-width: 34px;
+        height: 34px;
+        padding: 0 4px;
+        border: 1px solid var(--paper-border);
+        border-radius: 4px;
+        background: var(--panel);
+        color: var(--text-head);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      @keyframes cluePop {
+        from {
+          opacity: 0;
+          transform: scale(0.94);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* ===== Glossary ===== */
+      .glossary-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .glossary-item {
+        font-size: 12px;
+        color: #546e7a;
+        line-height: 1.4;
+      }
+      .glossary-item strong {
+        color: var(--text-head);
+        font-weight: 600;
+      }
+
+      /* ===== Scratchpad ===== */
+      .board-pad {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+      }
+      .pad-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+        padding: 4px 8px;
+        transition: color 0.15s;
+        touch-action: manipulation;
+      }
+      .pad-toggle:hover {
+        color: var(--accent);
+      }
+      .pad-toggle:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      .pad-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+      }
+      .pad-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+      }
+      .pad-btn {
+        border-radius: 6px;
+        border: 1px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--ink);
+        font-family: "JetBrains Mono", monospace;
+        cursor: pointer;
+        transition: all 0.15s;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .pad-dots {
+        display: flex;
+        gap: 3px;
+      }
+      .pad-dot {
+        width: 21px;
+        height: 21px;
+        border-radius: 50%;
+        border: 1px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-label);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      .pad-btn:hover:not(:disabled),
+      .pad-dot:hover:not(:disabled) {
+        border-color: var(--accent);
+      }
+      .pad-btn:disabled,
+      .pad-dot:disabled {
+        cursor: default;
+      }
+      .pad-btn:focus-visible,
+      .pad-dot:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .pad-btn.mark-no {
+        color: var(--coral);
+        border-color: var(--coral);
+        background: #fdf2f1;
+      }
+      /* Slot dots say "not in THIS place" — amber, matching the palette's
+         wrong-place accent: the symbol may well be in the code, just
+         elsewhere. Digit in a darker orange for legibility. */
+      .pad-dot.mark-no {
+        color: #ef6c00;
+        border-color: var(--amber);
+        background: #fdf3df;
+      }
+      .pad-btn.mark-yes,
+      .pad-dot.mark-yes {
+        color: var(--teal);
+        border-color: var(--teal);
+        background: #eef7f6;
+      }
+      .pad-btn.fresh,
+      .pad-dot.fresh {
+        animation: markPulse 0.6s ease;
+      }
+
+      /* ===== Readouts ===== */
+      .readout-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .readout-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+      .readout-val {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+
+      /* ===== Options ===== */
+      .opt-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .opt-btn {
+        padding: 10px 8px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        min-height: 44px;
+      }
+      .opt-btn:hover:not(:disabled) {
+        background: #f0ede6;
+      }
+      .opt-btn.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+      .opt-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .level-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .level-btn {
+        width: 32px;
+        height: 40px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        padding: 0;
+        position: relative;
+      }
+      .level-btn:hover {
+        background: #f0ede6;
+      }
+      .level-btn.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+      .level-btn.recommended::after {
+        content: "";
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--teal);
+      }
+      .level-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ===== Help ===== */
+      .help-body {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.5;
+      }
+      .help-body .keys {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--text-dim);
+        line-height: 1.6;
+      }
+
+      /* ===== Result overlay ===== */
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+        padding: 24px;
+        text-align: center;
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        font-family: "Outfit", sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #0b171b;
+        margin-top: 12px;
+      }
+      .overlay-sub {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 16px;
+        color: #0b171b;
+        margin-top: 8px;
+      }
+      .overlay-hint {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 18px;
+      }
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      @keyframes markPulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(0, 137, 123, 0.5);
+        }
+        100% {
+          box-shadow: 0 0 0 8px rgba(0, 137, 123, 0);
+        }
+      }
+
+      /* ===== Reduced motion ===== */
+      @media (prefers-reduced-motion: reduce) {
+        .result-overlay,
+        .overlay-emoji,
+        .pad-btn.fresh,
+        .pad-dot.fresh,
+        .board-clue.reveal,
+        .solved-stamp {
+          animation: none;
+        }
+        .lang-btn,
+        .action-btn,
+        .opt-btn,
+        .level-btn,
+        .code-slot,
+        .symbol-btn,
+        .clue-head,
+        .pad-btn,
+        .pad-dot,
+        .pad-toggle,
+        .stage-prompt {
+          transition: none;
+        }
+      }
+
+      /* ===== Mobile ===== */
+      @media (max-width: 720px) {
+        .main {
+          height: auto;
+          flex-direction: column;
+        }
+        .stage-wrap {
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+        }
+        .game-board {
+          height: auto;
+          display: flex;
+          flex-direction: column;
+          padding: 60px 12px 16px;
+        }
+        .clue-board {
+          overflow-y: visible;
+          grid-template-columns: 1fr;
+          display: grid;
+        }
+        .board-actions {
+          position: sticky;
+          bottom: 0;
+          background: var(--canvas-bg);
+          padding: 8px 0;
+          z-index: 6;
+          width: 100%;
+        }
+        .symbol-tray {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          justify-content: flex-start;
+          padding-bottom: 4px;
+          max-width: 100%;
+        }
+        .panel {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/" aria-label="Back to all learn apps"
+            ><span class="header-icon">&#x1F50E;</span></a
+          >
+          <span id="titleText">Code Breaker</span>
+        </h1>
+        <p id="subtitleText">Crack the hidden code from exact clues.</p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+        aria-label="Switch language"
+      >
+        PL
+      </button>
+    </header>
+    <main class="main">
+      <div class="stage-wrap">
+        <div class="stage-prompt" id="stagePrompt" hidden></div>
+        <div class="board-idle" id="boardIdle">
+          <span class="board-idle-emoji" aria-hidden="true">&#x1F50E;</span>
+          <p id="boardIdleText">Press Start puzzle to begin</p>
+        </div>
+        <div
+          class="game-board"
+          id="gameBoard"
+          aria-label="Game board with the answer slots, symbol tray, and clue cards"
+          hidden
+        >
+          <div class="board-answer" id="boardAnswer">
+            <div class="slot-row" id="slotRow"></div>
+            <div class="solved-stamp" id="solvedStamp" hidden>SOLVED</div>
+          </div>
+          <div class="symbol-tray" id="symbolTray"></div>
+          <div class="clue-board" id="clueList"></div>
+          <div class="board-pad" id="padWrap" hidden>
+            <button
+              type="button"
+              class="pad-toggle"
+              id="padToggleBtn"
+              aria-expanded="true"
+            >
+              Scratchpad
+            </button>
+            <div class="pad-grid" id="padGrid"></div>
+          </div>
+          <div class="board-actions" id="boardActions">
+            <div class="btn-row">
+              <button type="button" class="action-btn primary" id="checkBtn">
+                Check
+              </button>
+              <button type="button" class="action-btn" id="hintBtn">
+                Hint
+              </button>
+              <button type="button" class="action-btn" id="undoBtn">
+                Undo
+              </button>
+              <button type="button" class="action-btn" id="clearBtn">
+                Clear
+              </button>
+              <button type="button" class="action-btn" id="nextBtn">
+                Next
+              </button>
+            </div>
+            <div class="feedback-card" id="feedbackCard" hidden></div>
+          </div>
+        </div>
+      </div>
+      <aside class="panel">
+        <section class="panel-section" id="launcher" hidden>
+          <span class="launcher-title" id="launcherTitle">Code Breaker</span>
+          <p class="launcher-text" id="launcherText">
+            Find the hidden three-symbol code from exact clues.
+          </p>
+          <button type="button" class="action-btn primary" id="startCaseBtn">
+            Start puzzle
+          </button>
+          <button type="button" class="action-btn" id="launcherSettingsBtn">
+            Settings
+          </button>
+        </section>
+        <section class="panel-section" id="modeSection" hidden>
+          <span class="section-label" id="lblMode">Mode</span>
+          <div class="opt-grid" id="modeToggle">
+            <button type="button" class="opt-btn" id="modeStepBtn">
+              Step By Step
+            </button>
+            <button type="button" class="opt-btn" id="modeAllBtn">
+              All Clues
+            </button>
+          </div>
+          <button type="button" class="action-btn" id="newPuzzleBtn">
+            New puzzle
+          </button>
+        </section>
+        <section class="panel-section" id="summarySection" hidden>
+          <span class="section-label" id="lblSummary">Current puzzle</span>
+          <div class="task-chips" id="taskChips">
+            <span class="task-chip" id="levelChip"></span>
+            <span class="task-chip" id="variantChip"></span>
+          </div>
+          <div class="readout-row">
+            <span class="readout-label" id="lblProgress">Progress</span>
+            <span class="readout-val" id="progressReadout">&mdash;</span>
+          </div>
+          <div class="readout-row" id="candidateRow" hidden>
+            <span class="readout-label" id="lblCandidates">Possible codes</span>
+            <span class="readout-val" id="candidateReadout">&mdash;</span>
+          </div>
+        </section>
+        <section class="panel-section grow" id="settingsSection" hidden>
+          <button
+            type="button"
+            class="action-btn"
+            id="settingsBtn"
+            aria-expanded="false"
+          >
+            Settings
+          </button>
+          <div class="settings-body" id="settingsBody" hidden>
+            <span class="section-label" id="lblVariant">Symbols</span>
+            <div class="opt-grid" id="variantGrid">
+              <button type="button" class="opt-btn" data-variant="numbers">
+                Numbers
+              </button>
+              <button type="button" class="opt-btn" data-variant="letters">
+                Letters
+              </button>
+              <button type="button" class="opt-btn" data-variant="cards">
+                Cards
+              </button>
+              <button type="button" class="opt-btn" data-variant="shapes">
+                Shapes
+              </button>
+            </div>
+            <span class="section-label" id="lblLevel">Level</span>
+            <div class="level-row" id="levelRow">
+              <button type="button" class="level-btn" data-level="1">1</button>
+              <button type="button" class="level-btn" data-level="2">2</button>
+              <button type="button" class="level-btn" data-level="3">3</button>
+              <button type="button" class="level-btn" data-level="4">4</button>
+              <button type="button" class="level-btn" data-level="5">5</button>
+            </div>
+            <div class="settings-progress" id="settingsProgress"></div>
+            <button type="button" class="action-btn" id="glossaryBtn">
+              Clue glossary
+            </button>
+            <div class="glossary-list" id="glossaryList" hidden></div>
+            <button type="button" class="action-btn" id="helpBtn">
+              How to play
+            </button>
+            <div class="help-body" id="helpBody" hidden>
+              <p id="helpText1"></p>
+              <p id="helpText2"></p>
+              <p class="keys" id="helpKeys"></p>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+    <div class="visually-hidden" id="liveRegion" aria-live="polite"></div>
+    <script>
+      (function () {
+        "use strict";
+
+        /* ================= I18N ================= */
+        const I18N = {
+          en: {
+            docTitle: "Code Breaker",
+            title: "Code Breaker",
+            subtitle: "Crack the hidden code from exact clues.",
+            langTitle: "Switch language",
+            homeAria: "Back to all learn apps",
+            boardAria:
+              "Game board with the answer slots, symbol tray, and clue cards",
+
+            mode: "Mode",
+            variant: "Symbols",
+            level: "Level",
+            progress: "Progress",
+            lblCandidates: "Possible codes",
+            lblSummary: "Current puzzle",
+            lblPad: "Scratchpad",
+
+            launcherTitle: "Code Breaker",
+            launcherText: "Find the hidden three-symbol code from exact clues.",
+            startPuzzle: "Start puzzle",
+            settings: "Settings",
+            newPuzzle: "New puzzle",
+            modeStep: "Step By Step",
+            modeAll: "All Clues",
+
+            numbers: "Numbers",
+            letters: "Letters",
+            cards: "Cards",
+            shapes: "Shapes",
+
+            check: "Check",
+            hint: "Hint",
+            undo: "Undo",
+            clear: "Clear",
+            next: "Next",
+            newCase: "New case",
+
+            levelChip: "Level {level}",
+
+            clueNothing: "Nothing is correct",
+            clueOneWell: "One symbol is correct and well placed",
+            clueOneWrong: "One symbol is correct but wrongly placed",
+            clueTwoWrong: "Two symbols are correct but wrongly placed",
+            clueMixedTwo:
+              "Two symbols are correct: one well placed, one wrongly placed",
+            clueThreeWrong:
+              "All three symbols are correct but all wrongly placed",
+
+            shortNothing: "0 in code",
+            shortOneWell: "1 right, right place",
+            shortOneWrong: "1 right, wrong place",
+            shortTwoWrong: "2 right, wrong places",
+            shortMixedTwo: "2 right: 1 placed, 1 moved",
+            shortThreeWrong: "3 right, all moved",
+
+            clueTag: "Clue {n}",
+            clueAria: "Clue {n}: {label}",
+            markFromClue: "Mark from this clue",
+            clueMarked: "Marked",
+
+            stepMarkAbsent: "Mark {symbols} as not in the code.",
+            stepMarkSlots:
+              "Mark each shown symbol as impossible in its shown slot.",
+            stepReadOn:
+              "No sure marks from this clue alone — remember it and press Next.",
+            stepFinal:
+              "All clues are on the desk. Fill the three slots and press Check.",
+            stepDone: "Nice work! Press Next for the next clue.",
+
+            guidedClue1:
+              "Nothing is correct here: 1, 2 and 3 are not in the code. Mark all three as out.",
+            guidedClue2:
+              "Exactly one symbol is correct and well placed. You crossed out 2 and 3 — so it is 4, right where it stands. Put 4 into the first slot.",
+            guidedClue3:
+              "One symbol is correct but wrongly placed. 2 and 3 are out, so 5 is in the code — just not where this card shows it. Mark the shown slots as impossible.",
+            guidedClue4:
+              "Two symbols are correct but both wrongly placed. 6 and 5 are in the code, but each must move away from where the card shows them. Mark the shown slots as impossible.",
+            guidedClue5:
+              "Counts are exact: exactly one is correct and well placed — 3 and 1 are out, so it is 6, sitting in the middle. Put 6 into the middle slot, then fill the rest and press Check.",
+
+            glossaryBtn: "Clue glossary",
+            meanNothing: "none of the shown symbols are in the code.",
+            meanOneWell:
+              "exactly one shown symbol is in the code, in that exact slot. The other two are absent.",
+            meanOneWrong:
+              "exactly one shown symbol is in the code, but in a different slot. The other two are absent.",
+            meanTwoWrong:
+              "exactly two shown symbols are in the code, and both must move to other slots.",
+            meanMixedTwo:
+              "exactly two shown symbols are in the code: one stays where it is, one must move.",
+            meanThreeWrong:
+              "all three shown symbols are in the code, and every one must move.",
+
+            fbIncomplete: "Fill all three slots before checking.",
+            fbPerfect: "Solved! Your code matches every clue exactly.",
+            fbPerfectHints:
+              "Solved! You cracked it with a little help from the hints.",
+            fbClose:
+              "These are the right symbols, but {count} sit in the wrong slot. Check the wrong-place clues again.",
+            fbFarPresent:
+              "Your answer makes {got} of the symbols on clue {clue} correct, but that clue says exactly {want}. Try a different mix.",
+            fbFarWell:
+              "Your answer puts {got} symbols from clue {clue} in exactly the right slot, but that clue says {want}. Something must move.",
+            fbMiss:
+              "None of those symbols are in the hidden code. Cross them off in the scratchpad and try others.",
+            fbWrongGeneric:
+              "That answer does not match every clue. Cross-check it against each card, one at a time.",
+
+            hintAbsent:
+              "Clue {clue} says nothing is correct — so {symbols} are not in the code. I marked them out.",
+            hintAbsentAll:
+              "Clue {clue} says all three symbols are in the code — so every other symbol is out. I marked them.",
+            hintSlot:
+              "In clue {clue}, no symbol sits in the right slot. So {symbol} cannot be in slot {slot}. I marked it.",
+            hintConfirm:
+              "Every code that fits the clues agrees: slot {slot} must be {symbol}. I marked it.",
+            hintCandidates:
+              "Your notes still allow {count} possible codes. Keep eliminating!",
+            hintReveal: "Here is one for free: slot {slot} is {symbol}.",
+            hintNone:
+              "No more hints — compare your answer with each clue card, one at a time.",
+
+            padAriaOut: "{symbol}: not in the code",
+            padAriaSlot: "{symbol} in slot {slot}",
+            padMarkNone: "no mark",
+            padMarkNo: "marked impossible",
+            padMarkYes: "marked confirmed",
+
+            ovSolved: "Case solved!",
+            ovSolvedHints: "Solved with hints",
+            ovMatches: "Your code matches every clue",
+            ovDismiss: "Click anywhere to continue",
+            ovStamp: "SOLVED",
+
+            progressLine: "{solved} solved · this level: {levelSolved}",
+            settingsLevelLine: "solved {solved} · perfect {perfect}",
+
+            promptIdle: "Press Start puzzle to begin",
+            promptCase: "Study the clue cards, then fill the three slots",
+            promptStep: "Do what the active clue card says",
+            promptSolved: "Case closed!",
+
+            helpBtn: "How to play",
+            help1:
+              "A hidden code has three different symbols in order. Each clue card compares one old guess with the hidden code and tells you exactly how many symbols are correct and how many are in the right slot.",
+            help2:
+              "Counts are exact: if a card says one is correct, the other two shown symbols are not in the code at all. Use the scratchpad to cross off symbols, then fill the slots and press Check. Tap or drag symbols into the slots — drag between slots to swap, or off the slots to remove.",
+            helpKeys:
+              "Keys: 1-9, A-L type a symbol · arrows move between slots · Backspace clears a slot · Enter checks · Escape closes overlays",
+
+            suitH: "hearts",
+            suitD: "diamonds",
+            suitC: "clubs",
+            suitS: "spades",
+            cardAria: "{rank} of {suit}",
+            sym_circle: "circle",
+            sym_square: "square",
+            sym_triangle: "triangle",
+            sym_star: "star",
+            sym_diamond: "diamond",
+            sym_hexagon: "hexagon",
+            sym_pentagon: "pentagon",
+            sym_cross: "cross",
+            sym_heart: "heart",
+            sym_sun: "sun",
+            sym_flower: "flower",
+            sym_ring: "ring",
+
+            slotAriaEmpty: "Answer slot {n} of 3, empty",
+            slotAriaFilled: "Answer slot {n} of 3: {symbol}",
+            trayAria: "Put {symbol} into the selected slot",
+          },
+          pl: {
+            docTitle: "Łamacz Kodów",
+            title: "Łamacz Kodów",
+            subtitle: "Złam ukryty kod dzięki dokładnym wskazówkom.",
+            langTitle: "Zmień język",
+            homeAria: "Powrót do wszystkich aplikacji",
+            boardAria:
+              "Plansza gry z miejscami odpowiedzi, tacą symboli i kartami wskazówek",
+
+            mode: "Tryb",
+            variant: "Symbole",
+            level: "Poziom",
+            progress: "Postępy",
+            lblCandidates: "Możliwe kody",
+            lblSummary: "Bieżąca łamigłówka",
+            lblPad: "Notatnik",
+
+            launcherTitle: "Łamacz Kodów",
+            launcherText:
+              "Znajdź ukryty kod z trzech symboli dzięki dokładnym wskazówkom.",
+            startPuzzle: "Zacznij łamigłówkę",
+            settings: "Ustawienia",
+            newPuzzle: "Nowa łamigłówka",
+            modeStep: "Krok po kroku",
+            modeAll: "Wszystkie wskazówki",
+
+            numbers: "Cyfry",
+            letters: "Litery",
+            cards: "Karty",
+            shapes: "Kształty",
+
+            check: "Sprawdź",
+            hint: "Podpowiedź",
+            undo: "Cofnij",
+            clear: "Wyczyść",
+            next: "Dalej",
+            newCase: "Nowa sprawa",
+
+            levelChip: "Poziom {level}",
+
+            clueNothing: "Nic się nie zgadza",
+            clueOneWell: "Jeden symbol jest trafiony i dobrze ustawiony",
+            clueOneWrong: "Jeden symbol jest trafiony, ale źle ustawiony",
+            clueTwoWrong: "Dwa symbole są trafione, ale źle ustawione",
+            clueMixedTwo:
+              "Dwa symbole są trafione: jeden dobrze, a jeden źle ustawiony",
+            clueThreeWrong:
+              "Wszystkie trzy symbole są trafione, ale źle ustawione",
+
+            shortNothing: "0 w kodzie",
+            shortOneWell: "1 trafiony, dobre miejsce",
+            shortOneWrong: "1 trafiony, złe miejsce",
+            shortTwoWrong: "2 trafione, złe miejsca",
+            shortMixedTwo: "2 trafione: 1 stoi, 1 się przesuwa",
+            shortThreeWrong: "3 trafione, wszystkie się przesuwają",
+
+            clueTag: "Wskazówka {n}",
+            clueAria: "Wskazówka {n}: {label}",
+            markFromClue: "Oznacz z tej wskazówki",
+            clueMarked: "Oznaczone",
+
+            stepMarkAbsent: "Oznacz {symbols} jako nieobecne w kodzie.",
+            stepMarkSlots:
+              "Oznacz każdy pokazany symbol jako niemożliwy na pokazanym miejscu.",
+            stepReadOn:
+              "Ta wskazówka sama nie daje pewnych oznaczeń — zapamiętaj ją i naciśnij Dalej.",
+            stepFinal:
+              "Wszystkie wskazówki są na biurku. Wypełnij trzy miejsca i naciśnij Sprawdź.",
+            stepDone:
+              "Świetnie! Naciśnij Dalej, aby zobaczyć kolejną wskazówkę.",
+
+            guidedClue1:
+              "Nic się tu nie zgadza: 1, 2 i 3 nie występują w kodzie. Oznacz wszystkie trzy jako poza kodem.",
+            guidedClue2:
+              "Dokładnie jeden symbol jest trafiony i dobrze ustawiony. 2 i 3 są już skreślone — więc to 4, dokładnie tam, gdzie stoi. Wstaw 4 na pierwsze miejsce.",
+            guidedClue3:
+              "Jeden symbol jest trafiony, ale źle ustawiony. 2 i 3 są poza kodem, więc 5 jest w kodzie — tylko nie tam, gdzie pokazuje karta. Oznacz pokazane miejsca jako niemożliwe.",
+            guidedClue4:
+              "Dwa symbole są trafione, ale oba źle ustawione. 6 i 5 są w kodzie, ale każdy musi się przesunąć z pokazanego miejsca. Oznacz pokazane miejsca jako niemożliwe.",
+            guidedClue5:
+              "Liczby są dokładne: dokładnie jeden symbol jest trafiony i dobrze ustawiony — 3 i 1 są poza kodem, więc to 6, na środku. Wstaw 6 na środkowe miejsce, uzupełnij resztę i naciśnij Sprawdź.",
+
+            glossaryBtn: "Słowniczek wskazówek",
+            meanNothing: "żaden z pokazanych symboli nie występuje w kodzie.",
+            meanOneWell:
+              "dokładnie jeden pokazany symbol jest w kodzie, na dokładnie tym miejscu. Pozostałe dwa nie występują.",
+            meanOneWrong:
+              "dokładnie jeden pokazany symbol jest w kodzie, ale na innym miejscu. Pozostałe dwa nie występują.",
+            meanTwoWrong:
+              "dokładnie dwa pokazane symbole są w kodzie i oba muszą zmienić miejsce.",
+            meanMixedTwo:
+              "dokładnie dwa pokazane symbole są w kodzie: jeden zostaje na miejscu, a jeden musi się przesunąć.",
+            meanThreeWrong:
+              "wszystkie trzy pokazane symbole są w kodzie i każdy musi zmienić miejsce.",
+
+            fbIncomplete: "Wypełnij wszystkie trzy miejsca przed sprawdzeniem.",
+            fbPerfect:
+              "Rozwiązane! Twój kod pasuje dokładnie do każdej wskazówki.",
+            fbPerfectHints:
+              "Rozwiązane! Złamałeś kod z małą pomocą podpowiedzi.",
+            fbClose:
+              "To właściwe symbole, ale {count} stoi na złym miejscu. Sprawdź jeszcze raz wskazówki o złym miejscu.",
+            fbFarPresent:
+              "Twoja odpowiedź trafia {got} symboli ze wskazówki {clue}, a ta wskazówka mówi dokładnie {want}. Spróbuj innego zestawu.",
+            fbFarWell:
+              "Twoja odpowiedź ustawia {got} symboli ze wskazówki {clue} na dokładnie właściwych miejscach, a wskazówka mówi {want}. Coś musi się przesunąć.",
+            fbMiss:
+              "Żaden z tych symboli nie występuje w ukrytym kodzie. Skreśl je w notatniku i spróbuj innych.",
+            fbWrongGeneric:
+              "Ta odpowiedź nie pasuje do każdej wskazówki. Sprawdź ją z każdą kartą po kolei.",
+
+            hintAbsent:
+              "Wskazówka {clue} mówi, że nic się nie zgadza — więc {symbols} nie występują w kodzie. Skreśliłem je.",
+            hintAbsentAll:
+              "Wskazówka {clue} mówi, że wszystkie trzy symbole są w kodzie — więc każdy inny symbol jest poza. Oznaczyłem je.",
+            hintSlot:
+              "We wskazówce {clue} żaden symbol nie stoi na właściwym miejscu. Więc {symbol} nie może być na miejscu {slot}. Oznaczyłem to.",
+            hintConfirm:
+              "Każdy kod pasujący do wskazówek zgadza się: miejsce {slot} to {symbol}. Oznaczyłem to.",
+            hintCandidates:
+              "Twoje notatki wciąż dopuszczają {count} możliwych kodów. Skreślaj dalej!",
+            hintReveal: "Jedna gratis: miejsce {slot} to {symbol}.",
+            hintNone:
+              "Nie ma więcej podpowiedzi — porównaj swoją odpowiedź z każdą kartą wskazówki po kolei.",
+
+            padAriaOut: "{symbol}: nie występuje w kodzie",
+            padAriaSlot: "{symbol} na miejscu {slot}",
+            padMarkNone: "bez oznaczenia",
+            padMarkNo: "oznaczone jako niemożliwe",
+            padMarkYes: "oznaczone jako potwierdzone",
+
+            ovSolved: "Sprawa rozwiązana!",
+            ovSolvedHints: "Rozwiązane z podpowiedziami",
+            ovMatches: "Twój kod pasuje do każdej wskazówki",
+            ovDismiss: "Kliknij gdziekolwiek, aby kontynuować",
+            ovStamp: "ROZWIĄZANE",
+
+            progressLine: "{solved} rozwiązanych · ten poziom: {levelSolved}",
+            settingsLevelLine: "rozwiązane {solved} · bezbłędne {perfect}",
+
+            promptIdle: "Naciśnij Zacznij łamigłówkę, aby zacząć",
+            promptCase:
+              "Przeczytaj karty wskazówek, potem wypełnij trzy miejsca",
+            promptStep: "Zrób to, co mówi aktywna karta wskazówki",
+            promptSolved: "Sprawa zamknięta!",
+
+            helpBtn: "Jak grać",
+            help1:
+              "Ukryty kod to trzy różne symbole w kolejności. Każda karta wskazówki porównuje jedno dawne zgadywanie z ukrytym kodem i mówi dokładnie, ile symboli jest trafionych i ile stoi na właściwym miejscu.",
+            help2:
+              "Liczby są dokładne: jeśli karta mówi, że jeden jest trafiony, pozostałe dwa pokazane symbole w ogóle nie występują w kodzie. Skreślaj symbole w notatniku, wypełnij miejsca i naciśnij Sprawdź. Symbole możesz dotykać lub przeciągać na miejsca — między miejscami, aby je zamienić, albo poza nie, aby je usunąć.",
+            helpKeys:
+              "Klawisze: 1-9, A-L wpisuje symbol · strzałki zmieniają miejsce · Backspace czyści miejsce · Enter sprawdza · Escape zamyka nakładki",
+
+            suitH: "kier",
+            suitD: "karo",
+            suitC: "trefl",
+            suitS: "pik",
+            cardAria: "{rank} {suit}",
+            sym_circle: "koło",
+            sym_square: "kwadrat",
+            sym_triangle: "trójkąt",
+            sym_star: "gwiazda",
+            sym_diamond: "romb",
+            sym_hexagon: "sześciokąt",
+            sym_pentagon: "pięciokąt",
+            sym_cross: "krzyżyk",
+            sym_heart: "serce",
+            sym_sun: "słońce",
+            sym_flower: "kwiatek",
+            sym_ring: "pierścień",
+
+            slotAriaEmpty: "Miejsce odpowiedzi {n} z 3, puste",
+            slotAriaFilled: "Miejsce odpowiedzi {n} z 3: {symbol}",
+            trayAria: "Wstaw {symbol} na wybrane miejsce",
+          },
+        };
+
+        /* ========= SYMBOLS, LEVELS, ENGINE (pure) ========= */
+        // [engine:start]
+        const SUIT_GLYPHS = {
+          H: "♥︎",
+          D: "♦︎",
+          C: "♣︎",
+          S: "♠︎",
+        };
+        const SYMBOL_SETS = {
+          numbers: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(
+            function (d) {
+              return { id: d, label: d, key: d };
+            },
+          ),
+          letters: "ABCDEFGHIJKL".split("").map(function (c) {
+            return { id: c, label: c, key: c };
+          }),
+          cards: [
+            { rank: "A", suit: "H" },
+            { rank: "2", suit: "S" },
+            { rank: "3", suit: "D" },
+            { rank: "4", suit: "C" },
+            { rank: "5", suit: "H" },
+            { rank: "A", suit: "S" },
+            { rank: "2", suit: "D" },
+            { rank: "3", suit: "C" },
+            { rank: "4", suit: "S" },
+            { rank: "5", suit: "D" },
+            { rank: "A", suit: "C" },
+            { rank: "2", suit: "H" },
+          ].map(function (c) {
+            return {
+              id: c.rank + c.suit,
+              label: c.rank + SUIT_GLYPHS[c.suit],
+              rank: c.rank,
+              suit: c.suit,
+              color: c.suit === "H" || c.suit === "D" ? "#d32f2f" : "#263238",
+            };
+          }),
+          shapes: [
+            { id: "circle", glyph: "●", color: "#e53935" },
+            { id: "square", glyph: "■", color: "#1e88e5" },
+            { id: "triangle", glyph: "▲", color: "#43a047" },
+            { id: "star", glyph: "★", color: "#f9a825" },
+            { id: "diamond", glyph: "◆", color: "#8e24aa" },
+            { id: "hexagon", glyph: "⬢", color: "#00897b" },
+            { id: "pentagon", glyph: "⬟", color: "#3949ab" },
+            { id: "cross", glyph: "✚", color: "#f4511e" },
+            { id: "heart", glyph: "♥︎", color: "#d81b60" },
+            { id: "sun", glyph: "☀︎", color: "#fb8c00" },
+            { id: "flower", glyph: "❀", color: "#7cb342" },
+            { id: "ring", glyph: "◎", color: "#546e7a" },
+          ].map(function (s) {
+            return { id: s.id, label: s.glyph, color: s.color };
+          }),
+        };
+        const POOL_SIZES = {
+          numbers: [5, 6, 8, 10, 10],
+          letters: [5, 6, 8, 10, 12],
+          cards: [5, 6, 8, 10, 12],
+          shapes: [5, 6, 8, 10, 12],
+        };
+        const LEVELS = {
+          1: {
+            minClues: 4,
+            maxClues: 4,
+            keys: ["clueNothing", "clueOneWell", "clueOneWrong"],
+            marks: "auto",
+            showCandidates: false,
+            maxNothing: 2,
+          },
+          2: {
+            minClues: 4,
+            maxClues: 5,
+            keys: [
+              "clueNothing",
+              "clueOneWell",
+              "clueOneWrong",
+              "clueTwoWrong",
+            ],
+            marks: "auto",
+            showCandidates: false,
+            maxNothing: 2,
+          },
+          3: {
+            minClues: 5,
+            maxClues: 5,
+            keys: [
+              "clueNothing",
+              "clueOneWell",
+              "clueOneWrong",
+              "clueTwoWrong",
+              "clueMixedTwo",
+            ],
+            marks: "hint",
+            showCandidates: true,
+            maxNothing: 2,
+          },
+          4: {
+            minClues: 5,
+            maxClues: 6,
+            keys: [
+              "clueNothing",
+              "clueOneWell",
+              "clueOneWrong",
+              "clueTwoWrong",
+              "clueMixedTwo",
+            ],
+            marks: "manual",
+            showCandidates: true,
+            maxNothing: 1,
+          },
+          5: {
+            minClues: 6,
+            maxClues: 6,
+            keys: [
+              "clueNothing",
+              "clueOneWell",
+              "clueOneWrong",
+              "clueTwoWrong",
+              "clueMixedTwo",
+              "clueThreeWrong",
+            ],
+            marks: "manual",
+            showCandidates: true,
+            maxNothing: 1,
+          },
+        };
+        // Authored fallback puzzles as pool-index patterns. One per level;
+        // instantiated for any variant by index lookup, verified for a unique
+        // solution by tools/codebreak-puzzle-check.mjs.
+        const FALLBACK_PATTERNS = {
+          1: {
+            code: [3, 0, 2],
+            clues: [
+              { guess: [4, 3, 1] },
+              { guess: [4, 1, 3] },
+              { guess: [3, 1, 4] },
+              { guess: [1, 0, 4] },
+            ],
+          },
+          2: {
+            code: [3, 4, 5],
+            clues: [
+              { guess: [1, 0, 4] },
+              { guess: [2, 0, 4] },
+              { guess: [1, 0, 3] },
+              { guess: [5, 0, 3] },
+              { guess: [2, 4, 0] },
+            ],
+          },
+          3: {
+            code: [5, 0, 1],
+            clues: [
+              { guess: [4, 3, 1] },
+              { guess: [3, 6, 0] },
+              { guess: [7, 3, 2] },
+              { guess: [3, 7, 1] },
+              { guess: [4, 5, 2] },
+            ],
+          },
+          4: {
+            code: [6, 2, 4],
+            clues: [
+              { guess: [2, 3, 6] },
+              { guess: [3, 8, 4] },
+              { guess: [8, 1, 7] },
+              { guess: [6, 1, 5] },
+              { guess: [4, 2, 0] },
+            ],
+          },
+          5: {
+            code: [3, 5, 2],
+            clues: [
+              { guess: [4, 5, 9] },
+              { guess: [3, 7, 5] },
+              { guess: [3, 7, 4] },
+              { guess: [8, 3, 6] },
+              { guess: [1, 9, 8] },
+              { guess: [4, 7, 2] },
+            ],
+          },
+        };
+        // The authored teaching case used by Learn Clues steps 1-7.
+        const LEARN_CASE = {
+          pool: ["1", "2", "3", "4", "5", "6"],
+          code: ["4", "6", "5"],
+          guesses: [
+            ["1", "2", "3"],
+            ["4", "2", "3"],
+            ["2", "5", "3"],
+            ["6", "5", "2"],
+            ["3", "6", "1"],
+          ],
+        };
+        function createRng(seed) {
+          let t = seed >>> 0;
+          return function () {
+            t += 0x6d2b79f5;
+            let x = t;
+            x = Math.imul(x ^ (x >>> 15), x | 1);
+            x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+            return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        function shuffle(items, rng) {
+          for (let i = items.length - 1; i > 0; i--) {
+            const j = Math.floor(rng() * (i + 1));
+            const tmp = items[i];
+            items[i] = items[j];
+            items[j] = tmp;
+          }
+          return items;
+        }
+        function getSymbolPool(variant, level) {
+          return SYMBOL_SETS[variant].slice(0, POOL_SIZES[variant][level - 1]);
+        }
+        function scoreGuess(code, guess) {
+          let wellPlaced = 0;
+          let present = 0;
+          for (let i = 0; i < 3; i++) {
+            if (guess[i] === code[i]) wellPlaced++;
+            if (code.indexOf(guess[i]) >= 0) present++;
+          }
+          return {
+            present: present,
+            wellPlaced: wellPlaced,
+            wrongPlaced: present - wellPlaced,
+          };
+        }
+        function sameScore(a, b) {
+          return a.present === b.present && a.wellPlaced === b.wellPlaced;
+        }
+        function scoreKey(score) {
+          if (score.present === 0) return "clueNothing";
+          if (score.present === 1) {
+            return score.wellPlaced === 1 ? "clueOneWell" : "clueOneWrong";
+          }
+          if (score.present === 2) {
+            if (score.wellPlaced === 0) return "clueTwoWrong";
+            if (score.wellPlaced === 1) return "clueMixedTwo";
+            return null;
+          }
+          return score.wellPlaced === 0 ? "clueThreeWrong" : null;
+        }
+        function enumerateCodes(ids) {
+          const codes = [];
+          for (let a = 0; a < ids.length; a++) {
+            for (let b = 0; b < ids.length; b++) {
+              if (b === a) continue;
+              for (let c = 0; c < ids.length; c++) {
+                if (c === a || c === b) continue;
+                codes.push([ids[a], ids[b], ids[c]]);
+              }
+            }
+          }
+          return codes;
+        }
+        function filterCandidates(codes, clues) {
+          return codes.filter(function (code) {
+            return clues.every(function (clue) {
+              return sameScore(scoreGuess(code, clue.guess), clue.score);
+            });
+          });
+        }
+        function makeClue(code, guess) {
+          const score = scoreGuess(code, guess);
+          return { guess: guess, score: score, phraseKey: scoreKey(score) };
+        }
+        function codesEqual(a, b) {
+          return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+        }
+        function generatePuzzle(level, variant, seed) {
+          const cfg = LEVELS[level];
+          const pool = getSymbolPool(variant, level).map(function (s) {
+            return s.id;
+          });
+          const allCodes = enumerateCodes(pool);
+          const rng = createRng(seed);
+          for (let attempt = 0; attempt < 60; attempt++) {
+            const solution = allCodes[Math.floor(rng() * allCodes.length)];
+            const order = shuffle(allCodes.slice(), rng);
+            const clues = [];
+            let candidates = allCodes;
+            let nothingUsed = 0;
+            let scanned = 0;
+            for (
+              let i = 0;
+              i < order.length &&
+              clues.length < cfg.maxClues &&
+              candidates.length > 1 &&
+              scanned < 300;
+              i++
+            ) {
+              const guess = order[i];
+              scanned++;
+              const score = scoreGuess(solution, guess);
+              const key = scoreKey(score);
+              if (!key || cfg.keys.indexOf(key) < 0) continue;
+              if (key === "clueNothing" && nothingUsed >= cfg.maxNothing) {
+                continue;
+              }
+              const next = candidates.filter(function (code) {
+                return sameScore(scoreGuess(code, guess), score);
+              });
+              if (next.length >= candidates.length) continue;
+              if (next.length === 1 && clues.length + 1 < cfg.minClues) {
+                continue;
+              }
+              clues.push({ guess: guess, score: score, phraseKey: key });
+              candidates = next;
+              if (key === "clueNothing") nothingUsed++;
+            }
+            if (
+              candidates.length === 1 &&
+              clues.length >= cfg.minClues &&
+              clues.length <= cfg.maxClues
+            ) {
+              return {
+                level: level,
+                variant: variant,
+                seed: seed,
+                code: solution,
+                clues: clues,
+                fallback: false,
+              };
+            }
+          }
+          return instantiateFallback(level, variant);
+        }
+        function instantiateFallback(level, variant) {
+          const pattern = FALLBACK_PATTERNS[level];
+          const pool = getSymbolPool(variant, level).map(function (s) {
+            return s.id;
+          });
+          const code = pattern.code.map(function (i) {
+            return pool[i];
+          });
+          const clues = pattern.clues.map(function (c) {
+            return makeClue(
+              code,
+              c.guess.map(function (i) {
+                return pool[i];
+              }),
+            );
+          });
+          return {
+            level: level,
+            variant: variant,
+            seed: 0,
+            code: code,
+            clues: clues,
+            fallback: true,
+          };
+        }
+        // [engine:end]
+
+        /* ================= STATE & STORAGE ================= */
+        const INTRO_KEY = "codebreakIntroSeenV1";
+        const PROGRESS_KEY = "codebreakProgressV1";
+        const PHRASE_KEYS = [
+          "clueNothing",
+          "clueOneWell",
+          "clueOneWrong",
+          "clueTwoWrong",
+          "clueMixedTwo",
+          "clueThreeWrong",
+        ];
+        const SHORT_KEYS = {
+          clueNothing: "shortNothing",
+          clueOneWell: "shortOneWell",
+          clueOneWrong: "shortOneWrong",
+          clueTwoWrong: "shortTwoWrong",
+          clueMixedTwo: "shortMixedTwo",
+          clueThreeWrong: "shortThreeWrong",
+        };
+        const GUIDED_COPY = [
+          "guidedClue1",
+          "guidedClue2",
+          "guidedClue3",
+          "guidedClue4",
+          "guidedClue5",
+        ];
+        // Unicode shape glyphs fill their em-box unevenly; these factors
+        // equalize their optical size against the large baseline glyphs
+        // (circle, square, hexagon, pentagon).
+        const SHAPE_SCALE = {
+          triangle: 1.1,
+          star: 1.15,
+          diamond: 1.1,
+          cross: 1.2,
+          heart: 1.15,
+          sun: 1.25,
+          flower: 1.25,
+          ring: 1.2,
+        };
+        const OVERLAY_TIERS = {
+          perfect: "rgba(0, 200, 83, 0.92)",
+          close: "rgba(25, 118, 210, 0.9)",
+          far: "rgba(249, 168, 37, 0.92)",
+          miss: "rgba(211, 47, 47, 0.92)",
+        };
+
+        const dom = {};
+        [
+          "titleText",
+          "subtitleText",
+          "langBtn",
+          "stagePrompt",
+          "boardIdle",
+          "boardIdleText",
+          "gameBoard",
+          "slotRow",
+          "solvedStamp",
+          "symbolTray",
+          "clueList",
+          "padWrap",
+          "padToggleBtn",
+          "padGrid",
+          "checkBtn",
+          "nextBtn",
+          "hintBtn",
+          "undoBtn",
+          "clearBtn",
+          "feedbackCard",
+          "launcher",
+          "launcherTitle",
+          "launcherText",
+          "startCaseBtn",
+          "launcherSettingsBtn",
+          "modeSection",
+          "lblMode",
+          "modeStepBtn",
+          "modeAllBtn",
+          "newPuzzleBtn",
+          "summarySection",
+          "lblSummary",
+          "taskChips",
+          "levelChip",
+          "variantChip",
+          "lblProgress",
+          "progressReadout",
+          "settingsSection",
+          "settingsBtn",
+          "settingsBody",
+          "lblVariant",
+          "variantGrid",
+          "lblLevel",
+          "levelRow",
+          "candidateRow",
+          "lblCandidates",
+          "candidateReadout",
+          "settingsProgress",
+          "glossaryBtn",
+          "glossaryList",
+          "helpBtn",
+          "helpBody",
+          "helpText1",
+          "helpText2",
+          "helpKeys",
+          "liveRegion",
+        ].forEach(function (id) {
+          dom[id] = document.getElementById(id);
+        });
+
+        const motionQuery = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        );
+
+        const state = {
+          lang: (navigator.language || "").startsWith("pl") ? "pl" : "en",
+          mode: "all",
+          variant: "numbers",
+          level: 1,
+          started: false,
+          puzzle: null,
+          answer: [null, null, null],
+          undoStack: [],
+          activeSlot: 0,
+          solved: false,
+          attempts: 0,
+          hintsUsed: 0,
+          hintFlags: { candShown: false, revealWait: 0 },
+          marks: { absent: {}, cells: [{}, {}, {}] },
+          lastMark: null,
+          feedback: null,
+          selectedClue: null,
+          violatedClue: null,
+          step: null,
+          settingsOpen: false,
+          padOpen: true,
+          reduceMotion: motionQuery.matches,
+          seedCounter: (Date.now() % 2147483647) | 0,
+          progress: {
+            currentLevel: 1,
+            currentVariant: "numbers",
+            solvedByLevel: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+            perfectByLevel: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+            guidedDone: false,
+          },
+        };
+
+        function T(key, vars) {
+          let text = I18N[state.lang][key];
+          if (text === undefined) text = key;
+          if (vars) {
+            Object.keys(vars).forEach(function (name) {
+              text = text.split("{" + name + "}").join(String(vars[name]));
+            });
+          }
+          return text;
+        }
+
+        function nextSeed() {
+          state.seedCounter = (state.seedCounter * 48271) % 2147483647;
+          return state.seedCounter;
+        }
+
+        function loadProgress() {
+          try {
+            const raw = localStorage.getItem(PROGRESS_KEY);
+            if (!raw) return;
+            const data = JSON.parse(raw);
+            if (!data || data.version !== 1) return;
+            [1, 2, 3, 4, 5].forEach(function (level) {
+              if (typeof (data.solvedByLevel || {})[level] === "number") {
+                state.progress.solvedByLevel[level] = data.solvedByLevel[level];
+              }
+              if (typeof (data.perfectByLevel || {})[level] === "number") {
+                state.progress.perfectByLevel[level] =
+                  data.perfectByLevel[level];
+              }
+            });
+            if (LEVELS[data.currentLevel]) {
+              state.level = data.currentLevel;
+              state.progress.currentLevel = data.currentLevel;
+            }
+            if (SYMBOL_SETS[data.currentVariant]) {
+              state.variant = data.currentVariant;
+              state.progress.currentVariant = data.currentVariant;
+            }
+            // Back-compat: payloads written before guidedDone existed belong
+            // to players who already solved cases — never demote them into
+            // the guided tutorial.
+            const totalSolved = [1, 2, 3, 4, 5].reduce(function (sum, level) {
+              return sum + (state.progress.solvedByLevel[level] || 0);
+            }, 0);
+            state.progress.guidedDone =
+              data.guidedDone === true || totalSolved > 0;
+          } catch {
+            /* private mode or storage disabled: play without progress */
+          }
+        }
+
+        function saveProgress() {
+          state.progress.currentLevel = state.level;
+          state.progress.currentVariant = state.variant;
+          try {
+            localStorage.setItem(
+              PROGRESS_KEY,
+              JSON.stringify({
+                version: 1,
+                currentLevel: state.progress.currentLevel,
+                currentVariant: state.progress.currentVariant,
+                solvedByLevel: state.progress.solvedByLevel,
+                perfectByLevel: state.progress.perfectByLevel,
+                guidedDone: state.progress.guidedDone,
+              }),
+            );
+          } catch {
+            /* ignore */
+          }
+        }
+
+        function introSeen() {
+          try {
+            return !!localStorage.getItem(INTRO_KEY);
+          } catch {
+            return false;
+          }
+        }
+
+        function markIntroSeen() {
+          try {
+            localStorage.setItem(INTRO_KEY, "1");
+          } catch {
+            /* ignore */
+          }
+        }
+
+        function announce(text) {
+          dom.liveRegion.textContent = "";
+          dom.liveRegion.textContent = text;
+        }
+
+        function symbolById(variant, id) {
+          const set = SYMBOL_SETS[variant];
+          for (let i = 0; i < set.length; i++) {
+            if (set[i].id === id) return set[i];
+          }
+          return { id: id, label: id };
+        }
+
+        function symbolAria(variant, sym) {
+          if (variant === "cards") {
+            return T("cardAria", {
+              rank: sym.rank,
+              suit: T("suit" + sym.suit),
+            });
+          }
+          if (variant === "shapes") return T("sym_" + sym.id);
+          return sym.label;
+        }
+
+        function currentVariantForBoard() {
+          if (state.puzzle) return state.puzzle.variant;
+          return state.variant;
+        }
+
+        function currentPoolSymbols() {
+          if (state.puzzle && state.puzzle.guided) {
+            return SYMBOL_SETS.numbers.slice(0, LEARN_CASE.pool.length);
+          }
+          if (state.puzzle) {
+            return getSymbolPool(state.puzzle.variant, state.puzzle.level);
+          }
+          return getSymbolPool(state.variant, state.level);
+        }
+
+        function currentPoolIds() {
+          return currentPoolSymbols().map(function (s) {
+            return s.id;
+          });
+        }
+
+        const factsCache = { key: null, facts: null };
+        function deriveFacts() {
+          const puzzle = state.puzzle;
+          if (!puzzle) return null;
+          const key =
+            puzzle.variant +
+            "|" +
+            puzzle.level +
+            "|" +
+            puzzle.seed +
+            "|" +
+            puzzle.clues.length +
+            "|" +
+            puzzle.code.join(",");
+          if (factsCache.key === key) return factsCache.facts;
+          const poolIds = currentPoolIds();
+          const candidates = filterCandidates(
+            enumerateCodes(poolIds),
+            puzzle.clues,
+          );
+          const absent = {};
+          poolIds.forEach(function (id) {
+            absent[id] = true;
+          });
+          const confirmed = [null, null, null];
+          const impossibleAt = [{}, {}, {}];
+          for (let slot = 0; slot < 3; slot++) {
+            poolIds.forEach(function (id) {
+              impossibleAt[slot][id] = true;
+            });
+          }
+          candidates.forEach(function (code) {
+            code.forEach(function (id, slot) {
+              absent[id] = false;
+              impossibleAt[slot][id] = false;
+            });
+          });
+          for (let slot = 0; slot < 3; slot++) {
+            const first = candidates.length ? candidates[0][slot] : null;
+            let agree = first !== null;
+            for (let i = 1; i < candidates.length; i++) {
+              if (candidates[i][slot] !== first) {
+                agree = false;
+                break;
+              }
+            }
+            confirmed[slot] = agree ? first : null;
+          }
+          const facts = {
+            candidates: candidates,
+            absent: absent,
+            confirmed: confirmed,
+            impossibleAt: impossibleAt,
+          };
+          factsCache.key = key;
+          factsCache.facts = facts;
+          return facts;
+        }
+
+        // Codes the child's own notes still allow. This is the shrinking
+        // count shown by the candidate readout and the stage-4 hint —
+        // clue-based certainty stays in deriveFacts, where a solvable case
+        // always narrows to exactly one code.
+        function markCandidates() {
+          const marks = state.marks;
+          return enumerateCodes(currentPoolIds()).filter(function (code) {
+            for (let slot = 0; slot < 3; slot++) {
+              const id = code[slot];
+              if (marks.absent[id] === "no") return false;
+              if (marks.cells[slot][id] === "no") return false;
+            }
+            const absentOk = Object.keys(marks.absent).every(function (id) {
+              return marks.absent[id] !== "yes" || code.indexOf(id) >= 0;
+            });
+            if (!absentOk) return false;
+            return marks.cells.every(function (cell, slot) {
+              return Object.keys(cell).every(function (id) {
+                return cell[id] !== "yes" || code[slot] === id;
+              });
+            });
+          });
+        }
+
+        function resetBoard() {
+          state.answer = [null, null, null];
+          state.undoStack = [];
+          state.activeSlot = 0;
+          state.solved = false;
+          state.attempts = 0;
+          state.hintsUsed = 0;
+          state.hintFlags = { candShown: false, revealWait: 0 };
+          state.marks = { absent: {}, cells: [{}, {}, {}] };
+          state.lastMark = null;
+          state.feedback = null;
+          state.selectedClue = null;
+          state.violatedClue = null;
+          state.step = null;
+        }
+
+        // Clue-local deductions a child could make from one card alone:
+        // "nothing" eliminates its symbols, any zero-well-placed card rules
+        // each symbol out of its shown slot, and "three wrong" pins the code
+        // to the guessed trio, ruling every other symbol out.
+        function applyAutoMarks() {
+          const puzzle = state.puzzle;
+          if (!puzzle) return;
+          const poolIds = currentPoolIds();
+          puzzle.clues.forEach(function (clue) {
+            if (clue.phraseKey === "clueNothing") {
+              clue.guess.forEach(function (id) {
+                state.marks.absent[id] = "no";
+              });
+            }
+            if (clue.score.wellPlaced === 0) {
+              clue.guess.forEach(function (id, slot) {
+                state.marks.cells[slot][id] = "no";
+              });
+            }
+            if (clue.phraseKey === "clueThreeWrong") {
+              poolIds.forEach(function (id) {
+                if (clue.guess.indexOf(id) < 0) state.marks.absent[id] = "no";
+                else state.marks.absent[id] = "yes";
+              });
+            }
+          });
+        }
+
+        /* ================= MODES ================= */
+        // The first Step By Step puzzle is the authored teaching case; every
+        // later one is generated. `guided` routes the authored per-clue
+        // lesson copy and keeps the solve out of the progress counters.
+        function buildGuidedPuzzle() {
+          return {
+            level: 1,
+            variant: "numbers",
+            seed: -1,
+            code: LEARN_CASE.code.slice(),
+            clues: LEARN_CASE.guesses.map(function (guess) {
+              return makeClue(LEARN_CASE.code, guess);
+            }),
+            guided: true,
+          };
+        }
+
+        // Direct marks a child can make from one clue card alone. Returns
+        // null when the clue teaches nothing certain by itself (one symbol is
+        // well placed, but which one is not yet knowable).
+        function computeRequiredMarks(clue) {
+          if (clue.phraseKey === "clueNothing") {
+            return { kind: "absent", ids: clue.guess.slice() };
+          }
+          if (clue.score.wellPlaced === 0 && clue.score.present > 0) {
+            return {
+              kind: "cells",
+              pairs: clue.guess.map(function (id, slot) {
+                return { slot: slot, id: id };
+              }),
+            };
+          }
+          return null;
+        }
+
+        // A whole-symbol absent mark is strictly stronger than any per-slot
+        // elimination, so it covers the cell requirement — never force a
+        // child to re-mark a symbol they already crossed out entirely.
+        function cellCovered(slot, id) {
+          return (
+            state.marks.cells[slot][id] === "no" ||
+            state.marks.absent[id] === "no"
+          );
+        }
+
+        function marksSatisfied(req) {
+          if (!req) return true;
+          if (req.kind === "absent") {
+            return req.ids.every(function (id) {
+              return state.marks.absent[id] === "no";
+            });
+          }
+          return req.pairs.every(function (pair) {
+            return cellCovered(pair.slot, pair.id);
+          });
+        }
+
+        function stepMarksSatisfied() {
+          return marksSatisfied(state.step && state.step.requiredMarks);
+        }
+
+        function clueMarksApplied(index) {
+          const clue = state.puzzle && state.puzzle.clues[index];
+          if (!clue) return false;
+          const req = computeRequiredMarks(clue);
+          return req ? marksSatisfied(req) : false;
+        }
+
+        function startStep() {
+          state.step = {
+            revealed: 1,
+            requiredMarks: computeRequiredMarks(state.puzzle.clues[0]),
+            satisfied: false,
+          };
+          state.step.satisfied = stepMarksSatisfied();
+        }
+
+        function revealNextClue() {
+          const step = state.step;
+          if (!step || step.revealed >= state.puzzle.clues.length) return;
+          step.revealed++;
+          step.requiredMarks = computeRequiredMarks(
+            state.puzzle.clues[step.revealed - 1],
+          );
+          step.satisfied = stepMarksSatisfied();
+          state.selectedClue = null;
+          state.feedback = null;
+          render();
+        }
+
+        function evaluateStepProgress() {
+          if (state.mode !== "step" || !state.step || state.step.satisfied) {
+            return;
+          }
+          if (stepMarksSatisfied()) {
+            state.step.satisfied = true;
+            if (state.step.revealed < state.puzzle.clues.length) {
+              setFeedback("perfect", T("stepDone"));
+            }
+          }
+        }
+
+        function applyClueMarks(index) {
+          const clue = state.puzzle && state.puzzle.clues[index];
+          if (!clue || boardLocked()) return;
+          const req = computeRequiredMarks(clue);
+          if (!req) return;
+          if (req.kind === "absent") {
+            req.ids.forEach(function (id) {
+              state.marks.absent[id] = "no";
+            });
+            state.lastMark = { kind: "absent", ids: req.ids.slice() };
+          } else {
+            const pending = req.pairs.filter(function (pair) {
+              return !cellCovered(pair.slot, pair.id);
+            });
+            pending.forEach(function (pair) {
+              state.marks.cells[pair.slot][pair.id] = "no";
+            });
+            if (pending.length) {
+              state.lastMark = {
+                kind: "cell",
+                slot: pending[0].slot,
+                id: pending[0].id,
+              };
+            }
+          }
+          announce(T("clueMarked"));
+          evaluateStepProgress();
+          render();
+        }
+
+        function newCase() {
+          // The guided case is authored in numbers at level 1; honor any
+          // deliberate variant/level choice with a generated step puzzle
+          // instead of pinning the board to the tutorial.
+          const wantGuided =
+            state.mode === "step" &&
+            !state.progress.guidedDone &&
+            state.variant === "numbers" &&
+            state.level === 1;
+          state.puzzle = wantGuided
+            ? buildGuidedPuzzle()
+            : generatePuzzle(state.level, state.variant, nextSeed());
+          resetBoard();
+          if (state.mode === "step") startStep();
+          else if (LEVELS[state.puzzle.level].marks === "auto") {
+            applyAutoMarks();
+          }
+          render();
+        }
+
+        function setMode(mode) {
+          state.mode = mode;
+          state.feedback = null;
+          state.started = true;
+          newCase();
+          saveProgress();
+        }
+
+        /* ---- answer manipulation ---- */
+        function answerComplete() {
+          return state.answer.every(function (v) {
+            return v !== null;
+          });
+        }
+
+        function boardLocked() {
+          return state.solved;
+        }
+
+        function fillSlot(id) {
+          if (boardLocked()) return;
+          if (state.answer.indexOf(id) >= 0) return;
+          state.undoStack.push(state.answer.slice());
+          state.answer[state.activeSlot] = id;
+          for (let i = 1; i <= 3; i++) {
+            const idx = (state.activeSlot + i) % 3;
+            if (state.answer[idx] === null) {
+              state.activeSlot = idx;
+              break;
+            }
+          }
+          render();
+        }
+
+        function clearActiveSlot() {
+          if (boardLocked()) return;
+          let idx = state.activeSlot;
+          if (state.answer[idx] === null && idx > 0) idx--;
+          if (state.answer[idx] !== null) {
+            state.undoStack.push(state.answer.slice());
+            state.answer[idx] = null;
+          }
+          state.activeSlot = idx;
+          render();
+        }
+
+        function undoAnswer() {
+          if (boardLocked()) return;
+          const prev = state.undoStack.pop();
+          if (prev) {
+            state.answer = prev;
+            render();
+          }
+        }
+
+        function clearAnswer() {
+          if (boardLocked()) return;
+          if (
+            state.answer.every(function (v) {
+              return v === null;
+            })
+          ) {
+            return;
+          }
+          state.undoStack.push(state.answer.slice());
+          state.answer = [null, null, null];
+          state.activeSlot = 0;
+          render();
+        }
+
+        function nextAction() {
+          if (state.mode === "step" && state.puzzle && !state.solved) {
+            // Only the guided tutorial locks Next behind its marks — its
+            // lesson copy builds on them. Generated puzzles leave the
+            // choice to the child; the ready styling is the nudge.
+            if (state.puzzle.guided && (!state.step || !state.step.satisfied)) {
+              return;
+            }
+            revealNextClue();
+            return;
+          }
+          newCase();
+        }
+
+        /* ================= HINTS & FEEDBACK ================= */
+        function labelFor(id) {
+          return symbolById(currentVariantForBoard(), id).label;
+        }
+
+        function labelList(ids) {
+          return ids.map(labelFor).join(", ");
+        }
+
+        function setFeedback(type, text) {
+          state.feedback = { type: type, text: text };
+          announce(text);
+        }
+
+        function findViolatedClue(answer) {
+          const clues = state.puzzle.clues;
+          for (let i = 0; i < clues.length; i++) {
+            const got = scoreGuess(answer, clues[i].guess);
+            if (!sameScore(got, clues[i].score)) {
+              return { index: i, got: got, want: clues[i].score };
+            }
+          }
+          return null;
+        }
+
+        function checkAnswer() {
+          if (!state.puzzle || state.solved) return;
+          if (!answerComplete()) {
+            setFeedback("miss", T("fbIncomplete"));
+            render();
+            return;
+          }
+          state.attempts++;
+          const answer = state.answer.slice();
+          if (codesEqual(answer, state.puzzle.code)) {
+            handleSolved();
+          } else {
+            handleWrong(answer);
+          }
+          render();
+        }
+
+        function handleSolved() {
+          state.solved = true;
+          state.violatedClue = null;
+          markIntroSeen();
+          const noHints = state.hintsUsed === 0;
+          const level = state.puzzle.level;
+          if (state.puzzle.guided) {
+            state.progress.guidedDone = true;
+          } else {
+            state.progress.solvedByLevel[level] =
+              (state.progress.solvedByLevel[level] || 0) + 1;
+            if (noHints) {
+              state.progress.perfectByLevel[level] =
+                (state.progress.perfectByLevel[level] || 0) + 1;
+            }
+          }
+          saveProgress();
+          const message = noHints ? T("fbPerfect") : T("fbPerfectHints");
+          setFeedback("perfect", message);
+          showOverlay(
+            "perfect",
+            noHints ? "🎯" : "🎉",
+            T("ovSolved"),
+            noHints ? T("ovMatches") : T("ovSolvedHints"),
+          );
+        }
+
+        function handleWrong(answer) {
+          state.violatedClue = null;
+          const rel = scoreGuess(state.puzzle.code, answer);
+          if (rel.present === 0) {
+            setFeedback("miss", T("fbMiss"));
+            return;
+          }
+          if (rel.present === 3) {
+            setFeedback("close", T("fbClose", { count: 3 - rel.wellPlaced }));
+            return;
+          }
+          const violated = findViolatedClue(answer);
+          if (!violated) {
+            setFeedback("far", T("fbWrongGeneric"));
+            return;
+          }
+          state.violatedClue = violated.index;
+          const clueNo = violated.index + 1;
+          if (violated.got.present !== violated.want.present) {
+            setFeedback(
+              "far",
+              T("fbFarPresent", {
+                got: violated.got.present,
+                want: violated.want.present,
+                clue: clueNo,
+              }),
+            );
+          } else {
+            setFeedback(
+              "far",
+              T("fbFarWell", {
+                got: violated.got.wellPlaced,
+                want: violated.want.wellPlaced,
+                clue: clueNo,
+              }),
+            );
+          }
+        }
+
+        // Hints are staged and always teach by APPLYING a mark:
+        // 1 absent symbols from a nothing/three-wrong clue, 2 one impossible
+        // slot, 3 one confirmed slot, 4 candidate count, 5 reveal (only after
+        // repeated struggle). Each press takes the first stage that still has
+        // something new to say about THIS case.
+        function requestHint() {
+          if (!state.puzzle || state.solved) return;
+          if (state.mode === "step") return;
+          const facts = deriveFacts();
+          const clues = state.puzzle.clues;
+          const poolIds = currentPoolIds();
+          state.hintsUsed++;
+          for (let i = 0; i < clues.length; i++) {
+            const clue = clues[i];
+            if (clue.phraseKey === "clueNothing") {
+              const unmarked = clue.guess.filter(function (id) {
+                return state.marks.absent[id] !== "no";
+              });
+              if (unmarked.length) {
+                clue.guess.forEach(function (id) {
+                  state.marks.absent[id] = "no";
+                });
+                state.lastMark = { kind: "absent", ids: clue.guess.slice() };
+                state.selectedClue = i;
+                setFeedback(
+                  "hint",
+                  T("hintAbsent", {
+                    clue: i + 1,
+                    symbols: labelList(clue.guess),
+                  }),
+                );
+                render();
+                return;
+              }
+            }
+            if (clue.phraseKey === "clueThreeWrong") {
+              const others = poolIds.filter(function (id) {
+                return clue.guess.indexOf(id) < 0;
+              });
+              const unmarked = others.filter(function (id) {
+                return state.marks.absent[id] !== "no";
+              });
+              if (unmarked.length) {
+                others.forEach(function (id) {
+                  state.marks.absent[id] = "no";
+                });
+                clue.guess.forEach(function (id) {
+                  state.marks.absent[id] = "yes";
+                });
+                state.lastMark = { kind: "absent", ids: others };
+                state.selectedClue = i;
+                setFeedback("hint", T("hintAbsentAll", { clue: i + 1 }));
+                render();
+                return;
+              }
+            }
+          }
+          for (let i = 0; i < clues.length; i++) {
+            const clue = clues[i];
+            if (clue.score.wellPlaced !== 0) continue;
+            for (let slot = 0; slot < 3; slot++) {
+              const id = clue.guess[slot];
+              if (state.marks.absent[id] === "no") continue;
+              if (state.marks.cells[slot][id] !== "no") {
+                state.marks.cells[slot][id] = "no";
+                state.lastMark = { kind: "cell", slot: slot, id: id };
+                state.selectedClue = i;
+                setFeedback(
+                  "hint",
+                  T("hintSlot", {
+                    clue: i + 1,
+                    symbol: labelFor(id),
+                    slot: slot + 1,
+                  }),
+                );
+                render();
+                return;
+              }
+            }
+          }
+          for (let slot = 0; slot < 3; slot++) {
+            const id = facts.confirmed[slot];
+            if (id && state.marks.cells[slot][id] !== "yes") {
+              state.marks.cells[slot][id] = "yes";
+              state.lastMark = { kind: "cell", slot: slot, id: id };
+              setFeedback(
+                "hint",
+                T("hintConfirm", { slot: slot + 1, symbol: labelFor(id) }),
+              );
+              render();
+              return;
+            }
+          }
+          if (!state.hintFlags.candShown) {
+            state.hintFlags.candShown = true;
+            setFeedback(
+              "hint",
+              T("hintCandidates", { count: markCandidates().length }),
+            );
+            render();
+            return;
+          }
+          state.hintFlags.revealWait++;
+          if (state.hintFlags.revealWait >= 2) {
+            for (let slot = 0; slot < 3; slot++) {
+              if (state.answer[slot] !== state.puzzle.code[slot]) {
+                const id = state.puzzle.code[slot];
+                state.undoStack.push(state.answer.slice());
+                const other = state.answer.indexOf(id);
+                if (other >= 0) state.answer[other] = null;
+                state.answer[slot] = id;
+                state.marks.cells[slot][id] = "yes";
+                state.lastMark = { kind: "cell", slot: slot, id: id };
+                state.hintFlags.revealWait = 0;
+                setFeedback(
+                  "hint",
+                  T("hintReveal", { slot: slot + 1, symbol: labelFor(id) }),
+                );
+                render();
+                return;
+              }
+            }
+          }
+          setFeedback("hint", T("hintNone"));
+          render();
+        }
+
+        function showOverlay(tier, emoji, msg, sub) {
+          const overlay = document.createElement("div");
+          overlay.className = "result-overlay";
+          overlay.style.background = OVERLAY_TIERS[tier];
+          overlay.setAttribute("role", "dialog");
+          overlay.setAttribute("aria-live", "polite");
+          overlay.tabIndex = -1;
+          const emojiEl = document.createElement("div");
+          emojiEl.className = "overlay-emoji";
+          emojiEl.textContent = emoji;
+          overlay.appendChild(emojiEl);
+          const msgEl = document.createElement("div");
+          msgEl.className = "overlay-msg";
+          msgEl.textContent = msg;
+          overlay.appendChild(msgEl);
+          if (sub) {
+            const subEl = document.createElement("div");
+            subEl.className = "overlay-sub";
+            subEl.textContent = sub;
+            overlay.appendChild(subEl);
+          }
+          const hintEl = document.createElement("div");
+          hintEl.className = "overlay-hint";
+          hintEl.textContent = T("ovDismiss");
+          overlay.appendChild(hintEl);
+          document.body.appendChild(overlay);
+          overlay.focus();
+          announce(msg + (sub ? " " + sub : ""));
+          function onKey(event) {
+            if (
+              event.key === "Escape" ||
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+              event.preventDefault();
+              event.stopPropagation();
+              close();
+            }
+          }
+          function close() {
+            if (!overlay.parentNode) return;
+            document.removeEventListener("keydown", onKey, true);
+            overlay.remove();
+            dom.nextBtn.focus();
+          }
+          overlay.addEventListener("click", close);
+          document.addEventListener("keydown", onKey, true);
+        }
+
+        /* ================= RENDER (DOM) ================= */
+        function el(tag, className, text) {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text !== undefined) node.textContent = text;
+          return node;
+        }
+
+        function symbolNode(variant, sym, sizeClass) {
+          if (variant === "cards" && sym.suit) {
+            const card = el("span", "pc " + sizeClass);
+            card.style.color = sym.color || "";
+            card.appendChild(el("span", "pc-rank", sym.rank));
+            card.appendChild(el("span", "pc-pip", SUIT_GLYPHS[sym.suit]));
+            return card;
+          }
+          const node = el("span", "", sym.label);
+          node.style.color = sym.color || "";
+          if (variant === "shapes" && SHAPE_SCALE[sym.id]) {
+            node.style.fontSize = SHAPE_SCALE[sym.id] + "em";
+          }
+          return node;
+        }
+
+        const slotButtons = [];
+        function buildSlots() {
+          for (let i = 0; i < 3; i++) {
+            const btn = el("button", "code-slot");
+            btn.type = "button";
+            btn.addEventListener("click", function () {
+              if (consumeDragClick()) return;
+              state.activeSlot = i;
+              render();
+            });
+            bindDragSource(btn, function () {
+              return { id: state.answer[i], fromSlot: i };
+            });
+            dom.slotRow.appendChild(btn);
+            slotButtons.push(btn);
+          }
+        }
+
+        function renderSlots() {
+          const variant = currentVariantForBoard();
+          for (let i = 0; i < 3; i++) {
+            const btn = slotButtons[i];
+            const id = state.answer[i];
+            btn.classList.toggle("hosts-card", variant === "cards");
+            while (btn.firstChild) btn.removeChild(btn.firstChild);
+            if (id === null) {
+              btn.appendChild(el("span", "slot-hint", "?"));
+              btn.style.color = "";
+              btn.setAttribute("aria-label", T("slotAriaEmpty", { n: i + 1 }));
+            } else {
+              const sym = symbolById(variant, id);
+              btn.appendChild(symbolNode(variant, sym, "pc-lg"));
+              btn.style.color = "";
+              btn.setAttribute(
+                "aria-label",
+                T("slotAriaFilled", {
+                  n: i + 1,
+                  symbol: symbolAria(variant, sym),
+                }),
+              );
+            }
+            btn.classList.toggle("active", state.activeSlot === i);
+          }
+        }
+
+        let traySignature = null;
+        const trayButtons = [];
+        function renderTray() {
+          const symbols = currentPoolSymbols();
+          const variant = currentVariantForBoard();
+          const signature = variant + "|" + symbols.length + "|" + state.lang;
+          if (signature !== traySignature) {
+            traySignature = signature;
+            trayButtons.length = 0;
+            while (dom.symbolTray.firstChild) {
+              dom.symbolTray.removeChild(dom.symbolTray.firstChild);
+            }
+            symbols.forEach(function (sym) {
+              const hostsCard = variant === "cards" && !!sym.suit;
+              const btn = el(
+                "button",
+                hostsCard ? "symbol-btn hosts-card" : "symbol-btn",
+              );
+              btn.type = "button";
+              btn.appendChild(symbolNode(variant, sym, "pc-lg"));
+              btn.setAttribute(
+                "aria-label",
+                T("trayAria", { symbol: symbolAria(variant, sym) }),
+              );
+              btn.title = symbolAria(variant, sym);
+              btn.addEventListener("click", function () {
+                if (consumeDragClick()) return;
+                fillSlot(sym.id);
+              });
+              bindDragSource(btn, function () {
+                return { id: sym.id, fromSlot: null };
+              });
+              dom.symbolTray.appendChild(btn);
+              trayButtons.push({ id: sym.id, btn: btn });
+            });
+          }
+          const locked = boardLocked();
+          const selected =
+            state.selectedClue !== null && state.puzzle
+              ? state.puzzle.clues[state.selectedClue]
+              : null;
+          trayButtons.forEach(function (entry) {
+            entry.btn.disabled = locked || state.answer.indexOf(entry.id) >= 0;
+            entry.btn.classList.toggle(
+              "crossed",
+              state.marks.absent[entry.id] === "no",
+            );
+            entry.btn.classList.toggle(
+              "clue-highlight",
+              !!selected && selected.guess.indexOf(entry.id) >= 0,
+            );
+          });
+        }
+
+        function padPolicy() {
+          if (!state.puzzle) return "manual";
+          if (state.mode === "step") return "manual";
+          return LEVELS[state.puzzle.level].marks;
+        }
+
+        function cycleMark(current) {
+          if (current === "no") return "yes";
+          if (current === "yes") return undefined;
+          return "no";
+        }
+
+        function padMarkState(btn, mark, interactive, ariaBase) {
+          btn.classList.toggle("mark-no", mark === "no");
+          btn.classList.toggle("mark-yes", mark === "yes");
+          btn.disabled = !interactive;
+          const stateKey =
+            mark === "no"
+              ? "padMarkNo"
+              : mark === "yes"
+                ? "padMarkYes"
+                : "padMarkNone";
+          btn.setAttribute("aria-label", ariaBase + ", " + T(stateKey));
+        }
+
+        function pulseFresh(btn) {
+          btn.classList.remove("fresh");
+          void btn.offsetWidth;
+          btn.classList.add("fresh");
+        }
+
+        let padSignature = null;
+        const padButtons = [];
+        function renderBoardPad() {
+          const symbols = currentPoolSymbols();
+          const variant = currentVariantForBoard();
+          const signature = variant + "|" + symbols.length + "|" + state.lang;
+          if (signature !== padSignature) {
+            padSignature = signature;
+            padButtons.length = 0;
+            while (dom.padGrid.firstChild) {
+              dom.padGrid.removeChild(dom.padGrid.firstChild);
+            }
+            symbols.forEach(function (sym) {
+              const item = el("div", "pad-item");
+              const entry = { id: sym.id, out: null, cells: [] };
+              const outBtn = el("button", "pad-btn pad-out");
+              outBtn.type = "button";
+              if (variant === "cards" && sym.suit) {
+                outBtn.classList.add("hosts-card");
+              }
+              outBtn.appendChild(symbolNode(variant, sym, "pc-lg"));
+              outBtn.addEventListener("click", function () {
+                if (outBtn.disabled) return;
+                state.marks.absent[sym.id] = cycleMark(
+                  state.marks.absent[sym.id],
+                );
+                state.lastMark = null;
+                announcePadMark(
+                  T("padAriaOut", { symbol: symbolAria(variant, sym) }),
+                  state.marks.absent[sym.id],
+                );
+                evaluateStepProgress();
+                render();
+              });
+              item.appendChild(outBtn);
+              entry.out = outBtn;
+              const dots = el("div", "pad-dots");
+              for (let slot = 0; slot < 3; slot++) {
+                (function (slotIndex) {
+                  const dotBtn = el("button", "pad-dot", String(slotIndex + 1));
+                  dotBtn.type = "button";
+                  dotBtn.addEventListener("click", function () {
+                    if (dotBtn.disabled) return;
+                    state.marks.cells[slotIndex][sym.id] = cycleMark(
+                      state.marks.cells[slotIndex][sym.id],
+                    );
+                    state.lastMark = null;
+                    announcePadMark(
+                      T("padAriaSlot", {
+                        symbol: symbolAria(variant, sym),
+                        slot: slotIndex + 1,
+                      }),
+                      state.marks.cells[slotIndex][sym.id],
+                    );
+                    evaluateStepProgress();
+                    render();
+                  });
+                  dots.appendChild(dotBtn);
+                  entry.cells.push(dotBtn);
+                })(slot);
+              }
+              item.appendChild(dots);
+              dom.padGrid.appendChild(item);
+              padButtons.push(entry);
+            });
+          }
+          const interactive = padPolicy() !== "auto" && !state.solved;
+          padButtons.forEach(function (entry) {
+            const sym = symbolById(variant, entry.id);
+            padMarkState(
+              entry.out,
+              state.marks.absent[entry.id],
+              interactive,
+              T("padAriaOut", { symbol: symbolAria(variant, sym) }),
+            );
+            for (let slot = 0; slot < 3; slot++) {
+              padMarkState(
+                entry.cells[slot],
+                state.marks.cells[slot][entry.id],
+                interactive,
+                T("padAriaSlot", {
+                  symbol: symbolAria(variant, sym),
+                  slot: slot + 1,
+                }),
+              );
+              if (
+                state.lastMark &&
+                state.lastMark.kind === "cell" &&
+                state.lastMark.slot === slot &&
+                state.lastMark.id === entry.id
+              ) {
+                pulseFresh(entry.cells[slot]);
+              }
+            }
+            if (
+              state.lastMark &&
+              state.lastMark.kind === "absent" &&
+              state.lastMark.ids.indexOf(entry.id) >= 0
+            ) {
+              pulseFresh(entry.out);
+            }
+          });
+        }
+
+        function announcePadMark(base, mark) {
+          const stateKey =
+            mark === "no"
+              ? "padMarkNo"
+              : mark === "yes"
+                ? "padMarkYes"
+                : "padMarkNone";
+          announce(base + ", " + T(stateKey));
+        }
+
+        function miniSymbolEl(variant, id) {
+          const sym = symbolById(variant, id);
+          if (variant === "cards" && sym.suit) {
+            const node = el("span", "mini-symbol card");
+            node.appendChild(symbolNode(variant, sym, "pc-sm"));
+            node.title = symbolAria(variant, sym);
+            return node;
+          }
+          const node = el("span", "mini-symbol");
+          node.appendChild(symbolNode(variant, sym));
+          node.title = symbolAria(variant, sym);
+          return node;
+        }
+
+        // The Step By Step instruction shown on the active clue card: the
+        // authored lesson for the guided case, a generic per-phrase line for
+        // generated puzzles, plus the closing prompt once every clue is out.
+        function clueInstruction(index) {
+          const clue = state.puzzle.clues[index];
+          const step = state.step;
+          const lastRevealed =
+            step &&
+            step.satisfied &&
+            step.revealed >= state.puzzle.clues.length;
+          if (state.puzzle.guided) {
+            let copy = T(GUIDED_COPY[index]);
+            if (lastRevealed && index === state.puzzle.clues.length - 1) {
+              copy += " " + T("stepFinal");
+            }
+            return copy;
+          }
+          const req = computeRequiredMarks(clue);
+          let action;
+          if (!req) action = T("stepReadOn");
+          else if (req.kind === "absent") {
+            action = T("stepMarkAbsent", { symbols: labelList(req.ids) });
+          } else action = T("stepMarkSlots");
+          let text = T(clue.phraseKey) + ". " + action;
+          if (lastRevealed && index === state.puzzle.clues.length - 1) {
+            text += " " + T("stepFinal");
+          }
+          return text;
+        }
+
+        let clueSignature = null;
+        const clueCards = [];
+        function renderBoardClues() {
+          const puzzle = state.puzzle;
+          const key = !puzzle
+            ? "none"
+            : puzzle.variant +
+              "|" +
+              puzzle.seed +
+              "|" +
+              puzzle.code.join(",") +
+              "|" +
+              puzzle.clues.length +
+              "|" +
+              state.lang;
+          if (key !== clueSignature) {
+            clueSignature = key;
+            clueCards.length = 0;
+            while (dom.clueList.firstChild) {
+              dom.clueList.removeChild(dom.clueList.firstChild);
+            }
+            if (puzzle) {
+              puzzle.clues.forEach(function (clue, index) {
+                const card = el("div", "board-clue");
+                const head = el("button", "clue-head");
+                head.type = "button";
+                head.appendChild(
+                  el("span", "clue-tag", T("clueTag", { n: index + 1 })),
+                );
+                const row = el("span", "mini-row");
+                clue.guess.forEach(function (id) {
+                  row.appendChild(miniSymbolEl(puzzle.variant, id));
+                });
+                head.appendChild(row);
+                head.appendChild(
+                  el("span", "clue-short", T(SHORT_KEYS[clue.phraseKey])),
+                );
+                const badge = el("span", "clue-badge", "✕");
+                badge.hidden = true;
+                head.appendChild(badge);
+                head.setAttribute(
+                  "aria-label",
+                  T("clueAria", { n: index + 1, label: T(clue.phraseKey) }),
+                );
+                head.addEventListener("click", function () {
+                  state.selectedClue =
+                    state.selectedClue === index ? null : index;
+                  render();
+                });
+                card.appendChild(head);
+                const detail = el("div", "clue-detail");
+                detail.hidden = true;
+                const sentence = el("p", "clue-sentence", "");
+                detail.appendChild(sentence);
+                const markBtn = el(
+                  "button",
+                  "action-btn clue-mark-btn",
+                  T("markFromClue"),
+                );
+                markBtn.type = "button";
+                markBtn.hidden = true;
+                markBtn.addEventListener("click", function () {
+                  applyClueMarks(index);
+                });
+                detail.appendChild(markBtn);
+                card.appendChild(detail);
+                if (!state.reduceMotion) {
+                  card.classList.add("reveal");
+                  card.style.animationDelay = index * 60 + "ms";
+                }
+                dom.clueList.appendChild(card);
+                clueCards.push({
+                  root: card,
+                  head: head,
+                  badge: badge,
+                  detail: detail,
+                  sentence: sentence,
+                  markBtn: markBtn,
+                  wasActive: false,
+                });
+              });
+            }
+          }
+          if (!puzzle) return;
+          const step = state.mode === "step" ? state.step : null;
+          clueCards.forEach(function (entry, index) {
+            const clue = puzzle.clues[index];
+            const revealed = !step || index < step.revealed;
+            const isActive =
+              !!step && index === step.revealed - 1 && !state.solved;
+            entry.root.hidden = !revealed;
+            entry.root.classList.toggle("step-active", isActive);
+            entry.root.classList.toggle(
+              "collapsed",
+              !!step &&
+                revealed &&
+                !isActive &&
+                state.selectedClue !== index &&
+                !state.solved,
+            );
+            entry.root.classList.toggle(
+              "selected",
+              state.selectedClue === index,
+            );
+            entry.root.classList.toggle(
+              "violated",
+              state.violatedClue === index,
+            );
+            const marked = clueMarksApplied(index);
+            entry.badge.hidden = !marked;
+            let open = false;
+            let text = "";
+            let showMark = false;
+            if (isActive) {
+              open = true;
+              text = clueInstruction(index);
+              showMark = !!step.requiredMarks && !step.satisfied;
+            } else if (state.selectedClue === index) {
+              open = true;
+              text = T(clue.phraseKey) + ".";
+              showMark =
+                !!computeRequiredMarks(clue) && !marked && !state.solved;
+            }
+            entry.detail.hidden = !open;
+            entry.head.setAttribute("aria-expanded", open ? "true" : "false");
+            entry.sentence.textContent = text;
+            entry.markBtn.hidden = !showMark;
+            if (isActive && !entry.wasActive && !state.reduceMotion) {
+              entry.root.style.animationDelay = "0ms";
+              entry.root.classList.remove("reveal");
+              void entry.root.offsetWidth;
+              entry.root.classList.add("reveal");
+            }
+            entry.wasActive = isActive;
+          });
+        }
+
+        function renderVisibility() {
+          const started = state.started;
+          dom.launcher.hidden = started;
+          dom.modeSection.hidden = !started;
+          dom.summarySection.hidden = !started;
+          dom.settingsSection.hidden = !started && !state.settingsOpen;
+          dom.settingsBody.hidden = !state.settingsOpen;
+          dom.boardIdle.hidden = started;
+          dom.gameBoard.hidden = !started;
+          dom.stagePrompt.hidden = !started;
+          dom.padWrap.hidden =
+            !started || !state.puzzle || padPolicy() === "auto";
+          dom.padGrid.hidden = !state.padOpen;
+          const cfg = state.puzzle ? LEVELS[state.puzzle.level] : null;
+          dom.candidateRow.hidden = !cfg || !cfg.showCandidates;
+          dom.feedbackCard.hidden = !state.feedback;
+          dom.solvedStamp.hidden = !state.solved;
+          dom.hintBtn.hidden = state.mode === "step";
+          dom.nextBtn.hidden = state.mode !== "step" && !state.solved;
+        }
+
+        function renderSummary() {
+          const level = state.puzzle ? state.puzzle.level : state.level;
+          const variant = state.puzzle ? state.puzzle.variant : state.variant;
+          dom.levelChip.textContent = T("levelChip", { level: level });
+          dom.variantChip.textContent = T(variant);
+        }
+
+        function renderReadouts() {
+          if (!dom.candidateRow.hidden && state.puzzle) {
+            dom.candidateReadout.textContent = String(markCandidates().length);
+          } else {
+            dom.candidateReadout.textContent = "—";
+          }
+          let total = 0;
+          [1, 2, 3, 4, 5].forEach(function (level) {
+            total += state.progress.solvedByLevel[level] || 0;
+          });
+          dom.progressReadout.textContent = T("progressLine", {
+            solved: total,
+            levelSolved: state.progress.solvedByLevel[state.level] || 0,
+          });
+          while (dom.settingsProgress.firstChild) {
+            dom.settingsProgress.removeChild(dom.settingsProgress.firstChild);
+          }
+          if (state.settingsOpen) {
+            [1, 2, 3, 4, 5].forEach(function (level) {
+              const row = el("div", "readout-row");
+              row.appendChild(
+                el("span", "readout-label", T("levelChip", { level: level })),
+              );
+              row.appendChild(
+                el(
+                  "span",
+                  "readout-val",
+                  T("settingsLevelLine", {
+                    solved: state.progress.solvedByLevel[level] || 0,
+                    perfect: state.progress.perfectByLevel[level] || 0,
+                  }),
+                ),
+              );
+              dom.settingsProgress.appendChild(row);
+            });
+          }
+        }
+
+        function renderActions() {
+          const step = state.mode === "step" ? state.step : null;
+          const allRevealed =
+            !step ||
+            !state.puzzle ||
+            step.revealed >= state.puzzle.clues.length;
+          dom.checkBtn.textContent = T("check");
+          dom.checkBtn.disabled =
+            state.solved || !answerComplete() || !allRevealed;
+          let nextLabel = T("next");
+          let nextDisabled = false;
+          let nextReady = false;
+          if (step && !state.solved) {
+            const guided = !!state.puzzle && !!state.puzzle.guided;
+            nextDisabled = allRevealed || (guided && !step.satisfied);
+            nextReady = !allRevealed && step.satisfied;
+          } else if (state.solved) {
+            nextLabel = T("newCase");
+          }
+          dom.nextBtn.textContent = nextLabel;
+          dom.nextBtn.disabled = nextDisabled;
+          dom.nextBtn.classList.toggle("primary", nextReady);
+          dom.hintBtn.disabled = !state.puzzle || state.solved;
+          const canEdit = !boardLocked();
+          dom.undoBtn.disabled = !canEdit || state.undoStack.length === 0;
+          dom.clearBtn.disabled =
+            !canEdit ||
+            state.answer.every(function (v) {
+              return v === null;
+            });
+        }
+
+        function renderFeedback() {
+          if (!state.feedback) return;
+          dom.feedbackCard.className = "feedback-card " + state.feedback.type;
+          dom.feedbackCard.textContent = state.feedback.text;
+        }
+
+        function renderOptions() {
+          dom.modeStepBtn.classList.toggle("active", state.mode === "step");
+          dom.modeAllBtn.classList.toggle("active", state.mode === "all");
+          Array.prototype.forEach.call(
+            dom.variantGrid.children,
+            function (btn) {
+              btn.classList.toggle(
+                "active",
+                btn.dataset.variant === state.variant,
+              );
+            },
+          );
+          const recommended = recommendedLevel();
+          Array.prototype.forEach.call(dom.levelRow.children, function (btn) {
+            const level = Number(btn.dataset.level);
+            btn.classList.toggle("active", level === state.level);
+            btn.classList.toggle("recommended", level === recommended);
+          });
+        }
+
+        function recommendedLevel() {
+          for (let level = 1; level <= 5; level++) {
+            if ((state.progress.solvedByLevel[level] || 0) < 5) return level;
+          }
+          return 5;
+        }
+
+        function renderPrompt() {
+          let text;
+          let cls = "stage-prompt";
+          if (state.solved) {
+            text = T("promptSolved");
+            cls += " highlight";
+          } else if (state.mode === "step") {
+            text = T("promptStep");
+          } else {
+            text = T("promptCase");
+          }
+          dom.stagePrompt.textContent = text;
+          dom.stagePrompt.className = cls;
+        }
+
+        function buildGlossary() {
+          while (dom.glossaryList.firstChild) {
+            dom.glossaryList.removeChild(dom.glossaryList.firstChild);
+          }
+          PHRASE_KEYS.forEach(function (key) {
+            const item = el("div", "glossary-item");
+            item.appendChild(el("strong", "", T(key)));
+            item.appendChild(
+              document.createTextNode(" — " + T("mean" + key.slice(4))),
+            );
+            dom.glossaryList.appendChild(item);
+          });
+        }
+
+        function applyTranslations() {
+          document.title = T("docTitle");
+          document.documentElement.lang = state.lang;
+          dom.titleText.textContent = T("title");
+          dom.subtitleText.textContent = T("subtitle");
+          dom.langBtn.textContent = state.lang === "en" ? "PL" : "EN";
+          dom.langBtn.title = T("langTitle");
+          dom.langBtn.setAttribute("aria-label", T("langTitle"));
+          const homeLink = document.querySelector("header h1 a");
+          if (homeLink) homeLink.setAttribute("aria-label", T("homeAria"));
+          dom.gameBoard.setAttribute("aria-label", T("boardAria"));
+          dom.boardIdleText.textContent = T("promptIdle");
+          dom.lblMode.textContent = T("mode");
+          dom.lblSummary.textContent = T("lblSummary");
+          dom.lblVariant.textContent = T("variant");
+          dom.lblLevel.textContent = T("level");
+          dom.lblProgress.textContent = T("progress");
+          dom.lblCandidates.textContent = T("lblCandidates");
+          dom.launcherTitle.textContent = T("launcherTitle");
+          dom.launcherText.textContent = T("launcherText");
+          dom.startCaseBtn.textContent = T("startPuzzle");
+          dom.launcherSettingsBtn.textContent = T("settings");
+          dom.modeStepBtn.textContent = T("modeStep");
+          dom.modeAllBtn.textContent = T("modeAll");
+          dom.newPuzzleBtn.textContent = T("newPuzzle");
+          dom.settingsBtn.textContent = T("settings");
+          dom.padToggleBtn.textContent = T("lblPad");
+          dom.hintBtn.textContent = T("hint");
+          dom.undoBtn.textContent = T("undo");
+          dom.clearBtn.textContent = T("clear");
+          dom.glossaryBtn.textContent = T("glossaryBtn");
+          dom.helpBtn.textContent = T("helpBtn");
+          dom.helpText1.textContent = T("help1");
+          dom.helpText2.textContent = T("help2");
+          dom.helpKeys.textContent = T("helpKeys");
+          Array.prototype.forEach.call(
+            dom.variantGrid.children,
+            function (btn) {
+              btn.textContent = T(btn.dataset.variant);
+            },
+          );
+          buildGlossary();
+          traySignature = null;
+          padSignature = null;
+          clueSignature = null;
+          render();
+        }
+
+        function render() {
+          renderVisibility();
+          renderSummary();
+          renderSlots();
+          renderTray();
+          renderBoardClues();
+          renderBoardPad();
+          renderReadouts();
+          renderActions();
+          renderFeedback();
+          renderOptions();
+          renderPrompt();
+        }
+
+        /* ================= DRAG & DROP ================= */
+        let dragState = null;
+        let dragClickGuard = false;
+
+        function consumeDragClick() {
+          if (dragClickGuard) {
+            dragClickGuard = false;
+            return true;
+          }
+          return false;
+        }
+
+        function bindDragSource(btn, getPayload) {
+          btn.addEventListener("pointerdown", function (event) {
+            if (dragState || boardLocked()) return;
+            if (event.button !== undefined && event.button !== 0) return;
+            const payload = getPayload();
+            if (!payload || payload.id === null) return;
+            dragState = {
+              id: payload.id,
+              fromSlot: payload.fromSlot,
+              source: btn,
+              startX: event.clientX,
+              startY: event.clientY,
+              pointerId: event.pointerId,
+              started: false,
+              ghost: null,
+            };
+            try {
+              btn.setPointerCapture(event.pointerId);
+            } catch {
+              /* pointer capture unavailable */
+            }
+          });
+          btn.addEventListener("pointermove", onDragMove);
+          btn.addEventListener("pointerup", onDragEnd);
+          btn.addEventListener("pointercancel", onDragCancel);
+        }
+
+        function onDragMove(event) {
+          if (!dragState || event.pointerId !== dragState.pointerId) return;
+          const dx = event.clientX - dragState.startX;
+          const dy = event.clientY - dragState.startY;
+          if (!dragState.started) {
+            if (dx * dx + dy * dy < 36) return;
+            dragState.started = true;
+            const variant = currentVariantForBoard();
+            const sym = symbolById(variant, dragState.id);
+            const ghost = el("span", "drag-ghost");
+            if (variant === "cards" && sym.suit) {
+              ghost.classList.add("hosts-card");
+            }
+            ghost.appendChild(symbolNode(variant, sym, "pc-lg"));
+            document.body.appendChild(ghost);
+            dragState.ghost = ghost;
+            dragState.source.classList.add("drag-source");
+          }
+          event.preventDefault();
+          moveGhost(event.clientX, event.clientY);
+          const target = slotIndexAt(event.clientX, event.clientY);
+          slotButtons.forEach(function (slot, i) {
+            slot.classList.toggle("drop-hover", i === target);
+          });
+        }
+
+        function moveGhost(x, y) {
+          if (!dragState || !dragState.ghost) return;
+          const ghost = dragState.ghost;
+          ghost.style.left = x - (ghost.offsetWidth || 52) / 2 + "px";
+          ghost.style.top = y - (ghost.offsetHeight || 52) / 2 + "px";
+        }
+
+        function slotIndexAt(x, y) {
+          for (let i = 0; i < 3; i++) {
+            const rect = slotButtons[i].getBoundingClientRect();
+            if (
+              x >= rect.left &&
+              x <= rect.right &&
+              y >= rect.top &&
+              y <= rect.bottom
+            ) {
+              return i;
+            }
+          }
+          return -1;
+        }
+
+        function clearDragVisuals() {
+          if (dragState && dragState.ghost) dragState.ghost.remove();
+          if (dragState && dragState.source) {
+            dragState.source.classList.remove("drag-source");
+          }
+          slotButtons.forEach(function (slot) {
+            slot.classList.remove("drop-hover");
+          });
+        }
+
+        function onDragEnd(event) {
+          if (!dragState || event.pointerId !== dragState.pointerId) return;
+          const drag = dragState;
+          clearDragVisuals();
+          dragState = null;
+          if (!drag.started) return;
+          dragClickGuard = true;
+          setTimeout(function () {
+            dragClickGuard = false;
+          }, 0);
+          applyDrop(drag, slotIndexAt(event.clientX, event.clientY));
+        }
+
+        function onDragCancel(event) {
+          if (!dragState || event.pointerId !== dragState.pointerId) return;
+          clearDragVisuals();
+          dragState = null;
+        }
+
+        function cancelDrag() {
+          if (!dragState) return;
+          clearDragVisuals();
+          dragState = null;
+        }
+
+        function nextEmptySlotFrom(index) {
+          for (let i = 0; i <= 3; i++) {
+            const idx = (index + i) % 3;
+            if (state.answer[idx] === null) return idx;
+          }
+          return index;
+        }
+
+        function applyDrop(drag, target) {
+          if (boardLocked()) return;
+          const variant = currentVariantForBoard();
+          if (drag.fromSlot === null) {
+            if (target < 0 || state.answer.indexOf(drag.id) >= 0) return;
+            state.undoStack.push(state.answer.slice());
+            state.answer[target] = drag.id;
+            state.activeSlot = nextEmptySlotFrom(target);
+            announce(
+              T("slotAriaFilled", {
+                n: target + 1,
+                symbol: symbolAria(variant, symbolById(variant, drag.id)),
+              }),
+            );
+          } else if (target < 0) {
+            if (state.answer[drag.fromSlot] === null) return;
+            state.undoStack.push(state.answer.slice());
+            state.answer[drag.fromSlot] = null;
+            state.activeSlot = drag.fromSlot;
+            announce(T("slotAriaEmpty", { n: drag.fromSlot + 1 }));
+          } else if (target !== drag.fromSlot) {
+            state.undoStack.push(state.answer.slice());
+            const swapped = state.answer[target];
+            state.answer[target] = drag.id;
+            state.answer[drag.fromSlot] = swapped;
+            state.activeSlot =
+              swapped === null ? nextEmptySlotFrom(target) : target;
+            announce(
+              T("slotAriaFilled", {
+                n: target + 1,
+                symbol: symbolAria(variant, symbolById(variant, drag.id)),
+              }),
+            );
+          } else {
+            return;
+          }
+          render();
+        }
+
+        /* ================= EVENTS & INIT ================= */
+        function restartForOptionChange() {
+          if (!state.started) {
+            render();
+            return;
+          }
+          setMode(state.mode);
+        }
+
+        function handleKeydown(event) {
+          const key = event.key;
+          const target = event.target;
+          const tag = target && target.tagName;
+          const isButtonTarget = tag === "BUTTON" || tag === "A";
+          if (key === "Escape") {
+            if (dragState) {
+              cancelDrag();
+              return;
+            }
+            if (state.selectedClue !== null) {
+              state.selectedClue = null;
+              render();
+            }
+            return;
+          }
+          if (isButtonTarget && (key === "Enter" || key === " ")) return;
+          if (key === "ArrowLeft" || key === "ArrowRight") {
+            if (boardLocked()) return;
+            event.preventDefault();
+            const delta = key === "ArrowLeft" ? -1 : 1;
+            state.activeSlot = Math.min(
+              2,
+              Math.max(0, state.activeSlot + delta),
+            );
+            render();
+            return;
+          }
+          if (key === "Backspace" || key === "Delete") {
+            event.preventDefault();
+            clearActiveSlot();
+            return;
+          }
+          if (key === "Enter") {
+            if (answerComplete() && !dom.checkBtn.disabled) {
+              event.preventDefault();
+              checkAnswer();
+            }
+            return;
+          }
+          if (
+            key &&
+            key.length === 1 &&
+            !event.metaKey &&
+            !event.ctrlKey &&
+            !event.altKey
+          ) {
+            const id = key.toUpperCase();
+            if (currentPoolIds().indexOf(id) >= 0) {
+              event.preventDefault();
+              fillSlot(id);
+            }
+          }
+        }
+
+        function toggleDisclosure(btn, body) {
+          body.hidden = !body.hidden;
+          btn.setAttribute("aria-expanded", String(!body.hidden));
+        }
+
+        function bindEvents() {
+          dom.langBtn.addEventListener("click", function () {
+            state.lang = state.lang === "en" ? "pl" : "en";
+            applyTranslations();
+          });
+          dom.startCaseBtn.addEventListener("click", function () {
+            markIntroSeen();
+            setMode(state.progress.guidedDone ? "all" : "step");
+          });
+          dom.launcherSettingsBtn.addEventListener("click", function () {
+            state.settingsOpen = true;
+            render();
+            dom.settingsBtn.setAttribute("aria-expanded", "true");
+            dom.settingsBtn.focus();
+          });
+          dom.modeStepBtn.addEventListener("click", function () {
+            if (state.mode !== "step") setMode("step");
+          });
+          dom.modeAllBtn.addEventListener("click", function () {
+            if (state.mode !== "all") setMode("all");
+          });
+          dom.newPuzzleBtn.addEventListener("click", function () {
+            newCase();
+          });
+          dom.settingsBtn.addEventListener("click", function () {
+            state.settingsOpen = !state.settingsOpen;
+            dom.settingsBtn.setAttribute(
+              "aria-expanded",
+              String(state.settingsOpen),
+            );
+            render();
+          });
+          dom.padToggleBtn.addEventListener("click", function () {
+            state.padOpen = !state.padOpen;
+            dom.padToggleBtn.setAttribute(
+              "aria-expanded",
+              String(state.padOpen),
+            );
+            render();
+          });
+          Array.prototype.forEach.call(
+            dom.variantGrid.children,
+            function (btn) {
+              btn.addEventListener("click", function () {
+                if (state.variant === btn.dataset.variant) return;
+                state.variant = btn.dataset.variant;
+                saveProgress();
+                restartForOptionChange();
+              });
+            },
+          );
+          Array.prototype.forEach.call(dom.levelRow.children, function (btn) {
+            btn.addEventListener("click", function () {
+              const level = Number(btn.dataset.level);
+              if (state.level === level) return;
+              state.level = level;
+              saveProgress();
+              restartForOptionChange();
+            });
+          });
+          dom.checkBtn.addEventListener("click", checkAnswer);
+          dom.nextBtn.addEventListener("click", nextAction);
+          dom.hintBtn.addEventListener("click", requestHint);
+          dom.undoBtn.addEventListener("click", undoAnswer);
+          dom.clearBtn.addEventListener("click", clearAnswer);
+          dom.glossaryBtn.addEventListener("click", function () {
+            toggleDisclosure(dom.glossaryBtn, dom.glossaryList);
+          });
+          dom.helpBtn.addEventListener("click", function () {
+            toggleDisclosure(dom.helpBtn, dom.helpBody);
+          });
+          document.addEventListener("keydown", handleKeydown);
+          motionQuery.addEventListener("change", function () {
+            state.reduceMotion = motionQuery.matches;
+          });
+        }
+
+        function init() {
+          loadProgress();
+          state.mode = state.progress.guidedDone ? "all" : "step";
+          buildSlots();
+          bindEvents();
+          dom.glossaryBtn.setAttribute("aria-expanded", "false");
+          dom.helpBtn.setAttribute("aria-expanded", "false");
+          dom.settingsBtn.setAttribute("aria-expanded", "false");
+          dom.padToggleBtn.setAttribute("aria-expanded", "true");
+          if (introSeen()) {
+            state.started = true;
+            newCase();
+          }
+          applyTranslations();
+        }
+
+        init();
+
+        /* ================= DEBUG (gated behind ?debug=1) ================= */
+        const debugSearch =
+          typeof location === "undefined" ? "" : location.search || "";
+        if (/[?&]debug=1(?:&|$)/.test(debugSearch)) {
+          window.__codebreak = {
+            state: state,
+            engine: {
+              scoreGuess: scoreGuess,
+              scoreKey: scoreKey,
+              enumerateCodes: enumerateCodes,
+              filterCandidates: filterCandidates,
+              getSymbolPool: getSymbolPool,
+              generatePuzzle: generatePuzzle,
+            },
+            newCase: newCase,
+            requestHint: requestHint,
+            checkAnswer: checkAnswer,
+            render: render,
+          };
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -706,7 +706,7 @@ World names in Polish:
 - single self-contained HTML file with inline CSS and JavaScript
 - vanilla JavaScript only
 - HTML5 Canvas for all rendering
-- Google Fonts: Outfit + Share Tech Mono
+- Google Fonts: Outfit + JetBrains Mono
 - retina / device-pixel-ratio support
 - `requestAnimationFrame` for animation
 - responsive layout: canvas `flex: 1`, control panel about `300px`

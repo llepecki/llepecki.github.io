@@ -417,7 +417,7 @@ Polish star names:
 - Single self-contained HTML file with inline CSS and JavaScript
 - Vanilla JavaScript, no external libraries or frameworks
 - HTML5 Canvas for all rendering
-- Google Fonts: Outfit + Share Tech Mono
+- Google Fonts: Outfit + JetBrains Mono
 - Device pixel ratio handling for retina displays
 - `requestAnimationFrame` for the animation loop
 - Responsive layout: canvas `flex: 1` + `300px` control panel

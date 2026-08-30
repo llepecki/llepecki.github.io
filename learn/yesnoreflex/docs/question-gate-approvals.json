@@ -1,0 +1,1220 @@
+{
+  "version": 1,
+  "source": "yesnoreflex/docs/implementation-review-round-4-2026-08-16.md Appendix A",
+  "note": "Hashes lock the shipped wording. approvedBy* stay null until a NAMED native reviewer signs off; the gate reports every null as an OPEN HUMAN GATE and never treats it as passed.",
+  "hashAlgorithm": "sha256",
+  "canonicalFieldOrder": [
+    "id",
+    "cat",
+    "tone",
+    "truth",
+    "enQ",
+    "plQ",
+    "enFact",
+    "plFact"
+  ],
+  "nearDuplicateThreshold": 0.72,
+  "nearDuplicateDispositions": [],
+  "records": {
+    "ani01": {
+      "hash": "c2b91139406acb56b5562698680dc7bc42b884845e781d844916af79f18c4234",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani02": {
+      "hash": "b97856565cdee4e1a5a19e7c421e07b6b818a1c065adc6c7c4d02681f4d6eda9",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani03": {
+      "hash": "2a5d665d5ad5cc49a2b08207955fb1d315b777027ec0f4b92e44437940c3397b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani04": {
+      "hash": "d208c31c46bfbdf22a71505438dc3b7a209c4b021ad8c807f03786c90333d1ec",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani05": {
+      "hash": "358e8699f5fb96e441d032a0535c5479a0d2a49b6870c042d3d040cc82b05359",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani06": {
+      "hash": "2789475c411fa086648f2d0eae04ba5c17f73dace9a241a069fd444f5c1a8e3c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani07": {
+      "hash": "a1a33712c869f355ea46a34c796eafe59f285302b80c4e2df103a74985c0b378",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani08": {
+      "hash": "93f9c100ab0627ee4790f83c759acd1a375ad39c3f7b576e929fb15bc4dabc96",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani09": {
+      "hash": "232d063e95459f4cc27bade27f413273c17444c004035b5a1f393ad72f70ddaf",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani10": {
+      "hash": "5ef3815ec46c2b6300fac0f88c25153ef34eb06dca3ad263a56cb9dfc81005da",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani11": {
+      "hash": "ba140e9627c65502ddd94b1fe76af7afbf7632bd186a46f06aa234636a64e8c9",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani12": {
+      "hash": "7b2d321635bc0e6cf819c209de1b7eaaab0cfb2e8adb739c07ebc1e285d18d90",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani13": {
+      "hash": "2f6869e40eefa94625ac67a5023202bf27e176ddf880cfc761f0aa602b5d7715",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani14": {
+      "hash": "32e0a592e3261ca3d10e8a1a17dcde556a1f996a781e7a33e19476668dceeb9c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani15": {
+      "hash": "7a017d5787d961c1a7f79382c6eda3c8104f68f64a18f4f0e55160efdbd0821e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani16": {
+      "hash": "ecc20205fab2bf71c793529af020fe6dffe557e5318183e721d4ad66792e44e0",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani17": {
+      "hash": "4ce22bd1c42414ffc3ee5223f0f97526bd0a95a9dd6fd0faf1948ed1c2062d14",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani18": {
+      "hash": "b4d47d337998d5fcb20143b984835cbd05251a87043b0f8e25dff553a94143d4",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani19": {
+      "hash": "0dbdf0e97cb669d6ddfcf451d09e79bde6f0602c3370b13bf2a4649c95fbb27e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani20": {
+      "hash": "fb2b303801bf787972443fef5527f91595ceb4860710c182cfe2b7c815811613",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani21": {
+      "hash": "ffe4d643dd3f7f2f81dc5decb6eb5944c3576f78416166764db62cd8d14ba74c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani22": {
+      "hash": "6c2daa7bf6ae255a3adaa14f036973cccdf3822cbccd548dc34b85fedc824ef1",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani23": {
+      "hash": "da82efe74bc91735b2812487e580e537e04bc4114b89cf0e0c22c5416b477dea",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani24": {
+      "hash": "b52ff56d69cdb14c7568b5466fed40ca548220b484891bf2bf60102b77a41780",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani25": {
+      "hash": "08c4eacc9ec9987fc8391c474eddf60a494fe4c9c6638022ef94105da8116710",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani26": {
+      "hash": "3b68bc31bd17023d98a60d37b17221749a3fd9650a84669a2aa1ad9e1d514995",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani27": {
+      "hash": "6b2e568c98a9abe107f4c08a56f534c9a5467011914743ea2a6c1ed1194630f3",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani28": {
+      "hash": "d2b02e8297d24a9a264848648acee9ea074a475e45ff606855c576d8ddcbdc4b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani29": {
+      "hash": "204a7f402eeeaea581a39f88473c66eea5d665b11689c65d5f53ffe9d46b081d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "ani30": {
+      "hash": "e460e56e57b002a43f5630741d25acfd8bdd10ebfb34921442801410ebf516ce",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod01": {
+      "hash": "54ef341291e572be211744833d5249c4f11e63cc43cd37b20d1a0832eee92f04",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod02": {
+      "hash": "6e1a446ecac7c60e9e3b5bab642fd8fee5ab33ba9406f21911e3fe645d5b8783",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod03": {
+      "hash": "0943e352aa788670b3e596793c5e7b6c6941234f517629e54051f62feb4253c2",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod04": {
+      "hash": "1027e2c77cdb384c2a77e9858f178a51a6c27b69a7a97d66291edbc4fbf0cda8",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod05": {
+      "hash": "9527fc0702b310d062a7dc56651db7ccf9c982e5efc256178a5867f91e6b651f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod06": {
+      "hash": "55cc5b12f6a8595cec721b8c68277dead58934082fedf3eea97cffbb256c4a88",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod07": {
+      "hash": "404eb5556d83de93ced9da0b518b2d4b8a9a476fcdf6dc59a75498c20a5a6972",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod08": {
+      "hash": "533703bdb6eb44088c5ed079453fcac2fa930344613c981a2c8197a7c920fe3b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod09": {
+      "hash": "499ecabe8fdc4bf06663b52f9573ab908146d728232a53369d081fc7c661c86d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod10": {
+      "hash": "27cbe5f8b2e6ea1377f0c433738566ee1969bf4283702d7a5cc2c97d32ef2ffd",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod11": {
+      "hash": "921281b55300308141a6e5c801f68f197a3202b416df087a2eaeb3dd65f9bc3d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod12": {
+      "hash": "c7987e6a6e0f9ce7df84b291fd7f2e54d6f7bb0872ee8d883fcb26d91846a08d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod13": {
+      "hash": "3db8c53cf26ed3cb8818a63efea10b61ca79129b0ca50606fb9333f4c899850a",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod14": {
+      "hash": "05186be32aa7e32ab1385c5beb3dbddb91826fefa3091900367f4d8820a13ec8",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod15": {
+      "hash": "c0e3e8f6935ac9377b5aba95570c27f49c0ce2d5c4b732f9b4eff5dfc6a0e6f4",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod16": {
+      "hash": "bd6831d93f0936c6bf62bcfa6e33e09a292de098c55ea27d5bc1feceb6f5f05a",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod17": {
+      "hash": "e98c971f3afe57c06e861d7cc1a9c485ef7d244623671687546506ff9fc38711",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod18": {
+      "hash": "08c6b2364219af84b8c693789923334c94427567dd42745583dd18bb365fa04d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod19": {
+      "hash": "b47cabe292173e766fd7ff131349b2128d8fce29ee00a07c1a5ef04ece0d2dab",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod20": {
+      "hash": "4bc06556024d019091f2a4a38b6e9c3621a3ad8c6614d3e38ffd0750b285e3b5",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod21": {
+      "hash": "1025e77baadc0cca1844b4794a5e06d8acc8cb960c5aa856fd474388d855133e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod22": {
+      "hash": "64858f3ab99497b5b0669f0d555c53aac2b1b651129ddee1d167e87f0a9e8028",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod23": {
+      "hash": "b090206e2337fffdb8b6da94c3051fc1ee5b4c34ef7a58fbca776adaa803e074",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod24": {
+      "hash": "3d4f5fa93c0d8d951bcc110fffa188dd133136558fafc06d1f27700fe34be76b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod25": {
+      "hash": "e3fdeb1b88d720166b501e6bee16acedb41003b95850f8f321d8e56e3eca31df",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod26": {
+      "hash": "be4ec168597be76f5b41b2218f14aaf01af9dc9318407ebd8e72353770e0e41c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod27": {
+      "hash": "00ff89287548c7b788d1aecbb9267b92bce3f6aa6ae8fa1400a471103145d119",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod28": {
+      "hash": "c81cde4d18e8ceb55127d919f3cd40d7e8e2ee9f9ac8f752b5ddcb56063ba2f1",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod29": {
+      "hash": "0940b5f0dd9b10d75ad272f156890888805fa522bb1f5edf6f92634889862d65",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "bod30": {
+      "hash": "bc1d27990491795a5832fd445a3663b8db4443644e3bb5bca41c6833d5772e0f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa01": {
+      "hash": "5bb198f52e2045053ef591aba5af5c2b9b2fac0f215a4ca05b991959cb796ce4",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa02": {
+      "hash": "6c1856a7cca9176a441ce65526f00166101ba7562e7e302ed3bbedd11b4ce5d9",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa03": {
+      "hash": "88908834fa382c48d3b57a7dcbd69ce99ccc2782b074c77f44ab4baae1527a63",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa04": {
+      "hash": "854bbf40491ca6a847c7b5e4d9cea0fca042a16167f5aa4eecc0661c6a6560f5",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa05": {
+      "hash": "228e5ced4c81b16b53f79852bafd9c4f448a87610490a15c03ad325beeadf299",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa06": {
+      "hash": "708bef0f9c18352c3ddbcf76806ac99d07bb2b2ccb33afcaa1e451a3e36d884e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa07": {
+      "hash": "b6723bb3125fd20aa62769a9d5fca00755dc46762c679706ec6d75d38b1a735e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa08": {
+      "hash": "5726c2a8bce26d85a2fb01eacfb6102b6b0038e2232df42c3a22fe5d5a34b2d2",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa09": {
+      "hash": "0503bc265ff63be16d9f3639ffbbb0932cd0a8d3189c75d31283fb0d5481fe06",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa10": {
+      "hash": "8d1b2ed495418eeab4507a03ad103964b9a43d1f18ab252f59e9665be35a90a5",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa11": {
+      "hash": "208cdce29bd15d39615a92f36e16126271a242ec46f1418cb70ad51c56a43c2a",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa12": {
+      "hash": "8cfac19dedb741c0c23174a98dca7b008005c39527ebfda0b992cadae3cda5c6",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa13": {
+      "hash": "7dfcdfb3d04842cd0e27dafd2e55292a40b9e050e427521f9609fc0dffd36abc",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa14": {
+      "hash": "94aeb737fb1767706a691a6bb9ff7c1a64749a058016c445d9e30d83568446b5",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa15": {
+      "hash": "f213e6e346d8c6ae427a24b471a6673ffdc952f03e1c584fc5419b1d0e916ce3",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa16": {
+      "hash": "d1165f719aaf135cb61201ca5ed4d9cdd81ab596709b5f06e3adea43c5c70811",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa17": {
+      "hash": "522fcf30d66adb431035406ff362b3b2d5aab2174b4b4eded6b02d64d7ef86de",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa18": {
+      "hash": "deebd1cceba867cbcf9f42e1c161196c47644b8ea9d327ce7a7bfdf66e8b500c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa19": {
+      "hash": "84fd9b8df5a8d0aa060f0a316889c4e9367203c0858047af782158fdc539e676",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa20": {
+      "hash": "bc598ffe0ef22e9e72193a81d00897c8dfd03b858fb1ced178a3b7d5192531ed",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa21": {
+      "hash": "2caf69893fc7bdcf5aec25e84ebb17aa0ad197b1251e1dbe697bf45046a662ba",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa22": {
+      "hash": "042aa1c8b4511037347dbef3ff2859c67cc3e7068d19113b9fc0e13f4e9b5b3f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa23": {
+      "hash": "c5b2a623a4b0911a888f95fdc2b21a8d190d76986f0e929f30cd84f448c34fbc",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa24": {
+      "hash": "4b05c76069b81131ac20df5dd2e86dfd3c0e65c409c3f60ed0372bfae7b84400",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa25": {
+      "hash": "0838c28f5e5971970b54a48dc4b55e265c45b7f0dc2ca3f15a31fcdebf5fa5db",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa26": {
+      "hash": "3d98caec36fd618aca37cf1fb710ed196c0d2897d06508c9971d68020ecf82e9",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa27": {
+      "hash": "10896079695534a6e23fe5257e86c03a8a3e40895f6b5a6c3e0463535801aa02",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa28": {
+      "hash": "e428bf6f1540f38d06d5c9bf24f8f8f9bc857af3fb3d1324552d072ae0446413",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa29": {
+      "hash": "e8334d08d63223f58f7214b9f609efa555db786f0c17ea8f1c49cbb05c2fc4dd",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "spa30": {
+      "hash": "2024091d4e4a306b4e95f3468ccbc1455dba2a5f5e26cf2d55f3a7328cc68a39",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat01": {
+      "hash": "f552823665c642fd4fc081000d3a4148bfe0cd9b83869ee033c0226b93b03271",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat02": {
+      "hash": "023ece7867999689b205548f337a20746e15400466d0aecb291726d29db7526d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat03": {
+      "hash": "d0994674fac4078f1bbbd5245b6598ce98f1fda35bfe6ac6eecc93a3c2790e33",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat04": {
+      "hash": "de3b90d28fb06dbf916dde3c93a38772b62b2c61dfaa66a4a9e75054303952a4",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat05": {
+      "hash": "8b41140dc7da21188bc504b9b11ef57f48866682c642b6b1b3c119fb8a00889b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat06": {
+      "hash": "9918ad46cb4ce8d3176d54ff8b4138655fcc4e6a04ea4e7513e324ef84144a6c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat07": {
+      "hash": "dbde1e72ad7d5af1c7d9b282aa450d93232eb993d38295c29a40463185eb5a10",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat08": {
+      "hash": "9a271abcc48ace57e78854d177d82dd94b6609ab9c163aa7d8605fe2fc0f8771",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat09": {
+      "hash": "c00a09ef72bb638daade83926812a1f636c45db97337e7cc688c6c50a3461a1b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat10": {
+      "hash": "33d33e5a0f3eeac26518e8337193dc4c283ee616b08bab4c111941f8c1ff1cda",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat11": {
+      "hash": "7f1a47f9d49bf81a7db99986770f168dd2590a0a19991d8bcca9056c626aa68d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat12": {
+      "hash": "7c5254d098b14c33dd2010489a7d81eeb6dd688a4bdf8a38ddd30e1becd9f376",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat13": {
+      "hash": "692c6c5d89eeea8d7b0b612b3cd2b506f03d5cc3b28bd697f9fedc8d07c436b0",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat14": {
+      "hash": "c2b043d24773cf4cc96a6c46dedb82360b524c36817982f76f0f5dfbd5270aed",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat15": {
+      "hash": "f6ce76744f1ef7a19071058c1ffb921d0e1483eeaa4eef91be239df9003faf15",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat16": {
+      "hash": "6a34b8a0ddd76010dca7fbd432983b1c2299af7c36852e531137aef39fbb6ff6",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat17": {
+      "hash": "578a40f889c153671cd43a598f8555ab2fb6f7343d1278a82090b026933a246e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat18": {
+      "hash": "142eed0c94c4431dfa977a83a089f4df8699c8f068c1484b644bc543ac9a763b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat19": {
+      "hash": "b12e9628a050a7437f855e4f7aed526a60d0c71b063810428b32a0b9a0364f6f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat20": {
+      "hash": "16c175fd5d29b97806112db682ac1927019bcf95e85e68724bfc893175d9de57",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat21": {
+      "hash": "aea24021c303656dc2aa13e63fc36af5d1579e230c7767f3dd2a3a5e4dce5cfd",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat22": {
+      "hash": "ac37ec96db1f521ed1783acad3096227ebc1d4fb0ac2d554302ff11511ee6a30",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat23": {
+      "hash": "3b1cbbfca98c584ea0a7627d4a06ba0ad864b29e67640a116da6ca81fc1e47ee",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat24": {
+      "hash": "18672fbff8c2ed82a9267ffe487e6bbbdda4ca225f92d277e45831c85d98be1b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat25": {
+      "hash": "2ded65af5ac4e7ab1eeb95670af25eb046090f6750d3e3afa424c34b1ee15531",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat26": {
+      "hash": "350d82aefc088b45dc2178b56493178bfe287fa0b6b9d469bc28c3645dd0d667",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat27": {
+      "hash": "bc4e25382a27e5c90d71b776c4c5d776378279d043641543ae4d81a817a06443",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat28": {
+      "hash": "b882c6672dde4ffcd1a72ca2c74f967dfdf2d223d1a303604f3462460ac30328",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat29": {
+      "hash": "3a6e7090538179a197dab67a2e33bd2933c067c70027aba6f845974d2bbbc264",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "nat30": {
+      "hash": "1ef8a0a7be23cfc27dd334eaf0a0edfda2dcdbafa59ccde55b677ecb8e416125",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci01": {
+      "hash": "65ab1c0e66c9e3a29587b1a6402e7556f1c4ce8913b431f35de33eec9435d1d8",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci02": {
+      "hash": "d2f96c6b6b36c0b63b1d97c205e157505b9898fa1e93d81348518d0b7bee920d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci03": {
+      "hash": "073651f75dd5a2af43a69a24fa0ead0cd3a89efbdf59ad34a49e499c4fa54db9",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci04": {
+      "hash": "a627f2e149dd791db67bc65ab8ff97c74edf2435cb0d4ec5e404691194eecc7f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci05": {
+      "hash": "11d2264b5ed7bed12172e57b953e77d06144676f30907c70fc37ce3be3688aaa",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci06": {
+      "hash": "c01ae64ca9765f04d97c75b1f99c7691cc5df3656559faf2c73046a65bdfa82f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci07": {
+      "hash": "31ca3ebacf96be08027be537b335602cd13a52f3dc4fe8ea11432b71077b622e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci08": {
+      "hash": "c93d90c7736ffcff98e74902be4568b1489ad70d5300dc4d991c1fe33489241d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci09": {
+      "hash": "91ebef77b021742508e8628a609730cc04dee677e85a6ec43d3cda8f4519c654",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci10": {
+      "hash": "143101c114546c77b771ecab4af927429c63542d59143f9b96a28b9f936a92ac",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci11": {
+      "hash": "e4295967de48c7272e845ac48a4e2dbd6b27bf5d921715cdf920cfb8ae410b0c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci12": {
+      "hash": "2dca7511d767653f831e134faa81f19d737e75fcc7321afb296e9dce807eef8a",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci13": {
+      "hash": "be4494b479b781e1945f9cf6ea557a43cefdd054bc514ebcd9b0f44ecc8bd6be",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci14": {
+      "hash": "2cbc796da511adbb1464d6e1ed3f2a391de28ebb0a4ee309efb6e45b0889f86c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci15": {
+      "hash": "a389981a739287716ac121ed66235a60df24d2cc6e9b1763c29ac046e5d6b493",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci16": {
+      "hash": "75f19b45445c055e53910b055df17454561a0c3e2de61dd0f920a5fa8eea9c05",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci17": {
+      "hash": "1499a19966d97ef170242a8e510d3de425034d5cb0239fc9c52879a2eaa009c8",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci18": {
+      "hash": "aa8d9562affae5ad830edfa227c61e797fe9025857f6ff94c493fe9313854ca2",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci19": {
+      "hash": "aa8eea1bd095d9574298fcd3cca3bcad1fe2c3a4ea705bd5f674cebaa405915a",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci20": {
+      "hash": "4b17478e95a0ba7644d317720a01a92472fa2d34e2e4f4d528592e16370c191e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci21": {
+      "hash": "8a9b334a551d8dc107a1776d5c260e98a9918511391edd9fe0526b5761fff34f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci22": {
+      "hash": "3e29e4f0aa0af5a93092b292a16f3c8e7f500d9189b20ae65f37a984dbf91224",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci23": {
+      "hash": "43e098102e70cad01852f4d05f5f734a3ba42ac49e5c95ec552e86c30880d7d0",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci24": {
+      "hash": "a153e58fab2eac74d51df276e657ac935c2cb6e181bd761c1ff37a81f326adc7",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci25": {
+      "hash": "ebc511b51ab8ef512fb06f4512bfb7e64f5014e10061fd0796c71cfaa0237810",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci26": {
+      "hash": "710ef65c5cabdacb7f7ea7b8be2ff2633a04344ccef8e8576456467ed0f4d7e1",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci27": {
+      "hash": "f070f0ebb51032ee2cb806ca3eb407d9aa5df262b6334e696d5da6511e0f49a5",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci28": {
+      "hash": "956b4d920d860c0cc2fa174cbafe6640bd2e5c125f0163b0224c4936daad509d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci29": {
+      "hash": "896fafa7253884b6667b639146d0dffc222c1d8766345b986a87855fdd323866",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "sci30": {
+      "hash": "557723bba7482e0e4c7793e727bd9f1416664f2ad56f7be147365d8662f79949",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat01": {
+      "hash": "7e02f9856d06bee48f7ddf2917a8fa927e03968e05e559f6d28ffcc6d76faa94",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat02": {
+      "hash": "898fe8fb48114dfd2e5e33391c69f181e12bd2279bea5ed5ca55062f66196e3f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat03": {
+      "hash": "1afa2ab21d4e2678c4149bef0e0752a2b2032f94352cca6b3688b2ca76ff3462",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat04": {
+      "hash": "5179fb588d0fcc340bfd9325780515a892dacf4523160a62ed448fc029b47090",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat05": {
+      "hash": "18960d6bfaa82806359b9243bd59f4778342a01e759057e0d47c7670b63e8232",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat06": {
+      "hash": "8f85bd57fe40581c85ea8d36f8ecd6a113226bf0c81ddbc80c8a2bbbd7be248c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat07": {
+      "hash": "8ff8b3548ae4957dcd1a56d22480bd8a5bdda492782ea59a88bc59e430ff9fbd",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat08": {
+      "hash": "fc3bb4a15ecdb249acb39273f9b072e1eb6379142c147328b2859dc770056fa4",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat09": {
+      "hash": "010eaf97dcd437fa52a3e2ab64782cd3442a526c066044193992a2110d37e51e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat10": {
+      "hash": "0d21d95893f9e13bbb93e445fb782ba3fbb40d1f863d0d61f3b64582184a6393",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat11": {
+      "hash": "01dec13dd65382fdf2362ea3e46de9a775d3250abb79cedbef1d81466eb19add",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat12": {
+      "hash": "019c0d7ae62f7096c96911de07f2021238603f9af894cc9f4b06d428f265ae30",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat13": {
+      "hash": "2e064a7fba60f384c700623004b9d145d4d431ae75707f9b7e68a82cefc13e22",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat14": {
+      "hash": "114d4c681af03214363f4b05df4ef58d5f2144063738fea6720c2081852e599e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat15": {
+      "hash": "80170fa7b767b82840d3d3c09cd32b97607ff142d7d464a5987ea95038a3ff8f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat16": {
+      "hash": "f77eece926b56b54ebfc4565bd00324d14ee52d92f8fecd10c51206fdd3304d4",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat17": {
+      "hash": "861fc287840a0aee1ddcdb0d08592120b13c5deb757afb9b982ebf6cedf9746d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat18": {
+      "hash": "38829f6fd62e0d6d7b9d340606311b9911bf3555f32693afcf4b02e243a05745",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat19": {
+      "hash": "1788c4fb9b198ab87369750610a78ce7dade781c10ed136fb98c3c93d96b29ba",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat20": {
+      "hash": "c5e59ca0f12757867494ca51b01e361541be55c3899728b62e60f708559f5083",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat21": {
+      "hash": "390d2a0f59d79f78511c143936eb5ae81bf1f5fc1450e7133a6365a9c132a94a",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat22": {
+      "hash": "478e1eb01e80def94e2f05e75f7d688a648b7ca88fbd92b24e9ef8fe62722fa7",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat23": {
+      "hash": "91a3c6f8a87e39a401f954bf8bb91a28a79fe3764f3fe22595094c5c902d8b35",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat24": {
+      "hash": "87888c27c87a094b7bd1b009c522a6cb363190cd08df294c463253cc2e1eadb9",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat25": {
+      "hash": "71a861f410594ae6446fb932d388e5ec8338e88d471a88ee1d93ff85f8fff804",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat26": {
+      "hash": "0e3a81d5e95926157d4ce4630c9ea42529775746fd6141ef32beb4ecd40ecb5a",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat27": {
+      "hash": "318a006306dd6396744f43076798f179eef7b26b6df5350ece8cf1c439a18d39",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat28": {
+      "hash": "6c6859ab39e98221c796bb07b8c2ce63512a16d656d73535c67e56cf1243d6be",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat29": {
+      "hash": "53dd6d09b3ece5f8b6711856dc57c54b3213a0a43a0b7e1a7a61caa1eeb57c11",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "mat30": {
+      "hash": "e463f723d3a123ec826a09945ff2b669d3669bad21ea3c781a76df294afaaf79",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo01": {
+      "hash": "10a8fe6c86d095f50c01419388ef474af36af55f1d6433af93cc387aa68c5326",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo02": {
+      "hash": "4ff1e1d445f2e5ee2434f6fe96a111d7d204a66d67079411ae1dcd8e22f93880",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo03": {
+      "hash": "ba0d6db3cf557f97aec298a5e31948210758bec774fd4bd8486c0b998c60b826",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo04": {
+      "hash": "b9ee93266523da61550f1f78ba880e35aff426500bf874b0102eb8fd2a2ca7b2",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo05": {
+      "hash": "a9368f9c576e27a8d5ecf39eea532d7302773767d827f45f1d34a30a797759bc",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo06": {
+      "hash": "154163c0747729d468e9b3ad400a500bed8c7871157d53bdb84586ffebfee2a7",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo07": {
+      "hash": "545000e3ea2c3ca06c03436e37cdf9670fc29f2bbba18b043d598cc2e6e439f7",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo08": {
+      "hash": "49cdd7c481cf5f416a1724aed06b98ea34c7ba3b7c2843441c254152054e326f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo09": {
+      "hash": "459f0c0821b872768220dbcf06353c8169e760a14fcdac064248d4e46255359d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo10": {
+      "hash": "507d2f687c1e82b84d317b15f158a3c793e6ae6c0764be14b86cafdbb349d125",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo11": {
+      "hash": "34cc3da81e019c50e12489e8842ec30a8b9dbb2155b960031e618bc0c694e167",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo12": {
+      "hash": "19772644fcf497afddf67961c03ea012ba69b3a5485a84873785edd14c57a27b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo13": {
+      "hash": "c84459363425bb59f0997e2a912726305453b5e0aeae0a428f39901e7e9465fd",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo14": {
+      "hash": "f01825780218cfc73fe9e1b3fe42f5dbab220c37d7c13fc18e3a0f638327e7f0",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo15": {
+      "hash": "3281c7fd0d581d8402163e1db45ba7c84d114bb9532b241728143869413e4294",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo16": {
+      "hash": "fb7cdd8785ec2fc86998b7ba6ad78176d056931cc4e0c0215c6b9e4139453d94",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo17": {
+      "hash": "f4931cc01cf6e74b6f2d38573246e72cb967a4f4576a60e4305631fa340b2728",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo18": {
+      "hash": "607563bb5a3f609b12c2e17f8cd4b3e718a7d4af638e729d07e85d7f22f4a9d1",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo19": {
+      "hash": "15f1cfcff91fda4992b1eb481a5dd5800364883645ed67a3cf1938aa52501a08",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo20": {
+      "hash": "7465c8a4a6a88f1d5d5a02a8e4d963def5cbc017b71099dd085f42bcc5327261",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo21": {
+      "hash": "484ea506b6649af395894434b82ed3beb4ac27be7ffe082a969c4382f85bc0b3",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo22": {
+      "hash": "9f0a4abc55219d0b654dd8e23a11f3ff91b3b726774ffd1b722c78bddbd896b3",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo23": {
+      "hash": "5f9cce6fac53d9032a869d2a5761a39e20ccd857b4f0f3015ec0756d9f6e33ab",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo24": {
+      "hash": "a08007f10570146fd8092e55e2864477b9ff7a8b4581d06357a22b74de7014d4",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo25": {
+      "hash": "ba168cab5ae670eae321c4d0620f7136fe7a1010fcf9b21d08e1cf36c5ed13cc",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo26": {
+      "hash": "1a4d5b09fc853ca5035f6ad3a93c1abed57f2a0bbb148d5fb63c92dc1132648a",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo27": {
+      "hash": "7bb6a4844a4e56d08f2d99168a4ef721525a8ce336b2d616bd19744dea4ccdf2",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo28": {
+      "hash": "7c925b51a8b6f466053567c95cffbf5dec50c9e4cdc3b5d738316b1fc3da3a6e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo29": {
+      "hash": "566e8f56480abdd81d59d99ea442c6e1d34ed24611c54ec9c16c1ee12ca1e34c",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "foo30": {
+      "hash": "e57d1fa7b16a699b6be9825733da270ba93271924d6d64d60bae4942f05571da",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day01": {
+      "hash": "740452cce11698e1c5809678196a1aa4ccf1c09f752f7de66a922348038b0781",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day02": {
+      "hash": "24073fbbe38a4d505295e190628045491e86232c8b2b0baefa6a2a3739f89c31",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day03": {
+      "hash": "2bcca2a430bd50d19fc13567e63838ac6ed90183ca84639713cea7d711afe408",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day04": {
+      "hash": "894ffb09e1a3a5dd1efe407d54486205a68c362f404e66ede44a06206de6308b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day05": {
+      "hash": "93e836277d94e5e06a6b0fbaf0f1dd24f60a6c0a07e61873b315578a700e9885",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day06": {
+      "hash": "8636bf199d6d7f7396115c79d73ffc93f1f9464711de2b05cdd90f7f0fbc4a86",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day07": {
+      "hash": "fe99f42dd82d319a41833d8b3914cb6ae34e2d20a542d3b5eb160f75b1843e0d",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day08": {
+      "hash": "3fa3d3e0ab1e4f62b0b9337d7575d5a517344d1488fbfe6a5e63dede0f7b2199",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day09": {
+      "hash": "7784dd12d401bd232e6cf0a174d18135790cdfc8a51121736720fa212c1bf24a",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day10": {
+      "hash": "91e808d3e6f0d58e2c0422811930682eaa5c90da1ff6b0f04a3bdf3a7c7da669",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day11": {
+      "hash": "fdab307dec4881f762a902509222437eeae56769348de5aa3ed4e2ce23e007c1",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day12": {
+      "hash": "50915067b53d9f2db5f5f47ce0eebff04b2b5f69095bae271973a6a6db6c7381",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day13": {
+      "hash": "d2e900259235119331078088a5383ebc6d3f6231233fb064a993fa85cf23a1a4",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day14": {
+      "hash": "600f799b216d3111a6c2faa2cfcba3dd497410c3517956f3ff5bd70f151ec4a8",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day15": {
+      "hash": "6041008ab077509ed35a035cbaed05b9b5922fdbc2479ffe6b3607afebec29aa",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day16": {
+      "hash": "e6b8c613f3f98ed5ca93317d2da607cf8fb05bb48dc9f3082306ed2ec5e0362e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day17": {
+      "hash": "674537be27244902b7b491038c2e4ec6e8d10b5ef5c636e23b65db4781ea46dd",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day18": {
+      "hash": "e5f2c402fb6f809d5dd6e75e7fc00a32d0e60256d3b8faa3f437fab7fb720bef",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day19": {
+      "hash": "d349e1f47564b54aba4a79f1dcb758332d8e2c2c1d02246e1d72c2b6ef821d4f",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day20": {
+      "hash": "6420836edc3c420f7e53fe684e0aa42ae3cbba539ee12ffcbd4d651b888656d0",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day21": {
+      "hash": "41c10fd45265692e21ee55dc892e14834a4bb6c725b04eb72355087eea7f57e9",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day22": {
+      "hash": "90e02101fc2a042881481301eea85307fbec2b26f0f4a9b709257d5b85c23137",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day23": {
+      "hash": "322015f841244ea1cfcecb7ddb7e634ec4e71828010d1df579a27b20e716ba5b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day24": {
+      "hash": "f5449b89c421ec62a1703859a2b84d3542a358d93477e4b4fb2030a95d7fd63b",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day25": {
+      "hash": "b9024f5b1275f424499c1036e3828e7726bd330153aaa9ec0198a59e6fdf506e",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day26": {
+      "hash": "ad465b0caea06648693c14185f9fc8b44b0eb2a0f1b61dafb9898ea035d85c32",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day27": {
+      "hash": "10e830934d774155646f81a0477dc77900eb7dd29fa077c47686dde01b59d258",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day28": {
+      "hash": "90e40fe64d08ff0fab437f8ea19399f0670f0de05c9a5df972a9347245b81e02",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day29": {
+      "hash": "98c323fb2c7801e629ce9210ed76b71752c010fff6dbfc1c6141412d529d9aa6",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    },
+    "day30": {
+      "hash": "ce66520c354e12b5a14aa75d2abd3992dab35a0ab1dfc24d2d63ef21e8f9ed54",
+      "approvedByEnglishReviewer": null,
+      "approvedByPolishReviewer": null
+    }
+  }
+}

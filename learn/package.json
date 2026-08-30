@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "code-review": "node tools/code-review.mjs",
-    "word-quality": "node tools/word-quality.mjs"
+    "word-quality": "node tools/word-quality.mjs",
+    "yesnoreflex-dom-check": "node tools/yesnoreflex-dom-check.mjs",
+    "yesnoreflex-layout-check": "node tools/yesnoreflex-layout-check.mjs",
+    "yesnoreflex-question-gate": "node tools/yesnoreflex-question-gate.mjs"
   },
   "dependencies": {
     "@eslint/js": "10.0.1",
@@ -14,5 +17,9 @@
     "parse5": "8.0.0",
     "postcss": "8.5.10",
     "prettier": "3.8.3"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.3",
+    "puppeteer-core": "^23.11.1"
   }
 }

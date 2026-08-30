@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- morsegen.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- morsegen/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -33,8 +33,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Generate printable A4 Morse code practice sheets for two kids: one transmits a randomized list of letters, the other writes down what they decode."
     />
     <title>Morse Code Practice Sheets</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <script
@@ -133,7 +135,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -221,7 +223,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
       .session-id {
         margin-left: auto;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         color: var(--text-dim);
         letter-spacing: 1px;
@@ -307,14 +309,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: var(--panel-border);
       }
       .hist-letter {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 10px;
         font-weight: 700;
         color: var(--text-dim);
         line-height: 1;
       }
       .hist-count {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 9px;
         color: var(--text-label);
         line-height: 1;
@@ -368,7 +370,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border-radius: 6px;
         padding: 5px 10px;
         cursor: pointer;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -407,7 +409,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         font-weight: 700;
         color: var(--text-label);
@@ -415,7 +417,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         letter-spacing: 1px;
       }
       .slider-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -461,6 +463,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 2px solid #fff;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
         cursor: pointer;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
       }
     </style>
   </head>
@@ -674,7 +684,7 @@ const I18N = {
   },
 };
 
-function T(key) { return I18N[state.lang][key]; }
+function T(key) { return I18N[state.lang][key] || key; }
 
 function applyTranslations() {
   const l = I18N[state.lang];
@@ -1090,7 +1100,6 @@ function runLayoutTest() {
         btn.style.borderColor = color;
         btn.style.color = '#fff';
         btn.title = summary.join('\n');
-        console.log('Layout test:\n' + summary.join('\n'));
       } catch (e) {
         btn.style.background = '#C62828';
         btn.style.borderColor = '#C62828';

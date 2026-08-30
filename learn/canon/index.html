@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- canon.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- canon/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -12,9 +12,30 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       name="description"
       content="Planet Cannon: compare projectile trajectories across different worlds to see how gravity shapes the path."
     />
+    <link rel="canonical" href="https://lepecki.com/learn/canon/" />
+    <meta property="og:title" content="Planet Cannon" />
+    <meta
+      property="og:description"
+      content="Planet Cannon: compare projectile trajectories across different worlds to see how gravity shapes the path."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/canon/" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Planet Cannon" />
+    <meta
+      name="twitter:description"
+      content="Planet Cannon: compare projectile trajectories across different worlds to see how gravity shapes the path."
+    />
     <title>Planet Cannon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -85,7 +106,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -145,7 +166,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
       .section-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.8px;
@@ -154,7 +175,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border-bottom: 1px solid var(--panel-border);
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.8px;
@@ -271,7 +292,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .slider-val {
         min-width: 44px;
         text-align: right;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -283,7 +304,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         line-height: 1;
         cursor: pointer;
@@ -346,20 +367,20 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         padding: 1px 0;
       }
       .readout-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: var(--text-label);
       }
       .readout-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
       }
       .readout-compare {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         font-weight: 700;
         color: var(--text-dim);
@@ -369,7 +390,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         font-size: 11px;
         color: var(--success-color);
         font-style: italic;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         margin-top: 4px;
       }
       .info {
@@ -401,10 +422,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         font-size: 24px;
         font-weight: 700;
         margin-top: 16px;
-        color: #fff;
+        color: #0b171b;
       }
       .overlay-hint {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         margin-top: 8px;
         color: rgba(255, 255, 255, 0.6);
@@ -748,6 +769,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
    ═══════════════════════════════════════════════════════════ */
         const I18N = {
           en: {
+            ariaCanvas: "Projectile motion simulation canvas",
+            ariaWorld1Select: "Primary world selection",
+            ariaWorld2Select: "Comparison world selection",
+            ariaStepSpeedDown: "Decrease speed",
+            ariaSpeedSlider: "Launch speed",
+            ariaStepSpeedUp: "Increase speed",
+            ariaStepAngleDown: "Decrease angle",
+            ariaAngleSlider: "Launch angle",
+            ariaStepAngleUp: "Increase angle",
+            ariaStepMassDown: "Decrease mass",
+            ariaMassSlider: "Projectile mass",
+            ariaStepMassUp: "Increase mass",
             title: "Planet Cannon",
             subtitle:
               "Compare trajectories across worlds to see how gravity shapes the path.",
@@ -802,6 +835,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "Simplified model: no air resistance, spin, or planetary curvature.",
           },
           pl: {
+            ariaCanvas: "Symulacja rzutu uko\u015Bnego",
+            ariaWorld1Select: "Wyb\u00F3r \u015Bwiata g\u0142\u00F3wnego",
+            ariaWorld2Select: "Wyb\u00F3r \u015Bwiata por\u00F3wnawczego",
+            ariaStepSpeedDown: "Zmniejsz pr\u0119dko\u015B\u0107",
+            ariaSpeedSlider: "Pr\u0119dko\u015B\u0107 wystrza\u0142u",
+            ariaStepSpeedUp: "Zwi\u0119ksz pr\u0119dko\u015B\u0107",
+            ariaStepAngleDown: "Zmniejsz k\u0105t",
+            ariaAngleSlider: "K\u0105t wystrza\u0142u",
+            ariaStepAngleUp: "Zwi\u0119ksz k\u0105t",
+            ariaStepMassDown: "Zmniejsz mas\u0119",
+            ariaMassSlider: "Masa pocisku",
+            ariaStepMassUp: "Zwi\u0119ksz mas\u0119",
             title: "Armata Planetarna",
             subtitle:
               "Por\u00f3wnaj trajektorie na r\u00f3\u017cnych \u015bwiatach i zobacz, jak grawitacja kszta\u0142tuje tor lotu.",
@@ -1407,7 +1452,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           // Labels
-          ctx.font = '9px "Share Tech Mono", monospace';
+          ctx.font = '9px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(0,0,0,0.25)";
           ctx.textAlign = "center";
           let labelIdx = 0;
@@ -1686,12 +1731,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const endPt = forecast.arcPoints[forecast.arcPoints.length - 1];
           const lx = tx(endPt.x) + 4;
           const ly = ty(endPt.y) - 8;
-          ctx.font = '700 11px "Share Tech Mono", monospace';
+          ctx.font = '700 11px "JetBrains Mono", monospace';
           ctx.fillStyle = world.color;
           ctx.textAlign = "left";
           ctx.textBaseline = "bottom";
           ctx.fillText(T(world.key), lx, ly);
-          ctx.font = '9px "Share Tech Mono", monospace';
+          ctx.font = '9px "JetBrains Mono", monospace';
           ctx.fillText(fmt(forecast.range) + "m", lx, ly + 11);
         }
 
@@ -1832,7 +1877,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.strokeStyle = "rgba(0,0,0,0.3)";
           ctx.lineWidth = 1;
           ctx.stroke();
-          ctx.font = '10px "Share Tech Mono", monospace';
+          ctx.font = '10px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(0,0,0,0.4)";
           ctx.textAlign = "center";
           ctx.fillText(scaleDist + " m", bx + barPx / 2, by + 13);
@@ -1931,7 +1976,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             spY = my + (tipY - my) * s1 + offY;
           const anX = mx + (tipX - mx) * s2 + offX,
             anY = my + (tipY - my) * s2 + offY;
-          ctx.font = '700 13px "Share Tech Mono", monospace';
+          ctx.font = '700 13px "JetBrains Mono", monospace';
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           const speedTxt = fmtInt(state.speed) + " m/s";
@@ -2464,6 +2509,28 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
    I18N FUNCTIONS
    ═══════════════════════════════════════════════════════════ */
         function applyTranslations() {
+          // Aria labels must follow the language toggle, not stay in the
+          // markup language. See house/aria-label-not-localized.
+          const ariaLabels = [
+            ["canvas", "ariaCanvas"],
+            ["world1Select", "ariaWorld1Select"],
+            ["world2Select", "ariaWorld2Select"],
+            ["stepSpeedDown", "ariaStepSpeedDown"],
+            ["speedSlider", "ariaSpeedSlider"],
+            ["stepSpeedUp", "ariaStepSpeedUp"],
+            ["stepAngleDown", "ariaStepAngleDown"],
+            ["angleSlider", "ariaAngleSlider"],
+            ["stepAngleUp", "ariaStepAngleUp"],
+            ["stepMassDown", "ariaStepMassDown"],
+            ["massSlider", "ariaMassSlider"],
+            ["stepMassUp", "ariaStepMassUp"],
+          ];
+          ariaLabels.forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (el) el.setAttribute("aria-label", T(entry[1]));
+          });
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
           document.getElementById("titleText").textContent = T("title");
           document.getElementById("subtitleText").textContent = T("subtitle");
           document.getElementById("langBtn").textContent =

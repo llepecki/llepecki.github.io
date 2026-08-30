@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- fractions.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- fractions/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -13,8 +13,29 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       name="description"
       content="Fraction Playground — build, compare, match, place, and repair fractions and decimals. An interactive manipulative for children aged 7-11."
     />
+    <link rel="canonical" href="https://lepecki.com/learn/fractions/" />
+    <meta property="og:title" content="Fraction Playground" />
+    <meta
+      property="og:description"
+      content="Fraction Playground — build, compare, match, place, and repair fractions and decimals. An interactive manipulative for children aged 7-11."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/fractions/" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Fraction Playground" />
+    <meta
+      name="twitter:description"
+      content="Fraction Playground — build, compare, match, place, and repair fractions and decimals. An interactive manipulative for children aged 7-11."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -113,7 +134,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -277,7 +298,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: #fafaf7;
         color: #546e7a;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
@@ -380,7 +401,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .section-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.8px;
@@ -403,7 +424,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
       .frac-numer,
       .frac-denom {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 26px;
         font-weight: 700;
         color: var(--text-head);
@@ -421,7 +442,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .frac-whole {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 30px;
         font-weight: 700;
         color: var(--text-head);
@@ -430,7 +451,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .frac-decimal {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         font-weight: 700;
         color: var(--text-dim);
@@ -446,7 +467,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .readout-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -454,7 +475,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .readout-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -483,7 +504,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
       .progress-label {
         margin-top: 4px;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 10px;
         color: var(--text-label);
       }
@@ -529,7 +550,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .stepper-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -544,7 +565,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         line-height: 1;
         cursor: pointer;
@@ -567,7 +588,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .stepper-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         font-weight: 700;
         color: var(--text-head);
@@ -586,7 +607,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 2px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-head);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         font-weight: 700;
         cursor: pointer;
@@ -616,7 +637,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .status-text {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         color: var(--text-dim);
       }
@@ -672,14 +693,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         font-size: 22px;
         font-weight: 700;
         margin-top: 16px;
-        color: #fff;
+        color: #0b171b;
         text-align: center;
         max-width: 400px;
         padding: 0 20px;
       }
 
       .overlay-hint {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         margin-top: 12px;
         color: rgba(255, 255, 255, 0.5);
@@ -6298,7 +6319,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               x: bx,
               y: y + 24,
               "text-anchor": "middle",
-              "font-family": "'Share Tech Mono', monospace",
+              "font-family": "'JetBrains Mono', monospace",
               "font-size": "14",
               fill: "#78909C",
             });
@@ -6384,7 +6405,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const pad = fs * 0.25;
           const lineGap = fs * 0.12;
           const lineThick = Math.max(2, Math.round(fs * 0.09));
-          const font = "'Share Tech Mono', monospace";
+          const font = "'JetBrains Mono', monospace";
           const m = fracToMixed(n, d);
 
           const g = svgEl("g", {});
@@ -6565,7 +6586,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 y: cy,
                 "text-anchor": "start",
                 "dominant-baseline": "central",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": fs,
                 "font-weight": "bold",
                 fill: clr,
@@ -6617,7 +6638,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               y: y + height / 2 + 2,
               "text-anchor": "middle",
               "dominant-baseline": "middle",
-              "font-family": "'Share Tech Mono', monospace",
+              "font-family": "'JetBrains Mono', monospace",
               "font-size": label.length > 5 ? "22" : "28",
               "font-weight": "bold",
               fill: color || "#263238",
@@ -6787,7 +6808,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             y: opts.y + stripH / 2 + 2,
             "text-anchor": "middle",
             "dominant-baseline": "middle",
-            "font-family": "'Share Tech Mono', monospace",
+            "font-family": "'JetBrains Mono', monospace",
             "font-size": "22",
             "font-weight": "bold",
             fill: "#455A64",
@@ -6818,7 +6839,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             y: opts.y + stripH / 2 + 2,
             "text-anchor": "middle",
             "dominant-baseline": "middle",
-            "font-family": "'Share Tech Mono', monospace",
+            "font-family": "'JetBrains Mono', monospace",
             "font-size": "22",
             "font-weight": "bold",
             fill: "#455A64",
@@ -6956,7 +6977,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: lblX,
                 y: lblY,
                 "text-anchor": "middle",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "11",
                 "font-weight": "600",
                 fill: lblClr,
@@ -6969,7 +6990,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 y: lblY,
                 "text-anchor": "middle",
                 "dominant-baseline": "central",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "11",
                 "font-weight": "600",
                 fill: lblClr,
@@ -7172,7 +7193,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               x: sx + shareW / 2,
               y: shareY + shareH + 16,
               "text-anchor": "middle",
-              "font-family": "'Share Tech Mono', monospace",
+              "font-family": "'JetBrains Mono', monospace",
               "font-size": "11",
               fill: "#78909C",
             });
@@ -7289,7 +7310,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             y: trackY + trackH / 2 + 2,
             "text-anchor": "start",
             "dominant-baseline": "middle",
-            "font-family": "'Share Tech Mono', monospace",
+            "font-family": "'JetBrains Mono', monospace",
             "font-size": "16",
             "font-weight": "bold",
             fill: "#455A64",
@@ -7589,7 +7610,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             y: opts.y + (opts.shadedRows * opts.cellH) / 2 + 2,
             "text-anchor": "middle",
             "dominant-baseline": "middle",
-            "font-family": "'Share Tech Mono', monospace",
+            "font-family": "'JetBrains Mono', monospace",
             "font-size": "14",
             "font-weight": "bold",
             fill: color,
@@ -7611,7 +7632,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           duration,
           onComplete,
         ) {
-          const idx = 0;
+          let idx = 0;
           function placeNext() {
             if (idx >= positions.length) {
               if (onComplete) onComplete();
@@ -7702,7 +7723,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               x: 400,
               y: 180,
               "text-anchor": "middle",
-              "font-family": "'Share Tech Mono', monospace",
+              "font-family": "'JetBrains Mono', monospace",
               "font-size": "20",
               "font-weight": "bold",
               fill: "#90A4AE",
@@ -7827,7 +7848,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: wx + stripW / 2,
                 y: startY + stripH + 18,
                 "text-anchor": "middle",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "12",
                 fill: "#90A4AE",
               });
@@ -8152,7 +8173,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               y: eqY + eqPillH / 2 - 2,
               "text-anchor": "middle",
               "dominant-baseline": "middle",
-              "font-family": "'Share Tech Mono', monospace",
+              "font-family": "'JetBrains Mono', monospace",
               "font-size": "18",
               "font-weight": "bold",
               fill: eqHov ? MODE_COLORS.compare : "#546E7A",
@@ -8449,7 +8470,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               y: pillY + pillH / 2 + 1,
               "text-anchor": "middle",
               "dominant-baseline": "middle",
-              "font-family": "'Share Tech Mono', monospace",
+              "font-family": "'JetBrains Mono', monospace",
               "font-size": "11",
               "font-weight": "bold",
               fill: "#263238",
@@ -9354,7 +9375,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             y: centerY + 1,
             "text-anchor": "middle",
             "dominant-baseline": "middle",
-            "font-family": "'Share Tech Mono', monospace",
+            "font-family": "'JetBrains Mono', monospace",
             "font-size": "14",
             "font-weight": "bold",
             fill: r.phase === "done" ? "#388E3C" : "#78909C",
@@ -9479,7 +9500,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: repr.x + quadW / 2,
                 y: repr.y + quadH / 2 + 10,
                 "text-anchor": "middle",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "30",
                 "font-weight": "bold",
                 fill: "#263238",
@@ -9567,7 +9588,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                     y: optY + optH / 2 + 2,
                     "text-anchor": "middle",
                     "dominant-baseline": "middle",
-                    "font-family": "'Share Tech Mono', monospace",
+                    "font-family": "'JetBrains Mono', monospace",
                     "font-size": "15",
                     "font-weight": "bold",
                     fill: "#263238",
@@ -9895,7 +9916,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: 40 + stripW / 2,
                 y: 90,
                 "text-anchor": "middle",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "12",
                 fill: "#78909C",
               });
@@ -9913,7 +9934,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: 40 + stripW + 12 + 30 + stripW / 2,
                 y: 90,
                 "text-anchor": "middle",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "12",
                 fill: "#78909C",
               });
@@ -10009,7 +10030,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: wx + stripW / 2,
                 y: stripY + stripH + 18,
                 "text-anchor": "middle",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "12",
                 fill: "#90A4AE",
               });
@@ -10305,7 +10326,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: 400,
                 y: 78,
                 "text-anchor": "middle",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "12",
                 fill: "#78909C",
               });
@@ -10416,7 +10437,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 x: startX + (remN * segW) / 2,
                 y: stripY + stripH + 18,
                 "text-anchor": "middle",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "13",
                 "font-weight": "600",
                 fill: "#455A64",
@@ -10432,7 +10453,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 y: stripY - 8,
                 "text-anchor": "middle",
                 "dominant-baseline": "central",
-                "font-family": "'Share Tech Mono', monospace",
+                "font-family": "'JetBrains Mono', monospace",
                 "font-size": "12",
                 fill: MODE_COLORS.subtract,
               });
@@ -10854,7 +10875,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                   y: pieceY + pieceH / 2 + 2,
                   "text-anchor": "middle",
                   "dominant-baseline": "middle",
-                  "font-family": "'Share Tech Mono', monospace",
+                  "font-family": "'JetBrains Mono', monospace",
                   "font-size": "16",
                   fill: "#90A4AE",
                 });
@@ -10972,7 +10993,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               y: scMidY,
               "text-anchor": "middle",
               "dominant-baseline": "central",
-              "font-family": "'Share Tech Mono', monospace",
+              "font-family": "'JetBrains Mono', monospace",
               "font-size": "14",
               "font-weight": "bold",
               fill: MODE_COLORS.multiply,

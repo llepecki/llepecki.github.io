@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- angularmomentum.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- angularmomentum/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -12,9 +12,33 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       name="description"
       content="Interactive simulation demonstrating conservation of angular momentum. Drag weights on a spinning platform and observe how moment of inertia and angular velocity change."
     />
+    <link rel="canonical" href="https://lepecki.com/learn/angularmomentum/" />
+    <meta property="og:title" content="Conservation of Angular Momentum" />
+    <meta
+      property="og:description"
+      content="Interactive simulation demonstrating conservation of angular momentum. Drag weights on a spinning platform and observe how moment of inertia and angular velocity change."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://lepecki.com/learn/angularmomentum/"
+    />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Conservation of Angular Momentum" />
+    <meta
+      name="twitter:description"
+      content="Interactive simulation demonstrating conservation of angular momentum. Drag weights on a spinning platform and observe how moment of inertia and angular velocity change."
+    />
     <title>Conservation of Angular Momentum</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -86,7 +110,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -149,7 +173,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 18px;
       }
       .section-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.8px;
@@ -158,7 +182,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border-bottom: 1px solid var(--panel-border);
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.8px;
@@ -240,7 +264,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .slider-val {
         min-width: 52px;
         text-align: right;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -298,14 +322,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         padding: 1px 0;
       }
       .readout-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: var(--text-label);
       }
       .readout-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -337,7 +361,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border-radius: 6px;
         background: #e8f5e9;
         color: #2e7d32;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         font-weight: 700;
         text-align: center;
@@ -362,16 +386,16 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         font-size: 24px;
         font-weight: 700;
         margin-top: 16px;
-        color: #fff;
+        color: #0b171b;
       }
       .overlay-omega-line {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         margin-top: 12px;
         color: rgba(255, 255, 255, 0.85);
       }
       .overlay-hint {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         margin-top: 8px;
         color: rgba(255, 255, 255, 0.6);
@@ -619,6 +643,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         /* ───────── I18N ───────── */
         const I18N = {
           en: {
+            ariaCanvas: "Angular momentum simulation canvas",
+            ariaOmegaSlider: "Initial angular velocity",
+            ariaPlayBtn: "Play or pause simulation",
+            ariaStopBtn: "Stop and reset simulation",
             title: "Conservation of Angular Momentum",
             subtitle:
               "See how a spinning platform speeds up when you pull weights inward.",
@@ -654,6 +682,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ],
           },
           pl: {
+            ariaCanvas: "Symulacja momentu p\u0119du",
+            ariaOmegaSlider:
+              "Pocz\u0105tkowa pr\u0119dko\u015B\u0107 k\u0105towa",
+            ariaPlayBtn: "Odtw\u00F3rz lub zatrzymaj symulacj\u0119",
+            ariaStopBtn: "Zatrzymaj i zresetuj symulacj\u0119",
             title: "Zasada zachowania momentu p\u0119du",
             subtitle:
               "Zobacz, jak wiruj\u0105ca platforma przyspiesza, gdy przyci\u0105gasz ci\u0119\u017carki do \u015brodka.",
@@ -690,7 +723,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           },
         };
         function T(key) {
-          return I18N[state.lang][key];
+          return I18N[state.lang][key] || key;
         }
 
         /* ───────── CONSTANTS ───────── */
@@ -1000,7 +1033,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
               // Distance label
               ctx.fillStyle = color;
-              ctx.font = ts(11) + 'px "Share Tech Mono", monospace';
+              ctx.font = ts(11) + 'px "JetBrains Mono", monospace';
               ctx.textAlign = "center";
               ctx.textBaseline = "bottom";
               const mx = (PLATFORM_CX + pos.x) / 2,
@@ -1038,7 +1071,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
             // Mass label
             ctx.fillStyle = "#fff";
-            ctx.font = "bold " + ts(11) + 'px "Share Tech Mono", monospace';
+            ctx.font = "bold " + ts(11) + 'px "JetBrains Mono", monospace';
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(w.mass + "kg", sx, sy);
@@ -1080,7 +1113,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // Omega value (hidden in game mode)
           if (state.mode !== "game") {
             ctx.fillStyle = COL_OMEGA;
-            ctx.font = "bold " + ts(14) + 'px "Share Tech Mono", monospace';
+            ctx.font = "bold " + ts(14) + 'px "JetBrains Mono", monospace';
             ctx.textAlign = "center";
             ctx.textBaseline = "bottom";
             ctx.fillText(
@@ -1094,7 +1127,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         /* ───────── DRAW: SINGLE BAR ───────── */
         function drawSingleBar(y, barW, color, label, value) {
           ctx.fillStyle = "#90A4AE";
-          ctx.font = "bold " + ts(14) + 'px "Share Tech Mono", monospace';
+          ctx.font = "bold " + ts(14) + 'px "JetBrains Mono", monospace';
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
           ctx.fillText(label, tx(BAR_X - 10), ty(y + BAR_H / 2));
@@ -1112,7 +1145,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           ctx.fillStyle = color;
-          ctx.font = "bold " + ts(13) + 'px "Share Tech Mono", monospace';
+          ctx.font = "bold " + ts(13) + 'px "JetBrains Mono", monospace';
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
           ctx.fillText(fmtNum(value), tx(BAR_X + barW + 8), ty(y + BAR_H / 2));
@@ -1123,7 +1156,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const sectionY = 570;
 
           ctx.fillStyle = "#90A4AE";
-          ctx.font = "bold " + ts(13) + 'px "Share Tech Mono", monospace';
+          ctx.font = "bold " + ts(13) + 'px "JetBrains Mono", monospace';
           ctx.textAlign = "left";
           ctx.textBaseline = "alphabetic";
           ctx.fillText(T("angMomentum"), tx(BAR_X), ty(sectionY));
@@ -1215,7 +1248,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             const mx = (PLATFORM_CX + gx) / 2,
               my = (PLATFORM_CY + gy) / 2;
             ctx.fillStyle = color;
-            ctx.font = ts(11) + 'px "Share Tech Mono", monospace';
+            ctx.font = ts(11) + 'px "JetBrains Mono", monospace';
             ctx.textAlign = "center";
             ctx.textBaseline = "bottom";
             ctx.fillText("r=" + Math.round(t.r), tx(mx), ty(my) - ts(4));
@@ -1230,7 +1263,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
             // Mass label on ghost
             ctx.fillStyle = "rgba(255,255,255,0.5)";
-            ctx.font = "bold " + ts(11) + 'px "Share Tech Mono", monospace';
+            ctx.font = "bold " + ts(11) + 'px "JetBrains Mono", monospace';
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(w.mass + "kg", tx(gx), ty(gy));
@@ -1246,7 +1279,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           // Label above
           ctx.fillStyle = "#90A4AE";
-          ctx.font = "bold " + ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.font = "bold " + ts(12) + 'px "JetBrains Mono", monospace';
           ctx.textAlign = "center";
           ctx.textBaseline = "bottom";
           ctx.fillText("TARGET", rcx, rcy - rr - ts(6));
@@ -1285,7 +1318,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           // RPM below
           ctx.fillStyle = "#78909C";
-          ctx.font = ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.font = ts(12) + 'px "JetBrains Mono", monospace';
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.fillText(state.challengeTarget + " RPM", rcx, rcy + rr + ts(4));
@@ -1453,7 +1486,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.arc(b.minus.x, b.minus.y, BTN_R, 0, Math.PI * 2);
           ctx.stroke();
           ctx.fillStyle = color;
-          ctx.font = 'bold 16px "Share Tech Mono", monospace';
+          ctx.font = 'bold 16px "JetBrains Mono", monospace';
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText("\u2212", b.minus.x, b.minus.y);
@@ -1793,8 +1826,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const RPM_LO = 5,
             RPM_HI = 200;
           let attempts = 0;
-          let rpmMin = 0,
-            rpmMax = 0;
+          let rpmMin, rpmMax;
 
           // Retry until achievable range overlaps [5, 200] RPM
           do {
@@ -1906,11 +1938,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             msg = T("challengeSuccess");
             bg = "rgba(63,185,80,0.88)";
           } else if (result === "close") {
-            emoji = "\uD83D\uDC4D\uD83C\uDFFB";
+            emoji = "\uD83D\uDC4D";
             msg = T("challengeClose");
             bg = "rgba(88,166,255,0.88)";
           } else {
-            emoji = "\uD83D\uDC4E\uD83C\uDFFB";
+            emoji = "\uD83D\uDC4E";
             msg = T("challengeMiss");
             bg = "rgba(240,180,60,0.92)";
           }
@@ -1985,6 +2017,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         /* ───────── TRANSLATIONS ───────── */
         function applyTranslations() {
+          // Aria labels must follow the language toggle, not stay in the
+          // markup language. See house/aria-label-not-localized.
+          const ariaLabels = [
+            ["canvas", "ariaCanvas"],
+            ["omegaSlider", "ariaOmegaSlider"],
+            ["playBtn", "ariaPlayBtn"],
+            ["stopBtn", "ariaStopBtn"],
+          ];
+          ariaLabels.forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (el) el.setAttribute("aria-label", T(entry[1]));
+          });
           document.title = T("title");
           document.documentElement.lang = state.lang;
           document.getElementById("titleText").textContent = T("title");

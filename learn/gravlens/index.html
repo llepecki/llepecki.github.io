@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- gravlens.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- gravlens/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -33,8 +33,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive gravitational lensing simulator. Drag a light source behind a massive object to create Einstein rings, arcs, and multiple images."
     />
     <title>Gravitational Lens Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -53,8 +55,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         --text: #c9d1d9;
         --text-dim: #6e7a8a;
         --accent: #58a6ff;
-        --star-color: #ffe066;
-        --ring-color: #58a6ff;
       }
 
       body {
@@ -62,6 +62,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: var(--bg);
         font-family: "Outfit", sans-serif;
         color: var(--text);
+        -webkit-tap-highlight-color: transparent;
       }
 
       header {
@@ -109,6 +110,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         width: 100%;
         height: 100%;
         display: block;
+        touch-action: none;
       }
 
       .bottom {
@@ -134,7 +136,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -149,7 +151,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -170,7 +172,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         cursor: pointer;
         transition: all 0.2s;
@@ -197,7 +199,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         line-height: 1;
         cursor: pointer;
@@ -249,7 +251,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .slider-val {
         min-width: 28px;
         text-align: right;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         color: var(--text);
       }
@@ -281,7 +283,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         bottom: 10px;
         left: 50%;
         transform: translateX(-50%);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         color: var(--text-dim);
         letter-spacing: 1px;
@@ -465,6 +467,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         // ══════════════════════════════════════════════
         const I18N = {
           en: {
+            ariaSideCanvas: "Side view of gravitational lensing geometry",
+            ariaMassMinusBtn: "Decrease mass",
+            ariaMassSlider: "Black hole mass",
+            ariaMassPlusBtn: "Increase mass",
+            ariaSizeMinusBtn: "Decrease source size",
+            ariaSizeSlider: "Source size",
+            ariaSizePlusBtn: "Increase source size",
+            ariaObsCanvas: "Observer view of gravitational lensing effect",
             title: "Gravitational Lens Simulator",
             subtitle:
               "A massive object bends light from a distant source. Drag the source to see Einstein rings, arcs, and multiple images.",
@@ -480,7 +490,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             lblSource: "SOURCE",
             infoNoLens:
               "Mass is zero \u2014 no black hole, direct view of the source.",
-            infoNegligible: "Lens has negligible mass.",
             infoRing: "\u2728 Perfect alignment \u2014 Einstein ring!",
             infoArcs:
               "Near alignment \u2014 bright arcs visible around the lens.",
@@ -488,6 +497,16 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             infoFar: "Source far from lens \u2014 minimal distortion.",
           },
           pl: {
+            ariaSideCanvas:
+              "Widok z boku geometrii soczewkowania grawitacyjnego",
+            ariaMassMinusBtn: "Zmniejsz mas\u0119",
+            ariaMassSlider: "Masa czarnej dziury",
+            ariaMassPlusBtn: "Zwi\u0119ksz mas\u0119",
+            ariaSizeMinusBtn: "Zmniejsz rozmiar \u017Ar\u00F3d\u0142a",
+            ariaSizeSlider: "Rozmiar \u017Ar\u00F3d\u0142a",
+            ariaSizePlusBtn: "Zwi\u0119ksz rozmiar \u017Ar\u00F3d\u0142a",
+            ariaObsCanvas:
+              "Widok obserwatora efektu soczewkowania grawitacyjnego",
             title: "Symulator soczewki grawitacyjnej",
             subtitle:
               "Masywny obiekt zakrzywia \u015Bwiat\u0142o z odleg\u0142ego \u017Ar\u00F3d\u0142a. Przeci\u0105gnij \u017Ar\u00F3d\u0142o, aby zobaczy\u0107 pier\u015Bcienie Einsteina, \u0142uki i wielokrotne obrazy.",
@@ -503,7 +522,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             lblSource: "\u0179R\u00D3D\u0141O",
             infoNoLens:
               "Masa wynosi zero \u2014 brak czarnej dziury, bezpo\u015Bredni widok \u017Ar\u00F3d\u0142a.",
-            infoNegligible: "Soczewka ma zaniedbywaln\u0105 mas\u0119.",
             infoRing:
               "\u2728 Idealne ustawienie \u2014 pier\u015Bcie\u0144 Einsteina!",
             infoArcs:
@@ -516,10 +534,26 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         };
 
         function T(key) {
-          return I18N[state.lang][key];
+          return I18N[state.lang][key] || key;
         }
 
         function applyTranslations() {
+          // Aria labels must follow the language toggle, not stay in the
+          // markup language. See house/aria-label-not-localized.
+          const ariaLabels = [
+            ["sideCanvas", "ariaSideCanvas"],
+            ["massMinusBtn", "ariaMassMinusBtn"],
+            ["massSlider", "ariaMassSlider"],
+            ["massPlusBtn", "ariaMassPlusBtn"],
+            ["sizeMinusBtn", "ariaSizeMinusBtn"],
+            ["sizeSlider", "ariaSizeSlider"],
+            ["sizePlusBtn", "ariaSizePlusBtn"],
+            ["obsCanvas", "ariaObsCanvas"],
+          ];
+          ariaLabels.forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (el) el.setAttribute("aria-label", T(entry[1]));
+          });
           document.title = T("title");
           document.documentElement.lang = state.lang;
           document.getElementById("titleText").textContent = T("title");
@@ -722,7 +756,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 const bAbs = Math.abs(b);
                 if (bAbs < 3) continue;
 
-                const hatAlpha = (eRad * eRad) / (bAbs * distObsLens);
+                // True deflection at the lens plane. eRad^2/(b*Dl) is the
+                // REDUCED deflection alpha = thetaE^2/theta; the bend the ray
+                // physically takes is alphaHat = alpha * Ds/Dls. Without the
+                // Ds/Dls factor the fan solves beta = theta - (Dls/Ds)*thetaE^2/theta
+                // and converges at thetaE*sqrt(Dls/Ds) ~ 0.74*thetaE — inside the
+                // dashed Einstein radius and disagreeing with the solved rays below.
+                const hatAlpha =
+                  ((eRad * eRad) / (bAbs * distObsLens)) * (g.Ds / g.Dls);
                 const deflDir = b > 0 ? -1 : 1;
                 const mIn = (rayY - srcY) / distLensSrc;
                 const mOut = mIn + deflDir * hatAlpha;
@@ -804,18 +845,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           ctx.beginPath();
           ctx.arc(srcX, srcY, srcSolidR, 0, Math.PI * 2);
-          ctx.fillStyle = var_starColor();
+          ctx.fillStyle = "#ffe066"; // source star
           ctx.fill();
 
           // Observer
           ctx.font = "20px serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillStyle = var_textColor();
-          ctx.fillText("👩🏻", obsX, midY);
+          ctx.fillStyle = "#c9d1d9"; // mirrors --text
+          ctx.fillText("👩", obsX, midY);
 
           // Labels
-          ctx.font = '10px "Share Tech Mono", monospace';
+          ctx.font = '10px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(110,122,138,0.8)";
           ctx.textAlign = "center";
           ctx.fillText(T("lblObserver"), obsX, midY + 22);
@@ -845,16 +886,34 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.fill();
         }
 
-        function var_starColor() {
-          return "#ffe066";
-        }
-        function var_textColor() {
-          return "#c9d1d9";
-        }
-
         // ══════════════════════════════════════════════
         // OBSERVER VIEW RENDERING
         // ══════════════════════════════════════════════
+        // The ray trace target is reused across renders. Allocating a canvas,
+        // a 2D context and a res*res ImageData on every frame (render() runs on
+        // every pointer move while dragging the source) was the dominant cost
+        // and drove heavy GC. Reallocate only when the resolution changes;
+        // otherwise zero the existing buffer, since the trace loop writes only
+        // the pixels the source disc covers and leaves the rest transparent.
+        let traceCanvas = null;
+        let traceCtx = null;
+        let traceImgData = null;
+        let traceRes = 0;
+
+        function getTraceImageData(res) {
+          if (!traceCanvas || traceRes !== res) {
+            traceCanvas = document.createElement("canvas");
+            traceCanvas.width = res;
+            traceCanvas.height = res;
+            traceCtx = traceCanvas.getContext("2d");
+            traceImgData = traceCtx.createImageData(res, res);
+            traceRes = res;
+          } else {
+            traceImgData.data.fill(0);
+          }
+          return traceImgData;
+        }
+
         function drawObserverView() {
           const ctx = obsCtx;
           const size = obsSize;
@@ -889,7 +948,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // Use ImageData for pixel-level ray tracing (DPR-aware for sharp output)
           const dpr = window.devicePixelRatio || 1;
           const res = Math.min(Math.round(size * dpr), 600);
-          const imgData = ctx.createImageData(res, res);
+          const imgData = getTraceImageData(res);
           const data = imgData.data;
           const resHalf = res / 2;
           const thetaEScaled = (thetaE * res) / size;
@@ -929,12 +988,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           // Draw the ray-traced image scaled up
-          const tempCanvas = document.createElement("canvas");
-          tempCanvas.width = res;
-          tempCanvas.height = res;
-          tempCanvas.getContext("2d").putImageData(imgData, 0, 0);
+          traceCtx.putImageData(imgData, 0, 0);
           ctx.imageSmoothingEnabled = true;
-          ctx.drawImage(tempCanvas, 0, 0, size, size);
+          ctx.drawImage(traceCanvas, 0, 0, size, size);
 
           // Einstein radius ring (subtle guide)
           if (hasLens() && thetaE > 0) {
@@ -972,8 +1028,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           let text;
           if (!hasLens()) {
             text = T("infoNoLens");
-          } else if (thetaE < 1) {
-            text = T("infoNegligible");
           } else {
             const ratio = srcOff / thetaE;
             if (ratio < 0.05) {
@@ -1072,20 +1126,27 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             render();
           }
         });
+        // Not passive: while a drag is live the handler must suppress the
+        // browser's scroll/pinch gesture, otherwise the page moves under the
+        // finger instead of the source star.
         window.addEventListener(
           "touchmove",
           (e) => {
             if (dragging) {
               state.sourceY = getSourceY(e);
               render();
+              e.preventDefault();
             }
           },
-          { passive: true },
+          { passive: false },
         );
         window.addEventListener("mouseup", () => {
           dragging = false;
         });
         window.addEventListener("touchend", () => {
+          dragging = false;
+        });
+        window.addEventListener("touchcancel", () => {
           dragging = false;
         });
 

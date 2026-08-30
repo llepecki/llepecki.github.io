@@ -618,7 +618,7 @@ Must explain:
 
 These details will make the app feel consistent with the rest of the repo.
 
-- use `Outfit` for UI and `Share Tech Mono` for values and labels
+- use `Outfit` for UI and `JetBrains Mono` for values and labels
 - dark background, strong glow effects, restrained UI chrome
 - no generic flat background; use layered starfield and soft nebula gradients
 - the app should feel like a lab instrument, not a toy dashboard

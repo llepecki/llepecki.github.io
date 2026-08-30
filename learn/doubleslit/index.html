@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- doubleslit.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- doubleslit/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -20,10 +20,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive double-slit experiment simulator. Fire single photons and watch an interference pattern emerge one particle at a time."
     />
     <meta property="og:type" content="website" />
-    <meta
-      property="og:url"
-      content="https://lepecki.com/learn/doubleslit/"
-    />
+    <meta property="og:url" content="https://lepecki.com/learn/doubleslit/" />
     <meta property="og:site_name" content="Łukasz Łepecki" />
     <meta
       property="og:image"
@@ -36,8 +33,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive double-slit experiment simulator. Fire single photons and watch an interference pattern emerge one particle at a time."
     />
     <title>Double-Slit Experiment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -110,7 +109,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -170,7 +169,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         position: absolute;
         top: 8px;
         left: 12px;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -201,7 +200,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
@@ -305,7 +304,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .slider-val {
         min-width: 36px;
         text-align: right;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -324,13 +323,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 8px;
       }
       .stat-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         min-width: 24px;
       }
       .stat-count {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         min-width: 30px;
         text-align: right;
@@ -615,6 +614,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         // ══════════════════════════════════════════════
         const I18N = {
           en: {
+            ariaCanvas: "Double-slit experiment simulation",
+            ariaFrontCanvas: "Detection screen front view",
+            ariaSlitWidthSlider: "Slit width",
+            ariaSlitSepSlider: "Slit separation",
+            ariaSpeedSlider: "Speed",
             title: "Double-Slit Experiment",
             subtitle:
               "Fire single photons at a barrier with slits and watch an interference pattern build up.",
@@ -641,8 +645,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "Light passes through 1 slit and spreads out on the screen. This spreading is called diffraction. Try adjusting the slit width!",
             infoCont2:
               "Light passes through 2 slits and the waves interfere \u2014 bright and dark bands appear! This is the interference pattern. Try changing the slit separation.",
-            infoContSwitch:
-              'Now switch to "Single Photon" mode. Can individual particles produce the same pattern?',
             // Single photon mode info
             infoStart:
               'Press "Fire Photon" to shoot a single photon at the barrier!',
@@ -660,6 +662,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "The mystery: each photon is ONE particle making ONE dot. Yet the pattern of many dots proves each photon traveled as a wave through BOTH slits simultaneously!",
           },
           pl: {
+            ariaCanvas: "Symulacja do\u015Bwiadczenia z dwiema szczelinami",
+            ariaFrontCanvas: "Widok ekranu detekcji z przodu",
+            ariaSlitWidthSlider: "Szeroko\u015B\u0107 szczeliny",
+            ariaSlitSepSlider: "Odst\u0119p mi\u0119dzy szczelinami",
+            ariaSpeedSlider: "Pr\u0119dko\u015B\u0107",
             title: "Do\u015Bwiadczenie z podw\u00F3jn\u0105 szczelin\u0105",
             subtitle:
               "Wystrzel pojedyncze fotony w barier\u0119 ze szczelinami i obserwuj, jak powstaje wz\u00F3r interferencyjny.",
@@ -685,8 +692,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               "\u015Awiat\u0142o przechodzi przez 1 szczelin\u0119 i rozchodzi si\u0119 na ekranie. To zjawisko nazywamy dyfrakcj\u0105. Spr\u00F3buj zmieni\u0107 szeroko\u015B\u0107 szczeliny!",
             infoCont2:
               "\u015Awiat\u0142o przechodzi przez 2 szczeliny, a fale interferuj\u0105 \u2014 pojawiaj\u0105 si\u0119 jasne i ciemne pr\u0105\u017Cki! To wz\u00F3r interferencyjny. Spr\u00F3buj zmieni\u0107 odst\u0119p szczelin.",
-            infoContSwitch:
-              'Teraz prze\u0142\u0105cz na tryb "Pojedynczy foton". Czy pojedyncze cz\u0105stki mog\u0105 stworzy\u0107 ten sam wz\u00F3r?',
             infoStart:
               'Naci\u015Bnij "Wystrzel foton", aby wys\u0142a\u0107 pojedynczy foton w barier\u0119!',
             infoFiring1:
@@ -705,10 +710,23 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         };
 
         function T(key) {
-          return I18N[state.lang][key];
+          return I18N[state.lang][key] || key;
         }
 
         function applyTranslations() {
+          // Aria labels must follow the language toggle, not stay in the
+          // markup language. See house/aria-label-not-localized.
+          const ariaLabels = [
+            ["canvas", "ariaCanvas"],
+            ["frontCanvas", "ariaFrontCanvas"],
+            ["slitWidthSlider", "ariaSlitWidthSlider"],
+            ["slitSepSlider", "ariaSlitSepSlider"],
+            ["speedSlider", "ariaSpeedSlider"],
+          ];
+          ariaLabels.forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (el) el.setAttribute("aria-label", T(entry[1]));
+          });
           const l = I18N[state.lang];
           document.title = l.title;
           document.documentElement.lang = state.lang;
@@ -1032,7 +1050,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           c.lineTo(cx + ts(4), baseY);
           c.stroke();
 
-          c.font = `600 ${ts(20)}px "Share Tech Mono", monospace`;
+          c.font = `600 ${ts(20)}px "JetBrains Mono", monospace`;
           c.fillStyle = "#90A4AE";
           c.textAlign = "center";
           c.textBaseline = "top";
@@ -1069,7 +1087,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ctx.fillRect(bx - bw / 2, ty(s.top), bw, ts(s.bottom - s.top));
           }
 
-          ctx.font = `600 ${ts(18)}px "Share Tech Mono", monospace`;
+          ctx.font = `600 ${ts(18)}px "JetBrains Mono", monospace`;
           ctx.fillStyle = "#90A4AE";
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
@@ -1091,7 +1109,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.lineTo(sx, top + h);
           ctx.stroke();
 
-          ctx.font = `600 ${ts(18)}px "Share Tech Mono", monospace`;
+          ctx.font = `600 ${ts(18)}px "JetBrains Mono", monospace`;
           ctx.fillStyle = "#90A4AE";
           ctx.textAlign = "center";
           ctx.textBaseline = "top";

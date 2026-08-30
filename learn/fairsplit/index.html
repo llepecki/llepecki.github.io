@@ -1,0 +1,2850 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- fairsplit/index.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+The game rules are additionally verified by `node tools/fairsplit-rules-check.mjs` (run from learn/).
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fair Split</title>
+    <meta
+      name="description"
+      content="Fair Split — a two-player pass-and-play Ultimatum Game. Split a pot of 10 coins, make offers your partner will accept, and discover why fairness can be a winning strategy."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/fairsplit/" />
+    <meta property="og:title" content="Fair Split" />
+    <meta
+      property="og:description"
+      content="Fair Split — a two-player pass-and-play Ultimatum Game. Split a pot of 10 coins, make offers your partner will accept, and discover why fairness can be a winning strategy."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/fairsplit/" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Fair Split" />
+    <meta
+      name="twitter:description"
+      content="Fair Split — a two-player pass-and-play Ultimatum Game. Split a pot of 10 coins, make offers your partner will accept, and discover why fairness can be a winning strategy."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --perfect: #00c853;
+        --close: #1976d2;
+        --far: #f9a825;
+        --miss: #d32f2f;
+        --keep: #1976d2;
+        --offer: #f9a825;
+        --offer-ink: #8d6708;
+        --accept: #2e7d32;
+      }
+      body {
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      /* ================= HEADER ================= */
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* ================= LAYOUT ================= */
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+      .stage-wrap {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+      }
+      .phase-area {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        padding: 24px 24px 120px;
+        overflow-y: auto;
+        min-height: 0;
+      }
+      .panel {
+        width: 320px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .panel-section {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .panel-section.grow {
+        flex: 1;
+      }
+      .section-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+
+      /* ================= SCOREBOARD ================= */
+      .score-board {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 16px;
+        row-gap: 6px;
+        padding: 12px 24px;
+        border-bottom: 1px solid var(--panel-border);
+        background: var(--panel);
+      }
+      .score-board[hidden] {
+        display: none;
+      }
+      .sb-player {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        min-width: 0;
+      }
+      .sb-player.right {
+        margin-left: auto;
+      }
+      .sb-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-head);
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .sb-role {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+      .sb-role.is-p1 {
+        color: var(--keep);
+      }
+      .sb-role.is-p2 {
+        color: var(--offer-ink);
+      }
+      .sb-role[hidden] {
+        display: none;
+      }
+      .sb-score {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        line-height: 1.1;
+        font-weight: 700;
+        color: var(--text-head);
+        min-width: 2ch;
+      }
+      .sb-goal {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+      .sb-goal[hidden] {
+        display: none;
+      }
+      .sb-bank {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
+      .sb-bank[hidden] {
+        display: none;
+      }
+      .sb-bar {
+        flex: 1 1 0;
+        align-self: center;
+        min-width: 120px;
+        height: 10px;
+        background: var(--panel-border);
+        border-radius: 5px;
+        overflow: hidden;
+        position: relative;
+      }
+      .sb-bar[hidden] {
+        display: none;
+      }
+      .sb-bar-fill {
+        height: 100%;
+        width: 0;
+        background: var(--accent);
+        transition: width 0.12s ease-out;
+      }
+      .sb-bar-tick {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--panel);
+      }
+      .sb-bar-tick[hidden] {
+        display: none;
+      }
+      .sb-strikes {
+        display: inline-flex;
+        gap: 4px;
+      }
+      .sb-strikes[hidden] {
+        display: none;
+      }
+      .strike-slot {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--panel-border);
+      }
+      .strike-slot.burned {
+        color: var(--miss);
+      }
+      .sb-pot {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--offer-ink);
+      }
+      .sb-pot[hidden] {
+        display: none;
+      }
+      .sb-caption {
+        flex-basis: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 8px 12px;
+      }
+      .sb-round {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
+      .round-dots {
+        display: flex;
+        gap: 8px;
+      }
+      .r-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--panel-border);
+      }
+      .r-dot.done {
+        background: var(--accent);
+      }
+      .r-dot.current {
+        background: var(--panel);
+        border: 2px solid var(--accent);
+      }
+
+      /* ================= PHASES ================= */
+      .phase {
+        width: 100%;
+        max-width: 560px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        margin-top: auto;
+        margin-bottom: auto;
+      }
+      .phase[hidden] {
+        display: none;
+      }
+      .phase.center {
+        align-items: center;
+        text-align: center;
+        min-height: 500px;
+      }
+      .phase-head {
+        min-height: 88px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+      }
+      .phase.center > .action-btn {
+        align-self: stretch;
+      }
+      .phase-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .phase-copy {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.5;
+      }
+      .phase-copy.dim {
+        color: var(--text-dim);
+      }
+      .round-indicator {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
+
+      /* ================= BUTTONS ================= */
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .action-btn {
+        flex: 1;
+        padding: 10px 8px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .action-btn:hover:not(:disabled) {
+        background: #f0ede6;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .action-btn.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .action-btn.primary:hover:not(:disabled) {
+        background: #37474f;
+        border-color: #37474f;
+        color: #fff;
+      }
+      .phase > .action-btn,
+      .panel-section > .action-btn {
+        flex: none;
+      }
+      .btn-row.decision-row {
+        width: 100%;
+      }
+      .action-btn.decision {
+        min-height: 72px;
+        font-size: 15px;
+        gap: 12px;
+        padding: 12px 16px;
+      }
+      .action-btn.decision .d-icon {
+        font-size: 28px;
+        line-height: 1;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .action-btn.decision .d-icon.no {
+        color: var(--miss);
+      }
+      .d-col {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 2px;
+        min-width: 0;
+      }
+      .d-label {
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .d-sub {
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 1.35;
+        color: var(--text-dim);
+      }
+      .action-btn.decision.accept .d-sub {
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .action-btn.decision.accept {
+        background: var(--accept);
+        border-color: var(--accept);
+        color: #fff;
+      }
+      .action-btn.decision.accept:hover:not(:disabled) {
+        background: #1b5e20;
+        border-color: #1b5e20;
+        color: #fff;
+      }
+
+      /* ================= SETUP ================= */
+      .name-grid {
+        display: flex;
+        gap: 16px;
+      }
+      .name-field {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      .name-input {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        outline: none;
+      }
+      .name-input:focus {
+        border-color: var(--accent);
+      }
+      .setup-error {
+        font-size: 12px;
+        color: var(--miss);
+      }
+      .setup-error[hidden] {
+        display: none;
+      }
+      .mode-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .mode-row {
+        display: flex;
+        gap: 8px;
+      }
+      .mode-btn {
+        flex: 1;
+        min-height: 44px;
+        padding: 10px 8px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: #546e7a;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+      }
+      .mode-btn:hover {
+        background: #f0ede6;
+      }
+      .mode-btn.active {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        color: var(--accent);
+      }
+      .mode-summary {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      /* ================= SPLIT VIEW ================= */
+      .split-view {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 44px max-content 44px;
+        justify-content: center;
+        align-items: center;
+        column-gap: 8px;
+        row-gap: 18px;
+      }
+      .phase.center > .split-view {
+        margin: 16px 0;
+      }
+      .split-labels {
+        grid-column: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+      }
+      .split-label {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        min-width: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #546e7a;
+      }
+      .split-key {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        flex-shrink: 0;
+        align-self: center;
+      }
+      .split-key.p1 {
+        background: var(--keep);
+      }
+      .split-key.p2 {
+        background: var(--offer);
+      }
+      .split-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .split-num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-head);
+        min-width: 2ch;
+      }
+      .coin-row {
+        grid-column: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 44px;
+      }
+      .coin {
+        font-size: 34px;
+        line-height: 1;
+        flex-shrink: 0;
+        transition: opacity 0.3s ease;
+      }
+      .coin-divider {
+        width: 28px;
+        flex-shrink: 0;
+      }
+      .give-btn-left {
+        grid-column: 1;
+        grid-row: 2;
+      }
+      .give-btn-right {
+        grid-column: 3;
+        grid-row: 2;
+      }
+      .split-view.no-deal .coin {
+        opacity: 0.35;
+      }
+
+      /* ================= GIVE-A-COIN BUTTONS ================= */
+      .step-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-dim);
+        font-size: 22px;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        touch-action: manipulation;
+      }
+      .step-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .step-btn:active {
+        background: var(--accent);
+        color: var(--bg);
+      }
+
+      /* ================= REVEAL ================= */
+      .reveal-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .reveal-icon {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .reveal-icon.ok {
+        color: var(--accept);
+      }
+      .reveal-icon.no {
+        color: var(--miss);
+      }
+      .reveal-icon.pop {
+        animation: checkPop 0.35s ease;
+      }
+      .reveal-stats {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 8px 24px;
+        width: 100%;
+        align-items: baseline;
+      }
+      .rs-h {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+        text-align: right;
+      }
+      .rs-name {
+        font-weight: 600;
+        color: var(--text-head);
+        text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .rs-points {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        min-width: 3ch;
+        text-align: right;
+      }
+      .rs-total {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        min-width: 2ch;
+        text-align: right;
+      }
+      .reveal-notes {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      /* ================= FINAL ================= */
+      .final-scores {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-width: 280px;
+      }
+      .final-score-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 16px;
+        color: var(--text-head);
+      }
+      .final-score-row .final-score-val {
+        font-weight: 700;
+        min-width: 2ch;
+        text-align: right;
+      }
+      .final-winner {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-head);
+      }
+      .stats-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .debrief {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        border-top: 1px solid var(--panel-border);
+        padding-top: 14px;
+      }
+
+      /* ================= INTRO ================= */
+      #phaseIntro {
+        gap: 20px;
+        justify-content: center;
+      }
+      .intro-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .intro-emoji {
+        font-size: 72px;
+        line-height: 1;
+      }
+      .intro-body {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #546e7a;
+        max-width: 340px;
+      }
+      .intro-dots {
+        display: flex;
+        gap: 8px;
+      }
+      .intro-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--panel-border);
+      }
+      .intro-dot.active {
+        background: var(--accent);
+      }
+      .intro-foot {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+      }
+      .intro-link {
+        background: none;
+        border: none;
+        padding: 6px 8px;
+        cursor: pointer;
+        color: var(--text-dim);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        transition: color 0.15s;
+      }
+      .intro-link:hover {
+        color: var(--accent);
+      }
+      .intro-link[hidden] {
+        display: none;
+      }
+      .how-to-play {
+        align-self: center;
+        background: none;
+        border: none;
+        padding: 4px 8px;
+        cursor: pointer;
+        color: var(--text-dim);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        text-decoration: underline;
+        transition: color 0.15s;
+      }
+      .how-to-play:hover {
+        color: var(--accent);
+      }
+
+      /* ================= PANEL WIDGETS ================= */
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .history-row {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text);
+      }
+      .h-round {
+        width: 24px;
+        color: var(--text-label);
+      }
+      .h-split {
+        width: 48px;
+        color: var(--text-head);
+      }
+      .h-flag {
+        font-weight: 700;
+      }
+      .h-flag.ok {
+        color: var(--accept);
+      }
+      .h-flag.bad {
+        color: var(--miss);
+      }
+      .h-points {
+        margin-left: auto;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .history-empty {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+
+      /* ================= ANIMATIONS ================= */
+      @keyframes checkPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* ================= OVERLAY ================= */
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+        padding: 24px;
+        text-align: center;
+      }
+      .result-overlay.success {
+        background: rgba(0, 200, 83, 0.92);
+      }
+      .result-overlay.tie {
+        background: rgba(25, 118, 210, 0.9);
+      }
+      .result-overlay.miss {
+        background: rgba(211, 47, 47, 0.92);
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        margin-top: 12px;
+        font-size: 28px;
+        font-weight: 700;
+        color: #0b171b;
+      }
+      .overlay-sub {
+        margin-top: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 16px;
+        color: #0b171b;
+      }
+      .overlay-hint {
+        margin-top: 18px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* ================= FOCUS ================= */
+      .lang-btn:focus-visible,
+      .action-btn:focus-visible,
+      .mode-btn:focus-visible,
+      .step-btn:focus-visible,
+      .intro-link:focus-visible,
+      .how-to-play:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ================= REDUCED MOTION ================= */
+      @media (prefers-reduced-motion: reduce) {
+        header h1 a,
+        .lang-btn,
+        .action-btn,
+        .mode-btn,
+        .step-btn,
+        .coin,
+        .sb-bar-fill,
+        .intro-link,
+        .how-to-play {
+          transition: none;
+        }
+        .reveal-icon.pop {
+          animation: none;
+        }
+        .result-overlay,
+        .overlay-emoji {
+          animation: none;
+        }
+      }
+
+      /* ================= MOBILE ================= */
+      @media (max-width: 720px) {
+        .main {
+          height: auto;
+          flex-direction: column;
+        }
+        .stage-wrap {
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+          min-height: 360px;
+        }
+        .phase-area {
+          padding: 16px;
+        }
+        .phase.center {
+          min-height: 0;
+        }
+        .phase-head {
+          min-height: 0;
+        }
+        .panel {
+          width: 100%;
+        }
+        .name-grid {
+          flex-direction: column;
+        }
+        .score-board {
+          row-gap: 8px;
+        }
+        .sb-name {
+          max-width: 110px;
+        }
+        .sb-player.right {
+          order: 2;
+        }
+        .sb-bar {
+          order: 3;
+          flex-basis: 100%;
+        }
+        .sb-caption {
+          order: 4;
+        }
+        .coin {
+          font-size: 22px;
+        }
+        .coin-row {
+          gap: 2px;
+        }
+        .coin-divider {
+          width: 14px;
+        }
+        .split-view {
+          grid-template-columns: 44px 1fr 44px;
+        }
+        .split-labels,
+        .coin-row {
+          grid-column: 1 / -1;
+        }
+        .give-btn-left {
+          grid-column: 1;
+          grid-row: 3;
+        }
+        .give-btn-right {
+          grid-column: 3;
+          grid-row: 3;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .mode-row {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"
+            ><span class="header-icon">&#x2696;&#xFE0F;</span></a
+          >
+          <span id="titleText">Fair Split</span>
+        </h1>
+        <p id="subtitleText">A bargaining game about offers and fairness</p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+        aria-label="Switch language"
+      >
+        PL
+      </button>
+    </header>
+    <main class="main">
+      <section class="stage-wrap">
+        <div class="score-board" id="scoreBoard" hidden>
+          <div class="sb-player">
+            <span class="sb-name" id="sbName1">Player 1</span>
+            <span class="sb-role is-p1" id="sbRole1">Splitter</span>
+            <span class="sb-score" id="sbScore1">0</span>
+            <span class="sb-goal" id="sbGoal1" hidden>/ 20</span>
+          </div>
+          <div
+            class="sb-bar"
+            id="sbBar"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="60"
+            aria-valuenow="0"
+            hidden
+          >
+            <div class="sb-bar-fill" id="sbBarFill"></div>
+            <div class="sb-bar-tick" id="sbBarTick" hidden></div>
+          </div>
+          <div class="sb-player right">
+            <span class="sb-score" id="sbScore2">0</span>
+            <span class="sb-goal" id="sbGoal2" hidden>/ 20</span>
+            <span class="sb-role is-p2" id="sbRole2">Decider</span>
+            <span class="sb-name" id="sbName2">Player 2</span>
+          </div>
+          <div class="sb-caption">
+            <span class="sb-round" id="sbRound">Round 1 of 8</span>
+            <div class="round-dots" id="roundDots" aria-hidden="true"></div>
+            <span class="sb-bank" id="sbBank" hidden>Together: 0 / 60</span>
+            <span class="sb-strikes" id="sbStrikes" role="img" hidden>
+              <span class="strike-slot" id="sbStrike1" aria-hidden="true"
+                >&#x2716;&#xFE0E;</span
+              >
+              <span class="strike-slot" id="sbStrike2" aria-hidden="true"
+                >&#x2716;&#xFE0E;</span
+              >
+            </span>
+            <span class="sb-pot" id="sbPot" hidden>Pot: 10</span>
+          </div>
+        </div>
+        <div class="visually-hidden" aria-live="polite" id="announcer"></div>
+        <div class="phase-area">
+          <section class="phase center" id="phaseIntro" hidden>
+            <div class="intro-card">
+              <div class="intro-emoji" id="introEmoji" aria-hidden="true">
+                &#x2696;&#xFE0F;
+              </div>
+              <h2 class="phase-title" id="introTitle">Fair Split</h2>
+              <p class="intro-body" id="introBody">
+                Two players share coins and make deals.
+              </p>
+            </div>
+            <div class="intro-dots" id="introDots" aria-hidden="true"></div>
+            <button type="button" class="action-btn primary" id="introNext">
+              Next
+            </button>
+            <div class="intro-foot">
+              <button type="button" class="intro-link" id="introBack" hidden>
+                Back
+              </button>
+              <button type="button" class="intro-link" id="introSkip">
+                Skip
+              </button>
+            </div>
+          </section>
+
+          <section class="phase" id="phaseSetup">
+            <h2 class="phase-title" id="setupTitle">
+              Divide the pot. Make a deal.
+            </h2>
+            <p class="phase-copy" id="setupCopy">
+              One player offers a split. The other accepts it or says no deal.
+            </p>
+            <div class="name-grid">
+              <div class="name-field">
+                <label class="section-label" for="nameInput1" id="lblName1"
+                  >Player 1 name</label
+                >
+                <input
+                  type="text"
+                  class="name-input"
+                  id="nameInput1"
+                  maxlength="14"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="name-field">
+                <label class="section-label" for="nameInput2" id="lblName2"
+                  >Player 2 name</label
+                >
+                <input
+                  type="text"
+                  class="name-input"
+                  id="nameInput2"
+                  maxlength="14"
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+            <p class="setup-error" id="setupError" hidden>
+              Use two different names.
+            </p>
+            <div class="mode-field">
+              <span class="section-label" id="lblMode">Mode</span>
+              <div class="mode-row">
+                <button
+                  type="button"
+                  class="mode-btn active"
+                  id="modeTeamBtn"
+                  aria-pressed="true"
+                >
+                  Team goal
+                </button>
+                <button
+                  type="button"
+                  class="mode-btn"
+                  id="modeCheckpointBtn"
+                  aria-pressed="false"
+                >
+                  Checkpoint
+                </button>
+                <button
+                  type="button"
+                  class="mode-btn"
+                  id="modeShrinkBtn"
+                  aria-pressed="false"
+                >
+                  Shrinking pot
+                </button>
+              </div>
+              <p class="mode-summary" id="modeSummary">
+                Bank 60 coins together, and each of you needs 20. Higher score
+                takes the win.
+              </p>
+            </div>
+            <button type="button" class="action-btn primary" id="startBtn">
+              Start match
+            </button>
+            <button type="button" class="how-to-play" id="howToPlayBtn">
+              How to play
+            </button>
+          </section>
+
+          <section class="phase center" id="phaseSplitter" hidden>
+            <div class="phase-head">
+              <span class="round-indicator" id="splitterRound">
+                Round 1 of 8
+              </span>
+              <h2 class="phase-title" id="splitterTitle">
+                Player 1 splits 10 coins
+              </h2>
+            </div>
+            <div
+              class="split-view"
+              id="spView"
+              role="group"
+              aria-label="Offer to Player 2"
+            >
+              <div class="split-labels">
+                <span class="split-label keep">
+                  <span class="split-key p1"></span>
+                  <span class="split-text" id="spKeepText">Player 1 keeps</span>
+                  <span class="split-num" id="spKeepNum">5</span>
+                </span>
+                <span class="split-label get">
+                  <span class="split-key p2"></span>
+                  <span class="split-text" id="spGetText">Player 2 gets</span>
+                  <span class="split-num" id="spGetNum">5</span>
+                </span>
+              </div>
+              <button
+                type="button"
+                class="step-btn give-btn-left"
+                id="giveLeftBtn"
+                aria-label="Give a coin to Player 1"
+                title="Give a coin to Player 1"
+              >
+                +
+              </button>
+              <div class="coin-row" id="spCoins" aria-hidden="true"></div>
+              <button
+                type="button"
+                class="step-btn give-btn-right"
+                id="giveRightBtn"
+                aria-label="Give a coin to Player 2"
+                title="Give a coin to Player 2"
+              >
+                +
+              </button>
+            </div>
+            <button type="button" class="action-btn primary" id="sendOfferBtn">
+              Send offer
+            </button>
+          </section>
+
+          <section class="phase center" id="phaseDecider" hidden>
+            <div class="phase-head">
+              <span class="round-indicator" id="deciderRound">
+                Round 1 of 8
+              </span>
+              <p class="phase-copy dim" id="passHint">Pass to Player 2</p>
+              <h2 class="phase-title" id="deciderTitle">Player 2 decides</h2>
+            </div>
+            <div class="split-view" id="dcView">
+              <div class="split-labels">
+                <span class="split-label keep">
+                  <span class="split-key p1"></span>
+                  <span class="split-text" id="dcKeepText">Player 1 keeps</span>
+                  <span class="split-num" id="dcKeepNum">5</span>
+                </span>
+                <span class="split-label get">
+                  <span class="split-key p2"></span>
+                  <span class="split-text" id="dcGetText">Player 2 gets</span>
+                  <span class="split-num" id="dcGetNum">5</span>
+                </span>
+              </div>
+              <div class="coin-row" id="dcCoins" aria-hidden="true"></div>
+            </div>
+            <div class="btn-row decision-row">
+              <button
+                type="button"
+                class="action-btn decision accept"
+                id="acceptBtn"
+              >
+                <span class="d-icon" aria-hidden="true">&#x2714;&#xFE0E;</span>
+                <span class="d-col">
+                  <span class="d-label" id="acceptBtnText">Accept deal</span>
+                  <span class="d-sub" id="acceptBtnSub">
+                    Both players get these coins.
+                  </span>
+                </span>
+              </button>
+              <button type="button" class="action-btn decision" id="noDealBtn">
+                <span class="d-icon no" aria-hidden="true"
+                  >&#x2716;&#xFE0E;</span
+                >
+                <span class="d-col">
+                  <span class="d-label" id="noDealBtnText">No deal</span>
+                  <span class="d-sub" id="noDealBtnSub">
+                    Both players get 0 this round.
+                  </span>
+                </span>
+              </button>
+            </div>
+          </section>
+
+          <section class="phase center" id="phaseReveal" hidden>
+            <div class="phase-head">
+              <span class="round-indicator" id="revealRound">
+                Round 1 of 8
+              </span>
+              <h2 class="phase-title reveal-title">
+                <span class="reveal-icon ok" id="revealIcon" aria-hidden="true"
+                  >&check;</span
+                >
+                <span id="revealTitle">Deal accepted</span>
+              </h2>
+            </div>
+            <div class="split-view" id="rvView">
+              <div class="split-labels">
+                <span class="split-label keep">
+                  <span class="split-key p1"></span>
+                  <span class="split-text" id="rvKeepText">Player 1 keeps</span>
+                  <span class="split-num" id="rvKeepNum">5</span>
+                </span>
+                <span class="split-label get">
+                  <span class="split-key p2"></span>
+                  <span class="split-text" id="rvGetText">Player 2 gets</span>
+                  <span class="split-num" id="rvGetNum">5</span>
+                </span>
+              </div>
+              <div class="coin-row" id="rvCoins" aria-hidden="true"></div>
+            </div>
+            <div class="reveal-stats">
+              <span class="rs-h"></span>
+              <span class="rs-h" id="lblRevPoints">Round points</span>
+              <span class="rs-h" id="lblRevTotal">Total score</span>
+              <span class="rs-name" id="revName1">Player 1</span>
+              <span class="rs-points" id="revPoints1">+5</span>
+              <span class="rs-total" id="revTotal1">5</span>
+              <span class="rs-name" id="revName2">Player 2</span>
+              <span class="rs-points" id="revPoints2">+5</span>
+              <span class="rs-total" id="revTotal2">5</span>
+            </div>
+            <div class="reveal-notes">
+              <p class="phase-copy" id="bothZeroLine" hidden>
+                Both players get 0 this round.
+              </p>
+              <p class="phase-copy" id="revealNote">
+                Both players agreed, so both keep points.
+              </p>
+              <p class="phase-copy" id="modeNote" hidden></p>
+            </div>
+            <button type="button" class="action-btn primary" id="nextBtn">
+              Next round
+            </button>
+          </section>
+
+          <section class="phase" id="phaseFinal" hidden>
+            <h2 class="phase-title" id="finalTitle">Final result</h2>
+            <div class="final-scores">
+              <p class="final-score-row">
+                <span id="finalName1">Player 1</span>
+                <span class="final-score-val" id="finalScore1">0</span>
+              </p>
+              <p class="final-score-row">
+                <span id="finalName2">Player 2</span>
+                <span class="final-score-val" id="finalScore2">0</span>
+              </p>
+            </div>
+            <p class="final-winner" id="finalWinner">Balanced table</p>
+            <div class="stats-list">
+              <p class="phase-copy" id="statMode" hidden></p>
+              <p class="phase-copy" id="statBank" hidden></p>
+              <p class="phase-copy" id="statAccepted"></p>
+              <p class="phase-copy" id="statRejected"></p>
+              <p class="phase-copy" id="statAverage"></p>
+              <p class="phase-copy" id="statFairZone"></p>
+            </div>
+            <div class="debrief">
+              <span class="section-label" id="gtLabel">Game theory idea</span>
+              <p class="phase-copy" id="debriefText">
+                A deal needs both players. Very low offers can be rejected, so
+                fairness can be part of a winning strategy.
+              </p>
+              <p class="phase-copy dim" id="formalTermsText">
+                In game theory, the Splitter is the proposer and the Decider is
+                the responder.
+              </p>
+            </div>
+            <div class="btn-row">
+              <button
+                type="button"
+                class="action-btn primary"
+                id="playAgainBtn"
+              >
+                Play again
+              </button>
+              <button type="button" class="action-btn" id="newMatchBtn">
+                New match
+              </button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-section grow" id="secHistory">
+          <span class="section-label" id="lblHistory">Round history</span>
+          <div class="history-list" id="historyList"></div>
+        </div>
+      </aside>
+    </main>
+    <script>
+      (function () {
+        "use strict";
+
+        /* ================= I18N ================= */
+        const I18N = {
+          en: {
+            title: "Fair Split",
+            subtitle: "A bargaining game about offers and fairness",
+            langSwitch: "Switch language",
+            setupTitle: "Divide the pot. Make a deal.",
+            setupCopy:
+              "One player offers a split. The other accepts it or says no deal.",
+            playerOneName: "Player 1 name",
+            playerTwoName: "Player 2 name",
+            playerOneDefault: "Player 1",
+            playerTwoDefault: "Player 2",
+            sameNames: "Use two different names.",
+            start: "Start match",
+            howToPlay: "How to play",
+            introTitle1: "Fair Split",
+            introBody1: "Two players share coins and make deals.",
+            introTitle2: "Split the coins",
+            introBody2:
+              "The Splitter chooses how to share: keep some, offer some.",
+            introTitle3: "Yes or no?",
+            introBody3: "The Decider can accept the offer or say no deal.",
+            introTitle4: "No deal means zero",
+            introBody4: "Say no deal and you both get nothing that round!",
+            introTitle5: "Be fair",
+            introBody5: "A fair offer gets a yes — fair can be smart!",
+            introTitle6: "Three ways to win",
+            introBody6: "Pick a mode before you start:",
+            introTitle7: "Team goal",
+            introBody7:
+              "Fill a shared bar to 60 coins together. Each of you needs 20 too.",
+            introTitle8: "Checkpoint",
+            introBody8:
+              "Bank 60 together — but reach 30 by round 4, or the game ends early!",
+            introTitle9: "Shrinking pot",
+            introBody9:
+              "Grab 25 coins for yourself. Every no-deal shrinks the pot!",
+            introNext: "Next",
+            introStart: "Start playing",
+            introBack: "Back",
+            introSkip: "Skip",
+            introStepLabel: "Step {step} of {total}",
+            modeLabel: "Mode",
+            modeTeam: "Team goal",
+            modeCheckpoint: "Checkpoint",
+            modeShrink: "Shrinking pot",
+            modeSummaryTeam:
+              "Bank {target} coins together, and each of you needs {floor}. Higher score takes the win.",
+            modeSummaryCheckpoint:
+              "Bank {target} coins together. Have {bank} after round {round}, or the match ends early.",
+            modeSummaryShrink:
+              "Collect {goal} coins for yourself. Every no-deal shrinks the pot.",
+            roundOf: "Round {round} of {total}",
+            splitter: "Splitter",
+            decider: "Decider",
+            splitsPot: "{name} splits {pot} coins",
+            keeps: "{name} keeps",
+            gets: "{name} gets",
+            offerTo: "Offer to {name}",
+            giveCoinTo: "Give a coin to {name}",
+            sendOffer: "Send offer",
+            passTo: "Pass to {name}",
+            decides: "{name} decides",
+            acceptSub: "Both players get these coins.",
+            acceptDeal: "Accept deal",
+            noDeal: "No deal",
+            dealAccepted: "Deal accepted",
+            dealRejected: "No deal",
+            bothZero: "Both players get 0 this round.",
+            acceptedNote: "Both players agreed, so both keep points.",
+            rejectedLowNote:
+              "A low offer can disappear if the Decider says no.",
+            rejectedNeutralNote: "The Decider wanted a different split.",
+            roundPoints: "Round points",
+            totalScore: "Total score",
+            nextRound: "Next round",
+            finalResult: "Final result",
+            pointWinner: "Point winner: {name}",
+            balancedTable: "Balanced table",
+            aloneWin: "Only {name} wins",
+            bankLine: "Together: {sum} / {target}",
+            nobodyWins: "Nobody wins",
+            sharedMissed: "The shared goal was missed — nobody wins.",
+            checkpointMissed:
+              "Checkpoint missed — the match ends early. Nobody wins.",
+            bothReached: "Both reached the goal!",
+            goalReached: "Goal reached: {name}",
+            noneReached: "Nobody reached the goal.",
+            bothAboveFloor: "Both players cleared the {floor}-coin floor.",
+            belowFloorLine: "{name}: below the {floor}-coin floor.",
+            potChip: "Pot: {pot}",
+            strikesLeftLabel: "No-deals left: {count}",
+            potShrinksNote:
+              "The pot shrinks to {pot} coins for the rest of the match.",
+            potFloorNote: "The pot stays at {pot} coins.",
+            noDealShrinkSub: "Both players get 0 and the pot shrinks.",
+            strikesGoneNote:
+              "No spare no-deals left. Every remaining deal must be accepted to reach {target}.",
+            goalOutOfReachNote: "The team goal is out of reach this match.",
+            dealsAccepted: "{accepted} of {total} deals were accepted.",
+            dealsRejected: "No-deal rounds: {rejected} of {total}.",
+            averageOffer: "Average offer to the Decider: {value}.",
+            fairZoneCount: "Near-middle offers: {count} of {total}.",
+            gameTheoryIdea: "Game theory idea",
+            formalTerms:
+              "In game theory, the Splitter is the proposer and the Decider is the responder.",
+            debriefClassic:
+              "A deal needs both players. Very low offers can be rejected, so fairness can be part of a winning strategy.",
+            playAgain: "Play again",
+            newMatch: "New match",
+            overlayHint: "Tap anywhere to continue",
+            historyLabel: "Round history",
+          },
+          pl: {
+            title: "Sprawiedliwy Podział",
+            subtitle: "Gra o ofertach i sprawiedliwości",
+            langSwitch: "Przełącz język",
+            setupTitle: "Podziel pulę. Zawrzyjcie umowę.",
+            setupCopy:
+              "Jedna osoba proponuje podział. Druga przyjmuje go albo mówi: brak umowy.",
+            playerOneName: "Imię gracza 1",
+            playerTwoName: "Imię gracza 2",
+            playerOneDefault: "Gracz 1",
+            playerTwoDefault: "Gracz 2",
+            sameNames: "Użyjcie dwóch różnych imion.",
+            start: "Rozpocznij mecz",
+            howToPlay: "Jak grać",
+            introTitle1: "Sprawiedliwy Podział",
+            introBody1: "Dwie osoby dzielą się monetami i zawierają umowy.",
+            introTitle2: "Podziel monety",
+            introBody2:
+              "Osoba dzieląca wybiera podział: część zatrzymuje, część oferuje.",
+            introTitle3: "Tak czy nie?",
+            introBody3:
+              "Osoba decydująca może przyjąć ofertę albo powiedzieć: brak umowy.",
+            introTitle4: "Brak umowy to zero",
+            introBody4:
+              "Brak umowy i obie osoby nie dostają nic w tej rundzie!",
+            introTitle5: "Bądź fair",
+            introBody5:
+              "Sprawiedliwa oferta częściej dostaje tak. Grajcie na zmianę i baw się dobrze!",
+            introNext: "Dalej",
+            introStart: "Zaczynamy",
+            introBack: "Wstecz",
+            introSkip: "Pomiń",
+            introStepLabel: "Krok {step} z {total}",
+            modeLabel: "Tryb",
+            modeTeam: "Cel drużynowy",
+            modeCheckpoint: "Punkt kontrolny",
+            modeShrink: "Malejąca pula",
+            modeSummaryTeam:
+              "Uzbierajcie razem {target} monet, a każde z was potrzebuje {floor}. Wyższy wynik zwycięża.",
+            modeSummaryCheckpoint:
+              "Uzbierajcie razem {target} monet. Miejcie {bank} po rundzie {round}, inaczej mecz skończy się wcześniej.",
+            modeSummaryShrink:
+              "Zbierz {goal} monet dla siebie. Każdy brak umowy zmniejsza pulę.",
+            roundOf: "Runda {round} z {total}",
+            splitter: "Osoba dzieląca",
+            decider: "Osoba decydująca",
+            splitsPot: "{name} dzieli {pot} monet",
+            keeps: "{name} zatrzymuje",
+            gets: "{name} dostaje",
+            offerTo: "Oferta dla {name}",
+            giveCoinTo: "Daj monetę graczowi: {name}",
+            sendOffer: "Wyślij ofertę",
+            passTo: "Przekaż do: {name}",
+            decides: "{name} decyduje",
+            acceptSub: "Obie osoby dostają te monety.",
+            acceptDeal: "Przyjmij ofertę",
+            noDeal: "Brak umowy",
+            dealAccepted: "Oferta przyjęta",
+            dealRejected: "Brak umowy",
+            bothZero: "Obie osoby dostają 0 w tej rundzie.",
+            acceptedNote:
+              "Obie osoby się zgodziły, więc obie zachowują punkty.",
+            rejectedLowNote:
+              "Niska oferta może zniknąć, gdy osoba decydująca mówi: brak umowy.",
+            rejectedNeutralNote: "Osoba decydująca chciała innego podziału.",
+            roundPoints: "Punkty w rundzie",
+            totalScore: "Wynik łączny",
+            nextRound: "Następna runda",
+            finalResult: "Wynik końcowy",
+            pointWinner: "Zwycięzca punktowy: {name}",
+            balancedTable: "Równy stół",
+            aloneWin: "Wygrywa tylko {name}",
+            bankLine: "Razem: {sum} / {target}",
+            nobodyWins: "Nikt nie wygrywa",
+            sharedMissed: "Wspólny cel nieosiągnięty — nikt nie wygrywa.",
+            checkpointMissed:
+              "Punkt kontrolny nieosiągnięty — mecz kończy się wcześniej. Nikt nie wygrywa.",
+            bothReached: "Obie osoby osiągnęły cel!",
+            goalReached: "Cel osiągnięty: {name}",
+            noneReached: "Nikt nie osiągnął celu.",
+            bothAboveFloor: "Obie osoby są powyżej progu {floor} monet.",
+            belowFloorLine: "{name}: poniżej progu {floor} monet.",
+            potChip: "Pula: {pot}",
+            strikesLeftLabel: "Zapas braków umowy: {count}",
+            potShrinksNote: "Pula kurczy się do {pot} monet do końca meczu.",
+            potFloorNote: "Pula zostaje na poziomie {pot} monet.",
+            noDealShrinkSub: "Obie osoby dostają 0, a pula się kurczy.",
+            strikesGoneNote:
+              "Zapas braków umowy wyczerpany. Każda kolejna oferta musi zostać przyjęta, aby uzbierać {target}.",
+            goalOutOfReachNote:
+              "Wspólny cel jest już poza zasięgiem w tym meczu.",
+            dealsAccepted: "Przyjęte umowy: {accepted} z {total}.",
+            dealsRejected: "Rundy bez umowy: {rejected} z {total}.",
+            averageOffer: "Średnia oferta dla osoby decydującej: {value}.",
+            fairZoneCount: "Oferty blisko środka: {count} z {total}.",
+            gameTheoryIdea: "Pomysł z teorii gier",
+            formalTerms:
+              "W teorii gier osoba dzieląca to proponujący, a osoba decydująca to odpowiadający.",
+            debriefClassic:
+              "Umowa potrzebuje zgody obu osób. Bardzo niskie oferty mogą zostać odrzucone, więc sprawiedliwość może być częścią dobrej strategii.",
+            playAgain: "Zagraj ponownie",
+            newMatch: "Nowy mecz",
+            overlayHint: "Dotknij, aby kontynuować",
+            historyLabel: "Historia rund",
+          },
+        };
+
+        /* ================= RULES ================= */
+        // [rules:start]
+        const POT = 10;
+        const ROUNDS = 8;
+        const MODES = {
+          team: { target: 60, floor: 20, strikes: 2 },
+          checkpoint: {
+            target: 60,
+            checkpointRound: 4,
+            checkpointBank: 30,
+            strikes: 2,
+          },
+          shrink: { goal: 25, shrinkBy: 1, minPot: 5 },
+        };
+        function splitterIndex(roundIndex) {
+          return roundIndex % 2;
+        }
+        function deciderIndex(roundIndex) {
+          return 1 - (roundIndex % 2);
+        }
+        function potForRound(mode, rejectionsSoFar) {
+          if (mode !== "shrink") return POT;
+          return Math.max(
+            MODES.shrink.minPot,
+            POT - rejectionsSoFar * MODES.shrink.shrinkBy,
+          );
+        }
+        function resolveUltimatumRound({ pot, offerToDecider, accepted }) {
+          if (!Number.isInteger(pot) || pot <= 0) {
+            throw new Error("Pot must be a positive integer.");
+          }
+          if (!Number.isInteger(offerToDecider)) {
+            throw new Error("Offer must be an integer.");
+          }
+          if (offerToDecider < 0 || offerToDecider > pot) {
+            throw new Error("Offer must be between 0 and pot.");
+          }
+          const keptBySplitter = pot - offerToDecider;
+          if (!accepted) {
+            return {
+              keptBySplitter,
+              offerToDecider,
+              splitterPayoff: 0,
+              deciderPayoff: 0,
+            };
+          }
+          return {
+            keptBySplitter,
+            offerToDecider,
+            splitterPayoff: keptBySplitter,
+            deciderPayoff: offerToDecider,
+          };
+        }
+        function isFairZone(offerToDecider, pot) {
+          return Math.abs(offerToDecider - pot / 2) <= 1;
+        }
+        function isLowOffer(offerToDecider, pot) {
+          return offerToDecider < pot / 2 - 1;
+        }
+        function summarizeMatch(history) {
+          const acceptedCount = history.filter(function (round) {
+            return round.accepted;
+          }).length;
+          const offerTotal = history.reduce(function (sum, round) {
+            return sum + round.offerToDecider;
+          }, 0);
+          return {
+            acceptedCount,
+            rejectedCount: history.length - acceptedCount,
+            fairZoneCount: history.filter(function (round) {
+              return isFairZone(round.offerToDecider, round.pot);
+            }).length,
+            averageOffer: offerTotal / history.length,
+          };
+        }
+        function strikesLeft(mode, rejections) {
+          const budget = MODES[mode].strikes;
+          if (budget === undefined) return null;
+          return Math.max(0, budget - rejections);
+        }
+        function checkpointFailed(scores) {
+          return scores[0] + scores[1] < MODES.checkpoint.checkpointBank;
+        }
+        function judgeMatch(mode, scores) {
+          if (mode === "shrink") {
+            const reached1 = scores[0] >= MODES.shrink.goal;
+            const reached2 = scores[1] >= MODES.shrink.goal;
+            if (reached1 && reached2) return "both";
+            if (reached1) return "p1";
+            if (reached2) return "p2";
+            return "none";
+          }
+          if (scores[0] + scores[1] < MODES[mode].target) return "miss";
+          if (mode === "team") {
+            const above1 = scores[0] >= MODES.team.floor;
+            const above2 = scores[1] >= MODES.team.floor;
+            if (above1 && !above2) return "p1Only";
+            if (!above1 && above2) return "p2Only";
+            if (scores[0] > scores[1]) return "bothP1";
+            if (scores[1] > scores[0]) return "bothP2";
+            return "tie";
+          }
+          if (scores[0] > scores[1]) return "p1";
+          if (scores[1] > scores[0]) return "p2";
+          return "tie";
+        }
+        // [rules:end]
+
+        /* ================= STATE ================= */
+        const state = {
+          lang: (navigator.language || "").startsWith("pl") ? "pl" : "en",
+          reduceMotion: false,
+          phase: "setup",
+          mode: "team",
+          introStep: 0,
+          names: ["Player 1", "Player 2"],
+          roundIndex: 0,
+          pot: 10,
+          currentOfferToDecider: 5,
+          scores: [0, 0],
+          history: [],
+          checkpointFailed: false,
+        };
+        const INTRO_STEPS = [
+          { emoji: "⚖️", title: "introTitle1", body: "introBody1" },
+          { emoji: "\u{1FA99}", title: "introTitle2", body: "introBody2" },
+          { emoji: "\u{1F914}", title: "introTitle3", body: "introBody3" },
+          { emoji: "❌", title: "introTitle4", body: "introBody4" },
+          { emoji: "\u{1F91D}", title: "introTitle5", body: "introBody5" },
+        ];
+        const INTRO_SEEN_KEY = "fairsplitIntroSeenV1";
+        let announceTick = false;
+        let activeOverlay = null;
+        let decisionGuardUntil = 0;
+
+        /* ================= DOM ================= */
+        const dom = {};
+        [
+          "titleText",
+          "subtitleText",
+          "langBtn",
+          "scoreBoard",
+          "sbName1",
+          "sbRole1",
+          "sbScore1",
+          "sbGoal1",
+          "sbScore2",
+          "sbGoal2",
+          "sbRole2",
+          "sbName2",
+          "sbRound",
+          "roundDots",
+          "sbBank",
+          "sbBar",
+          "sbBarFill",
+          "sbBarTick",
+          "sbStrikes",
+          "sbStrike1",
+          "sbStrike2",
+          "sbPot",
+          "announcer",
+          "phaseIntro",
+          "introEmoji",
+          "introTitle",
+          "introBody",
+          "introDots",
+          "introNext",
+          "introBack",
+          "introSkip",
+          "howToPlayBtn",
+          "phaseSetup",
+          "setupTitle",
+          "setupCopy",
+          "lblName1",
+          "nameInput1",
+          "lblName2",
+          "nameInput2",
+          "setupError",
+          "lblMode",
+          "modeTeamBtn",
+          "modeCheckpointBtn",
+          "modeShrinkBtn",
+          "modeSummary",
+          "startBtn",
+          "phaseSplitter",
+          "splitterRound",
+          "splitterTitle",
+          "spKeepText",
+          "spKeepNum",
+          "spGetText",
+          "spGetNum",
+          "spView",
+          "giveLeftBtn",
+          "giveRightBtn",
+          "spCoins",
+          "sendOfferBtn",
+          "phaseDecider",
+          "deciderRound",
+          "passHint",
+          "deciderTitle",
+          "dcKeepText",
+          "dcKeepNum",
+          "dcGetText",
+          "dcGetNum",
+          "dcCoins",
+          "acceptBtn",
+          "acceptBtnText",
+          "acceptBtnSub",
+          "noDealBtn",
+          "noDealBtnText",
+          "noDealBtnSub",
+          "phaseReveal",
+          "revealRound",
+          "revealIcon",
+          "revealTitle",
+          "rvView",
+          "rvKeepText",
+          "rvKeepNum",
+          "rvGetText",
+          "rvGetNum",
+          "rvCoins",
+          "bothZeroLine",
+          "modeNote",
+          "lblRevPoints",
+          "lblRevTotal",
+          "revName1",
+          "revPoints1",
+          "revTotal1",
+          "revName2",
+          "revPoints2",
+          "revTotal2",
+          "revealNote",
+          "nextBtn",
+          "phaseFinal",
+          "finalTitle",
+          "finalName1",
+          "finalScore1",
+          "finalName2",
+          "finalScore2",
+          "finalWinner",
+          "statMode",
+          "statBank",
+          "statAccepted",
+          "statRejected",
+          "statAverage",
+          "statFairZone",
+          "gtLabel",
+          "debriefText",
+          "formalTermsText",
+          "playAgainBtn",
+          "newMatchBtn",
+          "lblHistory",
+          "historyList",
+        ].forEach(function (id) {
+          dom[id] = document.getElementById(id);
+        });
+
+        /* ================= HELPERS ================= */
+        function T(key, vars) {
+          let text = I18N[state.lang][key];
+          if (text === undefined) text = key;
+          if (vars) {
+            Object.keys(vars).forEach(function (name) {
+              text = text.split("{" + name + "}").join(String(vars[name]));
+            });
+          }
+          return text;
+        }
+        function announce(msg) {
+          announceTick = !announceTick;
+          dom.announcer.textContent = announceTick ? msg : msg + " ";
+        }
+        function roundOfText(round) {
+          return T("roundOf", { round: round, total: ROUNDS });
+        }
+        function formatAverage(value) {
+          const rounded = Math.round(value * 10) / 10;
+          const text = Number.isInteger(rounded)
+            ? String(rounded)
+            : rounded.toFixed(1);
+          return state.lang === "pl" ? text.replace(".", ",") : text;
+        }
+        function noteFor(entry) {
+          if (entry.accepted) return T("acceptedNote");
+          return isLowOffer(entry.offerToDecider, entry.pot)
+            ? T("rejectedLowNote")
+            : T("rejectedNeutralNote");
+        }
+        function setToggle(btn, on) {
+          btn.classList.toggle("active", on);
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+        }
+        function rejectionCount() {
+          return state.history.filter(function (entry) {
+            return !entry.accepted;
+          }).length;
+        }
+        function bankLineText(target) {
+          return T("bankLine", {
+            sum: state.scores[0] + state.scores[1],
+            target: target,
+          });
+        }
+        function modeSummaryText() {
+          if (state.mode === "team") {
+            return T("modeSummaryTeam", {
+              target: MODES.team.target,
+              floor: MODES.team.floor,
+            });
+          }
+          if (state.mode === "checkpoint") {
+            return T("modeSummaryCheckpoint", {
+              target: MODES.checkpoint.target,
+              bank: MODES.checkpoint.checkpointBank,
+              round: MODES.checkpoint.checkpointRound,
+            });
+          }
+          return T("modeSummaryShrink", { goal: MODES.shrink.goal });
+        }
+        function modeNoteText(entry) {
+          if (entry.accepted) return null;
+          if (state.mode === "shrink") {
+            if (entry.round >= ROUNDS) return null;
+            const nextPot = potForRound("shrink", rejectionCount());
+            return nextPot < entry.pot
+              ? T("potShrinksNote", { pot: nextPot })
+              : T("potFloorNote", { pot: nextPot });
+          }
+          const rej = rejectionCount();
+          if (rej > MODES[state.mode].strikes) return T("goalOutOfReachNote");
+          if (rej === MODES[state.mode].strikes) {
+            return T("strikesGoneNote", { target: MODES[state.mode].target });
+          }
+          return null;
+        }
+        function verdictLine() {
+          if (state.mode === "checkpoint" && state.checkpointFailed) {
+            return T("checkpointMissed");
+          }
+          const verdict = judgeMatch(state.mode, state.scores);
+          if (state.mode === "shrink") {
+            if (verdict === "both") return T("bothReached");
+            if (verdict === "none") return T("noneReached");
+            return T("goalReached", {
+              name: state.names[verdict === "p1" ? 0 : 1],
+            });
+          }
+          if (verdict === "miss") return T("sharedMissed");
+          if (verdict === "tie") return T("balancedTable");
+          if (state.mode === "team") {
+            if (verdict === "bothP1" || verdict === "bothP2") {
+              return T("pointWinner", {
+                name: state.names[verdict === "bothP1" ? 0 : 1],
+              });
+            }
+            return T("aloneWin", {
+              name: state.names[verdict === "p1Only" ? 0 : 1],
+            });
+          }
+          return T("pointWinner", {
+            name: state.names[verdict === "p1" ? 0 : 1],
+          });
+        }
+        function offerSummaryText(keep, offer, splitterName, deciderName) {
+          return (
+            T("keeps", { name: splitterName }) +
+            " " +
+            keep +
+            ", " +
+            T("gets", { name: deciderName }) +
+            " " +
+            offer +
+            "."
+          );
+        }
+
+        /* ================= RENDERING ================= */
+        function renderVisibility() {
+          dom.phaseIntro.hidden = state.phase !== "intro";
+          dom.phaseSetup.hidden = state.phase !== "setup";
+          dom.phaseSplitter.hidden = state.phase !== "splitter_turn";
+          dom.phaseDecider.hidden = state.phase !== "decider_turn";
+          dom.phaseReveal.hidden = state.phase !== "round_reveal";
+          dom.phaseFinal.hidden = state.phase !== "final_result";
+          dom.scoreBoard.hidden =
+            state.phase === "setup" || state.phase === "intro";
+        }
+        function renderIntro() {
+          const step = INTRO_STEPS[state.introStep];
+          const last = state.introStep === INTRO_STEPS.length - 1;
+          dom.introEmoji.textContent = step.emoji;
+          dom.introTitle.textContent = T(step.title);
+          dom.introBody.textContent = T(step.body);
+          dom.introNext.textContent = T(last ? "introStart" : "introNext");
+          dom.introBack.hidden = state.introStep === 0;
+          dom.introSkip.hidden = last;
+          while (dom.introDots.firstChild) {
+            dom.introDots.removeChild(dom.introDots.firstChild);
+          }
+          for (let i = 0; i < INTRO_STEPS.length; i += 1) {
+            const dot = document.createElement("span");
+            dot.className =
+              "intro-dot" + (i === state.introStep ? " active" : "");
+            dom.introDots.appendChild(dot);
+          }
+        }
+        function renderScoreboard() {
+          const finalPhase = state.phase === "final_result";
+          const s = splitterIndex(state.roundIndex);
+          dom.sbName1.textContent = state.names[0];
+          dom.sbName2.textContent = state.names[1];
+          dom.sbScore1.textContent = String(state.scores[0]);
+          dom.sbScore2.textContent = String(state.scores[1]);
+          // Colors are player identity (P1 blue, P2 amber) and stay fixed; only
+          // the role text updates each round.
+          const roles = [dom.sbRole1, dom.sbRole2];
+          for (let i = 0; i < 2; i += 1) {
+            roles[i].hidden = finalPhase;
+            roles[i].textContent = T(i === s ? "splitter" : "decider");
+          }
+          const mode = state.mode;
+          const cfg = MODES[mode];
+          const bank = state.scores[0] + state.scores[1];
+          const isTeam = mode === "team";
+          const isCheckpoint = mode === "checkpoint";
+          const isShrink = mode === "shrink";
+          const showBank = isTeam || isCheckpoint;
+          const showGoal = isTeam || isShrink;
+          dom.sbGoal1.hidden = !showGoal;
+          dom.sbGoal2.hidden = !showGoal;
+          if (showGoal) {
+            const goal = "/ " + (isTeam ? MODES.team.floor : MODES.shrink.goal);
+            dom.sbGoal1.textContent = goal;
+            dom.sbGoal2.textContent = goal;
+          }
+          dom.sbBank.hidden = !showBank;
+          dom.sbBar.hidden = !showBank;
+          dom.sbStrikes.hidden = !showBank;
+          if (showBank) {
+            dom.sbBank.textContent = bankLineText(cfg.target);
+            const pct = Math.min(100, (bank / cfg.target) * 100);
+            dom.sbBarFill.style.width = pct + "%";
+            dom.sbBar.setAttribute(
+              "aria-valuenow",
+              String(Math.min(bank, cfg.target)),
+            );
+            dom.sbBar.setAttribute("aria-valuemax", String(cfg.target));
+            dom.sbBar.setAttribute("aria-label", bankLineText(cfg.target));
+            const left = strikesLeft(mode, rejectionCount());
+            const spent = cfg.strikes - left;
+            dom.sbStrike1.classList.toggle("burned", spent >= 1);
+            dom.sbStrike2.classList.toggle("burned", spent >= 2);
+            dom.sbStrikes.setAttribute(
+              "aria-label",
+              T("strikesLeftLabel", { count: left }),
+            );
+          }
+          dom.sbBarTick.hidden = !isCheckpoint;
+          dom.sbPot.hidden = !isShrink;
+          if (isShrink) {
+            dom.sbPot.textContent = T("potChip", { pot: state.pot });
+          }
+          dom.sbRound.textContent = roundOfText(state.roundIndex + 1);
+          while (dom.roundDots.firstChild) {
+            dom.roundDots.removeChild(dom.roundDots.firstChild);
+          }
+          for (let i = 0; i < ROUNDS; i += 1) {
+            const dot = document.createElement("span");
+            dot.className = "r-dot";
+            if (i < state.history.length) {
+              dot.classList.add("done");
+            } else if (i === state.roundIndex && !finalPhase) {
+              dot.classList.add("current");
+            }
+            dom.roundDots.appendChild(dot);
+          }
+        }
+        const coinRows = {};
+        function buildCoinRow(prefix, container) {
+          const coins = [];
+          for (let i = 0; i < POT; i += 1) {
+            const coin = document.createElement("span");
+            coin.className = "coin";
+            coin.textContent = "\u{1F7E1}";
+            container.appendChild(coin);
+            coins.push(coin);
+          }
+          const divider = document.createElement("span");
+          divider.className = "coin-divider";
+          container.appendChild(divider);
+          coinRows[prefix] = {
+            container: container,
+            coins: coins,
+            divider: divider,
+          };
+        }
+        // The left label/coins/chip are always Player 1 (blue), the right always
+        // Player 2 (amber), regardless of who is Splitter this round. Colors are
+        // fixed player identity (matching the scoreboard); only the "keeps"/
+        // "gets" verb follows each player's role. Ids keep their legacy
+        // Keep=left / Get=right names.
+        function renderSplitView(prefix, pot, splitterIdx, kept, offer) {
+          const p1IsSplitter = splitterIdx === 0;
+          const p1Amount = p1IsSplitter ? kept : offer;
+          const p2Amount = p1IsSplitter ? offer : kept;
+          dom[prefix + "KeepText"].textContent = T(
+            p1IsSplitter ? "keeps" : "gets",
+            { name: state.names[0] },
+          );
+          dom[prefix + "KeepNum"].textContent = String(p1Amount);
+          dom[prefix + "GetText"].textContent = T(
+            p1IsSplitter ? "gets" : "keeps",
+            { name: state.names[1] },
+          );
+          dom[prefix + "GetNum"].textContent = String(p2Amount);
+          const row = coinRows[prefix];
+          row.coins.forEach(function (coin, i) {
+            coin.hidden = i >= pot;
+          });
+          row.container.insertBefore(row.divider, row.coins[p1Amount] || null);
+        }
+        function renderSplitter() {
+          const s = splitterIndex(state.roundIndex);
+          const d = deciderIndex(state.roundIndex);
+          const pot = state.pot;
+          const offer = state.currentOfferToDecider;
+          dom.splitterRound.textContent = roundOfText(state.roundIndex + 1);
+          dom.splitterTitle.textContent = T("splitsPot", {
+            name: state.names[s],
+            pot: pot,
+          });
+          dom.spView.setAttribute(
+            "aria-label",
+            T("offerTo", { name: state.names[d] }),
+          );
+          dom.giveLeftBtn.title = T("giveCoinTo", { name: state.names[0] });
+          dom.giveLeftBtn.setAttribute(
+            "aria-label",
+            T("giveCoinTo", { name: state.names[0] }),
+          );
+          dom.giveRightBtn.title = T("giveCoinTo", { name: state.names[1] });
+          dom.giveRightBtn.setAttribute(
+            "aria-label",
+            T("giveCoinTo", { name: state.names[1] }),
+          );
+          renderSplitView("sp", pot, s, pot - offer, offer);
+        }
+        function renderDecider() {
+          const s = splitterIndex(state.roundIndex);
+          const d = deciderIndex(state.roundIndex);
+          const pot = state.pot;
+          const offer = state.currentOfferToDecider;
+          dom.deciderRound.textContent = roundOfText(state.roundIndex + 1);
+          dom.passHint.textContent = T("passTo", { name: state.names[d] });
+          dom.deciderTitle.textContent = T("decides", {
+            name: state.names[d],
+          });
+          renderSplitView("dc", pot, s, pot - offer, offer);
+          const willShrink =
+            state.mode === "shrink" && state.pot > MODES.shrink.minPot;
+          dom.noDealBtnSub.textContent = willShrink
+            ? T("noDealShrinkSub")
+            : T("bothZero");
+        }
+        function renderReveal() {
+          const entry = state.history[state.history.length - 1];
+          if (!entry) return;
+          dom.revealRound.textContent = roundOfText(entry.round);
+          dom.revealIcon.textContent = entry.accepted ? "✔︎" : "✖︎";
+          dom.revealIcon.className =
+            "reveal-icon " + (entry.accepted ? "ok" : "no");
+          dom.revealTitle.textContent = T(
+            entry.accepted ? "dealAccepted" : "dealRejected",
+          );
+          dom.rvView.classList.toggle("no-deal", !entry.accepted);
+          renderSplitView(
+            "rv",
+            entry.pot,
+            entry.splitter,
+            entry.keptBySplitter,
+            entry.offerToDecider,
+          );
+          dom.bothZeroLine.hidden = entry.accepted;
+          dom.revName1.textContent = state.names[0];
+          dom.revName2.textContent = state.names[1];
+          dom.revPoints1.textContent = "+" + entry.payoff[0];
+          dom.revPoints2.textContent = "+" + entry.payoff[1];
+          dom.revTotal1.textContent = String(state.scores[0]);
+          dom.revTotal2.textContent = String(state.scores[1]);
+          dom.revealNote.textContent = noteFor(entry);
+          const mNote = modeNoteText(entry);
+          dom.modeNote.hidden = mNote === null;
+          if (mNote !== null) dom.modeNote.textContent = mNote;
+          const over =
+            entry.round >= ROUNDS ||
+            (state.mode === "checkpoint" &&
+              entry.round === MODES.checkpoint.checkpointRound &&
+              checkpointFailed(state.scores));
+          dom.nextBtn.textContent = T(over ? "finalResult" : "nextRound");
+        }
+        function renderSetup() {
+          setToggle(dom.modeTeamBtn, state.mode === "team");
+          setToggle(dom.modeCheckpointBtn, state.mode === "checkpoint");
+          setToggle(dom.modeShrinkBtn, state.mode === "shrink");
+          dom.modeSummary.textContent = modeSummaryText();
+        }
+        function renderFinal() {
+          const summary = summarizeMatch(state.history);
+          const isShrink = state.mode === "shrink";
+          const isTeam = state.mode === "team";
+          const showBank = isTeam || state.mode === "checkpoint";
+          dom.finalName1.textContent = state.names[0];
+          dom.finalName2.textContent = state.names[1];
+          dom.finalScore1.textContent = isShrink
+            ? state.scores[0] + " / " + MODES.shrink.goal
+            : String(state.scores[0]);
+          dom.finalScore2.textContent = isShrink
+            ? state.scores[1] + " / " + MODES.shrink.goal
+            : String(state.scores[1]);
+          dom.finalWinner.textContent = verdictLine();
+          const verdict = judgeMatch(state.mode, state.scores);
+          let modeStat = null;
+          if (isTeam && !state.checkpointFailed && verdict !== "miss") {
+            if (verdict === "p1Only" || verdict === "p2Only") {
+              modeStat = T("belowFloorLine", {
+                name: state.names[verdict === "p1Only" ? 1 : 0],
+                floor: MODES.team.floor,
+              });
+            } else {
+              modeStat = T("bothAboveFloor", { floor: MODES.team.floor });
+            }
+          }
+          dom.statMode.hidden = modeStat === null;
+          if (modeStat !== null) dom.statMode.textContent = modeStat;
+          dom.statBank.hidden = !showBank;
+          if (showBank) {
+            dom.statBank.textContent =
+              bankLineText(MODES[state.mode].target) + ".";
+          }
+          dom.statAccepted.textContent = T("dealsAccepted", {
+            accepted: summary.acceptedCount,
+            total: state.history.length,
+          });
+          dom.statRejected.textContent = T("dealsRejected", {
+            rejected: summary.rejectedCount,
+            total: state.history.length,
+          });
+          dom.statAverage.textContent = T("averageOffer", {
+            value: formatAverage(summary.averageOffer),
+          });
+          dom.statFairZone.textContent = T("fairZoneCount", {
+            count: summary.fairZoneCount,
+            total: state.history.length,
+          });
+        }
+        function renderHistory() {
+          while (dom.historyList.firstChild) {
+            dom.historyList.removeChild(dom.historyList.firstChild);
+          }
+          if (state.history.length === 0) {
+            const empty = document.createElement("span");
+            empty.className = "history-empty";
+            empty.textContent = "—";
+            dom.historyList.appendChild(empty);
+            return;
+          }
+          state.history.forEach(function (entry) {
+            const row = document.createElement("div");
+            row.className = "history-row";
+            const num = document.createElement("span");
+            num.className = "h-round";
+            num.textContent = "R" + entry.round;
+            row.appendChild(num);
+            const split = document.createElement("span");
+            split.className = "h-split";
+            split.textContent =
+              entry.keptBySplitter + "/" + entry.offerToDecider;
+            row.appendChild(split);
+            const flag = document.createElement("span");
+            flag.className = "h-flag " + (entry.accepted ? "ok" : "bad");
+            flag.textContent = entry.accepted ? "✔︎" : "✖︎";
+            flag.title = T(entry.accepted ? "dealAccepted" : "dealRejected");
+            row.appendChild(flag);
+            const sr = document.createElement("span");
+            sr.className = "visually-hidden";
+            sr.textContent =
+              offerSummaryText(
+                entry.keptBySplitter,
+                entry.offerToDecider,
+                state.names[entry.splitter],
+                state.names[entry.decider],
+              ) +
+              " " +
+              T(entry.accepted ? "dealAccepted" : "dealRejected");
+            row.appendChild(sr);
+            const pts = document.createElement("span");
+            pts.className = "h-points";
+            pts.textContent = "+" + entry.payoff[0] + "/+" + entry.payoff[1];
+            row.appendChild(pts);
+            dom.historyList.appendChild(row);
+          });
+        }
+        function renderAll() {
+          renderVisibility();
+          renderScoreboard();
+          renderHistory();
+          if (state.phase === "intro") renderIntro();
+          if (state.phase === "setup") renderSetup();
+          if (state.phase === "splitter_turn") renderSplitter();
+          if (state.phase === "decider_turn") renderDecider();
+          if (state.phase === "round_reveal") renderReveal();
+          if (state.phase === "final_result") renderFinal();
+        }
+
+        /* ================= TRANSLATIONS ================= */
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
+          dom.titleText.textContent = T("title");
+          dom.subtitleText.textContent = T("subtitle");
+          dom.langBtn.textContent = state.lang === "en" ? "PL" : "EN";
+          dom.langBtn.title = T("langSwitch");
+          dom.langBtn.setAttribute("aria-label", T("langSwitch"));
+          dom.setupTitle.textContent = T("setupTitle");
+          dom.setupCopy.textContent = T("setupCopy");
+          dom.lblName1.textContent = T("playerOneName");
+          dom.lblName2.textContent = T("playerTwoName");
+          dom.nameInput1.placeholder = T("playerOneDefault");
+          dom.nameInput2.placeholder = T("playerTwoDefault");
+          dom.setupError.textContent = T("sameNames");
+          dom.lblMode.textContent = T("modeLabel");
+          dom.modeTeamBtn.textContent = T("modeTeam");
+          dom.modeCheckpointBtn.textContent = T("modeCheckpoint");
+          dom.modeShrinkBtn.textContent = T("modeShrink");
+          dom.startBtn.textContent = T("start");
+          dom.howToPlayBtn.textContent = T("howToPlay");
+          dom.introBack.textContent = T("introBack");
+          dom.introSkip.textContent = T("introSkip");
+          dom.sendOfferBtn.textContent = T("sendOffer");
+          dom.acceptBtnText.textContent = T("acceptDeal");
+          dom.acceptBtnSub.textContent = T("acceptSub");
+          dom.noDealBtnText.textContent = T("noDeal");
+          dom.bothZeroLine.textContent = T("bothZero");
+          dom.lblRevPoints.textContent = T("roundPoints");
+          dom.lblRevTotal.textContent = T("totalScore");
+          dom.finalTitle.textContent = T("finalResult");
+          dom.gtLabel.textContent = T("gameTheoryIdea");
+          dom.debriefText.textContent = T("debriefClassic");
+          dom.formalTermsText.textContent = T("formalTerms");
+          dom.playAgainBtn.textContent = T("playAgain");
+          dom.newMatchBtn.textContent = T("newMatch");
+          dom.lblHistory.textContent = T("historyLabel");
+          if (activeOverlay) {
+            activeOverlay.msg.textContent = overlayMsg();
+            activeOverlay.sub.textContent = overlaySub();
+            activeOverlay.hint.textContent = T("overlayHint");
+          }
+          renderAll();
+        }
+
+        /* ================= OVERLAY ================= */
+        function overlayMsg() {
+          if (state.mode === "checkpoint" && state.checkpointFailed) {
+            return T("nobodyWins");
+          }
+          if (judgeMatch(state.mode, state.scores) === "miss") {
+            return T("nobodyWins");
+          }
+          return verdictLine();
+        }
+        function overlaySub() {
+          if (state.mode === "checkpoint" && state.checkpointFailed) {
+            return bankLineText(MODES.checkpoint.checkpointBank);
+          }
+          if (judgeMatch(state.mode, state.scores) === "miss") {
+            return bankLineText(MODES[state.mode].target);
+          }
+          const goal = state.mode === "shrink" ? " / " + MODES.shrink.goal : "";
+          return (
+            state.names[0] +
+            " " +
+            state.scores[0] +
+            goal +
+            " · " +
+            state.names[1] +
+            " " +
+            state.scores[1] +
+            goal
+          );
+        }
+        function showOverlay() {
+          const verdict = judgeMatch(state.mode, state.scores);
+          const lose =
+            state.checkpointFailed || verdict === "miss" || verdict === "none";
+          const tie = !lose && verdict === "tie";
+          const overlay = document.createElement("div");
+          overlay.className =
+            "result-overlay " + (lose ? "miss" : tie ? "tie" : "success");
+          overlay.setAttribute("role", "dialog");
+          overlay.setAttribute("aria-live", "polite");
+          overlay.tabIndex = -1;
+          const emoji = document.createElement("div");
+          emoji.className = "overlay-emoji";
+          emoji.textContent = lose ? "❌" : tie ? "\u{1F3AF}" : "\u{1F389}";
+          const msg = document.createElement("div");
+          msg.className = "overlay-msg";
+          msg.textContent = overlayMsg();
+          const sub = document.createElement("div");
+          sub.className = "overlay-sub";
+          sub.textContent = overlaySub();
+          const hint = document.createElement("div");
+          hint.className = "overlay-hint";
+          hint.textContent = T("overlayHint");
+          overlay.appendChild(emoji);
+          overlay.appendChild(msg);
+          overlay.appendChild(sub);
+          overlay.appendChild(hint);
+          document.body.appendChild(overlay);
+          activeOverlay = { el: overlay, msg: msg, sub: sub, hint: hint };
+          overlay.focus();
+          function close() {
+            document.removeEventListener("keydown", onKey, true);
+            overlay.remove();
+            activeOverlay = null;
+            dom.playAgainBtn.focus();
+          }
+          function onKey(event) {
+            if (
+              event.key === "Escape" ||
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+              event.preventDefault();
+              close();
+            }
+          }
+          overlay.addEventListener("click", close);
+          document.addEventListener("keydown", onKey, true);
+        }
+
+        /* ================= GAME FLOW ================= */
+        function setPhase(phase) {
+          state.phase = phase;
+          renderAll();
+        }
+        function resetMatch() {
+          state.roundIndex = 0;
+          state.pot = potForRound(state.mode, 0);
+          state.currentOfferToDecider = Math.round(state.pot / 2);
+          state.scores = [0, 0];
+          state.history = [];
+          state.checkpointFailed = false;
+        }
+        function enterSplitterTurn() {
+          const s = splitterIndex(state.roundIndex);
+          setPhase("splitter_turn");
+          announce(
+            roundOfText(state.roundIndex + 1) +
+              " — " +
+              T("splitsPot", { name: state.names[s], pot: state.pot }),
+          );
+          dom.giveLeftBtn.focus();
+        }
+        function onStart() {
+          if (state.phase !== "setup") return;
+          const n1 = dom.nameInput1.value.trim() || T("playerOneDefault");
+          const n2 = dom.nameInput2.value.trim() || T("playerTwoDefault");
+          if (n1.toLowerCase() === n2.toLowerCase()) {
+            dom.setupError.hidden = false;
+            announce(T("sameNames"));
+            return;
+          }
+          dom.setupError.hidden = true;
+          state.names = [n1, n2];
+          resetMatch();
+          enterSplitterTurn();
+        }
+        function onOfferStep(delta) {
+          if (state.phase !== "splitter_turn") return;
+          const next = Math.min(
+            state.pot,
+            Math.max(0, state.currentOfferToDecider + delta),
+          );
+          announce(
+            offerSummaryText(
+              state.pot - next,
+              next,
+              state.names[splitterIndex(state.roundIndex)],
+              state.names[deciderIndex(state.roundIndex)],
+            ),
+          );
+          if (next === state.currentOfferToDecider) return;
+          state.currentOfferToDecider = next;
+          renderSplitter();
+        }
+        function onSendOffer() {
+          if (state.phase !== "splitter_turn") return;
+          const s = splitterIndex(state.roundIndex);
+          const d = deciderIndex(state.roundIndex);
+          const offer = state.currentOfferToDecider;
+          decisionGuardUntil = performance.now() + 500;
+          setPhase("decider_turn");
+          announce(
+            T("passTo", { name: state.names[d] }) +
+              ". " +
+              T("decides", { name: state.names[d] }) +
+              " — " +
+              offerSummaryText(
+                state.pot - offer,
+                offer,
+                state.names[s],
+                state.names[d],
+              ),
+          );
+          dom.acceptBtn.focus();
+        }
+        function onDecide(accepted) {
+          if (state.phase !== "decider_turn") return;
+          if (performance.now() < decisionGuardUntil) return;
+          if (state.history.length !== state.roundIndex) return;
+          const s = splitterIndex(state.roundIndex);
+          const d = deciderIndex(state.roundIndex);
+          const result = resolveUltimatumRound({
+            pot: state.pot,
+            offerToDecider: state.currentOfferToDecider,
+            accepted: accepted,
+          });
+          const payoff = [0, 0];
+          payoff[s] = result.splitterPayoff;
+          payoff[d] = result.deciderPayoff;
+          state.scores[0] += payoff[0];
+          state.scores[1] += payoff[1];
+          const entry = {
+            round: state.roundIndex + 1,
+            pot: state.pot,
+            splitter: s,
+            decider: d,
+            offerToDecider: result.offerToDecider,
+            keptBySplitter: result.keptBySplitter,
+            accepted: accepted,
+            payoff: payoff,
+          };
+          state.history.push(entry);
+          setPhase("round_reveal");
+          if (accepted && !state.reduceMotion) {
+            dom.revealIcon.classList.remove("pop");
+            dom.revealIcon.getBoundingClientRect();
+            dom.revealIcon.classList.add("pop");
+          }
+          const mNote = modeNoteText(entry);
+          announce(
+            T(accepted ? "dealAccepted" : "dealRejected") +
+              " — " +
+              offerSummaryText(
+                entry.keptBySplitter,
+                entry.offerToDecider,
+                state.names[s],
+                state.names[d],
+              ) +
+              " " +
+              (accepted ? "" : T("bothZero") + " ") +
+              noteFor(entry) +
+              (mNote ? " " + mNote : ""),
+          );
+          dom.nextBtn.focus();
+        }
+        function onNext() {
+          if (state.phase !== "round_reveal") return;
+          const atCheckpoint =
+            state.mode === "checkpoint" &&
+            state.roundIndex === MODES.checkpoint.checkpointRound - 1;
+          if (atCheckpoint && checkpointFailed(state.scores)) {
+            state.checkpointFailed = true;
+          }
+          if (state.checkpointFailed || state.roundIndex >= ROUNDS - 1) {
+            setPhase("final_result");
+            announce(
+              T("finalResult") +
+                ". " +
+                state.names[0] +
+                " " +
+                state.scores[0] +
+                ", " +
+                state.names[1] +
+                " " +
+                state.scores[1] +
+                ". " +
+                verdictLine(),
+            );
+            showOverlay();
+            return;
+          }
+          state.roundIndex += 1;
+          state.pot = potForRound(state.mode, rejectionCount());
+          state.currentOfferToDecider = Math.round(state.pot / 2);
+          enterSplitterTurn();
+        }
+        function onPlayAgain() {
+          if (state.phase !== "final_result") return;
+          resetMatch();
+          enterSplitterTurn();
+        }
+        function onNewMatch() {
+          if (state.phase === "setup") return;
+          resetMatch();
+          setPhase("setup");
+          dom.nameInput1.focus();
+        }
+        function onModePick(mode) {
+          if (state.phase !== "setup") return;
+          state.mode = mode;
+          renderAll();
+        }
+
+        /* ================= INTRO ================= */
+        function announceIntro() {
+          const step = INTRO_STEPS[state.introStep];
+          announce(
+            T("introStepLabel", {
+              step: state.introStep + 1,
+              total: INTRO_STEPS.length,
+            }) +
+              ": " +
+              T(step.title) +
+              " — " +
+              T(step.body),
+          );
+        }
+        function enterIntro() {
+          state.introStep = 0;
+          setPhase("intro");
+          announceIntro();
+          dom.introNext.focus();
+        }
+        function markIntroSeen() {
+          try {
+            localStorage.setItem(INTRO_SEEN_KEY, "1");
+          } catch {
+            // storage unavailable — the intro simply shows again next time
+          }
+        }
+        function exitIntro() {
+          markIntroSeen();
+          setPhase("setup");
+          dom.nameInput1.focus();
+        }
+        function onIntroNext() {
+          if (state.phase !== "intro") return;
+          if (state.introStep >= INTRO_STEPS.length - 1) {
+            exitIntro();
+            return;
+          }
+          state.introStep += 1;
+          renderIntro();
+          announceIntro();
+        }
+        function onIntroBack() {
+          if (state.phase !== "intro" || state.introStep === 0) return;
+          state.introStep -= 1;
+          renderIntro();
+          announceIntro();
+        }
+        function onHowToPlay() {
+          if (state.phase !== "setup") return;
+          enterIntro();
+        }
+
+        /* ================= EVENTS ================= */
+        dom.langBtn.addEventListener("click", function () {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        });
+        dom.startBtn.addEventListener("click", onStart);
+        [dom.nameInput1, dom.nameInput2].forEach(function (input) {
+          input.addEventListener("input", function () {
+            dom.setupError.hidden = true;
+          });
+          input.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") onStart();
+          });
+        });
+        dom.modeTeamBtn.addEventListener("click", function () {
+          onModePick("team");
+        });
+        dom.modeCheckpointBtn.addEventListener("click", function () {
+          onModePick("checkpoint");
+        });
+        dom.modeShrinkBtn.addEventListener("click", function () {
+          onModePick("shrink");
+        });
+        // The left button always grows Player 1's pile, the right grows
+        // Player 2's — so the offer delta flips with who is Splitter.
+        dom.giveLeftBtn.addEventListener("click", function () {
+          onOfferStep(splitterIndex(state.roundIndex) === 0 ? -1 : 1);
+        });
+        dom.giveRightBtn.addEventListener("click", function () {
+          onOfferStep(splitterIndex(state.roundIndex) === 0 ? 1 : -1);
+        });
+        dom.sendOfferBtn.addEventListener("click", onSendOffer);
+        dom.acceptBtn.addEventListener("click", function () {
+          onDecide(true);
+        });
+        dom.noDealBtn.addEventListener("click", function () {
+          onDecide(false);
+        });
+        dom.nextBtn.addEventListener("click", onNext);
+        dom.playAgainBtn.addEventListener("click", onPlayAgain);
+        dom.newMatchBtn.addEventListener("click", onNewMatch);
+        dom.introNext.addEventListener("click", onIntroNext);
+        dom.introBack.addEventListener("click", onIntroBack);
+        dom.introSkip.addEventListener("click", exitIntro);
+        dom.howToPlayBtn.addEventListener("click", onHowToPlay);
+        document.addEventListener("keydown", function (event) {
+          if (state.phase !== "intro") return;
+          if (event.key === "Escape") {
+            event.preventDefault();
+            exitIntro();
+          } else if (event.key === "ArrowRight") {
+            event.preventDefault();
+            onIntroNext();
+          } else if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            onIntroBack();
+          }
+        });
+        const motionQuery = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        );
+        state.reduceMotion = motionQuery.matches;
+        motionQuery.addEventListener("change", function () {
+          state.reduceMotion = motionQuery.matches;
+        });
+
+        /* ================= INIT ================= */
+        buildCoinRow("sp", dom.spCoins);
+        buildCoinRow("dc", dom.dcCoins);
+        buildCoinRow("rv", dom.rvCoins);
+        state.names = [T("playerOneDefault"), T("playerTwoDefault")];
+        let introSeen = false;
+        try {
+          introSeen = localStorage.getItem(INTRO_SEEN_KEY) === "1";
+        } catch {
+          // storage unavailable — default to showing the intro
+        }
+        if (!introSeen) state.phase = "intro";
+        applyTranslations();
+        if (state.phase === "intro") dom.introNext.focus();
+        if (new URLSearchParams(window.location.search).get("debug") === "1") {
+          window.fairsplitDebug = {
+            state: state,
+            POT: POT,
+            ROUNDS: ROUNDS,
+            MODES: MODES,
+          };
+        }
+      })();
+    </script>
+  </body>
+</html>

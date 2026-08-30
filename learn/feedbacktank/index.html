@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- feedbacktank.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- feedbacktank/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -20,10 +20,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Water Tank Negative Feedback Lab — watch a tank correct itself with a visible mechanical feedback system."
     />
     <meta property="og:type" content="website" />
-    <meta
-      property="og:url"
-      content="https://lepecki.com/learn/feedbacktank/"
-    />
+    <meta property="og:url" content="https://lepecki.com/learn/feedbacktank/" />
     <meta property="og:site_name" content="Łukasz Łepecki" />
     <meta
       property="og:image"
@@ -36,8 +33,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Water Tank Negative Feedback Lab — watch a tank correct itself with a visible mechanical feedback system."
     />
     <title>Water Tank Negative Feedback Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -136,7 +135,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -203,7 +202,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .section-label,
       .chart-label,
       .readout-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -227,7 +226,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: #fafaf7;
         color: #546e7a;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         cursor: pointer;
         transition: all 0.2s;
@@ -270,7 +269,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1px solid var(--panel-border);
         background: #fafaf7;
         color: #546e7a;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         cursor: pointer;
         transition: all 0.2s;
@@ -335,7 +334,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .slider-val {
         min-width: 56px;
         text-align: right;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         font-weight: 700;
         color: var(--text-head);
@@ -368,7 +367,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .readout-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -398,7 +397,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
       .stability-badge {
         display: inline-block;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         font-weight: 700;
         padding: 4px 10px;
@@ -520,7 +519,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .intro-counter {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         color: var(--text-dim);
         min-width: 56px;
@@ -1369,7 +1368,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               {
                 x: x,
                 y: y,
-                "font-family": "Share Tech Mono, monospace",
+                "font-family": "JetBrains Mono, monospace",
                 "font-size": "10",
                 fill: "#455A64",
                 "text-anchor": "middle",
@@ -2660,7 +2659,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         function drawGrid01(ctx, pad, plotW, plotH) {
           ctx.strokeStyle = "#E0DDD6";
           ctx.lineWidth = 0.6;
-          ctx.font = "9px 'Share Tech Mono', monospace";
+          ctx.font = "9px 'JetBrains Mono', monospace";
           ctx.fillStyle = "#90A4AE";
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
@@ -2678,7 +2677,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         function drawGridBalance(ctx, pad, plotW, plotH) {
           ctx.strokeStyle = "#E0DDD6";
           ctx.lineWidth = 0.6;
-          ctx.font = "9px 'Share Tech Mono', monospace";
+          ctx.font = "9px 'JetBrains Mono', monospace";
           ctx.fillStyle = "#90A4AE";
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";

@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- starlab.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- starlab/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -33,8 +33,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Star Lab: an interactive simulator showing how stars live and die — from birth to white dwarf, neutron star, or black hole."
     />
     <title>Star Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -62,6 +64,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: var(--bg);
         font-family: "Outfit", sans-serif;
         color: var(--text);
+        -webkit-tap-highlight-color: transparent;
       }
 
       header {
@@ -100,13 +103,21 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
         transition:
           border-color 0.15s,
           color 0.15s;
+      }
+      /* Keyboard focus indicator — required by the Style reference. */
+      .type-btn:focus-visible,
+      .lang-btn:focus-visible,
+      .mass-bar-btn:focus-visible,
+      .step-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
       }
       .lang-btn:hover {
         border-color: var(--accent);
@@ -148,7 +159,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -173,7 +184,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: none;
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 18px;
         cursor: pointer;
         display: flex;
@@ -223,7 +234,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         display: flex;
         align-items: center;
         justify-content: center;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         color: #fff;
         pointer-events: none;
@@ -267,7 +278,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: var(--panel);
         color: var(--text-dim);
         cursor: pointer;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         transition: all 0.2s;
         text-align: center;
@@ -304,7 +315,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         outline: none;
         cursor: pointer;
@@ -324,12 +335,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         padding: 2px 0;
       }
       .readout-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         color: var(--text-dim);
       }
       .readout-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         color: var(--text);
       }
@@ -343,7 +354,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .star-blurb {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         line-height: 1.5;
         color: var(--text);
@@ -380,7 +391,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         padding: 14px 16px;
         max-width: 340px;
         pointer-events: none;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 15px;
         color: var(--text);
         line-height: 1.5;
@@ -2910,7 +2921,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ctx.setLineDash([]);
 
             /* Label with optional status */
-            ctx.font = '15px "Share Tech Mono", monospace';
+            ctx.font = '15px "JetBrains Mono", monospace';
             ctx.textAlign = "center";
             const label = statusText
               ? orbitData[i].lbl + " \u2014 " + statusText
@@ -2997,7 +3008,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           /* Size + magnification label (top-right corner) */
-          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.font = '15px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(255,255,255,0.5)";
           ctx.textAlign = "right";
           const sizeDesc = isNS ? T("realSizeNS") : T("realSizeWD");
@@ -3068,7 +3079,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.restore();
 
           /* Label with magnification (top-right corner) */
-          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.font = '15px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(255,255,255,0.5)";
           ctx.textAlign = "right";
           const bhSunPx = physicalToDisplayRadius(1);
@@ -3249,7 +3260,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
             /* Stage label (inside segment, two-line if multi-word) */
             if (seg.width > 18) {
-              ctx.font = '12px "Share Tech Mono", monospace';
+              ctx.font = '12px "JetBrains Mono", monospace';
               ctx.fillStyle = "#fff";
               ctx.textAlign = "center";
               ctx.textBaseline = "middle";
@@ -3281,7 +3292,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
             /* Age label at end boundary (two lines: number + unit) */
             if (i < segments.length - 1 && seg.width > 30) {
-              ctx.font = '11px "Share Tech Mono", monospace';
+              ctx.font = '11px "JetBrains Mono", monospace';
               ctx.fillStyle = "rgba(255,255,255,0.35)";
               ctx.textAlign = "center";
               const ageParts = formatAgeSplit(seg.ageEnd);
@@ -3314,7 +3325,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           /* Final age label (two lines: number + unit) */
-          ctx.font = '12px "Share Tech Mono", monospace';
+          ctx.font = '12px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(255,255,255,0.5)";
           ctx.textAlign = "right";
           const finalParts = formatAgeSplit(
@@ -3361,14 +3372,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ctx.lineTo(nowX + 5, segY - 11);
             ctx.closePath();
             ctx.fill();
-            ctx.font = '13px "Share Tech Mono", monospace';
+            ctx.font = '13px "JetBrains Mono", monospace';
             ctx.fillStyle = var_accent;
             ctx.textAlign = "center";
             ctx.fillText(T("now"), nowX, segY - 14);
           }
 
           /* Compressed timeline label */
-          ctx.font = '11px "Share Tech Mono", monospace';
+          ctx.font = '11px "JetBrains Mono", monospace';
           ctx.fillStyle = "rgba(255,255,255,0.2)";
           ctx.textAlign = "left";
           ctx.fillText(T("timelineCompressed"), TIMELINE_MARGIN, H - 5);
@@ -3420,7 +3431,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.stroke();
 
           /* Landmarks */
-          ctx.font = '12px "Share Tech Mono", monospace';
+          ctx.font = '12px "JetBrains Mono", monospace';
           ctx.textAlign = "left";
           for (let i = 0; i < SCALE_LANDMARKS.length; i++) {
             const lm = SCALE_LANDMARKS[i];
@@ -3526,7 +3537,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           zoomBadgeTimer -= dt;
           const alpha = clamp(zoomBadgeTimer / 0.5, 0, 1);
           ctx.save();
-          ctx.font = '16px "Share Tech Mono", monospace';
+          ctx.font = '16px "JetBrains Mono", monospace';
           ctx.textAlign = "center";
           ctx.fillStyle = "rgba(255,200,60," + 0.7 * alpha + ")";
           const starAreaH = state.H - TIMELINE_HEIGHT;

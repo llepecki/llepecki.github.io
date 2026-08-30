@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- coriolis.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- coriolis/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -12,9 +12,30 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       name="description"
       content="Interactive dual-frame simulation of the Coriolis effect. Launch projectiles on a spinning platform and see paths curve in the rotating frame while staying straight in the inertial frame."
     />
+    <link rel="canonical" href="https://lepecki.com/learn/coriolis/" />
+    <meta property="og:title" content="The Coriolis Effect" />
+    <meta
+      property="og:description"
+      content="Interactive dual-frame simulation of the Coriolis effect. Launch projectiles on a spinning platform and see paths curve in the rotating frame while staying straight in the inertial frame."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/coriolis/" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="The Coriolis Effect" />
+    <meta
+      name="twitter:description"
+      content="Interactive dual-frame simulation of the Coriolis effect. Launch projectiles on a spinning platform and see paths curve in the rotating frame while staying straight in the inertial frame."
+    />
     <title>The Coriolis Effect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -87,7 +108,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -147,7 +168,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 18px;
       }
       .section-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.8px;
@@ -156,7 +177,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border-bottom: 1px solid var(--panel-border);
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.8px;
@@ -238,7 +259,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .slider-val {
         min-width: 52px;
         text-align: right;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -276,14 +297,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         padding: 1px 0;
       }
       .readout-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: var(--text-label);
       }
       .readout-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -318,7 +339,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border-radius: 6px;
         background: #e8f5e9;
         color: #2e7d32;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         font-weight: 700;
         text-align: center;
@@ -343,16 +364,16 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         font-size: 24px;
         font-weight: 700;
         margin-top: 16px;
-        color: #fff;
+        color: #0b171b;
       }
       .overlay-detail {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         margin-top: 12px;
         color: rgba(255, 255, 255, 0.85);
       }
       .overlay-hint {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         margin-top: 8px;
         color: rgba(255, 255, 255, 0.6);
@@ -592,19 +613,21 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
                 <span class="readout-label" id="lblReadSpeed"
                   >v (proj. speed)</span
                 >
-                <span class="readout-val v-proj" id="readoutSpeed">--</span>
+                <span class="readout-val v-proj" id="readoutSpeed"
+                  >&mdash;</span
+                >
               </div>
               <div class="readout-row">
                 <span class="readout-label" id="lblReadCor"
                   >F_cor (Coriolis)</span
                 >
-                <span class="readout-val v-cor" id="readoutCor">--</span>
+                <span class="readout-val v-cor" id="readoutCor">&mdash;</span>
               </div>
               <div class="readout-row">
                 <span class="readout-label" id="lblReadCen"
                   >F_cen (centrifugal)</span
                 >
-                <span class="readout-val v-cen" id="readoutCen">--</span>
+                <span class="readout-val v-cen" id="readoutCen">&mdash;</span>
               </div>
             </div>
           </div>
@@ -623,6 +646,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         /* ───────── I18N ───────── */
         const I18N = {
           en: {
+            ariaCanvas: "Coriolis effect simulation canvas",
+            ariaOmegaSlider: "Angular velocity",
+            ariaSpeedSlider: "Launch speed",
+            ariaPlayBtn: "Play or pause simulation",
+            ariaStopBtn: "Stop and reset simulation",
             title: "The Coriolis Effect",
             subtitle:
               "Launch projectiles on a spinning platform and observe the deflection.",
@@ -666,6 +694,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ],
           },
           pl: {
+            ariaCanvas: "Symulacja efektu Coriolisa",
+            ariaOmegaSlider: "Pr\u0119dko\u015B\u0107 k\u0105towa",
+            ariaSpeedSlider: "Pr\u0119dko\u015B\u0107 wystrza\u0142u",
+            ariaPlayBtn: "Odtw\u00F3rz lub zatrzymaj symulacj\u0119",
+            ariaStopBtn: "Zatrzymaj i zresetuj symulacj\u0119",
             title: "Efekt Coriolisa",
             subtitle:
               "Wystrzel pociski na obracaj\u0105cej si\u0119 platformie i obserwuj odchylenie.",
@@ -711,7 +744,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         };
 
         function T(key) {
-          return I18N[state.lang][key];
+          return I18N[state.lang][key] || key;
         }
 
         /* ───────── CONSTANTS ───────── */
@@ -1093,7 +1126,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             drawArrowhead(ex, ey, Math.atan2(ey - sy, ex - sx), COL_COR);
 
             ctx.fillStyle = COL_COR;
-            ctx.font = "bold " + ts(10) + 'px "Share Tech Mono", monospace';
+            ctx.font = "bold " + ts(10) + 'px "JetBrains Mono", monospace';
             ctx.textAlign = "left";
             ctx.textBaseline = "bottom";
             ctx.fillText("F_cor", ex + ts(5), ey - ts(3));
@@ -1114,7 +1147,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               drawArrowhead(cex, cey, Math.atan2(cey - sy, cex - sx), COL_CEN);
 
               ctx.fillStyle = COL_CEN;
-              ctx.font = "bold " + ts(10) + 'px "Share Tech Mono", monospace';
+              ctx.font = "bold " + ts(10) + 'px "JetBrains Mono", monospace';
               ctx.textAlign = "left";
               ctx.textBaseline = "bottom";
               ctx.fillText("F_cen", cex + ts(5), cey - ts(3));
@@ -1228,21 +1261,21 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const descY = labelY + 15;
 
           ctx.fillStyle = "#546E7A";
-          ctx.font = "bold " + ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.font = "bold " + ts(12) + 'px "JetBrains Mono", monospace';
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.fillText(T("rotatingFrame"), tx(LEFT_CX), ty(labelY));
 
           ctx.fillStyle = "#90A4AE";
-          ctx.font = ts(10) + 'px "Share Tech Mono", monospace';
+          ctx.font = ts(10) + 'px "JetBrains Mono", monospace';
           ctx.fillText(T("rotFrameDesc"), tx(LEFT_CX), ty(descY));
 
           ctx.fillStyle = "#546E7A";
-          ctx.font = "bold " + ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.font = "bold " + ts(12) + 'px "JetBrains Mono", monospace';
           ctx.fillText(T("inertialFrame"), tx(RIGHT_CX), ty(labelY));
 
           ctx.fillStyle = "#90A4AE";
-          ctx.font = ts(10) + 'px "Share Tech Mono", monospace';
+          ctx.font = ts(10) + 'px "JetBrains Mono", monospace';
           ctx.fillText(T("inertFrameDesc"), tx(RIGHT_CX), ty(descY));
         }
 
@@ -1277,7 +1310,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           );
 
           ctx.fillStyle = "#78909C";
-          ctx.font = "bold " + ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.font = "bold " + ts(12) + 'px "JetBrains Mono", monospace';
           ctx.textAlign = "center";
           ctx.textBaseline = "bottom";
           ctx.fillText(
@@ -1291,7 +1324,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         function drawFormula() {
           const fy = LEFT_CY + PLAT_R + 55;
           ctx.fillStyle = "#90A4AE";
-          ctx.font = ts(12) + 'px "Share Tech Mono", monospace';
+          ctx.font = ts(12) + 'px "JetBrains Mono", monospace';
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.fillText("F_cor = \u22122m(\u03c9 \u00d7 v)", tx(500), ty(fy));
@@ -1595,9 +1628,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
 
         function clearLiveReadouts() {
-          document.getElementById("readoutSpeed").textContent = "--";
-          document.getElementById("readoutCor").textContent = "--";
-          document.getElementById("readoutCen").textContent = "--";
+          document.getElementById("readoutSpeed").textContent = "\u2014";
+          document.getElementById("readoutCor").textContent = "\u2014";
+          document.getElementById("readoutCen").textContent = "\u2014";
         }
 
         /* ───────── UI: SLIDERS ───────── */
@@ -1746,11 +1779,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             msg = T("challengeSuccess");
             bg = "rgba(63,185,80,0.88)";
           } else if (result === "close") {
-            emoji = "\uD83D\uDC4D\uD83C\uDFFB";
+            emoji = "\uD83D\uDC4D";
             msg = T("challengeClose");
             bg = "rgba(88,166,255,0.88)";
           } else {
-            emoji = "\uD83D\uDC4E\uD83C\uDFFB";
+            emoji = "\uD83D\uDC4E";
             msg = T("challengeMiss");
             bg = "rgba(240,180,60,0.92)";
           }
@@ -1811,6 +1844,19 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         /* ───────── TRANSLATIONS ───────── */
         function applyTranslations() {
+          // Aria labels must follow the language toggle, not stay in the
+          // markup language. See house/aria-label-not-localized.
+          const ariaLabels = [
+            ["canvas", "ariaCanvas"],
+            ["omegaSlider", "ariaOmegaSlider"],
+            ["speedSlider", "ariaSpeedSlider"],
+            ["playBtn", "ariaPlayBtn"],
+            ["stopBtn", "ariaStopBtn"],
+          ];
+          ariaLabels.forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (el) el.setAttribute("aria-label", T(entry[1]));
+          });
           document.title = T("title");
           document.documentElement.lang = state.lang;
           document.getElementById("titleText").textContent = T("title");

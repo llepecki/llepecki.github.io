@@ -8,7 +8,7 @@ Project implementation baseline:
 
 - follow the same coding, UI, layout, animation, localization, and single-file architecture conventions used by the other `learn/` apps in this folder,
 - use `logigate/index.html` as the closest reference for overall screen structure: compact header, top control bar, one large interactive board, and a concise feedback/status area,
-- prefer the same font stack (`Outfit` + `Share Tech Mono`), the same language-toggle/theme-toggle pattern, and the same responsive behavior expectations,
+- prefer the same font stack (`Outfit` + `JetBrains Mono`), the same language-toggle/theme-toggle pattern, and the same responsive behavior expectations,
 - if this document leaves a low-level detail unspecified, inherit the established project convention rather than inventing a new UI language.
 
 ## 1. Purpose & Educational Goal

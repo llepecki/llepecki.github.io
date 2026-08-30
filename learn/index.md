@@ -37,6 +37,30 @@ Fire a cannonball on the Moon, Mercury, Venus, Earth, or Mars and discover how g
 
 Build, compare, and place fractions and decimals. Tap bars, circles, or a hundred grid to fill equal parts, drag a number line marker, and solve guided missions across three difficulty levels. Includes an explore mode!
 
+### [Roman Numerals](roman/) `Mathematics`
+
+Learn to read and build numbers the ancient Roman way. Discover what I, V, X, L, C, D, and M mean, how symbols combine, and how to write any number like a Roman.
+
+### [Code Breaker](codebreak/) `Mathematics` `Logic`
+
+Crack hidden three-symbol codes from exact clues. Practice elimination, wrong-place reasoning, and cross-checking with numbers, letters, cards, and shapes.
+
+### [Yes / No Reflex](yesnoreflex/) `Logic`
+
+Answer easy yes-or-no questions, but watch the signal: sometimes the rule says to flip your answer. Switch between color and shape cues while the clock tests your attention, inhibition, and reflexes.
+
+### [Trust Dilemma](dilemma/) `Mathematics` `Game theory`
+
+Two players, one device: share the stores to keep your boat afloat or raid them for your own treasure, crossing an uncertain sea where you never know which day is the last. Reach shore alive and the richer sailor wins — but a sunk boat wins for nobody. A kid-friendly introduction to cooperation, trust, and the shadow of the future.
+
+### [Fair Split](fairsplit/) `Mathematics` `Game theory`
+
+Two players, one device: split a pot of 10 coins, offer a share your partner will accept, or say no deal and both get nothing. Alternate roles over 8 rounds and discover why fairness can be a winning strategy — a kid-friendly introduction to the Ultimatum Game. Three modes: bank a team goal where everyone also needs a personal floor, beat a mid-match checkpoint, or race personal goals while every no-deal shrinks the pot.
+
+### [Secret Signal](secretsignal/) `Mathematics` `Game theory`
+
+Two players, one device: one player sees the hidden target and sends a single tiny clue, the other guesses what it meant. Alternate roles over 8 rounds, score as a team, and discover why a good clue must be clear to your partner — a kid-friendly introduction to cooperative signaling games.
+
 ### [Piano Scale Pattern Generator](gamgen/) `Music`
 
 Visual generator for piano scale patterns. Pick a root note and scale type to see the notes laid out on a keyboard diagram.

@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- copernicus.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- copernicus/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -20,10 +20,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive Copernican reference frame simulator. Choose a reference body to compare simple Sun-centered ellipses with complex relative paths."
     />
     <meta property="og:type" content="website" />
-    <meta
-      property="og:url"
-      content="https://lepecki.com/learn/copernicus/"
-    />
+    <meta property="og:url" content="https://lepecki.com/learn/copernicus/" />
     <meta property="og:site_name" content="Łukasz Łepecki" />
     <meta
       property="og:image"
@@ -37,7 +34,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
     />
     <title>Copernican Reference Frame Simulator</title>
     <style>
-      @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap");
 
       @layer base {
         *,
@@ -69,6 +66,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           background: var(--bg);
           font-family: "Outfit", sans-serif;
           color: var(--text);
+          -webkit-tap-highlight-color: transparent;
         }
         header {
           padding: 20px 28px 16px;
@@ -106,7 +104,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           cursor: pointer;
           flex-shrink: 0;
           color: var(--text-dim);
-          font-family: "Share Tech Mono", monospace;
+          font-family: "JetBrains Mono", monospace;
           font-size: 13px;
           font-weight: 700;
           letter-spacing: 1px;
@@ -150,7 +148,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           gap: 6px;
         }
         .ctrl-label {
-          font-family: "Share Tech Mono", monospace;
+          font-family: "JetBrains Mono", monospace;
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 1px;
@@ -166,7 +164,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           border: 1.5px solid var(--panel-border);
           background: var(--panel);
           color: var(--text-dim);
-          font-family: "Share Tech Mono", monospace;
+          font-family: "JetBrains Mono", monospace;
           font-size: 14px;
           cursor: pointer;
           transition: all 0.2s;
@@ -231,7 +229,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         }
         .planet-row .planet-name {
           flex: 1;
-          font-family: "Share Tech Mono", monospace;
+          font-family: "JetBrains Mono", monospace;
           font-size: 15px;
           color: var(--text-dim);
         }
@@ -307,7 +305,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           border: 1.5px solid var(--panel-border);
           background: var(--panel);
           color: var(--text);
-          font-family: "Share Tech Mono", monospace;
+          font-family: "JetBrains Mono", monospace;
           font-size: 13px;
           cursor: pointer;
           outline: none;
@@ -326,7 +324,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-family: "Share Tech Mono", monospace;
+          font-family: "JetBrains Mono", monospace;
           font-size: 12px;
           padding: 2px 0;
         }
@@ -356,7 +354,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           border-radius: 8px;
           background: rgba(11, 15, 24, 0.88);
           border: 1px solid var(--panel-border);
-          font-family: "Share Tech Mono", monospace;
+          font-family: "JetBrains Mono", monospace;
           font-size: 18px;
           font-weight: 700;
           letter-spacing: 2px;
@@ -416,7 +414,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           padding: 14px 16px;
           width: 320px;
           pointer-events: none;
-          font-family: "Share Tech Mono", monospace;
+          font-family: "JetBrains Mono", monospace;
           font-size: 15px;
           color: var(--text);
           line-height: 1.5;
@@ -964,6 +962,22 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
       const I18N = {
         en: {
+          ariaCanvas: "Copernican reference frame simulation",
+          ariaVisSun: "Toggle Sun visibility",
+          ariaVisMercury: "Toggle Mercury visibility",
+          ariaVisVenus: "Toggle Venus visibility",
+          ariaVisEarth: "Toggle Earth visibility",
+          ariaVisMars: "Toggle Mars visibility",
+          ariaVisJupiter: "Toggle Jupiter visibility",
+          ariaVisSaturn: "Toggle Saturn visibility",
+          ariaVisUranus: "Toggle Uranus visibility",
+          ariaVisNeptune: "Toggle Neptune visibility",
+          ariaVisAll: "Toggle all planets visibility",
+          ariaClearTrailsBtn: "Clear all trails",
+          ariaWarpNormalBtn: "Normal speed",
+          ariaWarpFastBtn: "Fast speed",
+          ariaWarpFastestBtn: "Fastest speed",
+          ariaResetBtn: "Reset simulation",
           title: "Copernican Reference Frame Simulator",
           subtitle:
             "Choose a reference body to compare simple heliocentric orbits with more complex relative paths.",
@@ -1003,6 +1017,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             "Fetching current planet positions from the observatory.",
         },
         pl: {
+          ariaCanvas: "Symulacja uk\u0142adu odniesienia Kopernika",
+          ariaVisSun:
+            "Prze\u0142\u0105cz widoczno\u015B\u0107 S\u0142o\u0144ca",
+          ariaVisMercury: "Prze\u0142\u0105cz widoczno\u015B\u0107 Merkurego",
+          ariaVisVenus: "Prze\u0142\u0105cz widoczno\u015B\u0107 Wenus",
+          ariaVisEarth: "Prze\u0142\u0105cz widoczno\u015B\u0107 Ziemi",
+          ariaVisMars: "Prze\u0142\u0105cz widoczno\u015B\u0107 Marsa",
+          ariaVisJupiter: "Prze\u0142\u0105cz widoczno\u015B\u0107 Jowisza",
+          ariaVisSaturn: "Prze\u0142\u0105cz widoczno\u015B\u0107 Saturna",
+          ariaVisUranus: "Prze\u0142\u0105cz widoczno\u015B\u0107 Urana",
+          ariaVisNeptune: "Prze\u0142\u0105cz widoczno\u015B\u0107 Neptuna",
+          ariaVisAll:
+            "Prze\u0142\u0105cz widoczno\u015B\u0107 wszystkich planet",
+          ariaClearTrailsBtn: "Wyczy\u015B\u0107 wszystkie \u015Blady",
+          ariaWarpNormalBtn: "Normalna pr\u0119dko\u015B\u0107",
+          ariaWarpFastBtn: "Szybka pr\u0119dko\u015B\u0107",
+          ariaWarpFastestBtn: "Najszybsza pr\u0119dko\u015B\u0107",
+          ariaResetBtn: "Resetuj symulacj\u0119",
           title: "Symulator Uk\u0142adu Odniesienia Kopernika",
           subtitle:
             "Wybierz cia\u0142o odniesienia i por\u00f3wnaj proste elipsy heliocentryczne z bardziej z\u0142o\u017conymi torami wzgl\u0119dnymi.",
@@ -1043,7 +1075,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         },
       };
       function T(key) {
-        return I18N[state.lang][key];
+        return I18N[state.lang][key] || key;
       }
       const ASTRO_BODY = {
         mercury: "Mercury",
@@ -1381,7 +1413,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           ctx.arc(c.cx, c.cy, body.radius, 0, TWO_PI);
           ctx.fillStyle = body.color;
           ctx.fill();
-          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.font = '15px "JetBrains Mono", monospace';
           ctx.fillStyle = body.color;
           ctx.textAlign = "center";
           ctx.fillText(T(body.key), c.cx, c.cy - body.radius - 6);
@@ -1709,6 +1741,30 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         updateVisUI();
       }
       function applyTranslations() {
+        // Aria labels must follow the language toggle, not stay in the
+        // markup language. See house/aria-label-not-localized.
+        const ariaLabels = [
+          ["canvas", "ariaCanvas"],
+          ["visSun", "ariaVisSun"],
+          ["visMercury", "ariaVisMercury"],
+          ["visVenus", "ariaVisVenus"],
+          ["visEarth", "ariaVisEarth"],
+          ["visMars", "ariaVisMars"],
+          ["visJupiter", "ariaVisJupiter"],
+          ["visSaturn", "ariaVisSaturn"],
+          ["visUranus", "ariaVisUranus"],
+          ["visNeptune", "ariaVisNeptune"],
+          ["visAll", "ariaVisAll"],
+          ["clearTrailsBtn", "ariaClearTrailsBtn"],
+          ["warpNormalBtn", "ariaWarpNormalBtn"],
+          ["warpFastBtn", "ariaWarpFastBtn"],
+          ["warpFastestBtn", "ariaWarpFastestBtn"],
+          ["resetBtn", "ariaResetBtn"],
+        ];
+        ariaLabels.forEach(function (entry) {
+          const el = document.getElementById(entry[0]);
+          if (el) el.setAttribute("aria-label", T(entry[1]));
+        });
         const l = I18N[state.lang];
         document.title = l.title;
         document.documentElement.lang = state.lang;

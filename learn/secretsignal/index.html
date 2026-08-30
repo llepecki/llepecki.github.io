@@ -1,0 +1,2261 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- secretsignal/index.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+The game design and rules live in secretsignal/docs/req.md.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secret Signal</title>
+    <meta
+      name="description"
+      content="Secret Signal — a two-player pass-and-play cooperative signaling game. One player sends a tiny clue, the other guesses the hidden target. Build a shared code together."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/secretsignal/" />
+    <meta property="og:title" content="Secret Signal" />
+    <meta
+      property="og:description"
+      content="Secret Signal — a two-player pass-and-play cooperative signaling game. One player sends a tiny clue, the other guesses the hidden target. Build a shared code together."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/secretsignal/" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Secret Signal" />
+    <meta
+      name="twitter:description"
+      content="Secret Signal — a two-player pass-and-play cooperative signaling game. One player sends a tiny clue, the other guesses the hidden target. Build a shared code together."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --perfect: #00c853;
+        --close: #1976d2;
+        --far: #f9a825;
+        --miss: #d32f2f;
+        --team: #00897b;
+        --p1: #1976d2;
+        --p2: #7b1fa2;
+        --match: #2e7d32;
+        --shared-ink: #8d6708;
+      }
+      body {
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      /* ================= HEADER ================= */
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* ================= LAYOUT ================= */
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+      .stage-wrap {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+      }
+      .phase-area {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 24px 48px;
+        overflow-y: auto;
+        min-height: 0;
+      }
+      .panel {
+        width: 320px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .panel-section {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .panel-section.grow {
+        flex: 1;
+      }
+      .panel-section[hidden] {
+        display: none;
+      }
+      .section-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+
+      /* ================= PHASES ================= */
+      .phase {
+        width: 100%;
+        max-width: 560px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .phase[hidden] {
+        display: none;
+      }
+      .phase.center {
+        align-items: center;
+        text-align: center;
+      }
+      .phase.center > .action-btn {
+        align-self: stretch;
+      }
+      .phase-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .phase-title.success {
+        color: var(--match);
+      }
+      .phase-title.far {
+        color: var(--shared-ink);
+      }
+      .phase-title.missed {
+        color: var(--miss);
+      }
+      .phase-copy {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.5;
+      }
+      .phase-copy.dim {
+        color: var(--text-dim);
+      }
+      .round-indicator {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
+      .stage-block {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* ================= BUTTONS ================= */
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .action-btn {
+        flex: 1;
+        padding: 10px 8px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .action-btn:hover:not(:disabled) {
+        background: #f0ede6;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .action-btn.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .action-btn.primary:hover:not(:disabled) {
+        background: #37474f;
+        border-color: #37474f;
+        color: #fff;
+      }
+      .phase > .action-btn,
+      .panel-section > .action-btn {
+        flex: none;
+      }
+      .phase.center > .action-btn.handoff-ready {
+        align-self: center;
+        min-width: 220px;
+      }
+
+      /* ================= SETUP ================= */
+      .name-grid {
+        display: flex;
+        gap: 16px;
+      }
+      .name-field {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      .name-input {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        outline: none;
+      }
+      .name-input:focus {
+        border-color: var(--accent);
+      }
+      .rule-note {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.5;
+        border-left: 3px solid var(--team);
+        padding-left: 10px;
+      }
+      .setup-target {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+      .setup-error {
+        font-size: 12px;
+        color: var(--miss);
+      }
+      .setup-error[hidden] {
+        display: none;
+      }
+
+      /* ================= CARDS ================= */
+      .target-card.static {
+        align-self: center;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 28px;
+        border: 1.5px solid var(--panel-border);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+      .target-card.static .tc-icon {
+        font-size: 36px;
+        line-height: 1;
+      }
+      .target-card.static .tc-label {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .card-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        width: 100%;
+      }
+      .target-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        width: 100%;
+      }
+      .choice-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 64px;
+        padding: 12px 8px;
+        border-radius: 8px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text-head);
+        font-family: "Outfit", sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        touch-action: manipulation;
+      }
+      .choice-card:hover {
+        border-color: var(--accent);
+        background: #fafaf7;
+      }
+      .choice-card.selected {
+        border-color: var(--accent);
+        background: var(--accent-light);
+      }
+      .choice-card .tc-icon {
+        font-size: 30px;
+        line-height: 1;
+      }
+      .choice-card.target-choice {
+        min-height: 88px;
+      }
+      .card-check {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-size: 12px;
+        line-height: 18px;
+        text-align: center;
+        display: none;
+      }
+      .choice-card.selected .card-check {
+        display: block;
+      }
+      .clue-display {
+        align-self: center;
+        padding: 16px 32px;
+        border: 1.5px solid var(--panel-border);
+        border-radius: 8px;
+        background: var(--panel);
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+
+      /* ================= REVEAL ================= */
+      .reveal-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .reveal-icon {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .reveal-icon.ok {
+        color: var(--match);
+      }
+      .reveal-icon.no {
+        color: var(--miss);
+      }
+      .reveal-icon.pop {
+        animation: checkPop 0.35s ease;
+      }
+      .reveal-title .match-word {
+        color: var(--match);
+      }
+      .reveal-title .miss-word {
+        color: var(--miss);
+      }
+      .reveal-cards {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+      }
+      .reveal-card {
+        flex: 1;
+        min-height: 104px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 12px 8px;
+        border: 1.5px solid var(--panel-border);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+      .reveal-card.match {
+        border-color: var(--match);
+      }
+      .reveal-card.miss {
+        border-color: var(--miss);
+      }
+      .rc-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+      .rc-icon {
+        font-size: 28px;
+        line-height: 1;
+      }
+      .rc-value {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .rc-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-dim);
+      }
+      .rc-tag.shared {
+        color: var(--shared-ink);
+      }
+      .reveal-stats {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+      }
+      .reveal-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+      }
+      .rs-h {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+      .rs-val {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .rs-val.ok {
+        color: var(--match);
+      }
+      .rs-val.no {
+        color: var(--miss);
+      }
+
+      /* ================= FINAL ================= */
+      .hero-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 10px 0;
+        border-top: 1px solid var(--panel-border);
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .hero-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+      .hero-val {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .stats-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .debrief {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        border-top: 1px solid var(--panel-border);
+        padding-top: 14px;
+      }
+
+      /* ================= PANEL WIDGETS ================= */
+      .team-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .team-score {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .team-round {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-dim);
+      }
+      .team-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: var(--panel-border);
+        overflow: hidden;
+      }
+      .team-fill {
+        height: 100%;
+        width: 0;
+        background: var(--team);
+        transition: width 0.12s ease-out;
+      }
+      .round-dots {
+        display: flex;
+        gap: 8px;
+      }
+      .r-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--panel-border);
+      }
+      .r-dot.done {
+        background: var(--team);
+      }
+      .r-dot.current {
+        background: var(--panel);
+        border: 2px solid var(--team);
+      }
+      .role-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .role-name {
+        font-size: 14px;
+        font-weight: 600;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .role-name.p1 {
+        color: var(--p1);
+      }
+      .role-name.p2 {
+        color: var(--p2);
+      }
+      .role-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-dim);
+        flex-shrink: 0;
+      }
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .history-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text);
+      }
+      .h-round {
+        width: 24px;
+        color: var(--text-label);
+        flex-shrink: 0;
+      }
+      .h-init {
+        width: 16px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .h-init.p1 {
+        color: var(--p1);
+      }
+      .h-init.p2 {
+        color: var(--p2);
+      }
+      .h-clue {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--text-head);
+      }
+      .h-flag {
+        font-weight: 700;
+      }
+      .h-flag.ok {
+        color: var(--match);
+      }
+      .h-flag.bad {
+        color: var(--miss);
+      }
+      .h-points {
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .history-empty {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+      .reflection-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .reflect-target {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-head);
+        margin-top: 4px;
+      }
+      .reflect-target .rt-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .reflect-clue {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        padding-left: 26px;
+      }
+      .reflect-clue .h-clue {
+        color: var(--text);
+      }
+
+      /* ================= ANIMATIONS ================= */
+      @keyframes checkPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* ================= OVERLAY ================= */
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+        padding: 24px;
+        text-align: center;
+      }
+      .result-overlay.success {
+        background: rgba(0, 200, 83, 0.92);
+      }
+      .result-overlay.far {
+        background: rgba(249, 168, 37, 0.92);
+      }
+      .result-overlay.miss {
+        background: rgba(211, 47, 47, 0.92);
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        margin-top: 12px;
+        font-size: 28px;
+        font-weight: 700;
+        color: #0b171b;
+      }
+      .overlay-sub {
+        margin-top: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 16px;
+        color: #0b171b;
+      }
+      .overlay-hint {
+        margin-top: 18px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* ================= FOCUS ================= */
+      .lang-btn:focus-visible,
+      .action-btn:focus-visible,
+      .choice-card:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ================= REDUCED MOTION ================= */
+      @media (prefers-reduced-motion: reduce) {
+        header h1 a,
+        .lang-btn,
+        .action-btn,
+        .choice-card,
+        .team-fill {
+          transition: none;
+        }
+        .reveal-icon.pop {
+          animation: none;
+        }
+        .result-overlay,
+        .overlay-emoji {
+          animation: none;
+        }
+      }
+
+      /* ================= MOBILE ================= */
+      @media (max-width: 720px) {
+        .main {
+          height: auto;
+          flex-direction: column;
+        }
+        .stage-wrap {
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+          min-height: 360px;
+        }
+        .phase-area {
+          padding: 16px 16px 32px;
+        }
+        .panel {
+          width: 100%;
+        }
+        .name-grid {
+          flex-direction: column;
+        }
+        .target-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .reveal-cards {
+          flex-direction: column;
+        }
+        .reveal-card {
+          min-height: 72px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-icon">&#x1F4E1;</span></a>
+          <span id="titleText">Secret Signal</span>
+        </h1>
+        <p id="subtitleText">A cooperative signaling game</p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+        aria-label="Switch language"
+      >
+        PL
+      </button>
+    </header>
+    <main class="main">
+      <section class="stage-wrap">
+        <div class="visually-hidden" aria-live="polite" id="announcer"></div>
+        <div class="phase-area">
+          <section class="phase" id="phaseSetup">
+            <h2 class="phase-title" id="setupTitle">
+              Send tiny clues. Build a shared code.
+            </h2>
+            <p class="phase-copy" id="setupCopy">
+              One player sees the target. One clue must help the other player
+              guess it.
+            </p>
+            <p class="rule-note" id="ruleNote">
+              No talking about the clue until the reveal.
+            </p>
+            <div class="name-grid">
+              <div class="name-field">
+                <label class="section-label" for="nameInput1" id="lblName1"
+                  >Player 1 name</label
+                >
+                <input
+                  type="text"
+                  class="name-input"
+                  id="nameInput1"
+                  maxlength="14"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="name-field">
+                <label class="section-label" for="nameInput2" id="lblName2"
+                  >Player 2 name</label
+                >
+                <input
+                  type="text"
+                  class="name-input"
+                  id="nameInput2"
+                  maxlength="14"
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+            <p class="setup-target" id="setupTeamTarget">Team target: 21</p>
+            <p class="setup-error" id="setupError" hidden>
+              Use two different names.
+            </p>
+            <button type="button" class="action-btn primary" id="startBtn">
+              Start match
+            </button>
+          </section>
+
+          <section class="phase center" id="phaseSender" hidden>
+            <span class="round-indicator" id="senderRound">Round 1 of 8</span>
+            <h2 class="phase-title" id="senderTitle">Player 1 sends</h2>
+            <p class="phase-copy" id="senderCopy">
+              Pick one clue your partner will understand.
+            </p>
+            <div class="stage-block">
+              <span class="section-label" id="lblSecretTarget"
+                >Secret target</span
+              >
+              <div class="target-card static">
+                <span class="tc-icon" id="senderTargetIcon" aria-hidden="true"
+                  >&#x2600;&#xFE0F;</span
+                >
+                <span class="tc-label" id="senderTargetLabel">Sun</span>
+              </div>
+            </div>
+            <div class="stage-block">
+              <span class="section-label" id="lblClueChoices"
+                >Clue choices</span
+              >
+              <div
+                class="card-row"
+                id="clueCards"
+                role="group"
+                aria-label="Clue choices"
+              ></div>
+            </div>
+            <button
+              type="button"
+              class="action-btn primary"
+              id="sendClueBtn"
+              disabled
+            >
+              Send clue
+            </button>
+          </section>
+
+          <section class="phase center" id="phaseHandoff" hidden>
+            <h2 class="phase-title" id="handoffTitle">Pass to Player 2</h2>
+            <p class="phase-copy dim" id="handoffNote">The target is hidden.</p>
+            <button
+              type="button"
+              class="action-btn primary handoff-ready"
+              id="readyBtn"
+            >
+              Player 2, ready to guess
+            </button>
+          </section>
+
+          <section class="phase center" id="phaseReceiver" hidden>
+            <span class="round-indicator" id="receiverRound">Round 1 of 8</span>
+            <h2 class="phase-title" id="receiverTitle">Player 2 guesses</h2>
+            <p class="phase-copy" id="receiverCopy">
+              What target did your partner mean?
+            </p>
+            <div class="stage-block">
+              <span class="section-label" id="lblClueFrom"
+                >Clue from Player 1</span
+              >
+              <div class="clue-display" id="receiverClue">Day</div>
+            </div>
+            <div class="stage-block">
+              <span class="section-label" id="lblTargetChoices"
+                >Target choices</span
+              >
+              <div
+                class="target-grid"
+                id="targetCards"
+                role="group"
+                aria-label="Target choices"
+              ></div>
+            </div>
+            <button
+              type="button"
+              class="action-btn primary"
+              id="lockGuessBtn"
+              disabled
+            >
+              Lock guess
+            </button>
+          </section>
+
+          <section class="phase center" id="phaseReveal" hidden>
+            <span class="round-indicator" id="revealRound">Round 1 of 8</span>
+            <h2 class="phase-title reveal-title">
+              <span class="reveal-icon ok" id="revealIcon" aria-hidden="true"
+                >✓</span
+              >
+              <span id="revealTitle">Match</span>
+            </h2>
+            <div class="reveal-cards">
+              <div class="reveal-card">
+                <span class="rc-label" id="lblRevTarget">Target</span>
+                <span class="rc-icon" id="revTargetIcon" aria-hidden="true"
+                  >&#x2600;&#xFE0F;</span
+                >
+                <span class="rc-value" id="revTargetLabel">Sun</span>
+              </div>
+              <div class="reveal-card">
+                <span class="rc-label" id="lblRevClue">Clue</span>
+                <span class="rc-value" id="revClueLabel">Day</span>
+                <span class="rc-tag" id="revClueTag">Clear clue</span>
+              </div>
+              <div class="reveal-card" id="revGuessCard">
+                <span class="rc-label" id="lblRevGuess">Guess</span>
+                <span class="rc-icon" id="revGuessIcon" aria-hidden="true"
+                  >&#x2600;&#xFE0F;</span
+                >
+                <span class="rc-value" id="revGuessLabel">Sun</span>
+              </div>
+            </div>
+            <div class="reveal-stats">
+              <div class="reveal-stat">
+                <span class="rs-h" id="lblRevPoints">Round points</span>
+                <span class="rs-val ok" id="revPoints">+3</span>
+              </div>
+              <div class="reveal-stat">
+                <span class="rs-h" id="lblRevScore">Team score</span>
+                <span class="rs-val" id="revScore">3 / 21</span>
+              </div>
+            </div>
+            <p class="phase-copy" id="revealNote">
+              Clear signal. Day pointed strongly to Sun.
+            </p>
+            <button type="button" class="action-btn primary" id="nextBtn">
+              Next round
+            </button>
+          </section>
+
+          <section class="phase" id="phaseFinal" hidden>
+            <h2 class="phase-title" id="finalTitle">Signal found</h2>
+            <p class="phase-copy" id="finalMsg">You built a shared code.</p>
+            <div class="hero-stat">
+              <span class="hero-label" id="lblFinalScore">Team score</span>
+              <span class="hero-val" id="finalScore">21 / 21</span>
+            </div>
+            <div class="stats-list">
+              <p class="phase-copy" id="statMatches"></p>
+              <p class="phase-copy" id="statMisses"></p>
+              <p class="phase-copy" id="statClearMatches"></p>
+              <p class="phase-copy" id="statSharedMatches"></p>
+              <p class="phase-copy" id="statSharedMisses"></p>
+              <p class="phase-copy" id="statBestClue"></p>
+              <p class="phase-copy" id="statConfusing"></p>
+            </div>
+            <div class="debrief">
+              <span class="section-label" id="gtLabel">Game theory idea</span>
+              <p class="phase-copy" id="debriefText">
+                This was a signaling game. One player knew the target and sent a
+                signal. The other player had to choose what it meant. Good
+                signals are not just true. They must be clear to your partner.
+              </p>
+            </div>
+            <div class="btn-row">
+              <button
+                type="button"
+                class="action-btn primary"
+                id="playAgainBtn"
+              >
+                Play again
+              </button>
+              <button type="button" class="action-btn" id="newMatchBtn">
+                New match
+              </button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-section" id="secTeam">
+          <span class="section-label" id="lblTeamTarget">Team target</span>
+          <div class="team-row">
+            <span class="team-score" id="teamScoreVal">0 / 21</span>
+            <span class="team-round" id="teamRound">—</span>
+          </div>
+          <div class="team-bar">
+            <div class="team-fill" id="teamFill"></div>
+          </div>
+          <div class="round-dots" id="roundDots" aria-hidden="true"></div>
+        </div>
+        <div class="panel-section" id="secRoles" hidden>
+          <span class="section-label" id="lblRoles">Roles</span>
+          <div class="role-row">
+            <span class="role-name p1" id="roleName1">Player 1</span>
+            <span class="role-tag" id="roleTag1">Sender</span>
+          </div>
+          <div class="role-row">
+            <span class="role-name p2" id="roleName2">Player 2</span>
+            <span class="role-tag" id="roleTag2">Receiver</span>
+          </div>
+        </div>
+        <div class="panel-section grow" id="secHistory">
+          <span class="section-label" id="lblHistory">Round history</span>
+          <div class="history-list" id="historyList"></div>
+        </div>
+        <div class="panel-section" id="secReflection" hidden>
+          <span class="section-label" id="lblReflection">Team code map</span>
+          <div class="reflection-list" id="reflectionList"></div>
+        </div>
+        <div class="panel-section" id="secNewMatch" hidden>
+          <button type="button" class="action-btn" id="panelNewMatchBtn">
+            New match
+          </button>
+        </div>
+      </aside>
+    </main>
+    <script>
+      (function () {
+        "use strict";
+
+        /* ================= I18N ================= */
+        const I18N = {
+          en: {
+            title: "Secret Signal",
+            subtitle: "A cooperative signaling game",
+            langSwitch: "Switch language",
+            setupTitle: "Send tiny clues. Build a shared code.",
+            setupCopy:
+              "One player sees the target. One clue must help the other player guess it.",
+            playRule: "No talking about the clue until the reveal.",
+            playerOneName: "Player 1 name",
+            playerTwoName: "Player 2 name",
+            playerOneDefault: "Player 1",
+            playerTwoDefault: "Player 2",
+            nameError: "Use two different names.",
+            start: "Start match",
+            teamTarget: "Team target",
+            teamScore: "Team score",
+            roundOf: "Round {round} of {total}",
+            sender: "Sender",
+            receiver: "Receiver",
+            sends: "{name} sends",
+            guesses: "{name} guesses",
+            senderCopy: "Pick one clue your partner will understand.",
+            receiverCopy: "What target did your partner mean?",
+            secretTarget: "Secret target",
+            clueChoices: "Clue choices",
+            clueFrom: "Clue from {name}",
+            targetChoices: "Target choices",
+            sendClue: "Send clue",
+            lockGuess: "Lock guess",
+            passTo: "Pass to {name}",
+            targetHidden: "The target is hidden.",
+            readyToGuess: "{name}, ready to guess",
+            match: "Match",
+            miss: "Miss",
+            roundPoints: "Round points",
+            targetLabel: "Target",
+            clueLabel: "Clue",
+            guessLabel: "Guess",
+            clearClue: "Clear clue",
+            sharedClue: "Shared clue",
+            revealClearMatch:
+              "Clear signal. “{clue}” pointed strongly to {target}.",
+            revealSharedMatch:
+              "Team code. “{clue}” could mean more than one target, but you understood it the same way.",
+            revealSharedMiss:
+              "Mixed signal. “{clue}” could fit more than one target. Sender meant {target}, Receiver heard {guess}.",
+            revealClearMiss:
+              "Mixed signal. Sender meant {target}, but Receiver heard {guess}. Talk after the reveal and build a clearer code.",
+            nextRound: "Next round",
+            finalResult: "Final result",
+            signalFound: "Signal found",
+            signalFuzzy: "Signal fuzzy",
+            foundMsg: "You built a shared code.",
+            fuzzyMsg:
+              "Some clues meant different things. Try again and make a clearer code together.",
+            statMatches: "Matches: {matches} of {total}.",
+            statMisses: "Misses: {misses}.",
+            statClearMatches: "Clear clue matches: {count}.",
+            statSharedMatches: "Shared clue matches: {count}.",
+            statSharedMisses: "Shared clue misses: {count}.",
+            statBestClue: "Best team-code clue: {clue}.",
+            statBestClueNone: "Best team-code clue: no shared match yet.",
+            statConfusingClue: "Most confusing clue: {clue}.",
+            statConfusingClueNone: "Most confusing clue: no misses.",
+            gameTheoryIdea: "Game theory idea",
+            debrief:
+              "This was a signaling game. One player knew the target and sent a signal. The other player had to choose what it meant. Good signals are not just true. They must be clear to your partner.",
+            playAgain: "Play again",
+            newMatch: "New match",
+            overlayHint: "Tap anywhere to continue",
+            historyLabel: "Round history",
+            rolesLabel: "Roles",
+            reflectionLabel: "Team code map",
+            targetSun: "Sun",
+            targetMoon: "Moon",
+            targetTree: "Tree",
+            targetRiver: "River",
+            clueDay: "Day",
+            clueWater: "Water",
+            clueNight: "Night",
+            clueLeaves: "Leaves",
+            clueWarm: "Warm",
+            clueFlow: "Flow",
+            clueGreen: "Green",
+            clueTall: "Tall",
+            clueBright: "Bright",
+            clueRound: "Round",
+            clueQuiet: "Quiet",
+            clueNature: "Nature",
+            clueBlue: "Blue",
+          },
+          pl: {
+            title: "Tajny Sygnał",
+            subtitle: "Kooperacyjna gra o sygnałach",
+            langSwitch: "Przełącz język",
+            setupTitle: "Wysyłaj krótkie wskazówki. Zbudujcie wspólny kod.",
+            setupCopy:
+              "Jedna osoba widzi cel. Jedna wskazówka ma pomóc drugiej osobie go odgadnąć.",
+            playRule: "Nie rozmawiajcie o wskazówce aż do odkrycia wyniku.",
+            playerOneName: "Imię gracza 1",
+            playerTwoName: "Imię gracza 2",
+            playerOneDefault: "Gracz 1",
+            playerTwoDefault: "Gracz 2",
+            nameError: "Wpiszcie dwa różne imiona.",
+            start: "Rozpocznij mecz",
+            teamTarget: "Cel drużyny",
+            teamScore: "Wynik drużyny",
+            roundOf: "Runda {round} z {total}",
+            sender: "Nadawca",
+            receiver: "Odbiorca",
+            sends: "{name} wysyła",
+            guesses: "{name} zgaduje",
+            senderCopy: "Wybierz wskazówkę, którą zrozumie druga osoba.",
+            receiverCopy: "Który cel miała na myśli druga osoba?",
+            secretTarget: "Tajny cel",
+            clueChoices: "Wybór wskazówki",
+            clueFrom: "Wskazówka od: {name}",
+            targetChoices: "Wybór celu",
+            sendClue: "Wyślij wskazówkę",
+            lockGuess: "Zatwierdź odpowiedź",
+            passTo: "Przekaż do: {name}",
+            targetHidden: "Cel jest ukryty.",
+            readyToGuess: "{name}, gotowe do zgadywania",
+            match: "Trafienie",
+            miss: "Pudło",
+            roundPoints: "Punkty w rundzie",
+            targetLabel: "Cel",
+            clueLabel: "Wskazówka",
+            guessLabel: "Odpowiedź",
+            clearClue: "Czysta wskazówka",
+            sharedClue: "Wieloznaczna wskazówka",
+            revealClearMatch:
+              "Czysty sygnał. „{clue}” wyraźnie wskazywało jeden cel: {target}.",
+            revealSharedMatch:
+              "Wspólny kod. „{clue}” mogło oznaczać więcej niż jeden cel, ale zrozumieliście je tak samo.",
+            revealSharedMiss:
+              "Niejasny sygnał. „{clue}” mogło pasować do więcej niż jednego celu. Cel nadawcy: {target}. Wybór odbiorcy: {guess}.",
+            revealClearMiss:
+              "Niejasny sygnał. Cel nadawcy: {target}. Wybór odbiorcy: {guess}. Porozmawiajcie po odkryciu i zbudujcie razem jaśniejszy kod.",
+            nextRound: "Następna runda",
+            finalResult: "Wynik końcowy",
+            signalFound: "Sygnał odnaleziony",
+            signalFuzzy: "Sygnał był niejasny",
+            foundMsg: "Zbudowaliście wspólny kod.",
+            fuzzyMsg:
+              "Niektóre wskazówki znaczyły co innego. Zagrajcie jeszcze raz i stwórzcie razem jaśniejszy kod.",
+            statMatches: "Trafienia: {matches} z {total}.",
+            statMisses: "Pudła: {misses}.",
+            statClearMatches: "Trafienia z czystych wskazówek: {count}.",
+            statSharedMatches: "Trafienia z wieloznacznych wskazówek: {count}.",
+            statSharedMisses: "Pudła z wieloznacznych wskazówek: {count}.",
+            statBestClue: "Najlepsza wskazówka waszego kodu: {clue}.",
+            statBestClueNone:
+              "Najlepsza wskazówka waszego kodu: jeszcze bez wspólnego trafienia.",
+            statConfusingClue: "Najbardziej myląca wskazówka: {clue}.",
+            statConfusingClueNone: "Najbardziej myląca wskazówka: brak pudeł.",
+            gameTheoryIdea: "Pomysł z teorii gier",
+            debrief:
+              "To była gra sygnalizacyjna. Jedna osoba znała cel i wysłała sygnał. Druga osoba musiała zdecydować, co on znaczy. Dobre sygnały nie są tylko prawdziwe. Muszą być jasne dla partnera.",
+            playAgain: "Zagraj ponownie",
+            newMatch: "Nowy mecz",
+            overlayHint: "Dotknij, aby kontynuować",
+            historyLabel: "Historia rund",
+            rolesLabel: "Role",
+            reflectionLabel: "Mapa waszego kodu",
+            targetSun: "Słońce",
+            targetMoon: "Księżyc",
+            targetTree: "Drzewo",
+            targetRiver: "Rzeka",
+            clueDay: "Dzień",
+            clueWater: "Woda",
+            clueNight: "Noc",
+            clueLeaves: "Liście",
+            clueWarm: "Ciepło",
+            clueFlow: "Nurt",
+            clueGreen: "Zieleń",
+            clueTall: "Wysokie",
+            clueBright: "Jasne",
+            clueRound: "Okrągłe",
+            clueQuiet: "Cicho",
+            clueNature: "Natura",
+            clueBlue: "Niebieskie",
+          },
+        };
+
+        /* ================= RULES ================= */
+        const ROUNDS = 8;
+        const TEAM_TARGET = 21;
+        const POINTS_PER_MATCH = 3;
+        // Missing the team target by up to two extra misses reads as "close";
+        // anything further away uses the miss tier.
+        const NEAR_TARGET_MARGIN = 6;
+
+        const TARGET_ORDER = ["sun", "moon", "tree", "river"];
+        const TARGETS = {
+          sun: { labelKey: "targetSun", icon: "☀️" },
+          moon: { labelKey: "targetMoon", icon: "🌙" },
+          tree: { labelKey: "targetTree", icon: "🌳" },
+          river: { labelKey: "targetRiver", icon: "🌊" },
+        };
+        const CLUES = {
+          day: { labelKey: "clueDay", type: "clear" },
+          water: { labelKey: "clueWater", type: "clear" },
+          night: { labelKey: "clueNight", type: "clear" },
+          leaves: { labelKey: "clueLeaves", type: "clear" },
+          warm: { labelKey: "clueWarm", type: "clear" },
+          flow: { labelKey: "clueFlow", type: "clear" },
+          green: { labelKey: "clueGreen", type: "clear" },
+          tall: { labelKey: "clueTall", type: "clear" },
+          bright: { labelKey: "clueBright", type: "shared" },
+          round: { labelKey: "clueRound", type: "shared" },
+          quiet: { labelKey: "clueQuiet", type: "shared" },
+          nature: { labelKey: "clueNature", type: "shared" },
+          blue: { labelKey: "clueBlue", type: "shared" },
+        };
+        // Deterministic Classic deck (docs/req.md §5.6) — targets, clue sets,
+        // and their order are fixed by design; do not randomize.
+        const CLASSIC_DECK = [
+          { target: "sun", clues: ["day", "bright", "round"] },
+          { target: "river", clues: ["water", "blue", "flow"] },
+          { target: "moon", clues: ["night", "bright", "round"] },
+          { target: "tree", clues: ["leaves", "green", "tall"] },
+          { target: "sun", clues: ["warm", "bright", "round"] },
+          { target: "river", clues: ["flow", "nature", "quiet"] },
+          { target: "moon", clues: ["quiet", "night", "round"] },
+          { target: "tree", clues: ["tall", "green", "nature"] },
+        ];
+
+        function senderIndex(roundIndex) {
+          return roundIndex % 2;
+        }
+        function receiverIndex(roundIndex) {
+          return 1 - (roundIndex % 2);
+        }
+        function scoreRound(target, guess) {
+          return guess === target ? POINTS_PER_MATCH : 0;
+        }
+        function mostFrequentClue(entries) {
+          if (entries.length === 0) return null;
+          const counts = {};
+          let best = null;
+          entries.forEach(function (entry) {
+            counts[entry.clue] = (counts[entry.clue] || 0) + 1;
+            if (best === null || counts[entry.clue] > counts[best]) {
+              best = entry.clue;
+            }
+          });
+          return best;
+        }
+        function summarizeMatch(history) {
+          const matches = history.filter(function (entry) {
+            return entry.result === "match";
+          });
+          const misses = history.filter(function (entry) {
+            return entry.result === "miss";
+          });
+          const sharedMatches = matches.filter(function (entry) {
+            return entry.clueType === "shared";
+          });
+          const sharedMisses = misses.filter(function (entry) {
+            return entry.clueType === "shared";
+          });
+          return {
+            matchCount: matches.length,
+            missCount: misses.length,
+            clearMatchCount: matches.length - sharedMatches.length,
+            sharedMatchCount: sharedMatches.length,
+            sharedMissCount: sharedMisses.length,
+            bestSharedClue: mostFrequentClue(sharedMatches),
+            mostConfusingClue: mostFrequentClue(
+              sharedMisses.length > 0 ? sharedMisses : misses,
+            ),
+          };
+        }
+
+        /* ================= STATE ================= */
+        function loadLang() {
+          try {
+            const stored = localStorage.getItem("secretSignalLangV1");
+            if (stored === "en" || stored === "pl") return stored;
+          } catch {
+            /* localStorage unavailable */
+          }
+          return (navigator.language || "").startsWith("pl") ? "pl" : "en";
+        }
+        const state = {
+          lang: loadLang(),
+          reduceMotion: false,
+          phase: "setup",
+          names: ["Player 1", "Player 2"],
+          roundIndex: 0,
+          selectedClue: null,
+          selectedGuess: null,
+          score: 0,
+          history: [],
+        };
+        let announceTick = false;
+        let activeOverlay = null;
+        let senderCardRefs = [];
+        let targetCardRefs = [];
+
+        /* ================= DOM ================= */
+        const dom = {};
+        [
+          "titleText",
+          "subtitleText",
+          "langBtn",
+          "announcer",
+          "phaseSetup",
+          "setupTitle",
+          "setupCopy",
+          "ruleNote",
+          "lblName1",
+          "nameInput1",
+          "lblName2",
+          "nameInput2",
+          "setupTeamTarget",
+          "setupError",
+          "startBtn",
+          "phaseSender",
+          "senderRound",
+          "senderTitle",
+          "senderCopy",
+          "lblSecretTarget",
+          "senderTargetIcon",
+          "senderTargetLabel",
+          "lblClueChoices",
+          "clueCards",
+          "sendClueBtn",
+          "phaseHandoff",
+          "handoffTitle",
+          "handoffNote",
+          "readyBtn",
+          "phaseReceiver",
+          "receiverRound",
+          "receiverTitle",
+          "receiverCopy",
+          "lblClueFrom",
+          "receiverClue",
+          "lblTargetChoices",
+          "targetCards",
+          "lockGuessBtn",
+          "phaseReveal",
+          "revealRound",
+          "revealIcon",
+          "revealTitle",
+          "lblRevTarget",
+          "revTargetIcon",
+          "revTargetLabel",
+          "lblRevClue",
+          "revClueLabel",
+          "revClueTag",
+          "revGuessCard",
+          "lblRevGuess",
+          "revGuessIcon",
+          "revGuessLabel",
+          "lblRevPoints",
+          "revPoints",
+          "lblRevScore",
+          "revScore",
+          "revealNote",
+          "nextBtn",
+          "phaseFinal",
+          "finalTitle",
+          "finalMsg",
+          "lblFinalScore",
+          "finalScore",
+          "statMatches",
+          "statMisses",
+          "statClearMatches",
+          "statSharedMatches",
+          "statSharedMisses",
+          "statBestClue",
+          "statConfusing",
+          "gtLabel",
+          "debriefText",
+          "playAgainBtn",
+          "newMatchBtn",
+          "lblTeamTarget",
+          "teamScoreVal",
+          "teamRound",
+          "teamFill",
+          "roundDots",
+          "secRoles",
+          "lblRoles",
+          "roleName1",
+          "roleTag1",
+          "roleName2",
+          "roleTag2",
+          "lblHistory",
+          "historyList",
+          "secReflection",
+          "lblReflection",
+          "reflectionList",
+          "secNewMatch",
+          "panelNewMatchBtn",
+        ].forEach(function (id) {
+          dom[id] = document.getElementById(id);
+        });
+
+        /* ================= HELPERS ================= */
+        function T(key, vars) {
+          let text = I18N[state.lang][key];
+          if (text === undefined) text = key;
+          if (vars) {
+            Object.keys(vars).forEach(function (name) {
+              text = text.split("{" + name + "}").join(String(vars[name]));
+            });
+          }
+          return text;
+        }
+        function announce(msg) {
+          announceTick = !announceTick;
+          dom.announcer.textContent = announceTick ? msg : msg + " ";
+        }
+        function roundOfText(round) {
+          return T("roundOf", { round: round, total: ROUNDS });
+        }
+        function targetName(targetId) {
+          return T(TARGETS[targetId].labelKey);
+        }
+        function clueName(clueId) {
+          return T(CLUES[clueId].labelKey);
+        }
+        function scoreText() {
+          return state.score + " / " + TEAM_TARGET;
+        }
+        function isPlayPhase() {
+          return state.phase !== "setup" && state.phase !== "final_result";
+        }
+        function finalTier() {
+          if (state.score >= TEAM_TARGET) return "success";
+          if (state.score >= TEAM_TARGET - NEAR_TARGET_MARGIN) return "far";
+          return "miss";
+        }
+        function noteFor(entry) {
+          const vars = {
+            clue: clueName(entry.clue),
+            target: targetName(entry.target),
+            guess: targetName(entry.guess),
+          };
+          if (entry.result === "match") {
+            return entry.clueType === "shared"
+              ? T("revealSharedMatch", vars)
+              : T("revealClearMatch", vars);
+          }
+          return entry.clueType === "shared"
+            ? T("revealSharedMiss", vars)
+            : T("revealClearMiss", vars);
+        }
+        function buildChoiceCard(options) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = options.className;
+          btn.setAttribute("aria-pressed", "false");
+          if (options.icon) {
+            const icon = document.createElement("span");
+            icon.className = "tc-icon";
+            icon.setAttribute("aria-hidden", "true");
+            icon.textContent = options.icon;
+            btn.appendChild(icon);
+          }
+          const label = document.createElement("span");
+          label.className = "tc-label";
+          label.textContent = options.label;
+          btn.appendChild(label);
+          const check = document.createElement("span");
+          check.className = "card-check";
+          check.setAttribute("aria-hidden", "true");
+          check.textContent = "✓";
+          btn.appendChild(check);
+          return btn;
+        }
+        function markSelection(refs, selectedId) {
+          refs.forEach(function (ref) {
+            const on = ref.id === selectedId;
+            ref.btn.classList.toggle("selected", on);
+            ref.btn.setAttribute("aria-pressed", on ? "true" : "false");
+          });
+        }
+
+        /* ================= RENDERING ================= */
+        function renderVisibility() {
+          dom.phaseSetup.hidden = state.phase !== "setup";
+          dom.phaseSender.hidden = state.phase !== "sender_turn";
+          dom.phaseHandoff.hidden = state.phase !== "handoff_to_receiver";
+          dom.phaseReceiver.hidden = state.phase !== "receiver_turn";
+          dom.phaseReveal.hidden = state.phase !== "reveal_result";
+          dom.phaseFinal.hidden = state.phase !== "final_result";
+          dom.secRoles.hidden = !isPlayPhase();
+          dom.secNewMatch.hidden = !isPlayPhase();
+          dom.secReflection.hidden = state.phase !== "final_result";
+        }
+        function renderTeam() {
+          dom.teamScoreVal.textContent = scoreText();
+          dom.teamRound.textContent = isPlayPhase()
+            ? roundOfText(state.roundIndex + 1)
+            : "—";
+          const percent = Math.min(100, (state.score / TEAM_TARGET) * 100);
+          dom.teamFill.style.width = percent + "%";
+          while (dom.roundDots.firstChild) {
+            dom.roundDots.removeChild(dom.roundDots.firstChild);
+          }
+          for (let i = 0; i < ROUNDS; i += 1) {
+            const dot = document.createElement("span");
+            dot.className = "r-dot";
+            if (i < state.history.length) {
+              dot.classList.add("done");
+            } else if (i === state.roundIndex && isPlayPhase()) {
+              dot.classList.add("current");
+            }
+            dom.roundDots.appendChild(dot);
+          }
+        }
+        function renderRoles() {
+          const s = senderIndex(state.roundIndex);
+          dom.roleName1.textContent = state.names[0];
+          dom.roleName2.textContent = state.names[1];
+          dom.roleTag1.textContent = T(s === 0 ? "sender" : "receiver");
+          dom.roleTag2.textContent = T(s === 1 ? "sender" : "receiver");
+        }
+        function renderHistory() {
+          while (dom.historyList.firstChild) {
+            dom.historyList.removeChild(dom.historyList.firstChild);
+          }
+          if (state.history.length === 0) {
+            const empty = document.createElement("span");
+            empty.className = "history-empty";
+            empty.textContent = "—";
+            dom.historyList.appendChild(empty);
+            return;
+          }
+          state.history.forEach(function (entry) {
+            const row = document.createElement("div");
+            row.className = "history-row";
+            const num = document.createElement("span");
+            num.className = "h-round";
+            num.textContent = "R" + entry.round;
+            row.appendChild(num);
+            const init = document.createElement("span");
+            init.className = "h-init " + (entry.sender === 0 ? "p1" : "p2");
+            init.setAttribute("aria-hidden", "true");
+            init.textContent = state.names[entry.sender]
+              .charAt(0)
+              .toUpperCase();
+            row.appendChild(init);
+            const clue = document.createElement("span");
+            clue.className = "h-clue";
+            clue.textContent = clueName(entry.clue);
+            row.appendChild(clue);
+            const flag = document.createElement("span");
+            flag.className =
+              "h-flag " + (entry.result === "match" ? "ok" : "bad");
+            flag.setAttribute("aria-hidden", "true");
+            flag.textContent = entry.result === "match" ? "✓" : "×";
+            row.appendChild(flag);
+            const sr = document.createElement("span");
+            sr.className = "visually-hidden";
+            sr.textContent =
+              roundOfText(entry.round) +
+              ". " +
+              state.names[entry.sender] +
+              ": " +
+              clueName(entry.clue) +
+              ". " +
+              state.names[entry.receiver] +
+              ": " +
+              targetName(entry.guess) +
+              ". " +
+              T(entry.result === "match" ? "match" : "miss") +
+              ".";
+            row.appendChild(sr);
+            const pts = document.createElement("span");
+            pts.className = "h-points";
+            pts.textContent = "+" + entry.points;
+            row.appendChild(pts);
+            dom.historyList.appendChild(row);
+          });
+        }
+        function renderSender() {
+          const s = senderIndex(state.roundIndex);
+          const roundDef = CLASSIC_DECK[state.roundIndex];
+          dom.senderRound.textContent = roundOfText(state.roundIndex + 1);
+          dom.senderTitle.textContent = T("sends", { name: state.names[s] });
+          dom.senderTargetIcon.textContent = TARGETS[roundDef.target].icon;
+          dom.senderTargetLabel.textContent = targetName(roundDef.target);
+          dom.clueCards.setAttribute("aria-label", T("clueChoices"));
+          while (dom.clueCards.firstChild) {
+            dom.clueCards.removeChild(dom.clueCards.firstChild);
+          }
+          senderCardRefs = [];
+          roundDef.clues.forEach(function (clueId) {
+            const btn = buildChoiceCard({
+              className: "choice-card clue-card",
+              label: clueName(clueId),
+            });
+            btn.addEventListener("click", function () {
+              onSelectClue(clueId);
+            });
+            dom.clueCards.appendChild(btn);
+            senderCardRefs.push({ id: clueId, btn: btn });
+          });
+          markSelection(senderCardRefs, state.selectedClue);
+          dom.sendClueBtn.disabled = state.selectedClue === null;
+        }
+        function renderHandoff() {
+          const r = receiverIndex(state.roundIndex);
+          dom.handoffTitle.textContent = T("passTo", {
+            name: state.names[r],
+          });
+          dom.readyBtn.textContent = T("readyToGuess", {
+            name: state.names[r],
+          });
+        }
+        function renderReceiver() {
+          const s = senderIndex(state.roundIndex);
+          const r = receiverIndex(state.roundIndex);
+          dom.receiverRound.textContent = roundOfText(state.roundIndex + 1);
+          dom.receiverTitle.textContent = T("guesses", {
+            name: state.names[r],
+          });
+          dom.lblClueFrom.textContent = T("clueFrom", {
+            name: state.names[s],
+          });
+          dom.receiverClue.textContent = clueName(state.selectedClue);
+          dom.targetCards.setAttribute("aria-label", T("targetChoices"));
+          while (dom.targetCards.firstChild) {
+            dom.targetCards.removeChild(dom.targetCards.firstChild);
+          }
+          targetCardRefs = [];
+          TARGET_ORDER.forEach(function (targetId) {
+            const btn = buildChoiceCard({
+              className: "choice-card target-choice",
+              icon: TARGETS[targetId].icon,
+              label: targetName(targetId),
+            });
+            btn.addEventListener("click", function () {
+              onSelectGuess(targetId);
+            });
+            dom.targetCards.appendChild(btn);
+            targetCardRefs.push({ id: targetId, btn: btn });
+          });
+          markSelection(targetCardRefs, state.selectedGuess);
+          dom.lockGuessBtn.disabled = state.selectedGuess === null;
+        }
+        function renderReveal() {
+          const entry = state.history[state.history.length - 1];
+          if (!entry) return;
+          const matched = entry.result === "match";
+          dom.revealRound.textContent = roundOfText(entry.round);
+          dom.revealIcon.textContent = matched ? "✓" : "×";
+          dom.revealIcon.classList.toggle("ok", matched);
+          dom.revealIcon.classList.toggle("no", !matched);
+          dom.revealTitle.textContent = T(matched ? "match" : "miss");
+          dom.revealTitle.className = matched ? "match-word" : "miss-word";
+          dom.revTargetIcon.textContent = TARGETS[entry.target].icon;
+          dom.revTargetLabel.textContent = targetName(entry.target);
+          dom.revClueLabel.textContent = clueName(entry.clue);
+          dom.revClueTag.textContent = T(
+            entry.clueType === "shared" ? "sharedClue" : "clearClue",
+          );
+          dom.revClueTag.classList.toggle(
+            "shared",
+            entry.clueType === "shared",
+          );
+          dom.revGuessIcon.textContent = TARGETS[entry.guess].icon;
+          dom.revGuessLabel.textContent = targetName(entry.guess);
+          dom.revGuessCard.classList.toggle("match", matched);
+          dom.revGuessCard.classList.toggle("miss", !matched);
+          dom.revPoints.textContent = "+" + entry.points;
+          dom.revPoints.classList.toggle("ok", matched);
+          dom.revPoints.classList.toggle("no", !matched);
+          dom.revScore.textContent = scoreText();
+          dom.revealNote.textContent = noteFor(entry);
+          dom.nextBtn.textContent = T(
+            entry.round >= ROUNDS ? "finalResult" : "nextRound",
+          );
+        }
+        function renderFinal() {
+          const summary = summarizeMatch(state.history);
+          const tier = finalTier();
+          const found = tier === "success";
+          dom.finalTitle.textContent = T(found ? "signalFound" : "signalFuzzy");
+          dom.finalTitle.className =
+            "phase-title " +
+            (found ? "success" : tier === "far" ? "far" : "missed");
+          dom.finalMsg.textContent = T(found ? "foundMsg" : "fuzzyMsg");
+          dom.finalScore.textContent = scoreText();
+          dom.statMatches.textContent = T("statMatches", {
+            matches: summary.matchCount,
+            total: ROUNDS,
+          });
+          dom.statMisses.textContent = T("statMisses", {
+            misses: summary.missCount,
+          });
+          dom.statClearMatches.textContent = T("statClearMatches", {
+            count: summary.clearMatchCount,
+          });
+          dom.statSharedMatches.textContent = T("statSharedMatches", {
+            count: summary.sharedMatchCount,
+          });
+          dom.statSharedMisses.textContent = T("statSharedMisses", {
+            count: summary.sharedMissCount,
+          });
+          dom.statBestClue.textContent = summary.bestSharedClue
+            ? T("statBestClue", { clue: clueName(summary.bestSharedClue) })
+            : T("statBestClueNone");
+          dom.statConfusing.textContent = summary.mostConfusingClue
+            ? T("statConfusingClue", {
+                clue: clueName(summary.mostConfusingClue),
+              })
+            : T("statConfusingClueNone");
+        }
+        function renderReflection() {
+          while (dom.reflectionList.firstChild) {
+            dom.reflectionList.removeChild(dom.reflectionList.firstChild);
+          }
+          TARGET_ORDER.forEach(function (targetId) {
+            const rounds = state.history.filter(function (entry) {
+              return entry.target === targetId;
+            });
+            if (rounds.length === 0) return;
+            const head = document.createElement("div");
+            head.className = "reflect-target";
+            const icon = document.createElement("span");
+            icon.className = "rt-icon";
+            icon.setAttribute("aria-hidden", "true");
+            icon.textContent = TARGETS[targetId].icon;
+            head.appendChild(icon);
+            const name = document.createElement("span");
+            name.textContent = targetName(targetId);
+            head.appendChild(name);
+            dom.reflectionList.appendChild(head);
+            rounds.forEach(function (entry) {
+              const row = document.createElement("div");
+              row.className = "reflect-clue";
+              const num = document.createElement("span");
+              num.className = "h-round";
+              num.textContent = "R" + entry.round;
+              row.appendChild(num);
+              const clue = document.createElement("span");
+              clue.className = "h-clue";
+              clue.textContent = clueName(entry.clue);
+              row.appendChild(clue);
+              const flag = document.createElement("span");
+              flag.className =
+                "h-flag " + (entry.result === "match" ? "ok" : "bad");
+              flag.setAttribute("aria-hidden", "true");
+              flag.textContent = entry.result === "match" ? "✓" : "×";
+              row.appendChild(flag);
+              const sr = document.createElement("span");
+              sr.className = "visually-hidden";
+              sr.textContent = T(entry.result === "match" ? "match" : "miss");
+              row.appendChild(sr);
+              dom.reflectionList.appendChild(row);
+            });
+          });
+        }
+        function renderAll() {
+          renderVisibility();
+          renderTeam();
+          renderRoles();
+          renderHistory();
+          if (state.phase === "sender_turn") renderSender();
+          if (state.phase === "handoff_to_receiver") renderHandoff();
+          if (state.phase === "receiver_turn") renderReceiver();
+          if (state.phase === "reveal_result") renderReveal();
+          if (state.phase === "final_result") {
+            renderFinal();
+            renderReflection();
+          }
+        }
+
+        /* ================= TRANSLATIONS ================= */
+        function applyTranslations() {
+          document.title = T("title");
+          document.documentElement.lang = state.lang;
+          dom.titleText.textContent = T("title");
+          dom.subtitleText.textContent = T("subtitle");
+          dom.langBtn.textContent = state.lang === "en" ? "PL" : "EN";
+          dom.langBtn.title = T("langSwitch");
+          dom.langBtn.setAttribute("aria-label", T("langSwitch"));
+          dom.setupTitle.textContent = T("setupTitle");
+          dom.setupCopy.textContent = T("setupCopy");
+          dom.ruleNote.textContent = T("playRule");
+          dom.lblName1.textContent = T("playerOneName");
+          dom.lblName2.textContent = T("playerTwoName");
+          dom.nameInput1.placeholder = T("playerOneDefault");
+          dom.nameInput2.placeholder = T("playerTwoDefault");
+          dom.setupTeamTarget.textContent =
+            T("teamTarget") + ": " + TEAM_TARGET;
+          dom.setupError.textContent = T("nameError");
+          dom.startBtn.textContent = T("start");
+          dom.senderCopy.textContent = T("senderCopy");
+          dom.lblSecretTarget.textContent = T("secretTarget");
+          dom.lblClueChoices.textContent = T("clueChoices");
+          dom.sendClueBtn.textContent = T("sendClue");
+          dom.handoffNote.textContent = T("targetHidden");
+          dom.receiverCopy.textContent = T("receiverCopy");
+          dom.lblTargetChoices.textContent = T("targetChoices");
+          dom.lockGuessBtn.textContent = T("lockGuess");
+          dom.lblRevTarget.textContent = T("targetLabel");
+          dom.lblRevClue.textContent = T("clueLabel");
+          dom.lblRevGuess.textContent = T("guessLabel");
+          dom.lblRevPoints.textContent = T("roundPoints");
+          dom.lblRevScore.textContent = T("teamScore");
+          dom.lblFinalScore.textContent = T("teamScore");
+          dom.gtLabel.textContent = T("gameTheoryIdea");
+          dom.debriefText.textContent = T("debrief");
+          dom.playAgainBtn.textContent = T("playAgain");
+          dom.newMatchBtn.textContent = T("newMatch");
+          dom.lblTeamTarget.textContent = T("teamTarget");
+          dom.lblRoles.textContent = T("rolesLabel");
+          dom.lblHistory.textContent = T("historyLabel");
+          dom.lblReflection.textContent = T("reflectionLabel");
+          dom.panelNewMatchBtn.textContent = T("newMatch");
+          if (activeOverlay) {
+            const found = finalTier() === "success";
+            activeOverlay.msg.textContent = T(
+              found ? "signalFound" : "signalFuzzy",
+            );
+            activeOverlay.sub.textContent = scoreText();
+            activeOverlay.hint.textContent = T("overlayHint");
+          }
+          renderAll();
+        }
+
+        /* ================= OVERLAY ================= */
+        function showOverlay() {
+          const tier = finalTier();
+          const found = tier === "success";
+          const overlay = document.createElement("div");
+          overlay.className = "result-overlay " + tier;
+          overlay.setAttribute("role", "dialog");
+          overlay.setAttribute("aria-live", "polite");
+          overlay.tabIndex = -1;
+          const emoji = document.createElement("div");
+          emoji.className = "overlay-emoji";
+          emoji.textContent = found
+            ? "\u{1F389}"
+            : tier === "far"
+              ? "\u{1F914}"
+              : "❌";
+          const msg = document.createElement("div");
+          msg.className = "overlay-msg";
+          msg.textContent = T(found ? "signalFound" : "signalFuzzy");
+          const sub = document.createElement("div");
+          sub.className = "overlay-sub";
+          sub.textContent = scoreText();
+          const hint = document.createElement("div");
+          hint.className = "overlay-hint";
+          hint.textContent = T("overlayHint");
+          overlay.appendChild(emoji);
+          overlay.appendChild(msg);
+          overlay.appendChild(sub);
+          overlay.appendChild(hint);
+          document.body.appendChild(overlay);
+          activeOverlay = { el: overlay, msg: msg, sub: sub, hint: hint };
+          overlay.focus();
+          function close() {
+            document.removeEventListener("keydown", onKey, true);
+            overlay.remove();
+            activeOverlay = null;
+            dom.playAgainBtn.focus();
+          }
+          function onKey(event) {
+            if (
+              event.key === "Escape" ||
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+              event.preventDefault();
+              close();
+            }
+          }
+          overlay.addEventListener("click", close);
+          document.addEventListener("keydown", onKey, true);
+        }
+
+        /* ================= GAME FLOW ================= */
+        function setPhase(phase) {
+          state.phase = phase;
+          renderAll();
+        }
+        function resetMatch() {
+          state.roundIndex = 0;
+          state.selectedClue = null;
+          state.selectedGuess = null;
+          state.score = 0;
+          state.history = [];
+        }
+        function wipeSenderStage() {
+          dom.senderTargetIcon.textContent = "";
+          dom.senderTargetLabel.textContent = "—";
+          while (dom.clueCards.firstChild) {
+            dom.clueCards.removeChild(dom.clueCards.firstChild);
+          }
+          senderCardRefs = [];
+        }
+        function enterSenderTurn() {
+          state.selectedClue = null;
+          state.selectedGuess = null;
+          setPhase("sender_turn");
+          announce(
+            roundOfText(state.roundIndex + 1) +
+              " — " +
+              T("sends", { name: state.names[senderIndex(state.roundIndex)] }) +
+              ". " +
+              T("senderCopy"),
+          );
+          if (senderCardRefs.length > 0) senderCardRefs[0].btn.focus();
+        }
+        function onStart() {
+          if (state.phase !== "setup") return;
+          const n1 = dom.nameInput1.value.trim() || T("playerOneDefault");
+          const n2 = dom.nameInput2.value.trim() || T("playerTwoDefault");
+          if (n1.toLowerCase() === n2.toLowerCase()) {
+            dom.setupError.hidden = false;
+            announce(T("nameError"));
+            return;
+          }
+          dom.setupError.hidden = true;
+          state.names = [n1, n2];
+          resetMatch();
+          enterSenderTurn();
+        }
+        function onSelectClue(clueId) {
+          if (state.phase !== "sender_turn") return;
+          state.selectedClue = clueId;
+          markSelection(senderCardRefs, clueId);
+          dom.sendClueBtn.disabled = false;
+        }
+        function onSendClue() {
+          if (state.phase !== "sender_turn") return;
+          if (state.selectedClue === null) return;
+          setPhase("handoff_to_receiver");
+          wipeSenderStage();
+          announce(
+            T("passTo", {
+              name: state.names[receiverIndex(state.roundIndex)],
+            }) +
+              " " +
+              T("targetHidden"),
+          );
+          dom.readyBtn.focus();
+        }
+        function onReady() {
+          if (state.phase !== "handoff_to_receiver") return;
+          setPhase("receiver_turn");
+          announce(
+            T("guesses", {
+              name: state.names[receiverIndex(state.roundIndex)],
+            }) +
+              " — " +
+              T("clueFrom", {
+                name: state.names[senderIndex(state.roundIndex)],
+              }) +
+              ": " +
+              clueName(state.selectedClue) +
+              ". " +
+              T("receiverCopy"),
+          );
+          if (targetCardRefs.length > 0) targetCardRefs[0].btn.focus();
+        }
+        function onSelectGuess(targetId) {
+          if (state.phase !== "receiver_turn") return;
+          state.selectedGuess = targetId;
+          markSelection(targetCardRefs, targetId);
+          dom.lockGuessBtn.disabled = false;
+        }
+        function onLockGuess() {
+          if (state.phase !== "receiver_turn") return;
+          if (state.selectedGuess === null) return;
+          if (state.history.length !== state.roundIndex) return;
+          const roundDef = CLASSIC_DECK[state.roundIndex];
+          const points = scoreRound(roundDef.target, state.selectedGuess);
+          state.score += points;
+          const entry = {
+            round: state.roundIndex + 1,
+            sender: senderIndex(state.roundIndex),
+            receiver: receiverIndex(state.roundIndex),
+            target: roundDef.target,
+            clue: state.selectedClue,
+            clueType: CLUES[state.selectedClue].type,
+            guess: state.selectedGuess,
+            points: points,
+            result: points > 0 ? "match" : "miss",
+          };
+          state.history.push(entry);
+          setPhase("reveal_result");
+          if (!state.reduceMotion) {
+            dom.revealIcon.classList.remove("pop");
+            dom.revealIcon.getBoundingClientRect();
+            dom.revealIcon.classList.add("pop");
+          }
+          announce(
+            T(entry.result === "match" ? "match" : "miss") +
+              ". " +
+              T("roundPoints") +
+              ": +" +
+              entry.points +
+              ". " +
+              T("teamScore") +
+              ": " +
+              scoreText() +
+              ". " +
+              noteFor(entry),
+          );
+          dom.nextBtn.focus();
+        }
+        function onNext() {
+          if (state.phase !== "reveal_result") return;
+          if (state.roundIndex >= ROUNDS - 1) {
+            setPhase("final_result");
+            announce(
+              T(finalTier() === "success" ? "signalFound" : "signalFuzzy") +
+                ". " +
+                T("teamScore") +
+                ": " +
+                scoreText() +
+                ".",
+            );
+            showOverlay();
+            return;
+          }
+          state.roundIndex += 1;
+          enterSenderTurn();
+        }
+        function onPlayAgain() {
+          if (state.phase !== "final_result") return;
+          resetMatch();
+          enterSenderTurn();
+        }
+        function onNewMatch() {
+          if (state.phase === "setup") return;
+          resetMatch();
+          setPhase("setup");
+          dom.nameInput1.focus();
+        }
+
+        /* ================= EVENTS ================= */
+        dom.langBtn.addEventListener("click", function () {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          try {
+            localStorage.setItem("secretSignalLangV1", state.lang);
+          } catch {
+            /* localStorage unavailable */
+          }
+          applyTranslations();
+        });
+        dom.startBtn.addEventListener("click", onStart);
+        [dom.nameInput1, dom.nameInput2].forEach(function (input) {
+          input.addEventListener("input", function () {
+            dom.setupError.hidden = true;
+          });
+          input.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") onStart();
+          });
+        });
+        dom.sendClueBtn.addEventListener("click", onSendClue);
+        dom.readyBtn.addEventListener("click", onReady);
+        dom.lockGuessBtn.addEventListener("click", onLockGuess);
+        dom.nextBtn.addEventListener("click", onNext);
+        dom.playAgainBtn.addEventListener("click", onPlayAgain);
+        dom.newMatchBtn.addEventListener("click", onNewMatch);
+        dom.panelNewMatchBtn.addEventListener("click", onNewMatch);
+        const motionQuery = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        );
+        state.reduceMotion = motionQuery.matches;
+        motionQuery.addEventListener("change", function () {
+          state.reduceMotion = motionQuery.matches;
+        });
+
+        /* ================= INIT ================= */
+        state.names = [T("playerOneDefault"), T("playerTwoDefault")];
+        applyTranslations();
+        if (new URLSearchParams(window.location.search).get("debug") === "1") {
+          window.secretSignalDebug = {
+            state: state,
+            ROUNDS: ROUNDS,
+            TEAM_TARGET: TEAM_TARGET,
+            CLASSIC_DECK: CLASSIC_DECK,
+            summarizeMatch: summarizeMatch,
+          };
+        }
+      })();
+    </script>
+  </body>
+</html>

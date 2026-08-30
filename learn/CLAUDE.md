@@ -16,6 +16,8 @@ npm run word-quality                     # check bilingual word lists
 
 The code-review tool discovers apps as `<dir>/index.html` one level below `learn/` (skipping `docs/`, `tools/`, `node_modules/`) and enforces the single-file-app policy. Some apps have a dedicated physics cross-check script in `tools/`; where one exists, the app's `docs/` says so.
 
+It also enforces the Style reference below, as rules with `house/<id>` ids — overlay contrast and text opacity, aria-label localization, `applyTranslations()` completeness (`document.title` + `documentElement.lang`), `T()` fallback, dead I18N keys, hard-coded locales, skin-tone modifiers (literal, `\uXXXX`-escaped or HTML-entity), `touch-action`, passive `touchmove`, `:focus-visible`, tap-highlight, disabled-control styling, inline `style.display`, styled scrollbars, forbidden `<head>` tags, Share Tech Mono, `--` instead of an em dash, and the review-gate comment path. **An app suppresses one of these by citing its id in `<app>/docs/style-drift.md`**; the run then reports it as known drift instead of failing. That makes the drift files machine-enforced: recorded deviations stay green, anything new fails the gate. Delete the id from the drift file when you fix the underlying issue.
+
 ## Structure
 
 ```
@@ -41,7 +43,7 @@ learn/
 
 - **Single file.** Each app is one self-contained `index.html` with inline CSS and JS. No sidecar `.css`/`.js` files (enforced by the code-review tool), no build step, no Jekyll front matter — Jekyll copies apps verbatim.
 - **URLs.** Apps are served at `/learn/<app>/`. The `<link rel="canonical">` and `og:url` tags must use `https://lepecki.com/learn/<app>/`.
-- **Style.** Follow the Style reference section below — Outfit + Share Tech Mono fonts, shared CSS variable palettes, one of two theme-paired chassis.
+- **Style.** Follow the Style reference section below — Outfit + JetBrains Mono fonts, shared CSS variable palettes, one of two theme-paired chassis.
 - **Bilingual.** Apps provide English and Polish via an inline `I18N` object and a language toggle.
 - **URL stability.** App URLs are permanent — renaming or moving an app breaks inbound links with no server-side redirect available (GitHub Pages hosting). Legacy pre-folder `/learn/<app>.html` URLs intentionally 404.
 
@@ -51,7 +53,7 @@ learn/
 - Filenames are lowercase-hyphenated, type-first, without the app name (the folder provides it), with an ISO date suffix where versioning matters:
   - `req.md` — requirements / product spec
   - `design.md` — living design reference
-  - `style-drift.md` — known deviations from the Style reference below (delete entries as they are fixed; delete the file when the app is conformant)
+  - `style-drift.md` — known deviations from the Style reference below (delete entries as they are fixed; delete the file when the app is conformant). Entries that cite a `house/<id>` rule id suppress that gate rule for the app — see Commands above. An entry may record a deliberate exception rather than a defect; say so explicitly, with the date, so it is not "fixed" by a later pass.
   - `spec-<feature>-<date>.md` — feature spec (kept while it describes shipped behavior)
   - `scientific-review[-<scope>][-<date>].md` — scientific accuracy review (keep only the latest per scope)
 - One-time process artifacts (master handoffs, implementing-agent prompts, superseded reviews, completed plans/proposals) are **deleted** once the work ships — git history preserves them.
@@ -106,8 +108,8 @@ Hard-coded companions (used consistently, not variables): canvas clear `#080c14`
   --panel-border: #e0ddd6;
   --text: #37474f;
   --text-head: #263238;
-  --text-dim: #78909c;
-  --text-label: #90a4ae;
+  --text-dim: #5f6f76;
+  --text-label: #5f6f76;
   --accent: #455a64;
   --accent-light: #eceff1;
   --canvas-bg: #f5f3ee;
@@ -122,6 +124,12 @@ body { background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%); }
 Hard-coded companions: button bg `#fafaf7`, button hover bg `#f0ede6`, secondary text `#546e7a`, primary-hover `#37474f`, glass pill `rgba(255, 255, 255, 0.92)`.
 
 The light theme has two extra text tiers used systematically: `--text-head` for headings/values, `--text-label` for micro-labels. Do NOT rebrand `--accent` per app (keep `#58a6ff` dark / `#455a64` light); app identity comes from entity colors, not the chrome accent.
+
+Contrast correction (2026-08-16): `--text-dim` and `--text-label` were darkened
+from `#78909c`/`#90a4ae` (3.35:1 / 2.59:1 on white — WCAG AA failures) to
+`#5f6f76` (5.22:1 on white, 4.71:1 on `--canvas-bg`); the tier distinction is
+carried by size/uppercase, not color. Apps built before this date still carry
+the old values as known drift — fix when touching them.
 
 ### Layout skeleton
 
@@ -187,17 +195,41 @@ Shared rules:
 
 ### Fonts & typography
 
+**Kid-facing readability (binding, added 2026-08-16).** These apps are for
+children: the compact 11–13px tiers below are for PANEL CHROME ONLY (section
+labels, debug, micro-captions). On any surface a child reads or taps during
+play: primary stimulus text (questions, prompts) ≥ 28px; primary answer/action
+labels ≥ 18px on ≥ 48px targets; explanatory, feedback, and tutorial copy
+≥ 15px; in-game mono readouts a child must parse ≥ 13px. Prefer generous gaps
+(the 16–24px end of the rhythm) between play elements — when in doubt, go one
+size up and add whitespace. Dense, small-type layouts confuse kids and are a
+recurring review failure; do not ship them.
+
 Exactly two Google Fonts, one stylesheet link in `<head>`:
 
 ```html
 <link
-  href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
   rel="stylesheet"
 />
 ```
 
-- **Outfit** (`body` font) — prose: title, subtitle, mission text, info paragraphs, overlay messages. Weights 400/600/700 only — never request Outfit 500 or mono 600/700 (not loaded; Share Tech Mono has a single weight).
-- **Share Tech Mono** — technical UI: section labels, segmented buttons, selects, readouts, HUD clocks, counters, the language button, and all canvas-drawn text.
+- **Outfit** (`body` font) — prose: title, subtitle, mission text, info paragraphs, overlay messages. Weights 400/600/700 only — never request 500.
+- **JetBrains Mono** — technical UI: section labels, segmented buttons, selects, readouts, HUD clocks, counters, the language button, and all canvas-drawn text. Weights 400/600/700; real bold, so no synthesized faux-bold.
+
+**Mono replacement (2026-08-17, binding).** Share Tech Mono was the mandated
+mono until it was measured against the Polish alphabet: it ships **none** of
+`ą ć ę ł ń ś ź ż Ą Ć Ę Ł Ń Ś Ź Ż` (only `ó`/`Ó`, which are Latin-1). Every one
+of those characters silently fell back to the system monospace, so Polish
+readouts, labels and canvas text rendered in a mismatched face — most visibly
+as a heavier, wider capital in words like `ODWRÓĆ`. `document.fonts.check()`
+reports `true` for the family regardless, which is why it went unnoticed.
+JetBrains Mono covers the full set at 400/600/700 and is the standard for
+every app. Do not reintroduce a mono without verifying per-glyph coverage:
+in a monospaced face, any character whose canvas advance differs from `A`'s is
+being drawn by a fallback. JetBrains Mono is ~11% wider per character
+(0.6em vs 0.54em), so re-check tight labels and canvas HUD boxes when
+touching an older app.
 - Light-chassis exception: verb/action buttons (`.action-btn`, intro nav) use Outfit 13px/600; value-like controls (`.level-btn`) stay mono.
 
 Type scale (px; D = dark chassis, L = light chassis where they differ):
@@ -278,7 +310,7 @@ header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 ```css
 .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
 .ctrl-label {
-  font-family: "Share Tech Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -305,7 +337,7 @@ header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 }
 .panel-section.grow { flex: 1; }
 .section-label {
-  font-family: "Share Tech Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.8px;
@@ -313,7 +345,12 @@ header p { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 }
 ```
 
-Do not mix the chassis (no hairlines inside a `.ctrl-group` stack; no double-bordered labels). Panel order: mode toggle first (if the app has modes) → primary inputs → time-warp/playback → primary action → readouts → info text last. Mode-conditional groups default to `display: none` in CSS (no flash before JS runs). Primary navigation lives in the panel — never in a toolbar above the stage.
+Do not mix the chassis (no hairlines inside a `.ctrl-group` stack; no double-bordered labels). Panel order comes in two variants by app shape:
+
+- **Simulator-style apps** (continuous sims the user configures, then watches): mode toggle first (if the app has modes) → primary inputs → time-warp/playback → primary action → readouts → info text last.
+- **Mission/task-based apps** (the user is given a task and answers it): task card first → answer controls → actions (Check/Hint/Undo…) → inline feedback → details/readouts → practice options (mode picker, level picker, progress) → collapsed help last. The task is first; configuration is secondary — a first-time user must see one obvious primary action before any mode/level grid.
+
+Mode-conditional groups default to `display: none` in CSS (no flash before JS runs). Primary navigation lives in the panel — never in a toolbar above the stage.
 
 **Scrollbars: never styled.** No `::-webkit-scrollbar`, `scrollbar-width`, or `scrollbar-color` anywhere. The panel scrolls natively (`overflow-y: auto`); nothing else scrolls on desktop.
 
@@ -327,7 +364,7 @@ Native selects (the only native form control besides ranges):
   border: 1.5px solid var(--panel-border);
   background: var(--panel);
   color: var(--text);
-  font-family: "Share Tech Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   cursor: pointer;
   outline: none;
@@ -354,7 +391,7 @@ No tabs, no routes, no back buttons — the header emoji link is the only "back"
   border: 1.5px solid var(--panel-border);
   background: #fafaf7;
   color: #546e7a;
-  font-family: "Share Tech Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -391,7 +428,7 @@ Full-width back button, step title + commentary, prev/counter/next nav (40×40 c
   cursor: pointer;
   flex-shrink: 0;
   color: var(--text-dim);
-  font-family: "Share Tech Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -412,7 +449,7 @@ Behavior: label shows the OTHER language (`state.lang === "en" ? "PL" : "EN"`); 
   border: 1.5px solid var(--panel-border);
   background: var(--panel);
   color: var(--text-dim);
-  font-family: "Share Tech Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
@@ -518,7 +555,7 @@ Glyphs are text: `&minus;` and `+`. Press feedback = inverted fill (accent bg, `
 .slider-val {
   min-width: 28px;
   text-align: right;
-  font-family: "Share Tech Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 13px;
   color: var(--text);
 }
@@ -536,7 +573,7 @@ Dark:
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: "Share Tech Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 12px;
 }
 .readout-label { color: var(--text-dim); }
@@ -596,7 +633,7 @@ Background: dark `rgba(11, 15, 24, 0.85)`, light `rgba(255, 255, 255, 0.92)`. St
 .overlay-emoji { font-size: 72px; animation: overlayPop 0.4s ease; }
 ```
 
-Children: `.overlay-emoji` (72px) → `.overlay-msg` (Outfit 28px/700, `#fff`) → `.overlay-sub` (mono 16px) → `.overlay-hint` (mono 12px). Built by JS (`createElement`, appended to body) or static HTML toggled via the `hidden` attribute — both fine. Tier backgrounds from the shared 4-tier palette (CSS modifier classes preferred, inline from JS acceptable):
+Children: `.overlay-emoji` (72px) → `.overlay-msg` (Outfit 28px/700) → `.overlay-sub` (mono 16px) → `.overlay-hint` (mono 12px). Overlay foreground text is dark ink `#0b171b` at full opacity (contrast-corrected 2026-08-16: white text fails WCAG AA on the green/blue/amber washes — 2.2:1/3.9:1/1.9:1 — while `#0b171b` passes at 8.5:1/4.5:1/9.7:1; apps built earlier may still use white as known drift). Built by JS (`createElement`, appended to body) or static HTML toggled via the `hidden` attribute — both fine. Tier backgrounds from the shared 4-tier palette (CSS modifier classes preferred, inline from JS acceptable):
 
 - perfect/success `rgba(0, 200, 83, 0.92)`
 - close `rgba(25, 118, 210, 0.90)`
@@ -646,7 +683,7 @@ window.addEventListener("resize", resize);
 
 All drawing uses CSS-pixel coordinates W/H.
 - Animation: continuous sims use `requestAnimationFrame` with dt clamped to **0.05s max**; event-driven reveals may use elapsed time from `performance.now()`. Either way, handle `visibilitychange` by pausing/rebasing so hidden tabs don't produce a giant dt.
-- Canvas text: Share Tech Mono via `ctx.font`, 13–17px (12px only in dense inset panels); no fake mono weights.
+- Canvas text: JetBrains Mono via `ctx.font`, 13–17px (12px only in dense inset panels).
 - Dark space apps: decorative starfield of ~200 procedural stars in `rgba(200, 210, 220, α)`.
 - Cursor state machine from JS hit-testing — inline `canvas.style.cursor` or classes (e.g. `canvas.aiming/.hover-marker/.dragging` → crosshair/grab/grabbing).
 - Onboarding hints may be canvas-drawn rounded-rect tooltips (fill `rgba(11,15,24,0.94)`, r=6, 13px mono) that vanish permanently on first interaction.

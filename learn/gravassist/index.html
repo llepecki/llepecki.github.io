@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- gravassist.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- gravassist/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -20,10 +20,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive gravity assist simulator. Explore how spacecraft use planetary gravity for propulsion, with adjustable reference frames."
     />
     <meta property="og:type" content="website" />
-    <meta
-      property="og:url"
-      content="https://lepecki.com/learn/gravassist/"
-    />
+    <meta property="og:url" content="https://lepecki.com/learn/gravassist/" />
     <meta property="og:site_name" content="Łukasz Łepecki" />
     <meta
       property="og:image"
@@ -36,8 +33,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive gravity assist simulator. Explore how spacecraft use planetary gravity for propulsion, with adjustable reference frames."
     />
     <title>Gravity Assist Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -65,6 +64,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: var(--bg);
         font-family: "Outfit", sans-serif;
         color: var(--text);
+        -webkit-tap-highlight-color: transparent;
       }
 
       header {
@@ -103,7 +103,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -131,6 +131,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         width: 100%;
         height: 100%;
         display: block;
+        touch-action: none;
       }
 
       .controls {
@@ -150,7 +151,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         gap: 6px;
       }
       .ctrl-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -167,19 +168,31 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         cursor: pointer;
         transition: all 0.2s;
         text-align: center;
         flex: 1;
       }
-      .type-btn:hover {
+      .type-btn:hover:not(:disabled) {
         border-color: var(--accent);
       }
       .type-btn.active {
         border-color: var(--accent);
         color: var(--accent);
+      }
+      /* JS disables the warp and Launch buttons; without this they stayed
+         visually identical to enabled ones. */
+      .type-btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+      .type-btn:focus-visible,
+      .step-btn:focus-visible,
+      .lang-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
       }
       .type-btn.full-width {
         flex: none;
@@ -241,7 +254,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .slider-val {
         min-width: 28px;
         text-align: right;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         color: var(--text);
       }
@@ -253,7 +266,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         line-height: 1;
         cursor: pointer;
@@ -280,7 +293,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         cursor: pointer;
         outline: none;
@@ -300,7 +313,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
       }
       .readout-label {
@@ -333,14 +346,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border-bottom: 1px solid var(--panel-border);
       }
       .boost-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 1px;
         color: var(--text-dim);
       }
       .boost-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 20px;
         font-weight: 700;
       }
@@ -355,11 +368,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         font-size: 18px;
         line-height: 1;
       }
-      /* Game-mode-only groups: hidden by default; setMode() toggles display:''. */
-      #grpAltitude,
-      #grpLaunch,
-      #grpGameHud,
-      #grpMissionActions {
+      /* Visibility is driven by the native `hidden` attribute. These guards are
+         required because both selectors set `display`, which would otherwise
+         override the UA's [hidden] rule. Game-mode-only groups carry `hidden`
+         in the markup so they never flash before setMode() runs. */
+      .ctrl-group[hidden],
+      .result-row[hidden] {
         display: none;
       }
 
@@ -422,7 +436,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .fuel-tank-labels {
         display: flex;
         justify-content: space-between;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 10px;
         color: var(--text-dim);
         margin-top: 2px;
@@ -434,7 +448,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         align-items: baseline;
       }
       .hud-mission-value {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         color: var(--text);
       }
@@ -457,7 +471,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
       }
       .result-label {
@@ -498,7 +512,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         padding: 24px;
         cursor: pointer;
         text-align: center;
-        color: #fff;
+        /* Dark ink, not white: white fails WCAG AA on all four tier washes
+           (2.2:1 success / 3.9:1 close / 1.9:1 far / 4.0:1 miss) while #0b171b
+           passes on each. Kept at full opacity for the same reason. */
+        color: #0b171b;
         user-select: none;
       }
       /* Honor the [hidden] attribute. Without this, the
@@ -535,13 +552,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
       .overlay-subtitle {
         font-size: 1.1rem;
-        opacity: 0.95;
         max-width: 540px;
       }
       .overlay-hint {
         margin-top: 8px;
         font-size: 0.95rem;
-        opacity: 0.85;
       }
       @keyframes overlayPop {
         0% {
@@ -584,7 +599,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         z-index: 9999;
         color: var(--text-dim);
         font-size: 18px;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         padding: 0;
       }
       #missionAnalyzeBtn:hover {
@@ -604,7 +619,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         overflow: auto;
         padding: 24px;
         color: var(--text);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         line-height: 1.5;
       }
@@ -706,6 +721,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         class="lang-btn"
         id="langBtn"
         title="Switch language"
+        aria-label="Switch language"
       >
         PL
       </button>
@@ -772,7 +788,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           </div>
         </div>
 
-        <div class="ctrl-group" id="grpAltitude">
+        <div class="ctrl-group" id="grpAltitude" hidden>
           <span class="ctrl-label" id="lblFlybyAlt">Flyby Altitude</span>
           <div class="slider-row">
             <button
@@ -842,7 +858,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           </div>
         </div>
 
-        <div class="ctrl-group" id="grpLaunch">
+        <div class="ctrl-group" id="grpLaunch" hidden>
           <button
             type="button"
             class="type-btn full-width launch-btn"
@@ -902,7 +918,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           </button>
         </div>
 
-        <div class="ctrl-group" id="grpMissionActions">
+        <div class="ctrl-group" id="grpMissionActions" hidden>
           <div class="type-toggle">
             <button type="button" class="type-btn" id="retryMissionBtn">
               Retry
@@ -957,7 +973,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           </div>
         </div>
 
-        <div class="ctrl-group" id="grpGameHud">
+        <div class="ctrl-group" id="grpGameHud" hidden>
           <div class="hud-mission-label">
             <span class="ctrl-label" id="lblMissionTitle">Mission</span>
             <span class="hud-mission-value" id="hudMissionName">&mdash;</span>
@@ -1071,7 +1087,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             planet: "Planet",
             planetSpeed: "Planet Speed",
             flybyAlt: "Flyby Altitude",
-            spacecraftSpeed: "Spacecraft Speed",
             timeWarp: "Time Warp",
             warpNormal: "\u25b6",
             warpFast: "\u25b6\u25b6",
@@ -1104,7 +1119,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             infoDefault:
               "Drag the arrow body to reposition, or drag the tip to rotate. Increase the planet\u2019s speed to see a bigger boost.",
             infoGame:
-              "Drag the arrow tip to aim. Use Flyby Altitude to set how close you pass. Press Launch when ready — lower fuel + a tight flyby earn more stars.",
+              "Drag the arrow tip to aim: swing it around to change direction, stretch it for more speed. A longer arrow burns more fuel. Press Launch when ready — lower fuel + a tight flyby earn more stars.",
             gameSuccess: "Great shot!",
             gameCrash: "Crash! Too close",
             gameMiss: "Missed the target",
@@ -1121,8 +1136,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             launchBtn: "Launch",
             retryBtn: "Retry",
             newMissionBtn: "New Mission",
-            warpLabel: "Warp",
-            fuel: "Fuel",
             fuelUsed: "Fuel used",
             gold: "Gold",
             silver: "Silver",
@@ -1141,6 +1154,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ariaWarp3x: "3x playback speed",
             ariaWarp10x: "10x playback speed",
             ariaWarpGroup: "Playback speed",
+            ariaCanvas: "Gravity assist simulation viewport",
+            ariaPlanet: "Planet",
+            ariaPlanetVelDec: "Decrease planet speed",
+            ariaPlanetVelSlider: "Planet speed",
+            ariaPlanetVelInc: "Increase planet speed",
+            ariaWarpNormal: "Normal playback speed",
+            ariaWarpFast: "Fast playback speed",
+            ariaWarpFastest: "Fastest playback speed",
+            ariaZoomOut: "Zoom out",
+            ariaZoomIn: "Zoom in",
+            switchLang: "Switch language",
             mercury: "Mercury",
             venus: "Venus",
             earth: "Earth",
@@ -1159,7 +1183,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             planet: "Planeta",
             planetSpeed: "Pr\u0119dko\u015B\u0107 planety",
             flybyAlt: "Wysoko\u015B\u0107 przelotu",
-            spacecraftSpeed: "Pr\u0119dko\u015B\u0107 statku",
             timeWarp: "Przyspieszenie",
             warpNormal: "\u25b6",
             warpFast: "\u25b6\u25b6",
@@ -1193,7 +1216,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             infoDefault:
               "Przeci\u0105gnij cia\u0142o strza\u0142ki, aby zmieni\u0107 pozycj\u0119, lub przeci\u0105gnij grot, aby obr\u00F3ci\u0107. Zwi\u0119ksz pr\u0119dko\u015B\u0107 planety, aby zobaczy\u0107 wi\u0119kszy przyrost.",
             infoGame:
-              "Przeci\u0105gnij grot strza\u0142ki, aby celowa\u0107. Ustaw Wysoko\u015B\u0107 przelotu, aby przelecie\u0107 blisko planety. Kliknij Start gdy gotowe \u2014 mniejsze paliwo i ciasny przelot daj\u0105 wi\u0119cej gwiazdek.",
+              "Przeci\u0105gnij grot strza\u0142ki, aby celowa\u0107: obr\u00F3\u0107 j\u0105, by zmieni\u0107 kierunek, wyd\u0142u\u017C, by zwi\u0119kszy\u0107 pr\u0119dko\u015B\u0107. D\u0142u\u017Csza strza\u0142ka zu\u017Cywa wi\u0119cej paliwa. Kliknij Start gdy gotowe \u2014 mniejsze paliwo i ciasny przelot daj\u0105 wi\u0119cej gwiazdek.",
             gameSuccess: "\u015Awietny strza\u0142!",
             gameCrash: "Katastrofa! Za blisko",
             gameMiss: "Pud\u0142o",
@@ -1210,8 +1233,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             launchBtn: "Start",
             retryBtn: "Pon\u00F3w",
             newMissionBtn: "Nowa misja",
-            warpLabel: "Tempo",
-            fuel: "Paliwo",
             fuelUsed: "Zu\u017Cyte paliwo",
             gold: "Z\u0142oto",
             silver: "Srebro",
@@ -1230,6 +1251,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             ariaWarp3x: "Pr\u0119dko\u015B\u0107 odtwarzania 3x",
             ariaWarp10x: "Pr\u0119dko\u015B\u0107 odtwarzania 10x",
             ariaWarpGroup: "Pr\u0119dko\u015B\u0107 odtwarzania",
+            ariaCanvas: "Widok symulacji asysty grawitacyjnej",
+            ariaPlanet: "Planeta",
+            ariaPlanetVelDec: "Zmniejsz pr\u0119dko\u015B\u0107 planety",
+            ariaPlanetVelSlider: "Pr\u0119dko\u015B\u0107 planety",
+            ariaPlanetVelInc: "Zwi\u0119ksz pr\u0119dko\u015B\u0107 planety",
+            ariaWarpNormal: "Normalna pr\u0119dko\u015B\u0107 odtwarzania",
+            ariaWarpFast: "Szybka pr\u0119dko\u015B\u0107 odtwarzania",
+            ariaWarpFastest: "Najszybsza pr\u0119dko\u015B\u0107 odtwarzania",
+            ariaZoomOut: "Pomniejsz",
+            ariaZoomIn: "Powi\u0119ksz",
+            switchLang: "Prze\u0142\u0105cz j\u0119zyk",
             mercury: "Merkury",
             venus: "Wenus",
             earth: "Ziemia",
@@ -1491,7 +1523,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         // I18N FUNCTIONS
         // ══════════════════════════════════════════════
         function T(key) {
-          return I18N[state.lang][key];
+          return I18N[state.lang][key] || key;
         }
 
         function applyTranslations() {
@@ -1542,6 +1574,47 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           document
             .getElementById("warpGame10xBtn")
             .setAttribute("aria-label", l.ariaWarp10x);
+          // Chrome that predates game mode: these aria-labels were hard-coded
+          // in English, so a Polish screen-reader user heard English for every
+          // control regardless of the language toggle.
+          document
+            .getElementById("canvas")
+            .setAttribute("aria-label", l.ariaCanvas);
+          document
+            .getElementById("planetSelect")
+            .setAttribute("aria-label", l.ariaPlanet);
+          document
+            .getElementById("planetVelDecBtn")
+            .setAttribute("aria-label", l.ariaPlanetVelDec);
+          document
+            .getElementById("planetVelSlider")
+            .setAttribute("aria-label", l.ariaPlanetVelSlider);
+          document
+            .getElementById("planetVelIncBtn")
+            .setAttribute("aria-label", l.ariaPlanetVelInc);
+          document
+            .getElementById("warpNormalBtn")
+            .setAttribute("aria-label", l.ariaWarpNormal);
+          document
+            .getElementById("warpFastBtn")
+            .setAttribute("aria-label", l.ariaWarpFast);
+          document
+            .getElementById("warpFastestBtn")
+            .setAttribute("aria-label", l.ariaWarpFastest);
+          // Same string as the title: the double-click-resets-view affordance
+          // was carried only by the tooltip, invisible to assistive tech.
+          document
+            .getElementById("resetBtn")
+            .setAttribute("aria-label", l.stop);
+          document
+            .getElementById("zoomOutBtn")
+            .setAttribute("aria-label", l.ariaZoomOut);
+          document
+            .getElementById("zoomInBtn")
+            .setAttribute("aria-label", l.ariaZoomIn);
+          const langBtnEl = document.getElementById("langBtn");
+          langBtnEl.title = l.switchLang;
+          langBtnEl.setAttribute("aria-label", l.switchLang);
           updateLaunchBtn();
           updateHudMissionName();
           document.getElementById("precisionBtn").textContent = l.precision;
@@ -1616,21 +1689,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // Game-only groups.
           // Note: `grpAltitude` is intentionally NOT included here. In
           // game mode altitude is pinned per mission and the player has
-          // no control over it, so the slider stays hidden in both modes
-          // (the CSS default `#grpAltitude { display: none }` keeps it
-          // out of the way without us touching it on mode switch).
+          // no control over it, so the slider stays hidden in both modes —
+          // it keeps the `hidden` attribute it carries in the markup.
           const gameOnly = ["grpLaunch", "grpMissionActions", "grpGameHud"];
-          // Explore-only groups have no CSS hide rule, so "" falls back to the
-          // .ctrl-group flex display. Game-only groups DO have a CSS hide rule
-          // (so they don't flash on page load before JS runs), so showing them
-          // requires an explicit "flex" to override the rule.
+          // Visibility rides on the native `hidden` attribute (see the
+          // .ctrl-group[hidden] guard in CSS). Game-only groups carry `hidden`
+          // in the markup so they never flash before this runs.
           exploreOnly.forEach(function (id) {
-            document.getElementById(id).style.display =
-              mode === "explore" ? "" : "none";
+            document.getElementById(id).hidden = mode !== "explore";
           });
           gameOnly.forEach(function (id) {
-            document.getElementById(id).style.display =
-              mode === "game" ? "flex" : "none";
+            document.getElementById(id).hidden = mode !== "game";
           });
 
           // Re-populate the planet dropdown so non-scored planets disappear
@@ -1763,7 +1832,15 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.periapsisAlt = alt;
           state.approachSpeed = speed;
           initVecPosition();
-          computeTrajectory();
+          // Point the game-mode stop criterion at the candidate being tested,
+          // not at whatever mission happens to be live.
+          const prevSimTarget = simTarget;
+          simTarget = { x: target.x, y: target.y, hitR2: hitRSq };
+          try {
+            computeTrajectory();
+          } finally {
+            simTarget = prevSimTarget;
+          }
           if (state.crashed) return { hit: false, deltaV: 0 };
           if (state.trajectory.length < 50) return { hit: false, deltaV: 0 };
           if (state.closestIndex >= state.trajectory.length - 5)
@@ -1797,6 +1874,28 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             planet.defaultSpeed;
           document.getElementById("planetVelVal").textContent =
             planet.defaultSpeed;
+
+          // Drop the outgoing mission before any sampling. computeTrajectory()
+          // falls back to state.game.mission for its game-mode stop criterion,
+          // so leaving the previous mission in place truncated every candidate
+          // trajectory against the old target — a target that, after a planet
+          // change, belongs to entirely different geometry. The first mission
+          // of a session was unaffected (mission already null), which is why
+          // only REGENERATED missions degraded.
+          state.game.mission = null;
+
+          // The witness sampler and simHitWithDeltaV() both mutate the live
+          // approach state. The success path overwrites it from
+          // mission.defaults, but the no-mission path has nothing to overwrite
+          // it with, so snapshot it here and restore it there — otherwise the
+          // canvas keeps rendering the last random search sample.
+          const entryApproach = {
+            angle: state.approachAngle,
+            alt: state.periapsisAlt,
+            speed: state.approachSpeed,
+            vecPfX: state.vecPfX,
+            vecPfY: state.vecPfY,
+          };
 
           let mission = null;
           // Track the best partially-valid candidate (has thresholds but
@@ -2054,6 +2153,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               vIn: 0,
               vOut: 0,
             };
+            // Restore the approach state the search trampled and rebuild the
+            // trajectory. Without this the next animate() frame draws the last
+            // random search sample — a random arrow angle and length, a random
+            // planned-fuel readout, possibly a CRASH label — while the panel
+            // reads "Couldn't build a mission here right now."
+            state.approachAngle = entryApproach.angle;
+            state.periapsisAlt = entryApproach.alt;
+            state.approachSpeed = entryApproach.speed;
+            state.vecPfX = entryApproach.vecPfX;
+            state.vecPfY = entryApproach.vecPfY;
+            recompute();
+            syncAltitudeSlider();
             updateHudMissionName();
             updateFuelHud();
             updateLaunchBtn();
@@ -2289,7 +2400,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // Re-show stat rows (they may have been hidden by
           // renderNoMissionPanel on a prior generator failure).
           const rows = panel.querySelectorAll(".result-row");
-          for (let i = 0; i < rows.length; i++) rows[i].style.display = "";
+          for (let i = 0; i < rows.length; i++) rows[i].hidden = false;
           const fuel = state.game.lastAttempt.fuelUsed;
           const boost = state.game.lastAttempt.boost;
           const vIn = state.game.lastAttempt.vIn;
@@ -2350,7 +2461,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           if (!panel) return;
           panel.hidden = false;
           const rows = panel.querySelectorAll(".result-row");
-          for (let i = 0; i < rows.length; i++) rows[i].style.display = "none";
+          for (let i = 0; i < rows.length; i++) rows[i].hidden = true;
           const svg = document.getElementById("gameStars");
           if (svg) while (svg.firstChild) svg.removeChild(svg.firstChild);
           const msgEl = document.getElementById("resultMsg");
@@ -2600,14 +2711,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             );
             goldMarker.style.left = goldPct + "%";
             silverMarker.style.left = silverPct + "%";
-            goldMarker.style.display = "";
-            silverMarker.style.display = "";
+            goldMarker.hidden = false;
+            silverMarker.hidden = false;
             goldLbl.textContent = T("gold") + " ≤ " + m.thresholds.goldFuel;
             silverLbl.textContent =
               T("silver") + " ≤ " + m.thresholds.silverFuel;
           } else {
-            goldMarker.style.display = "none";
-            silverMarker.style.display = "none";
+            goldMarker.hidden = true;
+            silverMarker.hidden = true;
             goldLbl.textContent = T("gold") + " ≤ —";
             silverLbl.textContent = T("silver") + " ≤ —";
           }
@@ -2790,10 +2901,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           frozenRootY = 0;
         let dragPrevX = 0,
           dragPrevY = 0;
+        // Only ever "auto", "planet" or "spacecraft".
         let cameraMode = "auto";
         let manualScale = 1;
-        const manualCamX = 0,
-          manualCamY = 0;
         let zoomFactor = 1;
         const MIN_ARROW_PX = 68,
           MAX_ARROW_PX = 188;
@@ -2829,6 +2939,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         // ══════════════════════════════════════════════
         // PHYSICS
         // ══════════════════════════════════════════════
+        // Target override for computeTrajectory()'s game-mode stop criterion,
+        // as { x, y, hitR2 }. The mission generator evaluates candidate targets
+        // before any mission is committed, so it supplies one here rather than
+        // letting computeTrajectory() read state.game.mission — which during a
+        // regeneration still holds the PREVIOUS mission. Always null outside a
+        // generator batch. See simHitWithDeltaV().
+        let simTarget = null;
+
         function computeTrajectory() {
           const startDist = computeStartDist();
           const GM = state.planetMass * GM_BASE;
@@ -2868,17 +2986,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // closest sun-frame distance to the target and then drifted to a
           // margin past it (max of 3× that minimum or 3× the hit radius),
           // we stop. See gameModeStop check below.
-          const gameMode =
-            state.mode === "game" &&
+          const gameTgt =
+            simTarget ||
+            (state.mode === "game" &&
             state.game &&
             state.game.mission &&
-            state.game.mission.target;
-          const gameTgtX = gameMode ? state.game.mission.target.x : 0;
-          const gameTgtY = gameMode ? state.game.mission.target.y : 0;
-          const gameHitR2 = gameMode
-            ? state.game.mission.hitRadiusWorld *
-              state.game.mission.hitRadiusWorld
-            : 0;
+            state.game.mission.target
+              ? {
+                  x: state.game.mission.target.x,
+                  y: state.game.mission.target.y,
+                  hitR2:
+                    state.game.mission.hitRadiusWorld *
+                    state.game.mission.hitRadiusWorld,
+                }
+              : null);
+          const gameMode = !!gameTgt;
+          const gameTgtX = gameMode ? gameTgt.x : 0;
+          const gameTgtY = gameMode ? gameTgt.y : 0;
+          const gameHitR2 = gameMode ? gameTgt.hitR2 : 0;
           let gameMinDT2 = Infinity;
 
           for (let i = 0; i < MAX_STEPS; i++) {
@@ -3321,13 +3446,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             lastScale = scale;
             frozenCamX = camX;
             frozenCamY = camY;
-          } else if (cameraMode === "manual") {
-            scale = manualScale;
-            camX = manualCamX;
-            camY = manualCamY;
-            lastScale = scale;
-            frozenCamX = camX;
-            frozenCamY = camY;
           } else {
             scale *= zoomFactor;
             lastScale = scale;
@@ -3400,7 +3518,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               1.5,
               10,
             );
-            ctx.font = '14px "Share Tech Mono", monospace';
+            ctx.font = '14px "JetBrains Mono", monospace';
             ctx.fillStyle = "rgba(" + pg + ",0.5)";
             ctx.textAlign = "center";
             ctx.fillText("v\u209A", ppx + pr + 6 + arrowLen / 2, ppy - 16);
@@ -3610,7 +3728,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
             const midX = (sx + tipX) / 2,
               midY = (sy + tipY) / 2;
-            ctx.font = '17px "Share Tech Mono", monospace';
+            ctx.font = '17px "JetBrains Mono", monospace';
             ctx.fillStyle = "#58a6ff";
             ctx.textAlign = "center";
             ctx.fillText(
@@ -3635,7 +3753,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
 
           // ── Labels ──
-          ctx.font = '15px "Share Tech Mono", monospace';
+          ctx.font = '15px "JetBrains Mono", monospace';
           ctx.textAlign = "center";
           ctx.fillStyle = "rgba(110,122,138,0.7)";
           const plLabelY =
@@ -3737,7 +3855,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           const lines = [T("hintLine1"), T("hintLine2")];
 
-          ctx.font = '13px "Share Tech Mono", monospace';
+          ctx.font = '13px "JetBrains Mono", monospace';
           ctx.textAlign = "left";
           ctx.textBaseline = "top";
 
@@ -3860,7 +3978,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
             drawArrow(sx, sy, ex, ey, color, 2.5, 16);
 
-            ctx.font = '17px "Share Tech Mono", monospace';
+            ctx.font = '17px "JetBrains Mono", monospace';
             ctx.fillStyle = color;
             ctx.textAlign = "center";
             const mx = (sx + ex) / 2,
@@ -3997,8 +4115,17 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           updateWarpBtns();
         }
 
+        // Called from the rAF loop every frame. The button state only depends
+        // on (playing, warpLevel, lang), so memoize that signature and skip the
+        // six DOM writes otherwise — the same per-frame DOM-write cost the
+        // comment above updateFuelHud() warns causes visible animation jitter.
+        let warpBtnSig = "";
+
         function updateWarpBtns() {
           const playing = state.playing;
+          const sig = playing + "|" + state.warpLevel + "|" + state.lang;
+          if (sig === warpBtnSig) return;
+          warpBtnSig = sig;
           const nBtn = document.getElementById("warpNormalBtn");
           const fBtn = document.getElementById("warpFastBtn");
           const ffBtn = document.getElementById("warpFastestBtn");
@@ -4297,18 +4424,38 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           state.approachSpeed = Math.max(10, Math.min(100, Math.round(speed)));
 
           state.currentIndex = 0;
-          // Game mode: altitude is pinned at mission.altitude (set when
-          // the mission is generated). Skip the alt-from-position
-          // recompute so the arrow drag only changes angle and speed.
-          // Explore mode keeps the original behavior — altitude tracks
-          // the arrow body position.
-          if (state.mode !== "game") {
+          // Game mode: altitude is pinned at mission.altitude (set when the
+          // mission is generated), so the drag only changes angle and speed.
+          // Pinning it requires re-deriving the integration start point:
+          // periapsis is a function of the start position AND the velocity,
+          // so leaving vecPf frozen while (angle, speed) move lets the true
+          // periapsis drift away from mission.altitude while
+          // syncAltitudeSlider() keeps reporting the pinned value. It also
+          // breaks the contract with the mission generator — both
+          // simHitWithDeltaV() and simOneAndClassify() call initVecPosition()
+          // before integrating, so without this every (angle, speed) pair the
+          // gold/silver thresholds were validated against maps to a different
+          // trajectory here and can be unreachable by dragging.
+          // The arrow is drawn from frozenRootX/Y for the duration of the drag
+          // (see the vector block in drawScene), so moving vecPf mid-drag does
+          // not disturb aiming; the root settles to its true position on release.
+          // Explore mode keeps the original behavior — altitude tracks the
+          // arrow body position.
+          if (state.mode === "game") {
+            initVecPosition();
+          } else {
             computePeriapsisAltFromPosition();
           }
-          computeTrajectory();
-
-          updateReadouts();
-          updateInfo();
+          // recompute(), not a bare computeTrajectory(): grabbing the arrow
+          // mid-flight must also clear the in-progress attempt. Without it
+          // state.game.launched stayed true while result stayed null, so the
+          // Launch button kept its "Launch" label and enabled state but its
+          // handler took neither branch — a silent no-op the player could only
+          // escape via Retry or New Mission. recompute() clears
+          // launched/result/hitIndex, hides the stale result panel and
+          // refreshes the button; it also performs the updateReadouts() and
+          // updateInfo() calls this function used to make itself.
+          recompute();
           // Game-mode HUD updates triggered explicitly here (instead of every
           // animation frame) so the fuel tank and altitude readout track the
           // drag without paying a DOM-write cost on the 60Hz draw loop.
@@ -4499,8 +4646,22 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         // ══════════════════════════════════════════════
         // READOUTS & INFO
         // ══════════════════════════════════════════════
+        // Cached formatter: this runs from the rAF loop, and toLocaleString()
+        // builds a fresh Intl.NumberFormat on every call. The locale follows
+        // the language toggle — "en-US" was hard-coded, so Polish readouts used
+        // a comma group separator instead of the space Polish requires.
+        let kmFormatter = null;
+        let kmFormatterLang = null;
+
         function formatKm(km) {
-          return Math.round(km).toLocaleString("en-US") + " km";
+          if (kmFormatterLang !== state.lang) {
+            kmFormatterLang = state.lang;
+            kmFormatter = new Intl.NumberFormat(
+              state.lang === "pl" ? "pl-PL" : "en-US",
+              { maximumFractionDigits: 0 },
+            );
+          }
+          return kmFormatter.format(Math.round(km)) + " km";
         }
 
         function formatKmS(kmps) {
@@ -4509,14 +4670,42 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         // Live readouts updated every animation frame from drawScene(). Reads the
         // current trajectory sample at state.currentIndex and refreshes the current
-        // altitude, current speed, and the speed gauge fill. Cheap (~3 DOM ops) and
-        // guarded against an empty trajectory.
+        // altitude, current speed, and the speed gauge fill. Guarded against an
+        // empty trajectory.
+        //
+        // Every write goes through the memo below: the same per-frame DOM-write
+        // cost the NOTE at the end of this function warns about applies here
+        // too, and while the sim is paused (which is most of the time) all three
+        // values are unchanged frame to frame. Memoizing in JS rather than
+        // comparing against textContent also avoids a DOM read per frame.
+        let lastAltText = null;
+        let lastSpeedText = null;
+        let lastGaugeWidth = null;
+
+        function setAltText(v) {
+          if (v === lastAltText) return;
+          lastAltText = v;
+          document.getElementById("curAltVal").textContent = v;
+        }
+
+        function setSpeedText(v) {
+          if (v === lastSpeedText) return;
+          lastSpeedText = v;
+          document.getElementById("curSpeedVal").textContent = v;
+        }
+
+        function setGaugeWidth(v) {
+          if (v === lastGaugeWidth) return;
+          lastGaugeWidth = v;
+          document.getElementById("gaugeFill").style.width = v;
+        }
+
         function updateLiveReadouts() {
           const len = state.trajectory.length;
           if (len === 0) {
-            document.getElementById("curSpeedVal").textContent = "\u2014";
-            document.getElementById("curAltVal").textContent = "\u2014";
-            document.getElementById("gaugeFill").style.width = "0%";
+            setSpeedText("\u2014");
+            setAltText("\u2014");
+            setGaugeWidth("0%");
             return;
           }
           const idx = Math.min(state.currentIndex, len - 1);
@@ -4528,14 +4717,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             0,
             (r - state.planetRadius) * KM_PER_SIM_LENGTH,
           );
-          document.getElementById("curAltVal").textContent = formatKm(altKm);
+          setAltText(formatKm(altKm));
 
           const sx = pt.vx + vp;
           const sy = pt.vy;
           const vSliderUnits = Math.sqrt(sx * sx + sy * sy) / V_SCALE;
-          document.getElementById("curSpeedVal").textContent = formatKmS(
-            vSliderUnits * KMS_PER_SLIDER_VEL,
-          );
+          setSpeedText(formatKmS(vSliderUnits * KMS_PER_SLIDER_VEL));
 
           let pct =
             state.maxSpeedSliderUnits > 0
@@ -4543,8 +4730,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
               : 0;
           if (pct < 0) pct = 0;
           if (pct > 100) pct = 100;
-          document.getElementById("gaugeFill").style.width =
-            pct.toFixed(1) + "%";
+          setGaugeWidth(pct.toFixed(1) + "%");
 
           // NOTE: do NOT call updateFuelHud / syncAltitudeSlider here. Per-frame
           // DOM writes to fuel-bar style.width and slider .value caused visible

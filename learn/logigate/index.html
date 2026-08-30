@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- logigate.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- logigate/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -33,8 +33,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Interactive logic gate trainer. Build circuits with AND, OR, NOT, XOR gates and watch signals propagate in real time."
     />
     <title>Logic Gate Trainer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <script
@@ -58,7 +60,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         --panel-border: #1e2a3a;
         --text: #c9d1d9;
         --text-dim: #6e7a8a;
-        --accent: #3fb950;
+        --accent: #58a6ff;
+        --gain: #3fb950;
+        --loss: #f97583;
+        /* app entity colors */
         --wire-idle: #253040;
         --wire-high: #3fb950;
         --wire-low: #c24a4a;
@@ -76,50 +81,58 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         --dot-color: #1a2535;
       }
 
-      [data-theme="light"] {
-        --bg: #f0f2f5;
-        --panel: #ffffff;
-        --panel-border: #d0d5dd;
-        --text: #1a1a2e;
-        --text-dim: #6b7280;
-        --accent: #16a34a;
-        --wire-idle: #c4cad4;
-        --wire-high: #16a34a;
-        --wire-low: #dc2626;
-        --not-color: #e11d48;
-        --and-color: #0891b2;
-        --or-color: #2563eb;
-        --xor-color: #ca8a04;
-        --gate-fill: #ffffff;
-        --gate-stroke: #94a3b8;
-        --input-high: #16a34a;
-        --input-low: #94a3b8;
-        --input-label-color: #1a1a2e;
-        --output-led-high: #16a34a;
-        --output-led-low: #d0d5dd;
-        --dot-color: #d0d5dd;
-      }
-
       body {
         background: var(--bg);
         color: var(--text);
         font-family: "Outfit", sans-serif;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        overflow-x: hidden;
-        -webkit-user-select: none;
-        user-select: none;
-        touch-action: manipulation;
-        padding: env(safe-area-inset-top) env(safe-area-inset-right)
-          env(safe-area-inset-bottom) env(safe-area-inset-left);
-        overscroll-behavior: none;
         -webkit-tap-highlight-color: transparent;
       }
 
-      body::before {
+      header {
+        padding: 20px 28px 16px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+      .header-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .main {
+        display: flex;
+        height: calc(100vh - 80px);
+      }
+      .canvas-wrap {
+        flex: 1;
+        position: relative;
+        background: #080c14;
+        min-width: 0;
+      }
+      .canvas-wrap::before {
         content: "";
-        position: fixed;
+        position: absolute;
         inset: 0;
         background-image: radial-gradient(
           circle,
@@ -131,138 +144,97 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         pointer-events: none;
         z-index: 0;
       }
-
-      header {
-        position: relative;
-        z-index: 1;
-        padding: 20px 28px 0;
-      }
-      header h1 {
-        font-size: 22px;
-        font-weight: 700;
-        margin-bottom: 4px;
-      }
-      header h1 a {
-        color: inherit;
-        text-decoration: none;
-      }
-      header h1 a:hover {
-        opacity: 0.7;
-      }
-      header p {
-        color: var(--text-dim);
-        font-size: 13px;
+      .controls {
+        width: 300px;
+        flex-shrink: 0;
+        padding: 20px;
+        border-left: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        overflow-y: auto;
       }
 
-      .config {
-        position: relative;
-        z-index: 1;
+      .ctrl-group {
         display: flex;
-        align-items: center;
-        gap: 24px;
-        padding: 16px 28px;
-        flex-wrap: wrap;
+        flex-direction: column;
+        gap: 6px;
       }
-      .config-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .config-group label,
-      .config-group .config-label {
-        font-size: 12px;
-        color: var(--text-dim);
+      .ctrl-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 1px;
-        font-family: "Share Tech Mono", monospace;
+        color: var(--text-dim);
       }
 
-      .gate-toggles {
+      .type-toggle {
         display: flex;
         gap: 6px;
       }
-      .gate-toggle {
-        padding: 8px 14px;
+      .type-btn {
+        padding: 10px 4px;
         border-radius: 6px;
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
-        font-size: 13px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
         cursor: pointer;
         transition: all 0.2s;
-        user-select: none;
-        min-height: 38px;
+        text-align: center;
+        flex: 1;
+        touch-action: manipulation;
       }
-      .gate-toggle.active {
+      .type-btn:hover:not(:disabled) {
+        border-color: var(--accent);
+      }
+      .type-btn.active {
         border-color: var(--accent);
         color: var(--accent);
-        background: #1a2c1f;
       }
-      .gate-toggle[data-gate="NOT"].active {
+      .type-btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+      .type-btn.full-width {
+        flex: none;
+        width: 100%;
+      }
+      /* Gate identity: entity-colored active states (see docs/style-drift.md) */
+      .type-btn[data-gate="NOT"].active {
         border-color: var(--not-color);
         color: var(--not-color);
-        background: #2a1520;
       }
-      .gate-toggle[data-gate="AND"].active {
+      .type-btn[data-gate="AND"].active {
         border-color: var(--and-color);
         color: var(--and-color);
-        background: #152025;
       }
-      .gate-toggle[data-gate="OR"].active {
+      .type-btn[data-gate="OR"].active {
         border-color: var(--or-color);
         color: var(--or-color);
-        background: #151e2a;
       }
-      .gate-toggle[data-gate="XOR"].active {
+      .type-btn[data-gate="XOR"].active {
         border-color: var(--xor-color);
         color: var(--xor-color);
-        background: #252015;
       }
 
-      [data-theme="light"] .gate-toggle.active {
-        background: #e8f5e9;
+      .launch-btn {
+        padding: 12px 4px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--bg);
       }
-      [data-theme="light"] .gate-toggle[data-gate="NOT"].active {
-        background: #fce4ec;
+      .launch-btn:hover:not(:disabled) {
+        background: #79b8ff;
+        border-color: #79b8ff;
       }
-      [data-theme="light"] .gate-toggle[data-gate="AND"].active {
-        background: #e0f7fa;
-      }
-      [data-theme="light"] .gate-toggle[data-gate="OR"].active {
-        background: #e3f2fd;
-      }
-      [data-theme="light"] .gate-toggle[data-gate="XOR"].active {
-        background: #fff8e1;
-      }
-
-      /* Theme toggle switch */
-      .header-right {
-        position: absolute;
-        right: 28px;
-        top: 24px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        z-index: 2;
-      }
-
-      .theme-toggle {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        user-select: none;
-        padding: 8px;
-      }
-
-      .theme-toggle-icon {
-        font-size: 22px;
-        line-height: 1;
-        transition: transform 0.3s;
-      }
-
-      .theme-toggle:hover .theme-toggle-icon {
-        transform: scale(1.15);
+      .launch-btn.is-retry {
+        background: var(--panel);
+        color: var(--accent);
       }
 
       .lang-btn {
@@ -273,7 +245,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -287,134 +259,34 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
 
       .count-select {
-        padding: 8px 12px;
+        width: 100%;
+        padding: 8px 10px;
         border-radius: 6px;
         border: 1.5px solid var(--panel-border);
         background: var(--panel);
         color: var(--text);
-        font-family: "Share Tech Mono", monospace;
-        font-size: 13px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
         cursor: pointer;
-        appearance: none;
-        min-height: 38px;
+        outline: none;
+      }
+      .count-select:focus {
+        border-color: var(--accent);
       }
       .count-select option {
         background: var(--panel);
         color: var(--text);
       }
 
-      .btn {
-        padding: 10px 20px;
-        border-radius: 6px;
-        border: 1.5px solid var(--accent);
-        background: transparent;
-        color: var(--accent);
-        font-family: "Share Tech Mono", monospace;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        min-height: 40px;
-      }
-      .btn:hover {
-        background: var(--accent);
-        color: var(--bg);
-      }
-      .btn.reveal {
-        border-color: #e3b341;
-        color: #e3b341;
-      }
-      .btn.reveal:hover {
-        background: #e3b341;
-        color: var(--bg);
-      }
-      .btn.reveal.revealed {
-        border-color: var(--not-color);
-        color: var(--not-color);
-        pointer-events: auto;
-        opacity: 1;
-      }
-      .btn.reveal.revealed:hover {
-        background: var(--not-color);
-        color: var(--bg);
-      }
-      .btn.wire-toggle {
-        border-color: var(--panel-border);
-        color: var(--text-dim);
-      }
-      .btn.wire-toggle:hover {
-        background: var(--panel-border);
-        color: var(--text);
-      }
-      .btn.wire-toggle.active {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-      .btn.wire-toggle.active:hover {
-        background: var(--accent);
-        color: var(--bg);
-      }
-
-      .btn.randomize {
-        border-color: var(--or-color);
-        color: var(--or-color);
-      }
-      .btn.randomize:hover {
-        background: var(--or-color);
-        color: var(--bg);
-      }
-
-      .speed-toggle {
-        display: flex;
-        gap: 6px;
-      }
-      .speed-btn {
-        padding: 8px 6px;
-        border-radius: 6px;
-        border: 1.5px solid var(--panel-border);
-        background: var(--panel);
-        color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-align: center;
-      }
-      .speed-btn:hover {
-        border-color: var(--accent);
-      }
-      .speed-btn.active {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-
-      .circuit-container {
-        position: relative;
-        z-index: 1;
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px 28px 20px;
-        min-height: 400px;
-        -webkit-overflow-scrolling: touch;
-      }
-      .circuit-container .empty-state {
-        color: var(--text-dim);
-        font-size: 14px;
-        font-family: "Share Tech Mono", monospace;
-        text-align: center;
-        line-height: 1.8;
-      }
-      .circuit-container .empty-state span {
-        color: var(--accent);
-      }
-
       svg#circuit {
+        display: block;
         width: 100%;
         height: 100%;
-        max-height: 75vh;
+        position: relative;
+        z-index: 1;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
       }
 
       /* ── SVG element styles ── */
@@ -456,14 +328,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
       .gate-label {
         fill: var(--text);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-anchor: middle;
         dominant-baseline: central;
         pointer-events: none;
       }
       .gate-value {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         text-anchor: middle;
@@ -513,7 +385,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
       .input-label {
         fill: var(--input-label-color);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         text-anchor: middle;
@@ -522,7 +394,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
       .input-value-label {
         fill: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-anchor: middle;
         dominant-baseline: central;
@@ -550,13 +422,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
       .output-label {
         fill: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         text-anchor: middle;
         dominant-baseline: central;
       }
       .output-value {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         font-weight: 700;
         text-anchor: middle;
@@ -581,7 +453,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
       .wire-label text {
         fill: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 10px;
         font-weight: 700;
         text-anchor: middle;
@@ -604,7 +476,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
       .guess-btn text {
         fill: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 14px;
         font-weight: 700;
         text-anchor: middle;
@@ -643,6 +515,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         justify-content: center;
         cursor: pointer;
         animation: overlayFadeIn 0.3s ease;
+        padding: 24px;
+        text-align: center;
+      }
+      .result-overlay.success {
+        background: rgba(0, 200, 83, 0.92);
+      }
+      .result-overlay.miss {
+        background: rgba(211, 47, 47, 0.92);
       }
       .overlay-emoji {
         font-size: 72px;
@@ -650,13 +530,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
       .overlay-msg {
         font-family: "Outfit", sans-serif;
-        font-size: 24px;
+        font-size: 28px;
         font-weight: 700;
         margin-top: 16px;
-        color: #fff;
+        color: #0b171b;
       }
       .overlay-hint {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         margin-top: 8px;
         color: rgba(255, 255, 255, 0.6);
@@ -692,21 +572,15 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         stroke-width: 2;
       }
 
-      .bottom-bar {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        padding: 16px 28px 24px;
-      }
       .status-text {
-        font-family: "Share Tech Mono", monospace;
-        font-size: 13px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
         color: var(--text-dim);
-        min-width: 200px;
-        text-align: center;
+        line-height: 1.6;
+        min-height: 38px;
+      }
+      .status-text .accent {
+        color: var(--accent);
       }
       .status-text .val-high {
         color: var(--wire-high);
@@ -714,123 +588,155 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       .status-text .val-low {
         color: var(--wire-low);
       }
-      /* Touch device adjustments (won't affect mouse/desktop) */
-      @media (pointer: coarse) {
-        .gate-toggle {
-          padding: 10px 16px;
-          min-height: 44px;
-        }
-        .btn {
-          padding: 12px 22px;
-          min-height: 44px;
-        }
-        .count-select {
-          padding: 10px 14px;
-          min-height: 44px;
-        }
-        .config {
-          gap: 16px;
-          row-gap: 12px;
-        }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
       }
 
-      /* iPad portrait */
-      @media (max-width: 820px) {
-        .config {
-          gap: 14px;
-          row-gap: 10px;
-          padding: 14px 20px;
-        }
-        header {
-          padding: 16px 20px 0;
-        }
-        .circuit-container {
-          padding: 8px 16px 16px;
-        }
+      .type-btn:focus-visible,
+      .lang-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
       }
-
-      /* Focus-visible styles for keyboard users */
-      .gate-toggle:focus-visible,
-      .btn:focus-visible,
-      .speed-btn:focus-visible,
-      .lang-btn:focus-visible,
-      .theme-toggle-btn:focus-visible,
-      .count-select:focus-visible {
+      .input-toggle:focus-visible,
+      .guess-btn:focus-visible {
         outline: 2px solid var(--accent);
         outline-offset: 2px;
       }
 
-      /* Reduced motion fallback — high specificity avoids !important */
       @media (prefers-reduced-motion: reduce) {
-        html body *,
-        html body *::before,
-        html body *::after {
-          animation-duration: 0.01ms;
-          animation-iteration-count: 1;
-          transition-duration: 0.01ms;
+        .result-overlay,
+        .overlay-emoji {
+          animation: none;
+        }
+        .wire,
+        .gate-value,
+        .output-value,
+        .output-led,
+        .input-circle,
+        .input-ring,
+        .input-value-label,
+        .guess-btn,
+        .type-btn,
+        .launch-btn,
+        .lang-btn,
+        .count-select {
+          transition: none;
         }
       }
 
-      /* Inline style replacements */
-      .home-icon {
-        font-size: 18px;
-        line-height: 1;
-      }
-      #speedGroup {
-        display: flex;
+      @media (max-width: 700px) {
+        .main {
+          flex-direction: column;
+        }
+        .canvas-wrap {
+          min-height: 350px;
+          flex: 1;
+        }
+        .controls {
+          width: 100%;
+          flex-direction: row;
+          flex-wrap: wrap;
+          border-left: none;
+          border-top: 1px solid var(--panel-border);
+          padding: 12px 16px;
+          gap: 12px;
+        }
+        .ctrl-group {
+          min-width: 140px;
+          flex: 1;
+        }
       }
     </style>
   </head>
   <body>
     <header>
-      <h1>
-        <a href="/learn/"><span class="home-icon">⚡</span></a>
-        <span id="titleText">Logic Gate Trainer</span>
-      </h1>
-      <p id="subtitleText">
-        Practice solving circuits — set inputs, predict the output, then reveal!
-      </p>
-      <div class="header-right">
-        <button
-          type="button"
-          class="lang-btn"
-          id="langBtn"
-          title="Switch language"
-        >
-          PL
-        </button>
-        <button
-          type="button"
-          class="theme-toggle-btn theme-toggle"
-          id="themeToggleBtn"
-          aria-label="Toggle color theme"
-        >
-          <span class="theme-toggle-icon" id="themeIcon">☀</span>
-        </button>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"><span class="header-icon">⚡</span></a>
+          <span id="titleText">Logic Gate Trainer</span>
+        </h1>
+        <p id="subtitleText">
+          Practice solving circuits — set inputs, predict the output, then
+          reveal!
+        </p>
       </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+        aria-label="Switch language"
+      >
+        PL
+      </button>
     </header>
 
-    <main>
-      <div class="config">
-        <div class="config-group">
-          <span id="lblGates" class="config-label">Gates:</span>
-          <div class="gate-toggles" id="gateToggles">
-            <button type="button" class="gate-toggle active" data-gate="NOT">
+    <main class="main">
+      <div class="canvas-wrap" id="circuitContainer"></div>
+      <div class="controls">
+        <div class="ctrl-group">
+          <div class="status-text" id="statusText" aria-live="polite"></div>
+        </div>
+        <button
+          type="button"
+          class="type-btn full-width launch-btn"
+          id="revealBtn"
+        >
+          Check
+        </button>
+        <div class="ctrl-group">
+          <button type="button" class="type-btn full-width" id="generateBtn">
+            Generate
+          </button>
+          <button type="button" class="type-btn full-width" id="randomBtn">
+            Random Inputs
+          </button>
+        </div>
+        <div class="ctrl-group">
+          <span id="lblGates" class="ctrl-label">Gates:</span>
+          <div class="type-toggle" id="gateToggles">
+            <button
+              type="button"
+              class="type-btn gate-toggle active"
+              data-gate="NOT"
+            >
               NOT
             </button>
-            <button type="button" class="gate-toggle active" data-gate="AND">
+            <button
+              type="button"
+              class="type-btn gate-toggle active"
+              data-gate="AND"
+            >
               AND
             </button>
-            <button type="button" class="gate-toggle active" data-gate="OR">
+            <button
+              type="button"
+              class="type-btn gate-toggle active"
+              data-gate="OR"
+            >
               OR
             </button>
-            <button type="button" class="gate-toggle active" data-gate="XOR">
+            <button
+              type="button"
+              class="type-btn gate-toggle active"
+              data-gate="XOR"
+            >
               XOR
             </button>
           </div>
         </div>
-        <div class="config-group">
-          <label id="lblCount" for="gateCount">Count:</label>
+        <div class="ctrl-group">
+          <label id="lblCount" class="ctrl-label" for="gateCount">Count:</label>
           <select class="count-select" id="gateCount">
             <option value="2">2</option>
             <option value="3" selected="">3</option>
@@ -841,17 +747,12 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             <option value="8">8</option>
           </select>
         </div>
-        <button type="button" class="btn" id="generateBtn">Generate</button>
-        <button type="button" class="btn randomize" id="randomBtn">
-          Random Inputs
-        </button>
-        <button type="button" class="btn reveal" id="revealBtn">Check</button>
-        <div class="config-group" id="speedGroup">
-          <span id="lblSpeed" class="config-label">Speed:</span>
-          <div class="speed-toggle" id="speedToggle">
+        <div class="ctrl-group" id="speedGroup">
+          <span id="lblSpeed" class="ctrl-label">Speed:</span>
+          <div class="type-toggle" id="speedToggle">
             <button
               type="button"
-              class="speed-btn"
+              class="type-btn speed-btn"
               data-speed="0"
               aria-label="Slow speed"
             >
@@ -859,7 +760,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             </button>
             <button
               type="button"
-              class="speed-btn active"
+              class="type-btn speed-btn active"
               data-speed="1"
               aria-label="Normal speed"
             >
@@ -867,7 +768,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             </button>
             <button
               type="button"
-              class="speed-btn"
+              class="type-btn speed-btn"
               data-speed="2"
               aria-label="Fast speed"
             >
@@ -875,20 +776,9 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             </button>
           </div>
         </div>
-        <button
-          type="button"
-          class="btn wire-toggle"
-          id="wireLabelsBtn"
-          data-i18n="wireLabels"
-        >
+        <button type="button" class="type-btn full-width" id="wireLabelsBtn">
           Wire #
         </button>
-      </div>
-
-      <div class="circuit-container" id="circuitContainer"></div>
-
-      <div class="bottom-bar">
-        <div class="status-text" id="statusText"></div>
       </div>
     </main>
 
@@ -914,9 +804,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           );
           const src = doc.documentElement;
           while (src.firstChild)
-            target.appendChild(
-              target.ownerDocument.importNode(src.firstChild, true),
-            );
+            target.appendChild(target.ownerDocument.adoptNode(src.firstChild));
         }
 
         // ══════════════════════════════════════════════
@@ -958,6 +846,13 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             wrong: "Wrong!",
             dismiss: "click to dismiss",
             selectGates: "Select at least one gate type!",
+            langLabel: "Switch language",
+            speedSlow: "Slow speed",
+            speedNormal: "Normal speed",
+            speedFast: "Fast speed",
+            circuitAria: "Logic circuit diagram",
+            inputAria: "Toggle input",
+            guessAria: "Guess",
           },
           pl: {
             title: "Trener Bramek Logicznych",
@@ -995,11 +890,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             wrong: "\u0179le!",
             dismiss: "kliknij, aby zamkn\u0105\u0107",
             selectGates: "Wybierz co najmniej jeden typ bramki!",
+            langLabel: "Zmie\u0144 j\u0119zyk",
+            speedSlow: "Ma\u0142a pr\u0119dko\u015b\u0107",
+            speedNormal: "Normalna pr\u0119dko\u015b\u0107",
+            speedFast: "Du\u017ca pr\u0119dko\u015b\u0107",
+            circuitAria: "Schemat obwodu logicznego",
+            inputAria: "Prze\u0142\u0105cz wej\u015bcie",
+            guessAria: "Odpowied\u017a",
           },
         };
 
         function T(key) {
-          return I18N[lang][key];
+          return I18N[lang][key] || key;
         }
 
         // Build a status text node with accent-highlighted segments.
@@ -1009,7 +911,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           parts.forEach(function (text, i) {
             if (i % 2 === 1) {
               const span = document.createElement("span");
-              span.style.color = "#e3b341";
+              span.className = "accent";
               span.textContent = text;
               frag.appendChild(span);
             } else {
@@ -1060,9 +962,30 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // Re-render the output label in SVG if circuit is rendered
           const outLbl = document.querySelector(".output-label");
           if (outLbl) outLbl.textContent = T("outLabel");
+
+          // Re-apply language-dependent aria-labels and titles
+          const langBtn = document.getElementById("langBtn");
+          langBtn.title = T("langLabel");
+          langBtn.setAttribute("aria-label", T("langLabel"));
+          const speedKeys = ["speedSlow", "speedNormal", "speedFast"];
+          document.querySelectorAll(".speed-btn").forEach((b) => {
+            b.setAttribute("aria-label", T(speedKeys[+b.dataset.speed]));
+          });
+          const svg = document.getElementById("circuit");
+          if (svg) svg.setAttribute("aria-label", T("circuitAria"));
+          document.querySelectorAll(".input-toggle").forEach((el) => {
+            const inp = circuit && circuit.inputs[+el.dataset.idx];
+            if (inp)
+              el.setAttribute("aria-label", T("inputAria") + " " + inp.label);
+          });
+          document.querySelectorAll(".guess-btn").forEach((el) => {
+            el.setAttribute(
+              "aria-label",
+              T("guessAria") + " " + el.dataset.val,
+            );
+          });
         }
 
-        // eslint-disable-next-line no-unused-vars
         function toggleLang() {
           lang = lang === "en" ? "pl" : "en";
           document.getElementById("langBtn").textContent =
@@ -1070,7 +993,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           applyTranslations();
         }
 
-        // eslint-disable-next-line no-unused-vars
         function setGuess(v) {
           if (revealed) return;
           userGuess = v;
@@ -1081,22 +1003,28 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           });
         }
 
+        let announcer = null;
+        function announce(msg) {
+          if (!announcer) return;
+          announcer.textContent = "";
+          announcer.textContent = msg;
+        }
+
         function showResultOverlay(correct) {
           const existing = document.querySelector(".result-overlay");
           if (existing) existing.remove();
 
           const overlay = document.createElement("div");
-          overlay.className = "result-overlay";
+          overlay.className =
+            "result-overlay " + (correct ? "success" : "miss");
+          overlay.setAttribute("role", "dialog");
+          overlay.setAttribute("aria-live", "polite");
+          overlay.tabIndex = -1;
 
-          const emoji = correct ? "\uD83C\uDF89" : "\uD83D\uDC4E\uD83C\uDFFB";
           const msg = correct ? T("correct") : T("wrong");
-          overlay.style.background = correct
-            ? "rgba(63,185,80,0.88)"
-            : "rgba(249,117,131,0.88)";
-
           const emojiDiv = document.createElement("div");
           emojiDiv.className = "overlay-emoji";
-          emojiDiv.textContent = emoji;
+          emojiDiv.textContent = correct ? "\uD83C\uDF89" : "\u274C";
           const msgDiv = document.createElement("div");
           msgDiv.className = "overlay-msg";
           msgDiv.textContent = msg;
@@ -1106,20 +1034,15 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           overlay.append(emojiDiv, msgDiv, hintDiv);
 
           overlay.addEventListener("click", () => overlay.remove());
+          overlay.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              overlay.remove();
+            }
+          });
           document.body.appendChild(overlay);
-        }
-
-        // eslint-disable-next-line no-unused-vars
-        function toggleTheme() {
-          const html = document.documentElement;
-          const isLight = html.getAttribute("data-theme") === "light";
-          if (isLight) {
-            html.removeAttribute("data-theme");
-            document.getElementById("themeIcon").textContent = "☀";
-          } else {
-            html.setAttribute("data-theme", "light");
-            document.getElementById("themeIcon").textContent = "☽";
-          }
+          overlay.focus();
+          announce(msg);
         }
 
         function getSelectedGates() {
@@ -1431,6 +1354,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           svg.id = "circuit";
           svg.setAttribute("viewBox", `0 0 ${L.svgW} ${L.svgH}`);
           svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+          svg.setAttribute("aria-label", T("circuitAria"));
           if (
             !document
               .getElementById("wireLabelsBtn")
@@ -1523,7 +1447,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           c.inputs.forEach((inp, i) => {
             const p = L.inputPos[i];
             const cls = inp.value ? "high" : "low";
-            h += `<g class="input-toggle" onclick="toggleInput(${i})">
+            h += `<g class="input-toggle" data-idx="${i}" role="button" tabindex="0"
+      aria-label="${T("inputAria")} ${inp.label}">
       <circle cx="${p.x}" cy="${p.y}" r="24" fill="transparent" />
       <circle cx="${p.x}" cy="${p.y}" r="15" class="input-ring ${cls}" id="ir-${i}" />
       <circle cx="${p.x}" cy="${p.y}" r="11" class="input-circle ${cls}" id="ic-${i}" />
@@ -1540,16 +1465,33 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // ── guess buttons ──
           const gx = L.outputPos.x + 30,
             gy = L.outputPos.y;
-          h += `<g class="guess-btn" data-val="0" onclick="setGuess(0)">
+          h += `<g class="guess-btn" data-val="0" role="button" tabindex="0"
+          aria-label="${T("guessAria")} 0">
           <rect x="${gx}" y="${gy - 12}" width="24" height="24" />
           <text x="${gx + 12}" y="${gy}">0</text>
         </g>
-        <g class="guess-btn" data-val="1" onclick="setGuess(1)">
+        <g class="guess-btn" data-val="1" role="button" tabindex="0"
+          aria-label="${T("guessAria")} 1">
           <rect x="${gx + 30}" y="${gy - 12}" width="24" height="24" />
           <text x="${gx + 42}" y="${gy}">1</text>
         </g>`;
 
           appendSvgMarkup(svg, h);
+          const activate = (el, fn) => {
+            el.addEventListener("click", fn);
+            el.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fn();
+              }
+            });
+          };
+          svg.querySelectorAll(".input-toggle").forEach((el) => {
+            activate(el, () => toggleInput(+el.dataset.idx));
+          });
+          svg.querySelectorAll(".guess-btn").forEach((el) => {
+            activate(el, () => setGuess(+el.dataset.val));
+          });
           box.appendChild(svg);
         }
 
@@ -1563,7 +1505,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           return SPEED_STEPS[currentSpeed];
         }
 
-        // eslint-disable-next-line no-unused-vars
         function setSpeed(idx) {
           currentSpeed = idx;
           document.querySelectorAll(".speed-btn").forEach(function (b) {
@@ -1571,7 +1512,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           });
         }
 
-        // eslint-disable-next-line no-unused-vars
         function toggleWireLabels() {
           const btn = document.getElementById("wireLabelsBtn");
           btn.classList.toggle("active");
@@ -1583,7 +1523,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             );
         }
 
-        // eslint-disable-next-line no-unused-vars
         function randomizeInputs() {
           if (!circuit || revealed) return;
           circuit.inputs.forEach((inp, i) => {
@@ -1602,7 +1541,6 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           });
         }
 
-        // eslint-disable-next-line no-unused-vars
         function toggleInput(i) {
           if (!circuit || revealed) return;
           const v = (circuit.inputs[i].value = circuit.inputs[i].value ? 0 : 1);
@@ -1618,14 +1556,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           lbl.classList.toggle("low", !hi);
         }
 
-        // eslint-disable-next-line no-unused-vars
         function handleRevealReset() {
           if (!circuit) return;
           if (revealed) resetCircuit();
           else {
             if (userGuess === null) {
-              document.getElementById("statusText").textContent =
-                T("pickGuess");
+              const st = document.getElementById("statusText");
+              st.textContent = "";
+              st.appendChild(buildAccentText(T("pickGuess")));
               document.querySelectorAll(".guess-btn").forEach((el) => {
                 el.style.animation = "overlayPop 0.4s ease";
                 setTimeout(() => (el.style.animation = ""), 400);
@@ -1660,9 +1598,11 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           // Restore button
           const btn = document.getElementById("revealBtn");
           btn.textContent = T("check");
-          btn.classList.remove("revealed");
+          btn.classList.remove("is-retry");
 
-          document.getElementById("statusText").textContent = T("instructions");
+          const st = document.getElementById("statusText");
+          st.textContent = "";
+          st.appendChild(buildAccentText(T("instructions")));
         }
 
         // ══════════════════════════════════════════════
@@ -1672,7 +1612,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           if (!circuit || revealed) return;
           revealed = true;
           const btn = document.getElementById("revealBtn");
-          btn.classList.add("revealed");
+          btn.classList.add("is-retry");
           btn.textContent = T("reset");
           document
             .querySelectorAll(".guess-btn")
@@ -1762,7 +1702,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const types = getSelectedGates(),
             n = +document.getElementById("gateCount").value;
           if (!types.length) {
-            alert(T("selectGates"));
+            document.getElementById("statusText").textContent =
+              T("selectGates");
             return;
           }
 
@@ -1774,47 +1715,53 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           renderCircuit(circuit, layoutData);
 
           const btn = document.getElementById("revealBtn");
-          btn.style.display = "";
-          btn.classList.remove("revealed");
+          btn.classList.remove("is-retry");
           btn.textContent = T("check");
-          document.getElementById("randomBtn").style.display = "";
-          document.getElementById("speedGroup").style.display = "";
-          document.getElementById("statusText").textContent = T("instructions");
+          const st = document.getElementById("statusText");
+          st.textContent = "";
+          st.appendChild(buildAccentText(T("instructions")));
         }
 
-        document.getElementById("langBtn").textContent =
-          lang === "en" ? "PL" : "EN";
-        document
-          .getElementById("langBtn")
-          .addEventListener("click", toggleLang);
-        document
-          .getElementById("themeToggleBtn")
-          .addEventListener("click", toggleTheme);
-        document
-          .getElementById("generateBtn")
-          .addEventListener("click", generate);
-        document
-          .getElementById("randomBtn")
-          .addEventListener("click", randomizeInputs);
-        document.getElementById("revealBtn").addEventListener("click", reveal);
-        document
-          .getElementById("wireLabelsBtn")
-          .addEventListener("click", toggleWireLabels);
-        document.querySelectorAll(".gate-toggle").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            toggleGateType(btn);
+        // Init on DOMContentLoaded — the deferred dagre script is
+        // guaranteed to have executed by then.
+        document.addEventListener("DOMContentLoaded", function () {
+          document.getElementById("langBtn").textContent =
+            lang === "en" ? "PL" : "EN";
+          document
+            .getElementById("langBtn")
+            .addEventListener("click", toggleLang);
+          announcer = document.createElement("div");
+          announcer.className = "visually-hidden";
+          announcer.setAttribute("aria-live", "polite");
+          document.body.appendChild(announcer);
+          document
+            .getElementById("generateBtn")
+            .addEventListener("click", generate);
+          document
+            .getElementById("gateCount")
+            .addEventListener("change", generate);
+          document
+            .getElementById("randomBtn")
+            .addEventListener("click", randomizeInputs);
+          document
+            .getElementById("revealBtn")
+            .addEventListener("click", handleRevealReset);
+          document
+            .getElementById("wireLabelsBtn")
+            .addEventListener("click", toggleWireLabels);
+          document.querySelectorAll(".gate-toggle").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              toggleGateType(btn);
+            });
           });
-        });
-        document.querySelectorAll(".speed-btn").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            setSpeed(Number(btn.dataset.speed));
+          document.querySelectorAll(".speed-btn").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              setSpeed(Number(btn.dataset.speed));
+            });
           });
+          applyTranslations();
+          generate();
         });
-        applyTranslations();
-        generate();
-
-        window.toggleInput = toggleInput;
-        window.setGuess = setGuess;
       })();
     </script>
   </body>

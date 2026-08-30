@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- forces.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- forces/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="en">
@@ -13,8 +13,29 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       name="description"
       content="A child-friendly game that teaches graphical vector addition of forces. Look at the arrows pushing a puck, mentally combine them, and predict where the puck will first reach a ring around it."
     />
+    <link rel="canonical" href="https://lepecki.com/learn/forces/" />
+    <meta property="og:title" content="Forces" />
+    <meta
+      property="og:description"
+      content="A child-friendly game that teaches graphical vector addition of forces. Look at the arrows pushing a puck, mentally combine them, and predict where the puck will first reach a ring around it."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/forces/" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Forces" />
+    <meta
+      name="twitter:description"
+      content="A child-friendly game that teaches graphical vector addition of forces. Look at the arrows pushing a puck, mentally combine them, and predict where the puck will first reach a ring around it."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -95,7 +116,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         cursor: pointer;
         flex-shrink: 0;
         color: var(--text-dim);
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -123,6 +144,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         width: 100%;
         height: 100%;
         cursor: default;
+        touch-action: none;
       }
       canvas.aiming {
         cursor: crosshair;
@@ -200,7 +222,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         flex: 1;
       }
       .section-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.8px;
@@ -218,7 +240,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         border: 1.5px solid var(--panel-border);
         background: #fafaf7;
         color: #546e7a;
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
@@ -432,7 +454,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         outline-offset: 2px;
       }
       .intro-counter {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-dim);
@@ -547,14 +569,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         align-items: baseline;
       }
       .readout-label {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: var(--text-label);
       }
       .readout-val {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--text-head);
@@ -589,7 +611,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         display: none;
       }
       .resultant-caption {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         color: var(--text-dim);
         text-align: center;
@@ -621,18 +643,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         font-size: 28px;
         font-weight: 700;
         margin-top: 16px;
-        color: #fff;
+        color: #0b171b;
         letter-spacing: 0.5px;
       }
       .overlay-sub {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 16px;
         margin-top: 10px;
         color: rgba(255, 255, 255, 0.92);
         letter-spacing: 1px;
       }
       .overlay-hint {
-        font-family: "Share Tech Mono", monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         margin-top: 18px;
         color: rgba(255, 255, 255, 0.7);
@@ -1226,7 +1248,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         };
 
         function T(key) {
-          return I18N[state.lang][key];
+          return I18N[state.lang][key] || key;
         }
 
         function fmt(template, value) {
@@ -2015,7 +2037,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const ly = ey + py * 20 - Math.sin(rad) * 8;
           ctx.save();
           ctx.fillStyle = f.color;
-          ctx.font = "700 18px 'Share Tech Mono', monospace";
+          ctx.font = "700 18px 'JetBrains Mono', monospace";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(f.label, lx, ly);
@@ -2556,7 +2578,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const caption = document.createElementNS(svgNS, "text");
           caption.setAttribute("x", String(viewW / 2));
           caption.setAttribute("y", "18");
-          caption.setAttribute("font-family", "'Share Tech Mono', monospace");
+          caption.setAttribute("font-family", "'JetBrains Mono', monospace");
           caption.setAttribute("font-size", "12");
           caption.setAttribute("fill", "#78909c");
           caption.setAttribute("text-anchor", "middle");
@@ -2637,7 +2659,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         function drawLegendRow(card, viewW, yCenter, entries) {
           const svgNS = "http://www.w3.org/2000/svg";
           const fontSize = 12;
-          const charW = 8; /* Share Tech Mono approx px per glyph at 12px. */
+          const charW = 8; /* JetBrains Mono approx px per glyph at 12px. */
           const swatchW = 20;
           const swatchToText = 6;
           const widths = entries.map(
@@ -2666,7 +2688,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             const lbl = document.createElementNS(svgNS, "text");
             lbl.setAttribute("x", String(x + swatchW + swatchToText));
             lbl.setAttribute("y", String(yCenter));
-            lbl.setAttribute("font-family", "'Share Tech Mono', monospace");
+            lbl.setAttribute("font-family", "'JetBrains Mono', monospace");
             lbl.setAttribute("font-weight", "700");
             lbl.setAttribute("font-size", String(fontSize));
             lbl.setAttribute("fill", e.color);
@@ -3924,7 +3946,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const ly = ey + perpY * 14 - Math.sin(rad) * 6;
           ctx.globalAlpha = 0.85;
           ctx.fillStyle = color;
-          ctx.font = "700 13px 'Share Tech Mono', monospace";
+          ctx.font = "700 13px 'JetBrains Mono', monospace";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(FORCE_LABELS[force.labelIdx], lx, ly);
@@ -4086,7 +4108,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             const perpY = dx / len;
             ctx.save();
             ctx.fillStyle = color;
-            ctx.font = "700 13px 'Share Tech Mono', monospace";
+            ctx.font = "700 13px 'JetBrains Mono', monospace";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(
@@ -4111,7 +4133,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const perpY = -Math.cos(rad);
           ctx.save();
           ctx.fillStyle = color;
-          ctx.font = "700 14px 'Share Tech Mono', monospace";
+          ctx.font = "700 14px 'JetBrains Mono', monospace";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(
@@ -4285,7 +4307,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           const ly = ey + perpY * labelOff * labelDir - Math.sin(rad) * 8;
           ctx.save();
           ctx.fillStyle = color;
-          ctx.font = "700 18px 'Share Tech Mono', monospace";
+          ctx.font = "700 18px 'JetBrains Mono', monospace";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(lbl, lx, ly);
@@ -4326,7 +4348,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         function drawIntroCalloutChip(text, x, y) {
           ctx.save();
-          ctx.font = "600 12px 'Share Tech Mono', monospace";
+          ctx.font = "600 12px 'JetBrains Mono', monospace";
           ctx.textBaseline = "middle";
           ctx.textAlign = "center";
           const metrics = ctx.measureText(text);
@@ -4904,7 +4926,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           /* Auto-open intro on first visit. localStorage may throw in
              restricted environments — degrade silently in that case. */
-          let firstVisit = true;
+          let firstVisit;
           try {
             firstVisit = !window.localStorage.getItem(INTRO_STORAGE_KEY);
           } catch (_storageErr) {

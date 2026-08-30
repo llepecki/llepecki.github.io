@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 Implementing agent workflow:
-After making changes, and again before considering the job finished, run `npm run code-review -- gamgen.html`.
+After making changes, and again before considering the job finished, run `npm run code-review -- gamgen/index.html`.
 Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
 -->
 <html lang="pl">
@@ -33,6 +33,8 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       content="Wizualny generator schematów gam na fortepian. Wybierz tonację i wzorzec, aby wygenerować ćwiczenia na dwie ręce."
     />
     <title>Generator Schematów Gam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&display=swap"
       rel="stylesheet"
@@ -780,6 +782,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
       }
       body.dark.zen .zen-btn {
         background: #252540;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
       }
     </style>
   </head>
@@ -2570,6 +2580,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
    ═══════════════════════════════════════════════════════════ */
         const I18N = {
           en: {
+            ariaDarkBtn: "Dark mode",
+            ariaLenMinus: "Decrease length",
+            ariaLengthSlider: "Sequence length",
+            ariaLenPlus: "Increase length",
             title: "Piano Scale Pattern Generator",
             subtitle: "Automatic creation of exercise patterns for both hands",
             pattern: "Pattern",
@@ -2612,6 +2626,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             lightMode: "Light mode",
           },
           pl: {
+            ariaDarkBtn: "Tryb ciemny",
+            ariaLenMinus: "Zmniejsz d\u0142ugo\u015B\u0107",
+            ariaLengthSlider: "D\u0142ugo\u015B\u0107 sekwencji",
+            ariaLenPlus: "Zwi\u0119ksz d\u0142ugo\u015B\u0107",
             title: "Generator Schematów Gam",
             subtitle:
               "Automatyczne tworzenie schematów ćwiczeniowych dla obu rąk",
@@ -2657,10 +2675,22 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         };
 
         function T(key) {
-          return I18N[state.lang][key];
+          return I18N[state.lang][key] || key;
         }
 
         function applyTranslations() {
+          // Aria labels must follow the language toggle, not stay in the
+          // markup language. See house/aria-label-not-localized.
+          const ariaLabels = [
+            ["darkBtn", "ariaDarkBtn"],
+            ["lenMinus", "ariaLenMinus"],
+            ["lengthSlider", "ariaLengthSlider"],
+            ["lenPlus", "ariaLenPlus"],
+          ];
+          ariaLabels.forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (el) el.setAttribute("aria-label", T(entry[1]));
+          });
           document.documentElement.lang = state.lang;
           document.title = "🎹 " + T("title");
           document.getElementById("titleText").textContent = T("title");

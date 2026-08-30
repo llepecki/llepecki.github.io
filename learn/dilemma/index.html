@@ -1,0 +1,2659 @@
+<!doctype html>
+<!--
+Implementing agent workflow:
+After making changes, and again before considering the job finished, run `npm run code-review -- dilemma/index.html`.
+Use it as the final review gate. It enforces the single-file HTML app policy plus HTML, CSS, JavaScript, formatting, and architecture checks.
+The game rules are additionally verified by `node tools/dilemma-rules-check.mjs` (run from learn/): a seeded Monte-Carlo gate over the engine block.
+Design: docs/spec-crossing-2026-07-15.md ("The Crossing").
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trust Dilemma</title>
+    <meta
+      name="description"
+      content="Trust Dilemma — a two-player pass-and-play voyage across an uncertain sea. Fish to keep the crew fed or dive for treasure, and discover why cooperation wins when you never know which day is the last."
+    />
+    <meta name="author" content="Łukasz Łepecki" />
+    <link rel="canonical" href="https://lepecki.com/learn/dilemma/" />
+    <meta property="og:title" content="Trust Dilemma" />
+    <meta
+      property="og:description"
+      content="Trust Dilemma — a two-player pass-and-play voyage across an uncertain sea. Fish to keep the crew fed or dive for treasure, and discover why cooperation wins when you never know which day is the last."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lepecki.com/learn/dilemma/" />
+    <meta property="og:site_name" content="Łukasz Łepecki" />
+    <meta
+      property="og:image"
+      content="https://lepecki.com/assets/img/avatar.webp"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Trust Dilemma" />
+    <meta
+      name="twitter:description"
+      content="Trust Dilemma — a two-player pass-and-play voyage across an uncertain sea. Fish to keep the crew fed or dive for treasure, and discover why cooperation wins when you never know which day is the last."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --panel-border: #e0ddd6;
+        --text: #37474f;
+        --text-head: #263238;
+        --text-dim: #78909c;
+        --text-label: #90a4ae;
+        --accent: #455a64;
+        --accent-light: #eceff1;
+        --canvas-bg: #f5f3ee;
+        --perfect: #00c853;
+        --close: #1976d2;
+        --far: #f9a825;
+        --miss: #d32f2f;
+        --token-white: #ffffff;
+        --token-black: #16181d;
+        --shared: #00897b;
+        --p1: #1976d2;
+        --p2: #8e24aa;
+        --card-fish: #dff2ea;
+        --card-dive: #22384a;
+      }
+      body {
+        background: linear-gradient(160deg, #fafaf7 0%, #f0ede6 100%);
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      /* ================= HEADER ================= */
+      header {
+        padding: 6px 28px 5px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .header-text {
+        flex: 1;
+      }
+      header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      header h1 a:hover {
+        opacity: 0.7;
+      }
+      header p {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .header-icon {
+        font-size: 24px;
+        line-height: 1;
+      }
+      .lang-btn {
+        background: none;
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+        color: var(--text-dim);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .lang-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* ================= LAYOUT ================= */
+      .main {
+        display: flex;
+        height: calc(100vh - 46px);
+      }
+      .stage-wrap {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+        background: var(--canvas-bg);
+        border-right: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+      }
+      .phase-area {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 24px 120px;
+        overflow-y: auto;
+        min-height: 0;
+      }
+      .panel {
+        width: 320px;
+        flex-shrink: 0;
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .panel-section {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .panel-section.grow {
+        flex: 1;
+      }
+      .panel-section[hidden] {
+        display: none;
+      }
+      .section-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-label);
+      }
+
+      /* ================= VOYAGE BOARD ================= */
+      .board {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        row-gap: 8px;
+        padding: 12px 24px;
+        border-bottom: 1px solid var(--panel-border);
+        background: var(--panel);
+      }
+      .board[hidden] {
+        display: none;
+      }
+      .b-player {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        min-width: 0;
+      }
+      .b-player.right {
+        margin-left: auto;
+      }
+      .b-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-head);
+        max-width: 130px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .b-treasure {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 26px;
+        line-height: 1.1;
+        font-weight: 700;
+      }
+      .b-treasure.p1 {
+        color: var(--p1);
+      }
+      .b-treasure.p2 {
+        color: var(--p2);
+      }
+      .b-coin {
+        font-size: 24px;
+      }
+      .b-center {
+        flex: 1 1 260px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        min-width: 220px;
+      }
+      .b-weather {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .b-weather .w-emoji {
+        font-size: 34px;
+      }
+      .b-weather .w-demand {
+        color: var(--text-dim);
+        font-weight: 400;
+      }
+      .store-bar {
+        width: 100%;
+        height: 18px;
+        background: var(--panel-border);
+        border-radius: 9px;
+        overflow: hidden;
+      }
+      .store-fill {
+        height: 100%;
+        width: 0;
+        background: var(--shared);
+        border-radius: 9px;
+        transition:
+          width 0.14s ease-out,
+          background 0.2s;
+      }
+      .store-fill.warn {
+        background: var(--far);
+      }
+      .store-fill.danger {
+        background: var(--miss);
+      }
+      .b-readout {
+        display: flex;
+        gap: 14px;
+        align-items: baseline;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text-head);
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .b-readout .r-store {
+        font-weight: 700;
+      }
+      .b-readout .r-land {
+        color: var(--miss);
+        font-weight: 700;
+      }
+      .b-readout .r-sep {
+        color: var(--text-label);
+      }
+
+      /* ================= PHASES ================= */
+      .phase {
+        width: 100%;
+        max-width: 560px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .phase[hidden] {
+        display: none;
+      }
+      .phase.center {
+        align-items: center;
+        text-align: center;
+      }
+      .phase.center > .action-btn {
+        align-self: stretch;
+      }
+      .phase-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .phase-copy {
+        font-size: 13px;
+        color: #546e7a;
+        line-height: 1.5;
+      }
+      .day-indicator {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+      }
+
+      /* ================= BUTTONS ================= */
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .action-btn {
+        flex: 1;
+        padding: 10px 8px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: #fafaf7;
+        color: var(--text);
+        font-family: "Outfit", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+        touch-action: manipulation;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .action-btn:hover:not(:disabled) {
+        background: #f0ede6;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .action-btn.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .action-btn.primary:hover:not(:disabled) {
+        background: #37474f;
+        border-color: #37474f;
+        color: #fff;
+      }
+      .phase > .action-btn,
+      .panel-section > .action-btn {
+        flex: none;
+      }
+      .action-btn[hidden] {
+        display: none;
+      }
+
+      /* ================= SETUP ================= */
+      .setup-boat {
+        align-self: center;
+        font-size: 84px;
+        line-height: 1;
+        margin-bottom: 2px;
+      }
+      .name-grid {
+        display: flex;
+        gap: 16px;
+      }
+      .name-field {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      .name-input {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1.5px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        outline: none;
+      }
+      .name-input:focus {
+        border-color: var(--accent);
+      }
+      .setup-error {
+        font-size: 12px;
+        color: var(--miss);
+      }
+      .setup-error[hidden] {
+        display: none;
+      }
+
+      /* ================= TOKENS ================= */
+      .token {
+        display: inline-block;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .token.white {
+        background: var(--token-white);
+        border: 1.5px solid var(--text-head);
+      }
+      .token.black {
+        background: var(--token-black);
+        border: 1.5px solid var(--token-black);
+      }
+      .token-xs {
+        width: 10px;
+        height: 10px;
+      }
+      .token-sm {
+        width: 14px;
+        height: 14px;
+      }
+      .token-md {
+        width: 20px;
+        height: 20px;
+      }
+      .token-lg {
+        width: 48px;
+        height: 48px;
+      }
+      .tok-emoji {
+        display: inline-block;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .tok-emoji.e-xs {
+        font-size: 16px;
+      }
+      .tok-emoji.e-sm {
+        font-size: 22px;
+      }
+      .tok-emoji.e-md {
+        font-size: 28px;
+      }
+      .tok-emoji.e-lg {
+        font-size: 64px;
+      }
+
+      /* ================= FORECAST (turn) ================= */
+      .forecast {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 14px 22px;
+        border-radius: 8px;
+        border: 1px solid var(--panel-border);
+        background: var(--panel);
+        font-family: "JetBrains Mono", monospace;
+      }
+      .forecast .f-emoji {
+        font-size: 48px;
+      }
+      .forecast .f-text {
+        text-align: left;
+      }
+      .forecast .f-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .forecast .f-demand {
+        font-size: 14px;
+        color: var(--text-dim);
+      }
+
+      /* ================= INTRO / TUTORIAL ================= */
+      .intro-emoji {
+        font-size: 76px;
+        line-height: 1;
+      }
+      .intro-body {
+        font-size: 15px;
+        max-width: 440px;
+      }
+      .intro-dots {
+        display: flex;
+        gap: 10px;
+      }
+      .intro-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--panel-border);
+      }
+      .intro-dot.active {
+        background: var(--accent);
+      }
+      .intro-nav {
+        width: 100%;
+        max-width: 360px;
+      }
+      .intro-skip {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-dim);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        text-decoration: underline;
+        padding: 6px 8px;
+        touch-action: manipulation;
+      }
+      .intro-skip:hover {
+        color: var(--accent);
+      }
+      .intro-skip:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ================= TURN ================= */
+      .choice-row {
+        display: flex;
+        gap: 16px;
+        width: 100%;
+      }
+      .choice-card {
+        flex: 1;
+        min-height: 180px;
+        position: relative;
+        border-radius: 8px;
+        border: 2px solid var(--panel-border);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 20px 16px;
+        text-align: center;
+        font-family: "Outfit", sans-serif;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s,
+          opacity 0.15s,
+          transform 0.15s;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .choice-card.fish {
+        background: var(--card-fish);
+        color: var(--text-head);
+      }
+      .choice-card.dive {
+        background: var(--card-dive);
+        color: #f5f3ee;
+      }
+      .choice-card:hover:not(.active) {
+        border-color: var(--accent);
+      }
+      .choice-card.active {
+        border-color: var(--accent);
+        box-shadow:
+          0 0 0 4px var(--accent-light),
+          0 6px 18px rgba(38, 50, 56, 0.18);
+        transform: scale(1.02);
+      }
+      .choice-card.dimmed {
+        opacity: 0.45;
+      }
+      .choice-name {
+        font-size: 17px;
+        font-weight: 700;
+      }
+      .choice-role {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        opacity: 0.75;
+      }
+      .choice-note {
+        font-size: 12px;
+        line-height: 1.5;
+        opacity: 0.75;
+        max-width: 220px;
+      }
+      .choice-check {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .choice-card.dive .choice-check {
+        background: #f5f3ee;
+        color: var(--card-dive);
+      }
+      .choice-check[hidden] {
+        display: none;
+      }
+
+      /* ================= HANDOFF ================= */
+      .countdown {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 64px;
+        line-height: 1;
+        color: var(--text-head);
+      }
+      .countdown[hidden] {
+        display: none;
+      }
+      .handoff-note {
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+      .handoff-ready {
+        min-width: 220px;
+      }
+
+      /* ================= RESULT ================= */
+      .result-row {
+        display: flex;
+        gap: 16px;
+        width: 100%;
+      }
+      .result-item {
+        flex: 1;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        padding: 18px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .result-item.pop {
+        animation: resultPop 0.3s ease;
+      }
+      .result-item.p1 {
+        border-top: 3px solid var(--p1);
+      }
+      .result-item.p2 {
+        border-top: 3px solid var(--p2);
+      }
+      .result-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .result-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-head);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .result-choice {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text);
+      }
+      .result-stats {
+        display: flex;
+        gap: 24px;
+        border-top: 1px solid var(--panel-border);
+        padding-top: 12px;
+      }
+      .result-stat {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .stat-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-label);
+      }
+      .stat-val {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        line-height: 1.1;
+        font-weight: 700;
+        color: var(--text-head);
+      }
+      .stat-val.p1 {
+        color: var(--p1);
+      }
+      .stat-val.p2 {
+        color: var(--p2);
+      }
+      .store-line {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        color: var(--text-head);
+      }
+      .store-delta {
+        font-weight: 700;
+      }
+      .store-delta.up {
+        color: var(--shared);
+      }
+      .store-delta.down {
+        color: var(--far);
+      }
+      .store-delta.crit {
+        color: var(--miss);
+      }
+      .result-warning {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--miss);
+      }
+      .result-warning[hidden] {
+        display: none;
+      }
+
+      /* ================= FINAL ================= */
+      .final-line {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        color: var(--text-head);
+      }
+      .final-scores {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text);
+      }
+      .reflect {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .reflect-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .reflect-table td {
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .reflect-table .rf-val {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        color: var(--text-head);
+        text-align: right;
+      }
+      .reflect-table .rf-status {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: right;
+      }
+      .rf-status.ok {
+        color: var(--perfect);
+      }
+      .rf-status.bad {
+        color: var(--miss);
+      }
+
+      /* ================= PANEL WIDGETS ================= */
+      .rules-card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 15px;
+        color: var(--text);
+      }
+      .rules-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+      .rules-row .r-key {
+        color: var(--text-head);
+        font-weight: 700;
+        font-size: 22px;
+      }
+      .rules-row span:not(.r-key) {
+        color: var(--text-dim);
+      }
+      .rules-weather {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        font-size: 30px;
+        color: var(--text-dim);
+      }
+      .rules-hint {
+        font-size: 13px;
+        color: var(--text-label);
+        line-height: 1.5;
+      }
+      .log-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .log-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text);
+      }
+      .log-day {
+        width: 18px;
+        text-align: right;
+        color: var(--text-label);
+      }
+      .log-weather {
+        font-size: 24px;
+      }
+      .log-store {
+        margin-left: auto;
+        font-weight: 700;
+      }
+      .log-store.up {
+        color: var(--shared);
+      }
+      .log-store.down {
+        color: var(--far);
+      }
+      .log-store.crit {
+        color: var(--miss);
+      }
+      .log-empty {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+
+      /* ================= OVERLAY ================= */
+      .result-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: overlayFadeIn 0.3s ease;
+        padding: 24px;
+        text-align: center;
+      }
+      .result-overlay.success {
+        background: rgba(0, 200, 83, 0.92);
+      }
+      .result-overlay.miss {
+        background: rgba(211, 47, 47, 0.92);
+      }
+      .overlay-emoji {
+        font-size: 72px;
+        animation: overlayPop 0.4s ease;
+      }
+      .overlay-msg {
+        margin-top: 12px;
+        font-size: 28px;
+        font-weight: 700;
+        color: #0b171b;
+      }
+      .overlay-sub {
+        margin-top: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 16px;
+        color: #0b171b;
+      }
+      .overlay-hint {
+        margin-top: 18px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      @keyframes overlayFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes overlayPop {
+        0% {
+          transform: scale(0.3);
+        }
+        70% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      @keyframes resultPop {
+        0% {
+          transform: scale(0.85);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      /* ================= FOCUS ================= */
+      .lang-btn:focus-visible,
+      .action-btn:focus-visible,
+      .choice-card:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ================= REDUCED MOTION ================= */
+      @media (prefers-reduced-motion: reduce) {
+        header h1 a,
+        .lang-btn,
+        .action-btn,
+        .choice-card,
+        .store-fill {
+          transition: none;
+        }
+        .result-overlay,
+        .overlay-emoji,
+        .result-item.pop {
+          animation: none;
+        }
+      }
+
+      /* ================= MOBILE ================= */
+      @media (max-width: 720px) {
+        .main {
+          height: auto;
+          flex-direction: column;
+        }
+        .stage-wrap {
+          border-right: none;
+          border-bottom: 1px solid var(--panel-border);
+          min-height: 360px;
+        }
+        .phase-area {
+          padding: 16px;
+        }
+        .panel {
+          width: 100%;
+        }
+        .name-grid {
+          flex-direction: column;
+        }
+        .choice-row {
+          flex-direction: column;
+        }
+        .choice-card {
+          min-height: 120px;
+        }
+        .result-row {
+          flex-direction: column;
+        }
+        .board {
+          row-gap: 8px;
+        }
+        .b-player.right {
+          order: 2;
+        }
+        .b-center {
+          order: 3;
+          flex-basis: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-text">
+        <h1>
+          <a href="/learn/"
+            ><span class="header-icon">&#x1F91D;&#x1F3FB;</span></a
+          >
+          <span id="titleText">Trust Dilemma</span>
+        </h1>
+        <p id="subtitleText">A voyage of trust across an uncertain sea</p>
+      </div>
+      <button
+        type="button"
+        class="lang-btn"
+        id="langBtn"
+        title="Switch language"
+        aria-label="Switch language"
+      >
+        PL
+      </button>
+    </header>
+    <main class="main">
+      <section class="stage-wrap">
+        <div class="board" id="board" hidden>
+          <div class="b-player">
+            <span class="b-name" id="bName1">Player 1</span>
+            <span class="b-treasure p1" id="bTreasure1">0</span>
+            <span class="b-coin">&#x1FA99;</span>
+          </div>
+          <div class="b-center">
+            <span class="b-weather" id="bWeather">
+              <span class="w-emoji" id="wEmoji">&#x2600;&#xFE0F;</span>
+              <span id="wName">Calm</span>
+              <span class="w-demand" id="wDemand">&minus;3</span>
+            </span>
+            <div class="store-bar">
+              <div class="store-fill" id="storeFill"></div>
+            </div>
+            <div class="b-readout">
+              <span class="r-store" id="rStore">Stores 8</span>
+              <span class="r-sep" aria-hidden="true">&middot;</span>
+              <span id="rShore">Day 1 &middot; 0/24</span>
+              <span class="r-land" id="rLand" hidden>Land in sight!</span>
+            </div>
+          </div>
+          <div class="b-player right">
+            <span class="b-coin">&#x1FA99;</span>
+            <span class="b-treasure p2" id="bTreasure2">0</span>
+            <span class="b-name" id="bName2">Player 2</span>
+          </div>
+        </div>
+        <div class="visually-hidden" aria-live="polite" id="announcer"></div>
+        <div class="phase-area">
+          <section class="phase center" id="phaseIntro" tabindex="-1" hidden>
+            <div class="intro-emoji" id="introEmoji" aria-hidden="true">
+              &#x26F5;
+            </div>
+            <h2 class="phase-title" id="introTitle">One boat, two sailors</h2>
+            <p class="phase-copy intro-body" id="introBody">
+              You and a friend share one boat across the sea.
+            </p>
+            <div
+              class="intro-dots"
+              id="introDots"
+              role="img"
+              aria-label="Step 1 of 6"
+            ></div>
+            <div class="btn-row intro-nav">
+              <button type="button" class="action-btn" id="introBack" hidden>
+                Back
+              </button>
+              <button type="button" class="action-btn primary" id="introNext">
+                Next
+              </button>
+            </div>
+            <button type="button" class="intro-skip" id="introSkip">
+              Skip intro
+            </button>
+          </section>
+
+          <section class="phase" id="phaseSetup">
+            <div class="setup-boat" aria-hidden="true">⛵</div>
+            <h2 class="phase-title" id="setupTitle">
+              Cross the sea together — or nobody makes it.
+            </h2>
+            <p class="phase-copy" id="setupCopy">
+              Fish to keep the crew fed, or dive for your own treasure. Reach
+              shore with food left and the richer sailor wins — but an empty
+              larder wins for nobody, and you never know which day is the last.
+            </p>
+            <div class="name-grid">
+              <div class="name-field">
+                <label class="section-label" for="nameInput1" id="lblName1"
+                  >Sailor 1 name</label
+                >
+                <input
+                  type="text"
+                  class="name-input"
+                  id="nameInput1"
+                  maxlength="14"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="name-field">
+                <label class="section-label" for="nameInput2" id="lblName2"
+                  >Sailor 2 name</label
+                >
+                <input
+                  type="text"
+                  class="name-input"
+                  id="nameInput2"
+                  maxlength="14"
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+            <p class="setup-error" id="setupError" hidden>
+              Use two different names.
+            </p>
+            <button type="button" class="action-btn primary" id="startBtn">
+              Set sail
+            </button>
+            <button type="button" class="intro-skip" id="howToPlayBtn">
+              How to play
+            </button>
+          </section>
+
+          <section class="phase center" id="phaseTurn" hidden>
+            <span class="day-indicator" id="dayIndicator">Day 1</span>
+            <div class="forecast">
+              <span class="f-emoji" id="fEmoji">&#x2600;&#xFE0F;</span>
+              <span class="f-text">
+                <span class="f-name" id="fName">Calm seas</span><br />
+                <span class="f-demand" id="fDemand">The crew will eat 3.</span>
+              </span>
+            </div>
+            <h2 class="phase-title" id="turnTitle">
+              Player 1, choose in private
+            </h2>
+            <div class="choice-row">
+              <button
+                type="button"
+                class="choice-card fish"
+                id="fishCard"
+                aria-pressed="false"
+                aria-label="Fish to feed the crew"
+              >
+                <span class="tok-emoji e-lg" id="fishCardToken">🎣</span>
+                <span class="choice-name" id="fishName">Fish</span>
+                <span class="choice-role" id="fishRole">Feed the crew</span>
+                <span class="choice-note" id="fishNote">
+                  +3 to the stores. You keep +1.
+                </span>
+                <span
+                  class="choice-check"
+                  id="fishCheck"
+                  hidden
+                  aria-hidden="true"
+                  >&check;</span
+                >
+              </button>
+              <button
+                type="button"
+                class="choice-card dive"
+                id="diveCard"
+                aria-pressed="false"
+                aria-label="Dive for treasure"
+              >
+                <span class="tok-emoji e-lg" id="diveCardToken">🤿</span>
+                <span class="choice-name" id="diveName">Dive</span>
+                <span class="choice-role" id="diveRole">Hunt treasure</span>
+                <span class="choice-note" id="diveNote">
+                  +3 treasure. Stores −1 while you're down.
+                </span>
+                <span
+                  class="choice-check"
+                  id="diveCheck"
+                  hidden
+                  aria-hidden="true"
+                  >&check;</span
+                >
+              </button>
+            </div>
+          </section>
+
+          <section class="phase center" id="phaseHandoff" tabindex="-1" hidden>
+            <h2 class="phase-title" id="handoffTitle">Pass to Player 2</h2>
+            <div
+              class="countdown"
+              id="countdownEl"
+              role="timer"
+              aria-live="off"
+              aria-label="Countdown"
+            >
+              3
+            </div>
+            <p class="handoff-note" id="handoffNote">
+              The previous choice is hidden.
+            </p>
+            <button
+              type="button"
+              class="action-btn primary handoff-ready"
+              id="readyBtn"
+              hidden
+            >
+              Tap to start
+            </button>
+          </section>
+
+          <section class="phase center" id="phaseResult" hidden>
+            <span class="day-indicator" id="resultIndicator">Day 1</span>
+            <div class="result-row">
+              <div class="result-item p1" id="resItem1">
+                <span class="result-head">
+                  <span class="result-name" id="resName1">Player 1</span>
+                </span>
+                <span class="result-choice">
+                  <span class="token token-md white" id="resToken1"></span>
+                  <span id="resChoice1">Share</span>
+                </span>
+                <div class="result-stats">
+                  <div class="result-stat">
+                    <span class="stat-label" id="lblGain1">This day</span>
+                    <span class="stat-val" id="resGain1">+1</span>
+                  </div>
+                  <div class="result-stat">
+                    <span class="stat-label" id="lblTreasure1">Treasure</span>
+                    <span class="stat-val p1" id="resTreasure1">1</span>
+                  </div>
+                </div>
+              </div>
+              <div class="result-item p2" id="resItem2">
+                <span class="result-head">
+                  <span class="result-name" id="resName2">Player 2</span>
+                </span>
+                <span class="result-choice">
+                  <span class="token token-md white" id="resToken2"></span>
+                  <span id="resChoice2">Share</span>
+                </span>
+                <div class="result-stats">
+                  <div class="result-stat">
+                    <span class="stat-label" id="lblGain2">This day</span>
+                    <span class="stat-val" id="resGain2">+1</span>
+                  </div>
+                  <div class="result-stat">
+                    <span class="stat-label" id="lblTreasure2">Treasure</span>
+                    <span class="stat-val p2" id="resTreasure2">1</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="store-line">
+              <span class="store-delta up" id="storeDelta">Stores +3</span>
+              <span id="storeNow">now 11</span>
+            </p>
+            <p class="phase-copy" id="resultExplain">
+              You both fished. The stores grew and you each kept a little.
+            </p>
+            <p class="result-warning" id="resultWarning" hidden>
+              The stores are almost empty.
+            </p>
+            <button type="button" class="action-btn primary" id="nextBtn">
+              Next day
+            </button>
+          </section>
+
+          <section class="phase" id="phaseFinal" hidden>
+            <h2 class="phase-title" id="finalTitle">Shared landing</h2>
+            <p class="phase-copy" id="finalMsg">
+              You reached shore together with equal treasure.
+            </p>
+            <p class="final-line" id="finalLine">
+              Reached shore on day 5 &middot; stores 3 left
+            </p>
+            <p class="final-scores" id="finalScores">
+              Player 1 9 &middot; Player 2 7
+            </p>
+            <div class="reflect">
+              <span class="section-label" id="reflectTitle">
+                How the crossing went
+              </span>
+              <table class="reflect-table" aria-labelledby="reflectTitle">
+                <tbody>
+                  <tr>
+                    <td id="rfActualLabel">Your crossing</td>
+                    <td class="rf-val" id="rfActualVal">&mdash;</td>
+                    <td class="rf-status" id="rfActualStatus">&mdash;</td>
+                  </tr>
+                  <tr>
+                    <td id="rfShareLabel">If you'd shared all voyage</td>
+                    <td class="rf-val" id="rfShareVal">&mdash;</td>
+                    <td class="rf-status" id="rfShareStatus">&mdash;</td>
+                  </tr>
+                  <tr>
+                    <td id="rfRaidLabel">If you'd both dived</td>
+                    <td class="rf-val" id="rfRaidVal">&mdash;</td>
+                    <td class="rf-status" id="rfRaidStatus">&mdash;</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="phase-copy" id="debriefText">
+              This was a game about the shadow of the future.
+            </p>
+            <div class="btn-row">
+              <button
+                type="button"
+                class="action-btn primary"
+                id="playAgainBtn"
+              >
+                Sail again
+              </button>
+              <button type="button" class="action-btn" id="newMatchBtn">
+                New crew
+              </button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-section" id="secRules">
+          <span class="section-label" id="lblRules">How it works</span>
+          <div class="rules-card">
+            <div class="rules-row">
+              <span class="r-key" id="ruleFishKey">🎣 Fish</span>
+              <span id="ruleFishVal">stores +3 &middot; you +1</span>
+            </div>
+            <div class="rules-row">
+              <span class="r-key" id="ruleDiveKey">🤿 Dive</span>
+              <span id="ruleDiveVal">you +3 &middot; stores &minus;1</span>
+            </div>
+            <div class="rules-weather" id="ruleWeather">
+              <span>&#x2600;&#xFE0F; &minus;3</span>
+              <span>&#x1F30A; &minus;5</span>
+              <span>&#x26C8;&#xFE0F; &minus;6</span>
+            </div>
+            <p class="rules-hint" id="ruleHint">
+              Food hits zero and the crew starves — both lose. Reach shore with
+              food and the richer sailor wins.
+            </p>
+          </div>
+        </div>
+        <div class="panel-section grow" id="secLog">
+          <span class="section-label" id="lblLog">Voyage log</span>
+          <div class="log-list" id="logList"></div>
+        </div>
+      </aside>
+    </main>
+    <script>
+      (function () {
+        "use strict";
+
+        /* ================= I18N ================= */
+        const I18N = {
+          en: {
+            docTitle: "Trust Dilemma",
+            title: "Trust Dilemma",
+            subtitle: "A voyage of trust across an uncertain sea",
+            langSwitch: "Switch language",
+            setupTitle: "Cross the sea together — or nobody makes it.",
+            setupCopy:
+              "Fish to keep the crew fed, or dive for your own treasure. Reach shore with food left and the richer sailor wins — but an empty larder wins for nobody, and you never know which day is the last.",
+            playerOneName: "Sailor 1 name",
+            playerTwoName: "Sailor 2 name",
+            playerOneDefault: "Sailor 1",
+            playerTwoDefault: "Sailor 2",
+            sameNames: "Use two different names.",
+            start: "Set sail",
+            introSkip: "Skip intro",
+            introBack: "Back",
+            introNext: "Next",
+            introStart: "Set sail",
+            howToPlay: "How to play",
+            introStepAria: "Step {n} of {total}",
+            introT1: "One boat, two sailors",
+            introB1:
+              "You and a friend share one boat across the sea. You both want to reach the far shore.",
+            introT2: "Keep the stores full",
+            introB2:
+              "The Stores are your food. If they ever hit zero, the crew starves — and you BOTH lose.",
+            introT3: "Fish or dive?",
+            introB3:
+              "Each day you secretly choose. Fish to fill the Stores (+3 food, +1 for you). Dive for treasure (+3 for you) — but you use up supplies while you're down, so the Stores lose 1.",
+            introT4: "Watch the weather",
+            introB4:
+              "Every day the crew eats from the Stores. A storm costs the most — hard days need more food. Check the forecast before you choose.",
+            introT5: "The temptation",
+            introB5:
+              "Diving makes YOU richer. But if you both dive, nobody catches food, the Stores run out, and the crew starves. Trust each other to stay fed.",
+            introT6: "Race to shore",
+            introB6:
+              "You never know which day is the last. Reach shore alive and the richer sailor wins — but only if your food lasted!",
+            dayLabel: "Day {day}",
+            turnTitle: "{name}, choose in private",
+            forecastCalm: "Calm seas",
+            forecastRough: "Rough seas",
+            forecastStorm: "Storm!",
+            forecastDemand: "The crew will eat {demand}.",
+            fish: "Fish",
+            dive: "Dive",
+            fishRole: "Feed the crew",
+            diveRole: "Hunt treasure",
+            fishNote: "+3 to the stores. You keep +1.",
+            diveNote: "+3 treasure. Stores −1 while you're down.",
+            selected: "Selected",
+            chooseFish: "Fish to feed the crew",
+            chooseDive: "Dive for treasure",
+            passTo: "Pass to {name}",
+            passNote: "The previous choice is hidden.",
+            revealIn: "Reveal in",
+            revealNote: "Both choices are locked.",
+            readyBtn: "{name}, tap to start",
+            nowPlayer: "Now {name}",
+            timerLabel: "Countdown",
+            announcePass: "Pass the boat to {name}.",
+            announceReady: "{name}, tap to start.",
+            dayResult: "Day {day}",
+            thisDay: "This day",
+            treasureLabel: "Treasure",
+            storesLabel: "Stores",
+            shoreProgress: "Day {day} · {dist}/{harbor}",
+            landInSight: "Land in sight!",
+            storeDelta: "Stores {sign}{amount}",
+            storeNow: "now {store}",
+            explainFishBoth:
+              "You both fished. The stores grew and you each kept a little.",
+            explainSplit:
+              "{diver} dived for treasure while {fisher} fished. {diver} grabbed treasure, but the stores dipped.",
+            explainDiveBoth:
+              "You both dived for treasure. Riches for both — but nobody caught any food.",
+            warnLowStore:
+              "The food is almost gone — one bad day and you go hungry.",
+            nextDay: "Next day",
+            seeEnd: "See the end",
+            sunkTitle: "Out of food",
+            sunkMsg:
+              "The food ran out. Both sailors go hungry and don't make it — treasure and all.",
+            arriveWinTitle: "{name} wins",
+            arriveWinMsg: "You reached shore. The richer sailor takes the day.",
+            arriveTieTitle: "Shared landing",
+            arriveTieMsg: "You reached shore together with equal treasure.",
+            finalSunkLine: "The food ran out on day {day}.",
+            finalArriveLine: "Reached shore on day {day} · stores {store} left",
+            overlayHint: "Tap anywhere to continue",
+            reflectTitle: "How the crossing went",
+            rowActual: "Your crossing",
+            rowShare: "If you'd fished all voyage",
+            rowRaid: "If you'd both dived",
+            outcomeArrived: "reached shore",
+            outcomeSank: "starved",
+            debrief:
+              "This was a game about the shadow of the future — you never knew which day was the last. When you'll meet again and can't see the end, trusting and reading your partner beats grabbing. Dive too often and the food you both need runs out — and nobody makes it.",
+            playAgain: "Sail again",
+            newMatch: "New crew",
+            rulesLabel: "How it works",
+            ruleFishVal: "stores +3 · you +1",
+            ruleDiveVal: "you +3 · stores −1",
+            ruleHint:
+              "Food hits zero and the crew starves — both lose. Reach shore with food and the richer sailor wins.",
+            logLabel: "Voyage log",
+          },
+          pl: {
+            docTitle: "Dylemat Zaufania",
+            title: "Dylemat Zaufania",
+            subtitle: "Rejs zaufania przez niepewne morze",
+            langSwitch: "Przełącz język",
+            setupTitle: "Przepłyńcie morze razem — albo nikt nie dopłynie.",
+            setupCopy:
+              "Łów, żeby nakarmić załogę, albo nurkuj po własny skarb. Dotrzyj do brzegu z jedzeniem, a wygrywa bogatszy żeglarz — ale pusta spiżarnia nie wygrywa dla nikogo, a nigdy nie wiecie, który dzień jest ostatni.",
+            playerOneName: "Imię żeglarza 1",
+            playerTwoName: "Imię żeglarza 2",
+            playerOneDefault: "Żeglarz 1",
+            playerTwoDefault: "Żeglarz 2",
+            sameNames: "Użyjcie dwóch różnych imion.",
+            start: "Wypłyń",
+            introSkip: "Pomiń wstęp",
+            introBack: "Wstecz",
+            introNext: "Dalej",
+            introStart: "Wypłyń",
+            howToPlay: "Jak grać",
+            introStepAria: "Krok {n} z {total}",
+            introT1: "Jedna łódź, dwóch żeglarzy",
+            introB1:
+              "Ty i przyjaciel dzielicie jedną łódź na morzu. Oboje chcecie dopłynąć do dalekiego brzegu.",
+            introT2: "Nie pozwól, by zapasy się skończyły",
+            introB2:
+              "Zapasy to wasze jedzenie. Jeśli kiedykolwiek spadną do zera, załoga głoduje — i OBOJE przegrywacie.",
+            introT3: "Łowić czy nurkować?",
+            introB3:
+              "Każdego dnia wybieracie w tajemnicy. Łów, aby napełnić zapasy (+3 jedzenia, +1 dla ciebie). Nurkuj po skarb (+3 dla ciebie) — ale zużywasz zapasy pod wodą, więc spadają o 1.",
+            introT4: "Patrz na pogodę",
+            introB4:
+              "Każdego dnia załoga zjada zapasy. Sztorm kosztuje najwięcej — trudne dni wymagają więcej jedzenia. Sprawdź prognozę, zanim wybierzesz.",
+            introT5: "Pokusa",
+            introB5:
+              "Nurkowanie czyni CIEBIE bogatszym. Ale jeśli oboje nurkujecie, nikt nie łowi jedzenia, zapasy się kończą i załoga głoduje. Zaufajcie sobie.",
+            introT6: "Wyścig do brzegu",
+            introB6:
+              "Nigdy nie wiecie, który dzień jest ostatni. Dopłyń żywy, a wygrywa bogatszy żeglarz — ale tylko jeśli jedzenia starczyło!",
+            dayLabel: "Dzień {day}",
+            turnTitle: "{name}, wybierz w tajemnicy",
+            forecastCalm: "Spokojne morze",
+            forecastRough: "Wzburzone morze",
+            forecastStorm: "Sztorm!",
+            forecastDemand: "Załoga zje {demand}.",
+            fish: "Łowienie",
+            dive: "Nurkowanie",
+            fishRole: "Nakarm załogę",
+            diveRole: "Szukaj skarbu",
+            fishNote: "+3 do zapasów. Ty masz +1.",
+            diveNote: "+3 skarbu. Zapasy −1, gdy nurkujesz.",
+            selected: "Wybrane",
+            chooseFish: "Łów, aby nakarmić załogę",
+            chooseDive: "Nurkuj po skarb",
+            passTo: "Przekaż do: {name}",
+            passNote: "Poprzedni wybór jest ukryty.",
+            revealIn: "Odkrycie za",
+            revealNote: "Oba wybory są zablokowane.",
+            readyBtn: "{name}, dotknij, aby zacząć",
+            nowPlayer: "Teraz {name}",
+            timerLabel: "Odliczanie",
+            announcePass: "Przekażcie łódź: {name}.",
+            announceReady: "{name}, dotknij, aby zacząć.",
+            dayResult: "Dzień {day}",
+            thisDay: "Tego dnia",
+            treasureLabel: "Skarb",
+            storesLabel: "Zapasy",
+            shoreProgress: "Dzień {day} · {dist}/{harbor}",
+            landInSight: "Widać ląd!",
+            storeDelta: "Zapasy {sign}{amount}",
+            storeNow: "teraz {store}",
+            explainFishBoth:
+              "Oboje łowiliście. Zapasy urosły, a każde z was trochę zyskało.",
+            explainSplit:
+              "{diver} nurkował(a) po skarb, a {fisher} łowił(a). {diver} zdobył(a) skarb, ale zapasy spadły.",
+            explainDiveBoth:
+              "Oboje nurkowaliście po skarb. Bogactwo dla obojga — ale nikt nie złowił jedzenia.",
+            warnLowStore:
+              "Zapasy są prawie puste — jeszcze jeden zły dzień i głodujecie.",
+            nextDay: "Następny dzień",
+            seeEnd: "Zobacz koniec",
+            sunkTitle: "Zabrakło jedzenia",
+            sunkMsg:
+              "Jedzenie się skończyło. Oboje żeglarze głodują i nie dopływają — razem ze skarbem.",
+            arriveWinTitle: "Wygrywa {name}",
+            arriveWinMsg:
+              "Dotarliście do brzegu. Bogatszy żeglarz wygrywa ten dzień.",
+            arriveTieTitle: "Wspólne lądowanie",
+            arriveTieMsg: "Dotarliście do brzegu razem, z równym skarbem.",
+            finalSunkLine: "Jedzenie skończyło się w dniu {day}.",
+            finalArriveLine:
+              "Brzeg osiągnięty w dniu {day} · zapasów zostało {store}",
+            overlayHint: "Dotknij, aby kontynuować",
+            reflectTitle: "Jak poszedł rejs",
+            rowActual: "Wasz rejs",
+            rowShare: "Gdybyście cały rejs łowili",
+            rowRaid: "Gdybyście oboje nurkowali",
+            outcomeArrived: "dotarli",
+            outcomeSank: "głodowali",
+            debrief:
+              "To była gra o cieniu przyszłości — nigdy nie wiedzieliście, który dzień jest ostatni. Gdy spotkacie się znowu i nie widać końca, zaufanie i czytanie partnera bije branie. Nurkuj za często, a jedzenie, którego oboje potrzebujecie, się kończy — i nikt nie dopływa.",
+            playAgain: "Płyń znowu",
+            newMatch: "Nowa załoga",
+            rulesLabel: "Jak to działa",
+            ruleFishVal: "zapasy +3 · ty +1",
+            ruleDiveVal: "ty +3 · zapasy −1",
+            ruleHint:
+              "Zapasy spadną do zera i załoga głoduje — oboje przegrywają. Dopłyń z jedzeniem, a wygrywa bogatszy żeglarz.",
+            logLabel: "Dziennik rejsu",
+          },
+        };
+
+        /* ================= RULES (engine — verified by dilemma-rules-check.mjs) ================= */
+        // [rules:start]
+        const RULES = {
+          S0: 8, // starting Store
+          HARBOR: 24, // leagues to shore
+          SAIL_LO: 3,
+          SAIL_HI: 7,
+          LAND: 17, // "land in sight" distance
+          COOP_STORE: 3,
+          COMPETE_STORE: -1,
+          COOP_TREASURE: 1,
+          COMPETE_TREASURE: 3,
+          DEMAND: { calm: 3, rough: 5, storm: 6 },
+          DECK: {
+            early: [70, 25, 5], // day <= 2   [calm, rough, storm] %
+            mid: [45, 35, 20], // day 3-4
+            late: [25, 40, 35], // day 5+
+          },
+        };
+        function createRng(seed) {
+          let a = seed >>> 0;
+          return function () {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        function rngInt(rng, lo, hi) {
+          return lo + Math.floor(rng() * (hi - lo + 1));
+        }
+        function weatherForDay(day, rng) {
+          const w =
+            day <= 2
+              ? RULES.DECK.early
+              : day <= 4
+                ? RULES.DECK.mid
+                : RULES.DECK.late;
+          const r = rng() * 100;
+          if (r < w[0]) return "calm";
+          if (r < w[0] + w[1]) return "rough";
+          return "storm";
+        }
+        function storeContribution(choice) {
+          return choice === "fish" ? RULES.COOP_STORE : RULES.COMPETE_STORE;
+        }
+        function treasureGain(choice) {
+          return choice === "fish"
+            ? RULES.COOP_TREASURE
+            : RULES.COMPETE_TREASURE;
+        }
+        function resolveStore(store, c1, c2, weather) {
+          return (
+            store +
+            storeContribution(c1) +
+            storeContribution(c2) -
+            RULES.DEMAND[weather]
+          );
+        }
+        function roundKind(c1, c2) {
+          if (c1 === "fish" && c2 === "fish") return "fishBoth";
+          if (c1 === "dive" && c2 === "dive") return "diveBoth";
+          return "split";
+        }
+        function isSunk(store) {
+          return store <= 0;
+        }
+        function isArrived(distance) {
+          return distance >= RULES.HARBOR;
+        }
+        // [rules:end]
+
+        /* ================= STATE ================= */
+        const HANDOFF_SECONDS = 3;
+        const CHOICE_COMMIT_MS = 700;
+        const state = {
+          lang: (navigator.language || "").startsWith("pl") ? "pl" : "en",
+          reduceMotion: false,
+          phase: "setup",
+          handoffKind: null,
+          names: ["Sailor 1", "Sailor 2"],
+          day: 1,
+          activePlayer: 0,
+          choices: [null, null],
+          store: RULES.S0,
+          treasure: [0, 0],
+          distance: 0,
+          weather: "calm",
+          outcome: null, // null | "sunk" | "arrived"
+          history: [],
+        };
+        let matchRng = null;
+        let pendingChoice = null;
+        let choiceTimer = null;
+        const countdown = {
+          timer: null,
+          remaining: 0,
+          anchor: 0,
+          shown: -1,
+          done: false,
+        };
+        let activeOverlay = null;
+        let announceTick = false;
+        const INTRO_SEEN_KEY = "dilemmaIntroSeenV1";
+        const INTRO_STEPS = [
+          { emoji: "⛵", t: "introT1", b: "introB1" },
+          { emoji: "📦", t: "introT2", b: "introB2" },
+          { emoji: "🎣 🤿", t: "introT3", b: "introB3" },
+          { emoji: "⛈️", t: "introT4", b: "introB4" },
+          { emoji: "💰", t: "introT5", b: "introB5" },
+          { emoji: "🏝️", t: "introT6", b: "introB6" },
+        ];
+        let introStep = 0;
+
+        /* ================= DOM ================= */
+        const dom = {};
+        [
+          "titleText",
+          "subtitleText",
+          "langBtn",
+          "board",
+          "bName1",
+          "bTreasure1",
+          "bWeather",
+          "wEmoji",
+          "wName",
+          "wDemand",
+          "storeFill",
+          "rStore",
+          "rShore",
+          "rLand",
+          "bName2",
+          "bTreasure2",
+          "announcer",
+          "phaseIntro",
+          "introEmoji",
+          "introTitle",
+          "introBody",
+          "introDots",
+          "introBack",
+          "introNext",
+          "introSkip",
+          "howToPlayBtn",
+          "phaseSetup",
+          "setupTitle",
+          "setupCopy",
+          "lblName1",
+          "nameInput1",
+          "lblName2",
+          "nameInput2",
+          "setupError",
+          "startBtn",
+          "phaseTurn",
+          "dayIndicator",
+          "fEmoji",
+          "fName",
+          "fDemand",
+          "turnTitle",
+          "fishCard",
+          "fishCardToken",
+          "fishName",
+          "fishRole",
+          "fishNote",
+          "fishCheck",
+          "diveCard",
+          "diveCardToken",
+          "diveName",
+          "diveRole",
+          "diveNote",
+          "diveCheck",
+          "phaseHandoff",
+          "handoffTitle",
+          "countdownEl",
+          "handoffNote",
+          "readyBtn",
+          "phaseResult",
+          "resultIndicator",
+          "resItem1",
+          "resName1",
+          "resToken1",
+          "resChoice1",
+          "lblGain1",
+          "resGain1",
+          "lblTreasure1",
+          "resTreasure1",
+          "resItem2",
+          "resName2",
+          "resToken2",
+          "resChoice2",
+          "lblGain2",
+          "resGain2",
+          "lblTreasure2",
+          "resTreasure2",
+          "storeDelta",
+          "storeNow",
+          "resultExplain",
+          "resultWarning",
+          "nextBtn",
+          "phaseFinal",
+          "finalTitle",
+          "finalMsg",
+          "finalLine",
+          "finalScores",
+          "reflectTitle",
+          "rfActualLabel",
+          "rfActualVal",
+          "rfActualStatus",
+          "rfShareLabel",
+          "rfShareVal",
+          "rfShareStatus",
+          "rfRaidLabel",
+          "rfRaidVal",
+          "rfRaidStatus",
+          "debriefText",
+          "playAgainBtn",
+          "newMatchBtn",
+          "lblRules",
+          "ruleFishKey",
+          "ruleFishVal",
+          "ruleDiveKey",
+          "ruleDiveVal",
+          "ruleHint",
+          "lblLog",
+          "logList",
+        ].forEach(function (id) {
+          dom[id] = document.getElementById(id);
+        });
+
+        /* ================= HELPERS ================= */
+        function T(key, vars) {
+          let text = I18N[state.lang][key];
+          if (text === undefined) text = key;
+          if (vars) {
+            Object.keys(vars).forEach(function (name) {
+              text = text.split("{" + name + "}").join(String(vars[name]));
+            });
+          }
+          return text;
+        }
+        const WEATHER_EMOJI = {
+          calm: "☀️",
+          rough: "🌊",
+          storm: "⛈️",
+        };
+        const CHOICE_EMOJI = { fish: "🎣", dive: "🤿" };
+        function renderTokenEl(el, choice, size) {
+          el.setAttribute("aria-hidden", "true");
+          el.className = "tok-emoji e-" + size;
+          el.textContent = CHOICE_EMOJI[choice];
+        }
+        function choiceWord(choice) {
+          return choice === "fish" ? T("fish") : T("dive");
+        }
+        function announce(msg) {
+          announceTick = !announceTick;
+          dom.announcer.textContent = announceTick ? msg : msg + " ";
+        }
+        function currentNames() {
+          if (state.phase === "setup") {
+            return [
+              dom.nameInput1.value.trim() || T("playerOneDefault"),
+              dom.nameInput2.value.trim() || T("playerTwoDefault"),
+            ];
+          }
+          return state.names;
+        }
+        function weatherName(w) {
+          if (w === "storm") return T("forecastStorm");
+          if (w === "rough") return T("forecastRough");
+          return T("forecastCalm");
+        }
+
+        /* ================= COUNTDOWN ================= */
+        function startCountdown() {
+          countdown.remaining = HANDOFF_SECONDS * 1000;
+          countdown.done = false;
+          countdown.shown = -1;
+          dom.readyBtn.hidden = true;
+          renderHandoff();
+          resumeCountdown();
+        }
+        function resumeCountdown() {
+          if (countdown.done || countdown.timer !== null) return;
+          countdown.anchor = performance.now();
+          tickCountdown();
+          if (!countdown.done) {
+            countdown.timer = setInterval(tickCountdown, 200);
+          }
+        }
+        function pauseCountdown() {
+          if (countdown.timer === null) return;
+          clearInterval(countdown.timer);
+          countdown.timer = null;
+          countdown.remaining -= performance.now() - countdown.anchor;
+          if (countdown.remaining < 0) countdown.remaining = 0;
+        }
+        function stopCountdown() {
+          if (countdown.timer !== null) {
+            clearInterval(countdown.timer);
+            countdown.timer = null;
+          }
+        }
+        function tickCountdown() {
+          const left =
+            countdown.remaining - (performance.now() - countdown.anchor);
+          const secs = Math.max(0, Math.ceil(left / 1000));
+          if (secs !== countdown.shown) {
+            countdown.shown = secs;
+            dom.countdownEl.textContent = String(secs);
+          }
+          if (left <= 0) {
+            stopCountdown();
+            countdown.done = true;
+            onCountdownDone();
+          }
+        }
+        function onCountdownDone() {
+          if (state.handoffKind === "pass") {
+            renderHandoff();
+            dom.readyBtn.focus();
+            announce(
+              T("announceReady", { name: state.names[state.activePlayer] }),
+            );
+          } else {
+            revealDay();
+          }
+        }
+
+        /* ================= RENDERING ================= */
+        function storeClass(store) {
+          if (store <= 2) return "danger";
+          if (store <= 4) return "warn";
+          return "";
+        }
+        function renderVisibility() {
+          dom.phaseIntro.hidden = state.phase !== "intro";
+          dom.phaseSetup.hidden = state.phase !== "setup";
+          dom.phaseTurn.hidden = state.phase !== "turn";
+          dom.phaseHandoff.hidden = state.phase !== "handoff";
+          dom.phaseResult.hidden = state.phase !== "result";
+          dom.phaseFinal.hidden = state.phase !== "final";
+          dom.board.hidden =
+            state.phase !== "turn" &&
+            state.phase !== "result" &&
+            state.phase !== "final";
+        }
+        function renderBoard() {
+          const names = currentNames();
+          dom.bName1.textContent = names[0];
+          dom.bName2.textContent = names[1];
+          dom.bTreasure1.textContent = String(state.treasure[0]);
+          dom.bTreasure2.textContent = String(state.treasure[1]);
+          dom.wEmoji.textContent = WEATHER_EMOJI[state.weather];
+          dom.wName.textContent = weatherName(state.weather);
+          dom.wDemand.textContent = "−" + RULES.DEMAND[state.weather];
+          dom.bWeather.setAttribute(
+            "aria-label",
+            weatherName(state.weather) +
+              ". " +
+              T("forecastDemand", { demand: RULES.DEMAND[state.weather] }),
+          );
+          const pct = Math.max(0, Math.min(100, (state.store / 16) * 100));
+          dom.storeFill.style.width = pct + "%";
+          dom.storeFill.className = "store-fill " + storeClass(state.store);
+          dom.rStore.textContent = T("storesLabel") + " " + state.store;
+          dom.rShore.textContent = T("shoreProgress", {
+            day: state.day,
+            dist: Math.min(state.distance, RULES.HARBOR),
+            harbor: RULES.HARBOR,
+          });
+          dom.rLand.textContent = T("landInSight");
+          dom.rLand.hidden =
+            state.distance < RULES.LAND || state.outcome !== null;
+        }
+        function renderIntro() {
+          const step = INTRO_STEPS[introStep];
+          const last = introStep === INTRO_STEPS.length - 1;
+          dom.introEmoji.textContent = step.emoji;
+          dom.introTitle.textContent = T(step.t);
+          dom.introBody.textContent = T(step.b);
+          while (dom.introDots.firstChild) {
+            dom.introDots.removeChild(dom.introDots.firstChild);
+          }
+          for (let i = 0; i < INTRO_STEPS.length; i += 1) {
+            const d = document.createElement("span");
+            d.className = "intro-dot" + (i === introStep ? " active" : "");
+            dom.introDots.appendChild(d);
+          }
+          dom.introDots.setAttribute(
+            "aria-label",
+            T("introStepAria", {
+              n: introStep + 1,
+              total: INTRO_STEPS.length,
+            }),
+          );
+          dom.introBack.hidden = introStep === 0;
+          dom.introNext.textContent = last ? T("introStart") : T("introNext");
+        }
+        function renderTurn() {
+          dom.dayIndicator.textContent = T("dayLabel", { day: state.day });
+          dom.fEmoji.textContent = WEATHER_EMOJI[state.weather];
+          dom.fName.textContent = weatherName(state.weather);
+          dom.fDemand.textContent = T("forecastDemand", {
+            demand: RULES.DEMAND[state.weather],
+          });
+          dom.turnTitle.textContent = T("turnTitle", {
+            name: state.names[state.activePlayer],
+          });
+          const fishOn = pendingChoice === "fish";
+          const diveOn = pendingChoice === "dive";
+          dom.fishCard.classList.toggle("active", fishOn);
+          dom.diveCard.classList.toggle("active", diveOn);
+          dom.fishCard.setAttribute("aria-pressed", fishOn ? "true" : "false");
+          dom.diveCard.setAttribute("aria-pressed", diveOn ? "true" : "false");
+          dom.fishCard.classList.toggle("dimmed", diveOn);
+          dom.diveCard.classList.toggle("dimmed", fishOn);
+          dom.fishCheck.hidden = !fishOn;
+          dom.diveCheck.hidden = !diveOn;
+        }
+        function renderHandoff() {
+          const pass = state.handoffKind === "pass";
+          const holdNow = pass && countdown.done;
+          dom.handoffTitle.textContent = holdNow
+            ? T("nowPlayer", { name: state.names[state.activePlayer] })
+            : pass
+              ? T("passTo", { name: state.names[state.activePlayer] })
+              : T("revealIn");
+          dom.handoffNote.textContent = pass ? T("passNote") : T("revealNote");
+          dom.readyBtn.textContent = pass
+            ? T("readyBtn", { name: state.names[state.activePlayer] })
+            : "";
+          dom.readyBtn.hidden = !pass || !countdown.done;
+          dom.countdownEl.hidden = holdNow;
+          dom.countdownEl.textContent = String(
+            countdown.shown >= 0 ? countdown.shown : HANDOFF_SECONDS,
+          );
+        }
+        function explanationFor(entry) {
+          if (entry.kind === "fishBoth") return T("explainFishBoth");
+          if (entry.kind === "diveBoth") return T("explainDiveBoth");
+          const diverIdx = entry.choices[0] === "dive" ? 0 : 1;
+          return T("explainSplit", {
+            diver: state.names[diverIdx],
+            fisher: state.names[1 - diverIdx],
+          });
+        }
+        function renderResult() {
+          const entry = state.history[state.history.length - 1];
+          if (!entry) return;
+          dom.resultIndicator.textContent = T("dayResult", { day: entry.day });
+          const parts = [
+            {
+              name: dom.resName1,
+              token: dom.resToken1,
+              choice: dom.resChoice1,
+              gain: dom.resGain1,
+              treasure: dom.resTreasure1,
+            },
+            {
+              name: dom.resName2,
+              token: dom.resToken2,
+              choice: dom.resChoice2,
+              gain: dom.resGain2,
+              treasure: dom.resTreasure2,
+            },
+          ];
+          for (let i = 0; i < 2; i += 1) {
+            parts[i].name.textContent = state.names[i];
+            renderTokenEl(parts[i].token, entry.choices[i], "md");
+            parts[i].choice.textContent = choiceWord(entry.choices[i]);
+            parts[i].gain.textContent = "+" + entry.treasureDelta[i];
+            parts[i].treasure.textContent = String(state.treasure[i]);
+          }
+          const sign = entry.storeDelta >= 0 ? "+" : "−";
+          dom.storeDelta.textContent = T("storeDelta", {
+            sign: sign,
+            amount: Math.abs(entry.storeDelta),
+          });
+          dom.storeDelta.className =
+            "store-delta " +
+            (entry.storeDelta >= 0 ? "up" : state.store <= 2 ? "crit" : "down");
+          dom.storeNow.textContent = T("storeNow", {
+            store: Math.max(0, state.store),
+          });
+          dom.resultExplain.textContent = explanationFor(entry);
+          const lowStore =
+            state.outcome === null && state.store > 0 && state.store <= 3;
+          dom.resultWarning.hidden = !lowStore;
+          dom.resultWarning.textContent = T("warnLowStore");
+          dom.nextBtn.textContent =
+            state.outcome === null ? T("nextDay") : T("seeEnd");
+        }
+        function renderLog() {
+          while (dom.logList.firstChild) {
+            dom.logList.removeChild(dom.logList.firstChild);
+          }
+          if (state.history.length === 0) {
+            const empty = document.createElement("span");
+            empty.className = "log-empty";
+            empty.textContent = "—";
+            dom.logList.appendChild(empty);
+            return;
+          }
+          state.history.forEach(function (entry) {
+            const row = document.createElement("div");
+            row.className = "log-row";
+            const num = document.createElement("span");
+            num.className = "log-day";
+            num.textContent = String(entry.day);
+            row.appendChild(num);
+            const wx = document.createElement("span");
+            wx.className = "log-weather";
+            wx.textContent = WEATHER_EMOJI[entry.weather];
+            wx.setAttribute("aria-hidden", "true");
+            wx.title = weatherName(entry.weather);
+            row.appendChild(wx);
+            entry.choices.forEach(function (choice) {
+              const dot = document.createElement("span");
+              renderTokenEl(dot, choice, "md");
+              dot.title = choiceWord(choice);
+              row.appendChild(dot);
+            });
+            const sr = document.createElement("span");
+            sr.className = "visually-hidden";
+            sr.textContent =
+              state.names[0] +
+              ": " +
+              choiceWord(entry.choices[0]) +
+              ", " +
+              state.names[1] +
+              ": " +
+              choiceWord(entry.choices[1]);
+            row.appendChild(sr);
+            const st = document.createElement("span");
+            st.className =
+              "log-store " +
+              (entry.storeAfter <= 2
+                ? "crit"
+                : entry.storeDelta >= 0
+                  ? "up"
+                  : "down");
+            st.textContent =
+              T("storesLabel") + " " + Math.max(0, entry.storeAfter);
+            row.appendChild(st);
+            dom.logList.appendChild(row);
+          });
+        }
+        function renderRules() {
+          dom.ruleFishKey.textContent = "🎣 " + T("fish");
+          dom.ruleDiveKey.textContent = "🤿 " + T("dive");
+          dom.ruleFishVal.textContent = T("ruleFishVal");
+          dom.ruleDiveVal.textContent = T("ruleDiveVal");
+          dom.ruleHint.textContent = T("ruleHint");
+        }
+        function counterfactual(kind) {
+          // Replay the actual weather sequence under a fixed joint strategy.
+          let store = RULES.S0;
+          let treasure = 0;
+          for (let i = 0; i < state.history.length; i += 1) {
+            const w = state.history[i].weather;
+            const c = kind === "fish" ? "fish" : "dive";
+            store = resolveStore(store, c, c, w);
+            treasure += treasureGain(c);
+            if (isSunk(store)) {
+              return { sank: true, day: i + 1, treasure: treasure };
+            }
+          }
+          return { sank: false, day: state.history.length, treasure: treasure };
+        }
+        function renderFinal() {
+          const arrived = state.outcome === "arrived";
+          let winner = "shared";
+          if (arrived) {
+            if (state.treasure[0] > state.treasure[1]) winner = 0;
+            else if (state.treasure[1] > state.treasure[0]) winner = 1;
+          }
+          if (!arrived) {
+            dom.finalTitle.textContent = T("sunkTitle");
+            dom.finalMsg.textContent = T("sunkMsg");
+            dom.finalLine.textContent = T("finalSunkLine", { day: state.day });
+          } else if (winner === "shared") {
+            dom.finalTitle.textContent = T("arriveTieTitle");
+            dom.finalMsg.textContent = T("arriveTieMsg");
+            dom.finalLine.textContent = T("finalArriveLine", {
+              day: state.day,
+              store: state.store,
+            });
+          } else {
+            dom.finalTitle.textContent = T("arriveWinTitle", {
+              name: state.names[winner],
+            });
+            dom.finalMsg.textContent = T("arriveWinMsg");
+            dom.finalLine.textContent = T("finalArriveLine", {
+              day: state.day,
+              store: state.store,
+            });
+          }
+          dom.finalScores.textContent =
+            state.names[0] +
+            " " +
+            state.treasure[0] +
+            " · " +
+            state.names[1] +
+            " " +
+            state.treasure[1];
+          const actualTreasure = state.treasure[0] + state.treasure[1];
+          const rows = [
+            {
+              label: dom.rfActualLabel,
+              val: dom.rfActualVal,
+              status: dom.rfActualStatus,
+              key: "rowActual",
+              sank: !arrived,
+              treasure: actualTreasure,
+            },
+            {
+              label: dom.rfShareLabel,
+              val: dom.rfShareVal,
+              status: dom.rfShareStatus,
+              key: "rowShare",
+              cf: counterfactual("fish"),
+            },
+            {
+              label: dom.rfRaidLabel,
+              val: dom.rfRaidVal,
+              status: dom.rfRaidStatus,
+              key: "rowRaid",
+              cf: counterfactual("dive"),
+            },
+          ];
+          rows.forEach(function (row) {
+            const sank = row.cf ? row.cf.sank : row.sank;
+            const treasure = row.cf ? row.cf.treasure * 2 : row.treasure;
+            row.label.textContent = T(row.key);
+            row.val.textContent = sank ? "—" : String(treasure);
+            row.status.textContent = T(sank ? "outcomeSank" : "outcomeArrived");
+            row.status.className = "rf-status " + (sank ? "bad" : "ok");
+          });
+          dom.debriefText.textContent = T("debrief");
+        }
+        function renderAll() {
+          renderVisibility();
+          renderBoard();
+          renderLog();
+          renderRules();
+          if (state.phase === "intro") renderIntro();
+          if (state.phase === "turn") renderTurn();
+          if (state.phase === "handoff") renderHandoff();
+          if (state.phase === "result") renderResult();
+          if (state.phase === "final") renderFinal();
+        }
+
+        /* ================= TRANSLATIONS ================= */
+        function applyTranslations() {
+          document.title = T("docTitle");
+          document.documentElement.lang = state.lang;
+          dom.titleText.textContent = T("title");
+          dom.subtitleText.textContent = T("subtitle");
+          dom.langBtn.textContent = state.lang === "en" ? "PL" : "EN";
+          dom.langBtn.title = T("langSwitch");
+          dom.langBtn.setAttribute("aria-label", T("langSwitch"));
+          dom.setupTitle.textContent = T("setupTitle");
+          dom.setupCopy.textContent = T("setupCopy");
+          dom.lblName1.textContent = T("playerOneName");
+          dom.lblName2.textContent = T("playerTwoName");
+          dom.nameInput1.placeholder = T("playerOneDefault");
+          dom.nameInput2.placeholder = T("playerTwoDefault");
+          dom.setupError.textContent = T("sameNames");
+          dom.startBtn.textContent = T("start");
+          dom.introSkip.textContent = T("introSkip");
+          dom.introBack.textContent = T("introBack");
+          dom.howToPlayBtn.textContent = T("howToPlay");
+          dom.fishName.textContent = T("fish");
+          dom.diveName.textContent = T("dive");
+          dom.fishRole.textContent = T("fishRole");
+          dom.diveRole.textContent = T("diveRole");
+          dom.fishNote.textContent = T("fishNote");
+          dom.diveNote.textContent = T("diveNote");
+          dom.fishCard.setAttribute("aria-label", T("chooseFish"));
+          dom.diveCard.setAttribute("aria-label", T("chooseDive"));
+          renderTokenEl(dom.fishCardToken, "fish", "lg");
+          renderTokenEl(dom.diveCardToken, "dive", "lg");
+          dom.countdownEl.setAttribute("aria-label", T("timerLabel"));
+          dom.lblGain1.textContent = T("thisDay");
+          dom.lblGain2.textContent = T("thisDay");
+          dom.lblTreasure1.textContent = T("treasureLabel");
+          dom.lblTreasure2.textContent = T("treasureLabel");
+          dom.playAgainBtn.textContent = T("playAgain");
+          dom.newMatchBtn.textContent = T("newMatch");
+          dom.reflectTitle.textContent = T("reflectTitle");
+          dom.lblRules.textContent = T("rulesLabel");
+          dom.lblLog.textContent = T("logLabel");
+          if (activeOverlay) {
+            activeOverlay.msg.textContent = overlayTitle(activeOverlay.verdict);
+            activeOverlay.sub.textContent = overlaySub(activeOverlay.verdict);
+            activeOverlay.hint.textContent = T("overlayHint");
+          }
+          renderAll();
+        }
+
+        /* ================= OVERLAY ================= */
+        function finalVerdict() {
+          if (state.outcome !== "arrived") return "sunk";
+          if (state.treasure[0] > state.treasure[1]) return "p1";
+          if (state.treasure[1] > state.treasure[0]) return "p2";
+          return "tie";
+        }
+        function overlayTitle(verdict) {
+          if (verdict === "sunk") return T("sunkTitle");
+          if (verdict === "tie") return T("arriveTieTitle");
+          const winner = verdict === "p1" ? 0 : 1;
+          return T("arriveWinTitle", { name: state.names[winner] });
+        }
+        function overlaySub(verdict) {
+          if (verdict === "sunk") {
+            return T("finalSunkLine", { day: state.day });
+          }
+          return (
+            state.names[0] +
+            " " +
+            state.treasure[0] +
+            " · " +
+            state.names[1] +
+            " " +
+            state.treasure[1]
+          );
+        }
+        function showOverlay(verdict) {
+          const overlay = document.createElement("div");
+          overlay.className =
+            "result-overlay " + (verdict === "sunk" ? "miss" : "success");
+          overlay.setAttribute("role", "dialog");
+          overlay.setAttribute("aria-live", "polite");
+          overlay.tabIndex = -1;
+          const emoji = document.createElement("div");
+          emoji.className = "overlay-emoji";
+          if (verdict === "sunk") emoji.textContent = "🍽️";
+          else if (verdict === "tie") emoji.textContent = "⚓";
+          else emoji.textContent = "🏆";
+          const msg = document.createElement("div");
+          msg.className = "overlay-msg";
+          msg.textContent = overlayTitle(verdict);
+          const sub = document.createElement("div");
+          sub.className = "overlay-sub";
+          sub.textContent = overlaySub(verdict);
+          const hint = document.createElement("div");
+          hint.className = "overlay-hint";
+          hint.textContent = T("overlayHint");
+          overlay.appendChild(emoji);
+          overlay.appendChild(msg);
+          overlay.appendChild(sub);
+          overlay.appendChild(hint);
+          document.body.appendChild(overlay);
+          activeOverlay = {
+            el: overlay,
+            verdict: verdict,
+            msg: msg,
+            sub: sub,
+            hint: hint,
+          };
+          overlay.focus();
+          function close() {
+            document.removeEventListener("keydown", onKey, true);
+            overlay.remove();
+            activeOverlay = null;
+            dom.playAgainBtn.focus();
+          }
+          function onKey(event) {
+            if (
+              event.key === "Escape" ||
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+              event.preventDefault();
+              close();
+            }
+          }
+          overlay.addEventListener("click", close);
+          document.addEventListener("keydown", onKey, true);
+          announce(overlayTitle(verdict));
+        }
+
+        /* ================= GAME FLOW ================= */
+        function setPhase(phase) {
+          stopCountdown();
+          state.phase = phase;
+          renderAll();
+        }
+        function resetMatch() {
+          state.day = 1;
+          state.activePlayer = 0;
+          state.choices = [null, null];
+          state.store = RULES.S0;
+          state.treasure = [0, 0];
+          state.distance = 0;
+          state.outcome = null;
+          state.history = [];
+          pendingChoice = null;
+          state.seed = Math.floor(Math.random() * 0x7fffffff);
+          matchRng = createRng(state.seed);
+          state.weather = weatherForDay(1, matchRng);
+        }
+        function beginTurnPhase() {
+          setPhase("turn");
+          announce(
+            T("dayLabel", { day: state.day }) +
+              " — " +
+              weatherName(state.weather) +
+              " — " +
+              T("turnTitle", { name: state.names[0] }),
+          );
+          dom.fishCard.focus();
+        }
+        function onStart() {
+          if (state.phase !== "setup") return;
+          const n1 = dom.nameInput1.value.trim() || T("playerOneDefault");
+          const n2 = dom.nameInput2.value.trim() || T("playerTwoDefault");
+          if (n1.toLowerCase() === n2.toLowerCase()) {
+            dom.setupError.hidden = false;
+            announce(T("sameNames"));
+            return;
+          }
+          dom.setupError.hidden = true;
+          state.names = [n1, n2];
+          resetMatch();
+          beginTurnPhase();
+        }
+        function onChoose(choice) {
+          if (state.phase !== "turn") return;
+          pendingChoice = choice;
+          renderTurn();
+          announce(choiceWord(choice) + ": " + T("selected"));
+          if (choiceTimer !== null) clearTimeout(choiceTimer);
+          choiceTimer = setTimeout(commitTurn, CHOICE_COMMIT_MS);
+        }
+        function commitTurn() {
+          choiceTimer = null;
+          if (state.phase !== "turn" || pendingChoice === null) return;
+          state.choices[state.activePlayer] = pendingChoice;
+          pendingChoice = null;
+          if (state.activePlayer === 0) {
+            state.activePlayer = 1;
+            state.handoffKind = "pass";
+          } else {
+            state.handoffKind = "reveal";
+          }
+          setPhase("handoff");
+          startCountdown();
+          dom.phaseHandoff.focus();
+          if (state.handoffKind === "pass") {
+            announce(T("announcePass", { name: state.names[1] }));
+          } else {
+            announce(T("revealIn"));
+          }
+        }
+        function onReady() {
+          if (state.phase !== "handoff" || !countdown.done) return;
+          if (state.handoffKind !== "pass") return;
+          state.handoffKind = null;
+          setPhase("turn");
+          announce(T("turnTitle", { name: state.names[state.activePlayer] }));
+          dom.fishCard.focus();
+        }
+        function revealDay() {
+          const c1 = state.choices[0];
+          const c2 = state.choices[1];
+          const before = state.store;
+          const newStore = resolveStore(before, c1, c2, state.weather);
+          const treasureDelta = [treasureGain(c1), treasureGain(c2)];
+          state.store = newStore;
+          state.treasure[0] += treasureDelta[0];
+          state.treasure[1] += treasureDelta[1];
+          let sail = 0;
+          if (isSunk(newStore)) {
+            state.outcome = "sunk";
+          } else {
+            sail = rngInt(matchRng, RULES.SAIL_LO, RULES.SAIL_HI);
+            state.distance += sail;
+            if (isArrived(state.distance)) state.outcome = "arrived";
+          }
+          state.history.push({
+            day: state.day,
+            weather: state.weather,
+            choices: [c1, c2],
+            kind: roundKind(c1, c2),
+            treasureDelta: treasureDelta,
+            storeDelta: newStore - before,
+            storeAfter: newStore,
+            sail: sail,
+            distanceAfter: state.distance,
+          });
+          state.choices = [null, null];
+          state.handoffKind = null;
+          setPhase("result");
+          if (!state.reduceMotion) {
+            [dom.resItem1, dom.resItem2].forEach(function (item) {
+              item.classList.remove("pop");
+              item.getBoundingClientRect();
+              item.classList.add("pop");
+            });
+          }
+          const entry = state.history[state.history.length - 1];
+          let msg = explanationFor(entry);
+          if (state.outcome === "sunk") msg += " " + T("sunkMsg");
+          else if (state.outcome === "arrived") msg += " " + T("arriveTieMsg");
+          else if (state.store <= 3) msg += " " + T("warnLowStore");
+          announce(msg);
+          dom.nextBtn.focus();
+        }
+        function onNext() {
+          if (state.phase !== "result") return;
+          if (state.outcome !== null) {
+            setPhase("final");
+            showOverlay(finalVerdict());
+            return;
+          }
+          state.day += 1;
+          state.activePlayer = 0;
+          state.weather = weatherForDay(state.day, matchRng);
+          beginTurnPhase();
+        }
+        function onPlayAgain() {
+          if (state.phase !== "final") return;
+          resetMatch();
+          beginTurnPhase();
+        }
+        function onNewMatch() {
+          if (state.phase === "setup") return;
+          resetMatch();
+          setPhase("setup");
+          dom.nameInput1.focus();
+        }
+        function markIntroSeen() {
+          try {
+            localStorage.setItem(INTRO_SEEN_KEY, "1");
+          } catch {
+            /* private mode — play without remembering */
+          }
+        }
+        function goToSetup() {
+          setPhase("setup");
+          dom.nameInput1.focus();
+        }
+        function openIntro() {
+          introStep = 0;
+          setPhase("intro");
+          dom.introNext.focus();
+          announce(T(INTRO_STEPS[0].t));
+        }
+        function introNextStep() {
+          if (state.phase !== "intro") return;
+          if (introStep < INTRO_STEPS.length - 1) {
+            introStep += 1;
+            renderIntro();
+            announce(T(INTRO_STEPS[introStep].t));
+          } else {
+            markIntroSeen();
+            goToSetup();
+          }
+        }
+        function introPrevStep() {
+          if (state.phase !== "intro" || introStep === 0) return;
+          introStep -= 1;
+          renderIntro();
+          announce(T(INTRO_STEPS[introStep].t));
+        }
+        function skipIntro() {
+          if (state.phase !== "intro") return;
+          markIntroSeen();
+          goToSetup();
+        }
+
+        /* ================= EVENTS ================= */
+        dom.langBtn.addEventListener("click", function () {
+          state.lang = state.lang === "en" ? "pl" : "en";
+          applyTranslations();
+        });
+        dom.startBtn.addEventListener("click", onStart);
+        dom.introNext.addEventListener("click", introNextStep);
+        dom.introBack.addEventListener("click", introPrevStep);
+        dom.introSkip.addEventListener("click", skipIntro);
+        dom.howToPlayBtn.addEventListener("click", openIntro);
+        document.addEventListener("keydown", function (event) {
+          if (state.phase !== "intro") return;
+          if (event.key === "Escape") {
+            event.preventDefault();
+            skipIntro();
+          } else if (event.key === "ArrowRight") {
+            event.preventDefault();
+            introNextStep();
+          } else if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            introPrevStep();
+          }
+        });
+        [dom.nameInput1, dom.nameInput2].forEach(function (input) {
+          input.addEventListener("input", function () {
+            dom.setupError.hidden = true;
+          });
+          input.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") onStart();
+          });
+        });
+        dom.fishCard.addEventListener("click", function () {
+          onChoose("fish");
+        });
+        dom.diveCard.addEventListener("click", function () {
+          onChoose("dive");
+        });
+        dom.readyBtn.addEventListener("click", onReady);
+        dom.nextBtn.addEventListener("click", onNext);
+        dom.playAgainBtn.addEventListener("click", onPlayAgain);
+        dom.newMatchBtn.addEventListener("click", onNewMatch);
+        document.addEventListener("visibilitychange", function () {
+          if (state.phase !== "handoff" || countdown.done) return;
+          if (document.hidden) {
+            pauseCountdown();
+          } else {
+            resumeCountdown();
+          }
+        });
+        const motionQuery = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        );
+        state.reduceMotion = motionQuery.matches;
+        motionQuery.addEventListener("change", function () {
+          state.reduceMotion = motionQuery.matches;
+        });
+
+        /* ================= INIT ================= */
+        state.names = [T("playerOneDefault"), T("playerTwoDefault")];
+        let introSeen = false;
+        try {
+          introSeen = localStorage.getItem(INTRO_SEEN_KEY) === "1";
+        } catch {
+          /* private mode — treat as first visit */
+        }
+        state.phase = introSeen ? "setup" : "intro";
+        applyTranslations();
+        if (new URLSearchParams(window.location.search).get("debug") === "1") {
+          window.dilemmaDebug = { state: state, RULES: RULES };
+        }
+      })();
+    </script>
+  </body>
+</html>
