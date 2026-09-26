@@ -195,7 +195,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: #fafaf7;
         color: #546e7a;
         font-family: "Outfit", sans-serif;
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.15s;
@@ -681,6 +681,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             challengeClose: "Close! Try again",
             challengeMiss: "Missed! Try again",
             clickToDismiss: "Click to continue",
+            missDistance: "Miss distance: {0} px",
             infoExplore: [
               "Launch a projectile by clicking and dragging on the left platform. In the rotating frame the path curves due to the Coriolis effect. In the inertial frame it\u2019s a straight line!",
               "The dashed line shows where you aimed \u2014 the gap between it and the actual path is the ",
@@ -729,6 +730,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             challengeClose: "Prawie! Spr\u00f3buj ponownie",
             challengeMiss: "Pud\u0142o! Spr\u00f3buj ponownie",
             clickToDismiss: "Kliknij, aby kontynuowa\u0107",
+            missDistance: "Odleg\u0142o\u015B\u0107 pud\u0142a: {0} px",
             infoExplore: [
               "Wystrzel pocisk klikaj\u0105c i przeci\u0105gaj\u0105c na lewej platformie. W uk\u0142adzie obracaj\u0105cym tor zakrzywia si\u0119 przez efekt Coriolisa. W uk\u0142adzie inercjalnym to linia prosta!",
               "Przerywana linia pokazuje kierunek celowania \u2014 r\u00f3\u017cnica to ",
@@ -1766,6 +1768,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
         }
 
+        // Result overlays must work without a mouse: role + focus so assistive
+        // tech announces the outcome, and (where the app has no handler of its
+        // own) Escape/Enter/Space to dismiss. The keyboard path replays the
+        // element's own click handler so dismiss logic stays in one place.
+        // See house/overlay-a11y.
+        function makeOverlayAccessible(overlay) {
+          overlay.setAttribute("role", "dialog");
+          overlay.setAttribute("aria-live", "polite");
+          overlay.setAttribute("tabindex", "-1");
+          overlay.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              overlay.click();
+            }
+          });
+          overlay.focus();
+        }
+
         function showOverlay(result, dist) {
           const existing = document.querySelector(".result-overlay");
           if (existing) existing.remove();
@@ -1802,7 +1822,10 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
           const detailEl = document.createElement("div");
           detailEl.className = "overlay-detail";
-          detailEl.textContent = "Miss distance: " + Math.round(dist) + " px";
+          detailEl.textContent = T("missDistance").replace(
+            "{0}",
+            Math.round(dist),
+          );
           overlay.appendChild(detailEl);
 
           const hintEl = document.createElement("div");
@@ -1814,6 +1837,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             overlay.remove();
           });
           document.body.appendChild(overlay);
+          makeOverlayAccessible(overlay);
         }
 
         /* ───────── INFO TEXT ───────── */

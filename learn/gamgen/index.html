@@ -4006,6 +4006,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         /* ═══════════════════════════════════════════════════════════
    DARK MODE
    ═══════════════════════════════════════════════════════════ */
+        // localStorage throws on access in Safari private browsing, which would
+        // otherwise break dark-mode detection during start-up.
+        function readDarkPref() {
+          try {
+            return localStorage.getItem("gamgen-dark");
+          } catch {
+            return null;
+          }
+        }
+
+        function writeDarkPref(value) {
+          try {
+            localStorage.setItem("gamgen-dark", value);
+          } catch {
+            /* preference simply is not persisted */
+          }
+        }
+
         function setDarkMode(isDark) {
           const oldPalette = COLOR_PALETTE;
           state.dark = isDark;
@@ -4014,7 +4032,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           document.getElementById("darkBtn").title = T(
             isDark ? "lightMode" : "darkMode",
           );
-          localStorage.setItem("gamgen-dark", isDark ? "1" : "0");
+          writeDarkPref(isDark ? "1" : "0");
 
           COLOR_PALETTE = isDark ? DARK_PALETTE : LIGHT_PALETTE;
 
@@ -4251,7 +4269,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           if (params.has("d")) {
             state.dark = params.get("d") === "1";
           } else {
-            const saved = localStorage.getItem("gamgen-dark");
+            const saved = readDarkPref();
             state.dark =
               saved !== null
                 ? saved === "1"
@@ -4285,8 +4303,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           window
             .matchMedia("(prefers-color-scheme: dark)")
             .addEventListener("change", (e) => {
-              if (localStorage.getItem("gamgen-dark") === null)
-                setDarkMode(e.matches);
+              if (readDarkPref() === null) setDarkMode(e.matches);
             });
 
           if (restored && restored.path) {

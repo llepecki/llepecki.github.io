@@ -1690,20 +1690,54 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         };
 
         // ══════════════════════════════════════════════
+        // PERSISTENCE
+        // ══════════════════════════════════════════════
+        // Every localStorage access is guarded. Safari in private browsing
+        // throws on access rather than returning null, and these reads run
+        // while the state object below is being constructed — an unguarded
+        // throw here takes the whole app down before it renders. Stored JSON
+        // can also be corrupt, so parsing is guarded too.
+        function readStore(key, fallback) {
+          try {
+            const value = localStorage.getItem(key);
+            return value === null ? fallback : value;
+          } catch {
+            return fallback;
+          }
+        }
+
+        function readStoreJson(key, fallback) {
+          try {
+            const value = localStorage.getItem(key);
+            return value === null ? fallback : JSON.parse(value);
+          } catch {
+            return fallback;
+          }
+        }
+
+        function writeStore(key, value) {
+          try {
+            localStorage.setItem(key, value);
+          } catch {
+            /* storage unavailable or full — progress simply is not persisted */
+          }
+        }
+
+        // ══════════════════════════════════════════════
         // STATE
         // ══════════════════════════════════════════════
         const state = {
           lang: navigator.language?.startsWith("pl") ? "pl" : "en",
-          theme: localStorage.getItem("bat-theme") || "dark",
+          theme: readStore("bat-theme", "dark"),
           mode: "learn",
           topic: "series",
           difficulty: "easy",
-          lessonIdx: parseInt(localStorage.getItem("bat-lesson") || "0", 10),
-          maxLesson: parseInt(localStorage.getItem("bat-lesson") || "0", 10),
+          lessonIdx: parseInt(readStore("bat-lesson", "0"), 10),
+          maxLesson: parseInt(readStore("bat-lesson", "0"), 10),
           currentMission: null,
           hintsUsed: 0,
           hintLevel: 0,
-          stars: JSON.parse(localStorage.getItem("bat-stars") || "{}"),
+          stars: readStoreJson("bat-stars", {}),
           templateId: null,
           trayCount: 0,
           trayMax: 0,
@@ -3753,7 +3787,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             // Unlock next lesson
             if (state.lessonIdx >= state.maxLesson) {
               state.maxLesson = state.lessonIdx + 1;
-              localStorage.setItem("bat-lesson", String(state.maxLesson));
+              writeStore("bat-lesson", String(state.maxLesson));
             }
           } else if (state.mode === "challenge") {
             const mission = state.currentMission;
@@ -3770,7 +3804,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             const prev = state.stars[mission.id] || 0;
             if (earnedStars > prev) {
               state.stars[mission.id] = earnedStars;
-              localStorage.setItem("bat-stars", JSON.stringify(state.stars));
+              writeStore("bat-stars", JSON.stringify(state.stars));
             }
 
             showStars(Math.max(earnedStars, prev));
@@ -4213,7 +4247,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             state.theme = "light";
             $("themeIcon").textContent = "\u263D";
           }
-          localStorage.setItem("bat-theme", state.theme);
+          writeStore("bat-theme", state.theme);
         });
 
         // Mode toggles

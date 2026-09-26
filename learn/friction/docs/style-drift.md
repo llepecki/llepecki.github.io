@@ -10,5 +10,5 @@ Each `house/...` id below suppresses that rule in `npm run code-review`. Delete
 the line once the underlying issue is fixed — the gate then enforces it, and any
 new occurrence fails the review.
 
-- `house/inline-style-display` — 6 sites: visibility toggled with inline `style.display` instead of the native `hidden` attribute.
-- `house/tiny-css-text` — 1 site: CSS text below the 11px floor (diagram/chart labels — needs per-chart visual checking, not a sweep).
+- `house/tiny-canvas-text` — 3 sites: canvas text below 12px (chart tick and axis labels — raising them risks collisions, so verify visually).
+- `house/tiny-css-text` — 2 sites: CSS text below the 11px floor (diagram/chart labels — needs per-chart visual checking, not a sweep).

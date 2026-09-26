@@ -33,6 +33,12 @@ Draw a route for a cartoon bug climbing a hill and discover the difference betwe
 
 Fire a cannonball on the Moon, Mercury, Venus, Earth, or Mars and discover how gravity shapes the path. Drag the launch vector, adjust mass, and see why heavier cannonballs follow the same arc in a vacuum. Includes a Hit the Target game mode!
 
+### [Moment Lab](moment/) `Classical mechanics`
+
+Push near or far from a pivot, change a force's strength and direction, and
+see how moments make a beam turn. Explore freely, balance the moments, or
+predict the initial rotation.
+
 ### [Fraction Playground](fractions/) `Mathematics`
 
 Build, compare, and place fractions and decimals. Tap bars, circles, or a hundred grid to fill equal parts, drag a number line marker, and solve guided missions across three difficulty levels. Includes an explore mode!
@@ -40,6 +46,10 @@ Build, compare, and place fractions and decimals. Tap bars, circles, or a hundre
 ### [Roman Numerals](roman/) `Mathematics`
 
 Learn to read and build numbers the ancient Roman way. Discover what I, V, X, L, C, D, and M mean, how symbols combine, and how to write any number like a Roman.
+
+### [Factor Workshop](gcdlcm/) `Mathematics`
+
+Break numbers into prime tiles, match the equal tiles across two rows by dragging or tapping, and build the greatest common divisor or the least common multiple. A short tutorial, eight guided pairs per algorithm, a five-task challenge drawn afresh each run with hidden answers, and a board for your own numbers. Bilingual (EN/PL).
 
 ### [Code Breaker](codebreak/) `Mathematics` `Logic`
 

@@ -194,7 +194,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: #fafaf7;
         color: #546e7a;
         font-family: "Outfit", sans-serif;
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.15s;
@@ -310,6 +310,14 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         .ctrl-group {
           min-width: 120px;
           flex: 1;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .lang-btn,
+        .type-btn,
+        .step-only {
+          transition: none;
         }
       }
     </style>

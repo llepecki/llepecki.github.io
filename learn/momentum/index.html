@@ -196,7 +196,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
         background: #fafaf7;
         color: #546e7a;
         font-family: "Outfit", sans-serif;
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.15s;
@@ -2024,6 +2024,24 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
           }
         }
 
+        // Result overlays must work without a mouse: role + focus so assistive
+        // tech announces the outcome, and (where the app has no handler of its
+        // own) Escape/Enter/Space to dismiss. The keyboard path replays the
+        // element's own click handler so dismiss logic stays in one place.
+        // See house/overlay-a11y.
+        function makeOverlayAccessible(overlay) {
+          overlay.setAttribute("role", "dialog");
+          overlay.setAttribute("aria-live", "polite");
+          overlay.setAttribute("tabindex", "-1");
+          overlay.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              overlay.click();
+            }
+          });
+          overlay.focus();
+        }
+
         function showOverlay(result, actualVel, pct) {
           const existing = document.querySelector(".result-overlay");
           if (existing) existing.remove();
@@ -2079,6 +2097,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             }
           });
           document.body.appendChild(overlay);
+          makeOverlayAccessible(overlay);
         }
 
         /* ───────── READOUTS ───────── */

@@ -5,6 +5,15 @@
   "scripts": {
     "code-review": "node tools/code-review.mjs",
     "word-quality": "node tools/word-quality.mjs",
+    "codebreak-puzzle-check": "node tools/codebreak-puzzle-check.mjs",
+    "dilemma-rules-check": "node tools/dilemma-rules-check.mjs",
+    "fairsplit-rules-check": "node tools/fairsplit-rules-check.mjs",
+    "gcdlcm-rules-check": "node tools/gcdlcm-rules-check.mjs",
+    "gcdlcm-layout-check": "node tools/gcdlcm-layout-check.mjs",
+    "hohmann-transfer-matrix": "node tools/hohmann-transfer-matrix.mjs",
+    "moment-rules-check": "node tools/moment-rules-check.mjs",
+    "moment-dom-check": "node tools/moment-dom-check.mjs",
+    "moment-layout-check": "node tools/moment-layout-check.mjs",
     "yesnoreflex-dom-check": "node tools/yesnoreflex-dom-check.mjs",
     "yesnoreflex-layout-check": "node tools/yesnoreflex-layout-check.mjs",
     "yesnoreflex-question-gate": "node tools/yesnoreflex-question-gate.mjs"

@@ -11,3 +11,4 @@ the line once the underlying issue is fixed — the gate then enforces it, and a
 new occurrence fails the review.
 
 - `house/inline-style-display` — 4 sites: visibility toggled with inline `style.display` instead of the native `hidden` attribute.
+- `house/tiny-canvas-text` — 2 sites: canvas text below 12px (chart tick and axis labels — raising them risks collisions, so verify visually).

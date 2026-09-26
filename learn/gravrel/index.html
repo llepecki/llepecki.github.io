@@ -3778,6 +3778,18 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
 
         // ====================== REUNION SUMMARY OVERLAY ======================
 
+        // Result overlays must work without a mouse: role + focus so assistive
+        // tech announces the outcome, and (where the app has no handler of its
+        // own) Escape/Enter/Space to dismiss. The keyboard path replays the
+        // element's own click handler so dismiss logic stays in one place.
+        // See house/overlay-a11y.
+        function makeOverlayAccessible(overlay) {
+          overlay.setAttribute("role", "dialog");
+          overlay.setAttribute("aria-live", "polite");
+          overlay.setAttribute("tabindex", "-1");
+          overlay.focus();
+        }
+
         function showReunionSummary() {
           const existing = document.querySelector(".result-overlay");
           if (existing) existing.remove();
@@ -3912,6 +3924,7 @@ Use it as the final review gate. It enforces the single-file HTML app policy plu
             overlay.remove();
           });
           document.body.appendChild(overlay);
+          makeOverlayAccessible(overlay);
         }
 
         document.addEventListener("keydown", function (e) {

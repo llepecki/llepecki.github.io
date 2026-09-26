@@ -1604,6 +1604,73 @@ function analyzeHouseStyleExtras(file, appName, content, lineStarts, styleBlocks
       "Empty readout rendered as `--`. The Style reference uses an em dash (`&mdash;`).");
   });
 
+  // These are the floors the Style reference sets outright, independent of the
+  // 2026-08-16 kid-readability minimums: canvas text is 13-17px (12px only in
+  // dense inset panels), and no sanctioned CSS tier goes below 11px.
+  {
+    const canvasFontRe = /\.font\s*=\s*["'`](?:bold\s+|[0-9]{3}\s+)?(\d+(?:\.\d+)?)px/g;
+    canvasFontRe.lastIndex = 0;
+    let cf;
+    while ((cf = canvasFontRe.exec(content)) !== null) {
+      if (parseFloat(cf[1]) < 12) {
+        push(cf.index, "medium", "house/tiny-canvas-text",
+          `Canvas text drawn at ${cf[1]}px. The Style reference sets canvas text at 13-17px, and 12px only inside dense inset panels — below that a child cannot read it.`);
+      }
+    }
+    const cssFontRe = /font-size:\s*(\d+(?:\.\d+)?)px/g;
+    cssFontRe.lastIndex = 0;
+    let sf;
+    while ((sf = cssFontRe.exec(cssText)) !== null) {
+      if (parseFloat(sf[1]) < 11) {
+        push(null, "medium", "house/tiny-css-text",
+          `CSS sets ${sf[1]}px text. The smallest sanctioned tier is 11px, and that is reserved for uppercase micro-labels.`);
+      }
+    }
+  }
+
+  if (/\b(?:transition|animation):/.test(cssText)
+    && !/prefers-reduced-motion/.test(cssText)) {
+    push(null, "medium", "house/missing-reduced-motion-css",
+      "App animates or transitions but has no `@media (prefers-reduced-motion: reduce)` block. Motion-sensitive users get no way to opt out.");
+  }
+
+  // localStorage access THROWS in Safari private browsing rather than
+  // returning null, so an unguarded read during start-up takes the app down
+  // before it renders. Guarded = a `try {` opens within the preceding window
+  // and has not yet been closed by its `catch`.
+  {
+    const storeRe = /localStorage\s*\.\s*(?:getItem|setItem|removeItem|clear)/g;
+    storeRe.lastIndex = 0;
+    let hit;
+    while ((hit = storeRe.exec(content)) !== null) {
+      const window_ = content.slice(Math.max(0, hit.index - 300), hit.index);
+      const tryAt = window_.lastIndexOf("try {");
+      const catchAt = window_.lastIndexOf("catch");
+      if (tryAt < 0 || catchAt > tryAt) {
+        push(hit.index, "medium", "house/localstorage-unguarded",
+          "`localStorage` accessed outside a try/catch. Safari private browsing throws on access, so this can break the app outright rather than merely losing saved state.");
+      }
+    }
+  }
+
+  // Result overlays are the moment a child most needs feedback, so they must
+  // be reachable without a mouse. Only applies to apps that actually build one
+  // in JS — a stylesheet with leftover .result-overlay rules is not an overlay.
+  if (/\.className\s*=\s*["'](?:result|game)-overlay|classList\.add\(\s*["'](?:result|game)-overlay/.test(content)) {
+    const gaps = [
+      !/role["'\s,=:]+dialog/.test(content) ? '`role="dialog"`' : null,
+      // Case-insensitive: apps set this either as the attribute
+      // (setAttribute("tabindex", "-1")) or the IDL property (el.tabIndex = -1).
+      !/tabindex["'\s,=:]+-1/i.test(content) ? '`tabindex="-1"` (so it can take focus)' : null,
+      !/["']Escape["']/.test(content) ? "Escape/Enter/Space dismissal" : null,
+      !/aria-live/.test(content) ? '`aria-live="polite"`' : null
+    ].filter(Boolean);
+    if (gaps.length > 0) {
+      push(null, "medium", "house/overlay-a11y",
+        `Result overlay is missing ${gaps.join(", ")}. A child using a keyboard or a screen reader gets no feedback at the one moment the app is talking to them.`);
+    }
+  }
+
   if (DISABLED_ASSIGN_RE.test(content) && cssText && !/:disabled/.test(cssText)) {
     push(null, "medium", "house/missing-disabled-style",
       "JS disables controls but no CSS `:disabled` rule exists, so a disabled button looks identical to an enabled one. The Style reference specifies `opacity: 0.4; pointer-events: none`.");

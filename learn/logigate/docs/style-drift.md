@@ -19,3 +19,11 @@ Deliberate deviations from the Style reference in `../../CLAUDE.md`, kept after 
 - **Mono status line in the panel.** `#statusText` is JetBrains Mono 12px (readout
   typography) rather than Outfit info-text, because it doubles as the live
   `Output = HIGH/LOW` readout after a reveal.
+
+## Automated checks
+
+Each `house/...` id below suppresses that rule in `npm run code-review`. Delete
+the line once the underlying issue is fixed — the gate then enforces it, and any
+new occurrence fails the review.
+
+- `house/tiny-css-text` — 1 site: CSS text below the 11px floor (diagram/chart labels — needs per-chart visual checking, not a sweep).
