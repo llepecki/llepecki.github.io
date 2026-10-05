@@ -66,9 +66,19 @@ Senior back-end engineer specializing in .NET, API design, and distributed archi
 
 ## Work History
 
+### Staff Software Engineer · OEC
+
+Cracow, Poland · Mar 2026 - Present · [oeconnection.com/](https://oeconnection.com)
+
+.NET / C#, PostgreSQL, AWS
+
+- Drive agentic development across a team of several squads; design and evolve the agent harness they all share
+- Built skills encoding team conventions and recurring workflows, plus subagent orchestration for multi-step tasks - made agent output consistent across squads and sped up delivery
+- Added hooks and guardrails enforcing quality checks while agents work - issues get caught before code reaches a PR, reducing back-and-forth in review
+
 ### Senior Back-End Engineer · Tributech
 
-Linz, Austria · Jun 2024 - Present · [www.tributech.io](https://www.tributech.io)
+Linz, Austria · Jun 2024 - Mar 2026 · [www.tributech.io](https://www.tributech.io)
 
 .NET / C#, PostgreSQL, Redis, Docker, Kubernetes, Keycloak, Cerbos
 
