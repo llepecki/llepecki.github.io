@@ -16,7 +16,9 @@
     "moment-layout-check": "node tools/moment-layout-check.mjs",
     "yesnoreflex-dom-check": "node tools/yesnoreflex-dom-check.mjs",
     "yesnoreflex-layout-check": "node tools/yesnoreflex-layout-check.mjs",
-    "yesnoreflex-question-gate": "node tools/yesnoreflex-question-gate.mjs"
+    "yesnoreflex-question-gate": "node tools/yesnoreflex-question-gate.mjs",
+    "freefall-physics-check": "node tools/freefall-physics-check.mjs",
+    "freefall-layout-check": "node tools/freefall-layout-check.mjs"
   },
   "dependencies": {
     "@eslint/js": "10.0.1",

@@ -83,6 +83,10 @@ See how massive objects like black holes and stars bend light from distant stars
 
 See how spacecraft use a planet's gravity and motion to speed up or slow down without fuel. Toggle between reference frames to discover how the slingshot maneuver really works.
 
+### [Orbit & Free Fall](freefall/) `Classical mechanics` `Astrophysics`
+
+Change the starting speed to explore orbits, falls, and escape, and watch a station keep falling around a visibly curved Earth. An astronaut floating inside the enlarged cabin shows why people in orbit feel weightless while gravity still acts, and engine burns show when a wall finally pushes them. Bilingual (EN/PL).
+
 ### [Hohmann Transfer Game](hohmann/) `Astrophysics`
 
 Time your launch and burns to transfer between neighboring planets on a minimum-energy Hohmann orbit. Wait for the right planetary alignment, hold the engine for departure, coast through space, then burn again to capture orbit at the destination.
